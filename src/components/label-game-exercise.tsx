@@ -1,12 +1,11 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useContext } from 'react';
+import { useState, useCallback, useEffect, useContext } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Check, RefreshCw, X, Loader2, ThumbsUp, GripVertical } from 'lucide-react';
+import { Check, RefreshCw, X, Loader2, ThumbsUp, GripVertical, AlertTriangle } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
@@ -17,8 +16,6 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { SkillLevel } from '@/lib/skills';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Label } from './ui/label';
 
 const NUM_QUESTIONS = 5;
 
@@ -73,6 +70,7 @@ export function LabelGameExercise() {
     const [isLoading, setIsLoading] = useState(true);
     const [level, setLevel] = useState<SkillLevel | null>(null);
     const [allPhrases, setAllPhrases] = useState<string[]>([]);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     const [currentSentence, setCurrentSentence] = useState('');
     const [orderedLabels, setOrderedLabels] = useState<LabelItem[]>([]);
@@ -86,6 +84,18 @@ export function LabelGameExercise() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
     const sensors = useSensors(useSensor(PointerSensor));
+
+    const resetExerciseState = useCallback(() => {
+        setCurrentSentence('');
+        setOrderedLabels([]);
+        setCurrentQuestionIndex(0);
+        setFeedback(null);
+        setIsFinished(false);
+        setCorrectAnswers(0);
+        setHasBeenSaved(false);
+        setSessionDetails([]);
+        setShowConfetti(false);
+    }, []);
     
     useEffect(() => {
         if (student?.levels?.['label-game']) {
@@ -95,23 +105,48 @@ export function LabelGameExercise() {
         }
     }, [student]);
 
+    const fetchPhrases = useCallback(async () => {
+        setIsLoading(true);
+        setLoadError(null);
+        resetExerciseState();
+
+        try {
+            const response = await fetch('/grammaire/phrases.txt');
+            const text = await response.text();
+            const contentType = response.headers.get('content-type') ?? '';
+            const trimmedText = text.trim();
+            const looksLikeHtml =
+                /^<!DOCTYPE/i.test(trimmedText) ||
+                /<(?:html|head|body|script|style|div)\b/i.test(trimmedText) ||
+                contentType.includes('text/html');
+
+            if (!response.ok || looksLikeHtml) {
+                throw new Error('Invalid content received');
+            }
+
+            const lines = text
+                .split('\n')
+                .map((line) => line.trim())
+                .filter((line) => line.length > 0);
+
+            if (lines.length === 0) {
+                throw new Error('No phrases available');
+            }
+
+            setAllPhrases(lines);
+        } catch (error) {
+            console.error('Failed to fetch phrases:', error);
+            setAllPhrases([]);
+            setLoadError("Impossible de charger les phrases de l'exercice. Réessaie dans un instant.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [resetExerciseState]);
+
     // Fetch all phrases from the file on mount
     useEffect(() => {
-        async function fetchPhrases() {
-            setIsLoading(true);
-            try {
-                const response = await fetch('/grammaire/phrases.txt');
-                const text = await response.text();
-                const lines = text.split('\n').filter(Boolean); // Split by new line and remove empty ones
-                setAllPhrases(lines);
-            } catch (error) {
-                console.error("Failed to fetch phrases:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        }
         fetchPhrases();
-    }, []);
+    }, [fetchPhrases]);
 
     const fetchNewSentence = () => {
         if (!level || allPhrases.length === 0) return;
@@ -216,15 +251,10 @@ export function LabelGameExercise() {
     }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate, level]);
 
     const restartExercise = () => {
-        setCurrentQuestionIndex(0);
-        setFeedback(null);
-        setIsFinished(false);
-        setCorrectAnswers(0);
-        setHasBeenSaved(false);
-        setSessionDetails([]);
+        resetExerciseState();
     };
 
-    if (isLoading || !level || allPhrases.length === 0) {
+    if (isLoading || !level) {
         return (
             <Card className="w-full max-w-2xl mx-auto shadow-2xl p-6">
                 <CardHeader>
@@ -233,6 +263,40 @@ export function LabelGameExercise() {
                 <CardContent className="flex flex-col items-center gap-4">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
                     <p className="text-muted-foreground">Chargement des phrases...</p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <Card className="w-full max-w-2xl mx-auto shadow-2xl p-6">
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl text-center flex items-center justify-center gap-2">
+                        <AlertTriangle className="h-6 w-6 text-destructive" />
+                        Erreur de chargement
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-4 text-center">
+                    <p className="text-muted-foreground">{loadError}</p>
+                </CardContent>
+                <CardFooter className="flex justify-center">
+                    <Button onClick={fetchPhrases} size="lg">
+                        <RefreshCw className="mr-2" /> Réessayer
+                    </Button>
+                </CardFooter>
+            </Card>
+        );
+    }
+
+    if (allPhrases.length === 0) {
+        return (
+            <Card className="w-full max-w-2xl mx-auto shadow-2xl p-6">
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl text-center">Aucune phrase disponible</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center text-muted-foreground">
+                    <p>Nous n'avons trouvé aucune phrase pour cet exercice. Réessaie plus tard.</p>
                 </CardContent>
             </Card>
         );
