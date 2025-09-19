@@ -1,4 +1,5 @@
 
+export const PHRASES_RAW = `
 Le chat dort.
 Le chien aboie.
 La fille mange.
@@ -99,3 +100,4 @@ La guerre est une tragédie.
 La vie est un cadeau.
 La mort est une fin.
 L'espoir fait vivre.
+`;

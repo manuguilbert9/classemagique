@@ -16,6 +16,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { SkillLevel } from '@/lib/skills';
+import { PHRASES_RAW } from '@/data/grammaire/phrases';
 
 const NUM_QUESTIONS = 5;
 
@@ -105,37 +106,27 @@ export function LabelGameExercise() {
         }
     }, [student]);
 
-    const fetchPhrases = useCallback(async () => {
+    const loadPhrases = useCallback(() => {
         setIsLoading(true);
         setLoadError(null);
         resetExerciseState();
 
         try {
-            const response = await fetch('/grammaire/phrases.txt');
-            const text = await response.text();
-            const contentType = response.headers.get('content-type') ?? '';
-            const trimmedText = text.trim();
-            const looksLikeHtml =
-                /^<!DOCTYPE/i.test(trimmedText) ||
-                /<(?:html|head|body|script|style|div)\b/i.test(trimmedText) ||
-                contentType.includes('text/html');
-
-            if (!response.ok || looksLikeHtml) {
-                throw new Error('Invalid content received');
+            if (!PHRASES_RAW) {
+                throw new Error('Le fichier de phrases est vide.');
             }
-
-            const lines = text
+            const lines = PHRASES_RAW
                 .split('\n')
                 .map((line) => line.trim())
                 .filter((line) => line.length > 0);
 
             if (lines.length === 0) {
-                throw new Error('No phrases available');
+                throw new Error('Aucune phrase disponible.');
             }
 
             setAllPhrases(lines);
         } catch (error) {
-            console.error('Failed to fetch phrases:', error);
+            console.error('Failed to load phrases:', error);
             setAllPhrases([]);
             setLoadError("Impossible de charger les phrases de l'exercice. Réessaie dans un instant.");
         } finally {
@@ -145,8 +136,8 @@ export function LabelGameExercise() {
 
     // Fetch all phrases from the file on mount
     useEffect(() => {
-        fetchPhrases();
-    }, [fetchPhrases]);
+        loadPhrases();
+    }, [loadPhrases]);
 
     const fetchNewSentence = () => {
         if (!level || allPhrases.length === 0) return;
@@ -281,7 +272,7 @@ export function LabelGameExercise() {
                     <p className="text-muted-foreground">{loadError}</p>
                 </CardContent>
                 <CardFooter className="flex justify-center">
-                    <Button onClick={fetchPhrases} size="lg">
+                    <Button onClick={loadPhrases} size="lg">
                         <RefreshCw className="mr-2" /> Réessayer
                     </Button>
                 </CardFooter>
@@ -363,4 +354,3 @@ export function LabelGameExercise() {
     );
 }
 
-    
