@@ -18,9 +18,9 @@ interface CurrencySettingsProps {
 
 const difficultyDesc = [
   "Niveau A : Reconnaissance des pièces et billets",
-  "Niveau B : Faire une somme exacte (prochainement)",
-  "Niveau C : Calculer une somme (prochainement)",
-  "Niveau D : Rendre la monnaie (prochainement)",
+  "Niveau B : Faire une somme exacte",
+  "Niveau C : Calculer une somme totale",
+  "Niveau D : Rendre la monnaie",
 ];
 
 export function CurrencySettings({ onStart }: CurrencySettingsProps) {
@@ -42,7 +42,7 @@ export function CurrencySettings({ onStart }: CurrencySettingsProps) {
           <Slider
             id="difficulty"
             min={0}
-            max={0} // Only level A is available for now
+            max={3}
             step={1}
             value={[difficulty]}
             onValueChange={(value) => setDifficulty(value[0])}
@@ -58,3 +58,4 @@ export function CurrencySettings({ onStart }: CurrencySettingsProps) {
     </Card>
   );
 }
+

@@ -201,7 +201,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const handleQcmAnswer = (option: string) => {
     if (!exerciseData || feedback || !exerciseData.answer) return;
 
-    if (option === exerciseData.answer) {
+    let isCorrect = option === exerciseData.answer;
+
+     if (skill.slug === 'currency' && exerciseData.type === 'qcm') {
+        const userAnswerNum = parseFloat(option.replace(/[^0-9,-]+/g, "").replace(',', '.'));
+        const correctAnswerNum = parseFloat(exerciseData.answer.replace(/[^0-9,-]+/g, "").replace(',', '.'));
+        isCorrect = userAnswerNum === correctAnswerNum;
+    }
+
+
+    if (isCorrect) {
       processCorrectAnswer();
     } else {
       processIncorrectAnswer();
@@ -211,7 +220,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const handleComposeSumSubmit = () => {
     if (!exerciseData || feedback || typeof exerciseData.targetAmount === 'undefined') return;
     
-    if (composedAmount === exerciseData.targetAmount) {
+    // Use a small epsilon for float comparison
+    if (Math.abs(composedAmount - exerciseData.targetAmount) < 0.001) {
       processCorrectAnswer();
     } else {
       processIncorrectAnswer();
@@ -282,7 +292,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
 
   const handleAddToSum = (item: { name: string; value: number; image: string; hint?: string }) => {
-    setComposedAmount(prev => prev + item.value);
+    setComposedAmount(prev => parseFloat((prev + item.value).toFixed(2)));
     setSelectedCoins(prev => [...prev, {src: item.image, alt: item.name, value: item.value}].sort((a,b) => b.value - a.value));
   }
   
@@ -519,6 +529,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             matchColors={exerciseData.timeSettings?.matchColors}
             coloredHands={exerciseData.timeSettings?.coloredHands}
         />
+      ) : exerciseData.items ? (
+         <div className="flex flex-wrap items-center justify-center gap-4 text-3xl">
+          {exerciseData.items.map((item, index) => (
+            <img key={index} src={item.image} alt={item.name} className="h-20 object-contain" />
+          ))}
+         </div>
       ) : exerciseData.image ? (
         <img
           src={exerciseData.image}
@@ -770,8 +786,8 @@ const renderWrittenToAudioQCM = () => (
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
-          {exerciseData.type === 'audio-qcm' && renderQCM()}
           {exerciseData.type === 'image-qcm' && renderImageQCM()}
+          {exerciseData.type === 'audio-qcm' && renderQCM()}
           {exerciseData.type === 'compose-sum' && renderComposeSum()}
           {exerciseData.type === 'select-multiple' && renderSelectMultiple()}
           {exerciseData.type === 'set-time' && renderSetTime()}
@@ -805,6 +821,7 @@ const renderWrittenToAudioQCM = () => (
     </div>
   );
 }
+
 
 
 
