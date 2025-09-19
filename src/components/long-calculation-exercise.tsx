@@ -343,6 +343,112 @@ export function LongCalculationExercise() {
     const { operands, operation } = currentProblem;
     const symbol = operation === 'addition' ? '+' : '-';
     const statement = operands.join(` ${symbol} `);
+    const maxDigits = Math.max(
+        ...operands.map((operand) => operand.toString().length),
+        currentProblem.answer.toString().length
+    );
+    const totalColumns = maxDigits + 1;
+    const columnIndices = useMemo(
+        () => Array.from({ length: totalColumns }, (_, idx) => totalColumns - 1 - idx),
+        [totalColumns]
+    );
+
+    const getOperandDigit = useCallback((operand: number, columnIndex: number) => {
+        const digits = operand.toString();
+        if (columnIndex >= digits.length) {
+            return '';
+        }
+        return digits[digits.length - 1 - columnIndex];
+    }, []);
+
+    const gridTemplateStyle = useMemo(
+        () => ({ gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 3.25rem))` }),
+        [totalColumns]
+    );
+
+    const renderNoteInput = useCallback(
+        (cellId: string, placeholder?: string) => {
+            const value = calculationState[cellId]?.value || '';
+            return (
+                <input
+                    key={cellId}
+                    id={cellId}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={2}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={(event) => {
+                        const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
+                        handleInputChange(cellId, sanitized);
+                    }}
+                    className="w-full h-10 rounded-md border border-border bg-background text-center text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+            );
+        },
+        [calculationState, handleInputChange]
+    );
+
+    const renderResultInput = useCallback(
+        (columnIndex: number) => {
+            const cellId = `result-${columnIndex}`;
+            const value = calculationState[cellId]?.value || '';
+            return (
+                <input
+                    key={cellId}
+                    id={cellId}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={2}
+                    value={value}
+                    onChange={(event) => {
+                        const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
+                        handleInputChange(cellId, sanitized);
+                    }}
+                    onFocus={(event) => event.currentTarget.select()}
+                    className="w-full h-16 rounded-md border border-border bg-background text-center text-2xl font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+            );
+        },
+        [calculationState, handleInputChange]
+    );
+
+    const renderOperandCell = useCallback(
+        (operandIndex: number, columnIndex: number, digit: string) => {
+            const cellId = `operand-${operandIndex}-${columnIndex}`;
+            const isCrossed = calculationState[cellId]?.isCrossed;
+            const noteId = `note-${operandIndex}-${columnIndex}`;
+            const noteValue = calculationState[noteId]?.value || '';
+            return (
+                <div
+                    key={cellId}
+                    className="relative flex h-16 w-full items-center justify-center rounded-md border border-border bg-muted/40"
+                >
+                    <button
+                        type="button"
+                        onClick={() => handleToggleCrossed(cellId)}
+                        className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-foreground"
+                    >
+                        <span className={cn('transition-all', isCrossed && 'line-through decoration-4 decoration-destructive')}>
+                            {digit}
+                        </span>
+                    </button>
+                    <input
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={2}
+                        value={noteValue}
+                        onChange={(event) => {
+                            const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
+                            handleInputChange(noteId, sanitized);
+                        }}
+                        className="absolute -top-2 right-1 h-8 w-10 rounded border border-border bg-background text-center text-sm font-semibold text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                </div>
+            );
+        },
+        [calculationState, handleInputChange, handleToggleCrossed]
+    );
 
     return (
         <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6">
@@ -354,12 +460,52 @@ export function LongCalculationExercise() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-2 sm:pt-6">
-                    <div className="flex justify-center items-center scale-90 sm:scale-100 transform">
-                       <p className="text-muted-foreground">L'interface pour ce calcul n'est plus disponible.</p>
+                    <div className="flex flex-col items-center gap-4 sm:gap-6">
+                        <div className="space-y-3">
+                            <div
+                                className="grid gap-2"
+                                style={gridTemplateStyle}
+                            >
+                                {columnIndices.map((columnIndex) =>
+                                    renderNoteInput(`carry-${columnIndex}`, '↗')
+                                )}
+                            </div>
+                            {operands.map((operand, operandIndex) => (
+                                <div key={`operand-row-${operandIndex}`} className="flex items-center gap-2">
+                                    <div className="w-6 text-2xl font-bold text-primary sm:w-8">
+                                        {operandIndex === operands.length - 1 ? symbol : ''}
+                                    </div>
+                                    <div className="grid gap-2" style={gridTemplateStyle}>
+                                        {columnIndices.map((columnIndex) =>
+                                            renderOperandCell(
+                                                operandIndex,
+                                                columnIndex,
+                                                getOperandDigit(operand, columnIndex)
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 text-2xl font-bold text-primary sm:w-8">=</div>
+                                <div className="grid gap-2" style={gridTemplateStyle}>
+                                    <div className="col-span-full border-b-4 border-border" />
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 text-2xl font-bold text-primary sm:w-8" />
+                                <div className="grid gap-2" style={gridTemplateStyle}>
+                                    {columnIndices.map((columnIndex) => renderResultInput(columnIndex))}
+                                </div>
+                            </div>
+                            <p className="text-muted-foreground text-sm text-center">
+                                Clique sur un chiffre pour le barrer et utilise les petites cases pour noter tes retenues.
+                            </p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
-            
+
             <div className="w-full">
                 <Button onClick={handleValidate} size="lg" className={cn("w-full text-lg",
                     feedback === 'correct' && 'bg-green-500 hover:bg-green-600',
