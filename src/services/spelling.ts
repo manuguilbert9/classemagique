@@ -2,6 +2,8 @@
 
 'use client';
 
+import { SPELLING_LISTS_RAW } from '@/data/orthographe/listes_orthographe';
+
 // This function can be called from client components as it fetches data.
 // It is no longer a 'server' utility in the same way.
 
@@ -53,36 +55,25 @@ function parseSpellingFile(fileContent: string, logDebug: (message: string) => v
 
 
 /**
- * Fetches the spelling list file from the public directory and parses it.
- * This function is designed to be called from the client side.
+ * Parse les listes d'orthographe embarquées dans le bundle client.
+ * Cette fonction reste compatible avec les composants client.
  */
-export async function getSpellingLists(logDebug: (message: string) => void): Promise<SpellingList[]> {
-    const filePath = '/orthographe/listes_orthographe.txt';
-    logDebug(`Tentative de fetch le fichier: ${filePath}`);
-    
+export async function getSpellingLists(logDebug: (message: string) => void = () => {}): Promise<SpellingList[]> {
+    logDebug('Chargement du fichier d\'orthographe embarqué.');
+
     try {
-        const response = await fetch(filePath, { cache: 'no-store' });
-        logDebug(`Fetch terminé. Status: ${response.status} - ${response.statusText}`);
-
-        if (!response.ok) {
-            throw new Error(`Échec de la requête: ${response.statusText}`);
-        }
-
-        const fileContent = await response.text();
-        logDebug(`Contenu du fichier reçu (100 premiers caractères): "${fileContent.substring(0, 100)}..."`);
-        
-        if (!fileContent) {
+        if (!SPELLING_LISTS_RAW) {
             logDebug("ERREUR: Le contenu du fichier est vide.");
             return [];
         }
 
-        return parseSpellingFile(fileContent, logDebug);
-
+        logDebug(`Contenu du fichier chargé (100 premiers caractères): "${SPELLING_LISTS_RAW.substring(0, 100)}..."`);
+        return parseSpellingFile(SPELLING_LISTS_RAW, logDebug);
     } catch (error) {
         if (error instanceof Error) {
-            logDebug(`ERREUR lors du fetch ou du parsing: ${error.message}`);
+            logDebug(`ERREUR lors du chargement ou du parsing: ${error.message}`);
         } else {
-            logDebug(`ERREUR inconnue lors du fetch ou du parsing.`);
+            logDebug(`ERREUR inconnue lors du chargement ou du parsing.`);
         }
         return [];
     }
