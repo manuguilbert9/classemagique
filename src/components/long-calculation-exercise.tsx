@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useContext, useCallback } from 'react';
+import { useState, useMemo, useEffect, useContext, useCallback, Fragment } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,29 +26,33 @@ type Feedback = 'correct' | 'incorrect' | null;
 
 const NUM_PROBLEMS = 3;
 
-type CarryNoteInputProps = {
-    cellId: string;
-    value: string;
-    placeholder?: string;
-    isCrossed?: boolean;
-    onChange: (id: string, value: string) => void;
-    onToggleCrossed: (id: string) => void;
-};
-
 function CarryNoteInput({
     cellId,
     value,
-    placeholder,
     isCrossed,
     onChange,
     onToggleCrossed,
-}: CarryNoteInputProps) {
+}: {
+    cellId: string;
+    value: string;
+    isCrossed?: boolean;
+    onChange: (id: string, value: string) => void;
+    onToggleCrossed: (id: string) => void;
+}) {
+    const colorClass = useMemo(() => {
+        const column = parseInt(cellId.split('-')[1], 10);
+        if (column === 0) return 'text-blue-600 border-blue-400 focus-within:ring-blue-300';
+        if (column === 1) return 'text-red-600 border-red-400 focus-within:ring-red-300';
+        if (column === 2) return 'text-green-600 border-green-400 focus-within:ring-green-300';
+        return 'text-gray-600 border-gray-400 focus-within:ring-gray-300';
+    }, [cellId]);
+
     return (
         <label
             htmlFor={cellId}
             className={cn(
-                'group relative flex w-full cursor-text items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/60 bg-background text-sm font-semibold transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40 focus-within:ring-offset-2 focus-within:ring-offset-background sm:text-base',
-                'aspect-square',
+                'relative flex h-8 w-8 cursor-text items-center justify-center rounded-full border-2 border-dashed bg-background text-sm font-semibold transition focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-background sm:h-10 sm:w-10 sm:text-base',
+                colorClass,
                 isCrossed && 'focus-within:border-destructive/70 focus-within:ring-destructive/40'
             )}
             onContextMenu={(event) => {
@@ -77,11 +81,12 @@ function CarryNoteInput({
                     isCrossed && 'line-through decoration-4 decoration-destructive'
                 )}
             >
-                {value || placeholder || ''}
+                {value || ''}
             </span>
         </label>
     );
 }
+
 
 // --- Problem Generation Logic ---
 
@@ -358,8 +363,10 @@ export function LongCalculationExercise() {
         setHasBeenSaved(false);
         setSessionDetails([]);
     };
+    
+    // --- All hooks are above this line ---
 
-    if (isLoading || !level || problems.length === 0) {
+    if (isLoading || !level || problems.length === 0 || !currentProblem) {
         return (
             <div className="w-full max-w-lg mx-auto flex flex-col items-center justify-center gap-6 h-96">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -392,10 +399,6 @@ export function LongCalculationExercise() {
             </Card>
         )
     }
-
-    if (!currentProblem) {
-        return <p>Erreur lors de la génération du problème.</p>;
-    }
     
     const { operands, operation } = currentProblem;
     const symbol = operation === 'addition' ? '+' : '-';
@@ -404,128 +407,33 @@ export function LongCalculationExercise() {
         ...operands.map((operand) => operand.toString().length),
         currentProblem.answer.toString().length
     );
-    const totalColumns = maxDigits + 1;
-    const columnIndices = useMemo(
-        () => Array.from({ length: totalColumns }, (_, idx) => totalColumns - 1 - idx),
-        [totalColumns]
-    );
+    const totalColumns = maxDigits;
+    const columnIndices = Array.from({ length: totalColumns }, (_, idx) => totalColumns - 1 - idx);
 
-    const getOperandDigit = useCallback((operand: number, columnIndex: number) => {
+    const getOperandDigit = (operand: number, columnIndex: number) => {
         const digits = operand.toString();
         if (columnIndex >= digits.length) {
             return '';
         }
         return digits[digits.length - 1 - columnIndex];
-    }, []);
+    };
 
-    const gridTemplateStyle = useMemo(
-        () => ({ gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 3.25rem))` }),
-        [totalColumns]
-    );
-
-    const renderNoteInput = useCallback(
-        (cellId: string, placeholder?: string) => {
-            const value = calculationState[cellId]?.value || '';
-            const isCrossed = calculationState[cellId]?.isCrossed;
-            return (
-                <CarryNoteInput
-                    key={cellId}
-                    cellId={cellId}
-                    placeholder={placeholder}
-                    value={value}
-                    isCrossed={isCrossed}
-                    onChange={handleInputChange}
-                    onToggleCrossed={handleToggleCrossed}
-                />
-            );
-        },
-        [calculationState, handleInputChange, handleToggleCrossed]
-    );
-
-    const renderResultInput = useCallback(
-        (columnIndex: number) => {
-            const cellId = `result-${columnIndex}`;
-            const value = calculationState[cellId]?.value || '';
-            return (
-                <input
-                    key={cellId}
-                    id={cellId}
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={2}
-                    value={value}
-                    onChange={(event) => {
-                        const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
-                        handleInputChange(cellId, sanitized);
-                    }}
-                    onFocus={(event) => event.currentTarget.select()}
-                    className="w-full h-16 rounded-md border border-border bg-background text-center text-2xl font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                />
-            );
-        },
-        [calculationState, handleInputChange]
-    );
-
-    const renderOperandCell = useCallback(
-        (operandIndex: number, columnIndex: number, digit: string) => {
-            const cellId = `operand-${operandIndex}-${columnIndex}`;
-            const isCrossed = calculationState[cellId]?.isCrossed;
-            const noteId = `note-${operandIndex}-${columnIndex}`;
-            const noteValue = calculationState[noteId]?.value || '';
-            const isSubtractionMinuendCell = operation === 'subtraction' && operandIndex === 0;
-            const noteMaxLength = isSubtractionMinuendCell ? 1 : 2;
-            const notePlaceholder = isSubtractionMinuendCell ? '1' : undefined;
-
-            return (
-                <div
-                    key={cellId}
-                    onContextMenu={
-                        isSubtractionMinuendCell
-                            ? (event) => {
-                                  event.preventDefault();
-                                  handleToggleCrossed(cellId);
-                              }
-                            : undefined
-                    }
-                    className="relative flex h-16 w-full items-center justify-center rounded-md border border-border bg-muted/40"
-                >
-                    <button
-                        type="button"
-                        onClick={() => handleToggleCrossed(cellId)}
-                        onContextMenu={(event) => {
-                            event.preventDefault();
-                            handleToggleCrossed(cellId);
-                        }}
-                        className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-foreground"
-                    >
-                        <span className={cn('transition-all', isCrossed && 'line-through decoration-4 decoration-destructive')}>
-                            {digit}
-                        </span>
-                    </button>
-                    <div
-                        className={cn(
-                            'absolute z-10 flex items-center justify-center rounded-sm border border-dashed border-muted-foreground bg-background/90 text-xs font-semibold shadow-sm',
-                            isSubtractionMinuendCell ? 'top-1 left-1 h-7 w-7' : '-top-2 right-1 h-8 w-8'
-                        )}
-                    >
-                        <input
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            maxLength={noteMaxLength}
-                            placeholder={notePlaceholder}
-                            value={noteValue}
-                            onChange={(event) => {
-                                const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, noteMaxLength);
-                                handleInputChange(noteId, sanitized);
-                            }}
-                            className="h-full w-full bg-transparent text-center text-xs font-semibold text-foreground focus:outline-none"
-                        />
-                    </div>
-                </div>
-            );
-        },
-        [calculationState, handleInputChange, handleToggleCrossed, operation]
-    );
+    const gridTemplateStyle = { gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 3.5rem))` };
+    
+    const columnColors = [
+        'border-blue-400', 
+        'border-red-400', 
+        'border-green-400', 
+        'border-yellow-400', 
+        'border-purple-400'
+    ];
+    const columnTextColors = [
+        'text-blue-600', 
+        'text-red-600', 
+        'text-green-600', 
+        'text-yellow-600', 
+        'text-purple-600'
+    ];
 
     return (
         <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6">
@@ -537,49 +445,75 @@ export function LongCalculationExercise() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-2 sm:pt-6">
-                    <div className="flex flex-col items-center gap-4 sm:gap-6">
-                        <div className="space-y-3">
-                            <div
-                                className="grid gap-2"
-                                style={gridTemplateStyle}
-                            >
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="space-y-1">
+                            {/* Retenues */}
+                            <div className="grid gap-2 h-12" style={gridTemplateStyle}>
                                 {columnIndices.map((columnIndex) =>
-                                    renderNoteInput(`carry-${columnIndex}`, '↗')
+                                    <div key={`carry-${columnIndex}`} className="flex justify-center items-center">
+                                       <CarryNoteInput
+                                            cellId={`carry-${columnIndex}`}
+                                            value={calculationState[`carry-${columnIndex}`]?.value || ''}
+                                            isCrossed={calculationState[`carry-${columnIndex}`]?.isCrossed}
+                                            onChange={handleInputChange}
+                                            onToggleCrossed={handleToggleCrossed}
+                                        />
+                                    </div>
                                 )}
                             </div>
+                            {/* Operands */}
                             {operands.map((operand, operandIndex) => (
                                 <div key={`operand-row-${operandIndex}`} className="flex items-center gap-2">
-                                    <div className="w-6 text-2xl font-bold text-primary sm:w-8">
+                                    <div className="w-8 text-2xl font-bold text-primary flex justify-center">
                                         {operandIndex === operands.length - 1 ? symbol : ''}
                                     </div>
                                     <div className="grid gap-2" style={gridTemplateStyle}>
                                         {columnIndices.map((columnIndex) =>
-                                            renderOperandCell(
-                                                operandIndex,
-                                                columnIndex,
-                                                getOperandDigit(operand, columnIndex)
-                                            )
+                                            <div key={`op-${operandIndex}-${columnIndex}`} className="relative flex h-14 w-14 items-center justify-center rounded-md border-2 border-muted bg-muted/20 text-3xl font-bold">
+                                                 <button
+                                                    type="button"
+                                                    onClick={() => handleToggleCrossed(`op-${operandIndex}-${columnIndex}`)}
+                                                    className={cn(
+                                                        "transition-all",
+                                                        calculationState[`op-${operandIndex}-${columnIndex}`]?.isCrossed && "line-through decoration-4 decoration-destructive"
+                                                    )}
+                                                >
+                                                    {getOperandDigit(operand, columnIndex)}
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
                             ))}
+                            {/* Separator */}
                             <div className="flex items-center gap-2">
-                                <div className="w-6 text-2xl font-bold text-primary sm:w-8">=</div>
-                                <div className="grid gap-2" style={gridTemplateStyle}>
-                                    <div className="col-span-full border-b-4 border-border" />
+                                <div className="w-8 text-2xl font-bold text-primary" />
+                                <div className="grid gap-2 w-full" style={gridTemplateStyle}>
+                                    <div className="col-span-full border-b-4 border-foreground" />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-6 text-2xl font-bold text-primary sm:w-8" />
-                                <div className="grid gap-2" style={gridTemplateStyle}>
-                                    {columnIndices.map((columnIndex) => renderResultInput(columnIndex))}
-                                </div>
+                            {/* Result */}
+                            <div className="grid gap-2" style={gridTemplateStyle}>
+                                {columnIndices.map((columnIndex) => {
+                                    const colorIndex = columnIndex % columnColors.length;
+                                    return (
+                                        <input
+                                            key={`result-${columnIndex}`}
+                                            id={`result-${columnIndex}`}
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            maxLength={1}
+                                            value={calculationState[`result-${columnIndex}`]?.value || ''}
+                                            onChange={(e) => handleInputChange(`result-${columnIndex}`, e.target.value.replace(/[^0-9]/g, ''))}
+                                            onFocus={(e) => e.currentTarget.select()}
+                                            className={cn("h-14 w-14 rounded-md border-2 bg-background text-center text-3xl font-bold focus:outline-none focus:ring-2 focus:ring-offset-2",
+                                                columnColors[colorIndex],
+                                                `focus:ring-${columnColors[colorIndex].replace('border-','').replace('-400','')}-300`
+                                            )}
+                                        />
+                                    )
+                                })}
                             </div>
-                            <p className="text-muted-foreground text-sm text-center">
-                                {operation === 'subtraction'
-                                    ? "Clique sur un chiffre pour le barrer, fais un clic droit sur la première ligne pour barrer un chiffre lors d'un emprunt et utilise les petites cases pour noter tes emprunts."
-                                    : 'Clique sur un chiffre pour le barrer et utilise les petites cases pour noter tes retenues.'}
-                            </p>
                         </div>
                     </div>
                 </CardContent>
@@ -598,5 +532,3 @@ export function LongCalculationExercise() {
         </div>
     );
 }
-
-    
