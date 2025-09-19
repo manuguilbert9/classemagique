@@ -19,8 +19,8 @@ export async function generateSyllabeAttaqueQuestion(): Promise<Question> {
     }
     
     const imageOptions = [
-        { src: correctItem.image, alt: correctItem.word, hint: correctItem.word },
-        ...Array.from(distractors)
+        { src: correctItem.image, alt: correctItem.word, value: correctItem.word, hint: correctItem.word },
+        ...Array.from(distractors).map(option => ({ ...option, value: option.alt }))
     ].sort(() => Math.random() - 0.5);
 
     return {
@@ -30,6 +30,6 @@ export async function generateSyllabeAttaqueQuestion(): Promise<Question> {
         question: 'Clique sur l\'image qui commence par la syllabe :',
         syllable: correctItem.syllable,
         answer: correctItem.word,
-        images: imageOptions,
+        imageOptions,
     };
 }
