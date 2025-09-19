@@ -419,9 +419,21 @@ export function LongCalculationExercise() {
             const isCrossed = calculationState[cellId]?.isCrossed;
             const noteId = `note-${operandIndex}-${columnIndex}`;
             const noteValue = calculationState[noteId]?.value || '';
+            const isSubtractionMinuendCell = operation === 'subtraction' && operandIndex === 0;
+            const noteMaxLength = isSubtractionMinuendCell ? 1 : 2;
+            const notePlaceholder = isSubtractionMinuendCell ? '1' : undefined;
+
             return (
                 <div
                     key={cellId}
+                    onContextMenu={
+                        isSubtractionMinuendCell
+                            ? (event) => {
+                                  event.preventDefault();
+                                  handleToggleCrossed(cellId);
+                              }
+                            : undefined
+                    }
                     className="relative flex h-16 w-full items-center justify-center rounded-md border border-border bg-muted/40"
                 >
                     <button
@@ -433,21 +445,29 @@ export function LongCalculationExercise() {
                             {digit}
                         </span>
                     </button>
-                    <input
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={2}
-                        value={noteValue}
-                        onChange={(event) => {
-                            const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
-                            handleInputChange(noteId, sanitized);
-                        }}
-                        className="absolute -top-2 right-1 h-8 w-10 rounded border border-border bg-background text-center text-sm font-semibold text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                    <div
+                        className={cn(
+                            'absolute z-10 flex items-center justify-center rounded-sm border border-dashed border-muted-foreground bg-background/90 text-xs font-semibold shadow-sm',
+                            isSubtractionMinuendCell ? 'top-1 left-1 h-7 w-7' : '-top-2 right-1 h-8 w-8'
+                        )}
+                    >
+                        <input
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={noteMaxLength}
+                            placeholder={notePlaceholder}
+                            value={noteValue}
+                            onChange={(event) => {
+                                const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, noteMaxLength);
+                                handleInputChange(noteId, sanitized);
+                            }}
+                            className="h-full w-full bg-transparent text-center text-xs font-semibold text-foreground focus:outline-none"
+                        />
+                    </div>
                 </div>
             );
         },
-        [calculationState, handleInputChange, handleToggleCrossed]
+        [calculationState, handleInputChange, handleToggleCrossed, operation]
     );
 
     return (
@@ -499,7 +519,9 @@ export function LongCalculationExercise() {
                                 </div>
                             </div>
                             <p className="text-muted-foreground text-sm text-center">
-                                Clique sur un chiffre pour le barrer et utilise les petites cases pour noter tes retenues.
+                                {operation === 'subtraction'
+                                    ? "Clique sur un chiffre pour le barrer, fais un clic droit sur la première ligne pour barrer un chiffre lors d'un emprunt et utilise les petites cases pour noter tes emprunts."
+                                    : 'Clique sur un chiffre pour le barrer et utilise les petites cases pour noter tes retenues.'}
                             </p>
                         </div>
                     </div>
