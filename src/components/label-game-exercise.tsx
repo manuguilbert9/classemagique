@@ -18,6 +18,8 @@ import { CSS } from '@dnd-kit/utilities';
 import type { SkillLevel } from '@/lib/skills';
 import { PHRASES_RAW } from '@/data/grammaire/phrases';
 
+const NUM_QUESTIONS = 5;
+
 // Fisher-Yates shuffle algorithm
 const shuffleArray = (array: any[]) => {
   let currentIndex = array.length,  randomIndex;
