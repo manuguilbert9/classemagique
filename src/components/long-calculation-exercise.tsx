@@ -26,6 +26,63 @@ type Feedback = 'correct' | 'incorrect' | null;
 
 const NUM_PROBLEMS = 3;
 
+type CarryNoteInputProps = {
+    cellId: string;
+    value: string;
+    placeholder?: string;
+    isCrossed?: boolean;
+    onChange: (id: string, value: string) => void;
+    onToggleCrossed: (id: string) => void;
+};
+
+function CarryNoteInput({
+    cellId,
+    value,
+    placeholder,
+    isCrossed,
+    onChange,
+    onToggleCrossed,
+}: CarryNoteInputProps) {
+    return (
+        <label
+            htmlFor={cellId}
+            className={cn(
+                'group relative flex w-full cursor-text items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/60 bg-background text-sm font-semibold transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40 focus-within:ring-offset-2 focus-within:ring-offset-background sm:text-base',
+                'aspect-square',
+                isCrossed && 'focus-within:border-destructive/70 focus-within:ring-destructive/40'
+            )}
+            onContextMenu={(event) => {
+                event.preventDefault();
+                onToggleCrossed(cellId);
+            }}
+        >
+            <input
+                id={cellId}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={2}
+                value={value}
+                onChange={(event) => {
+                    const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
+                    onChange(cellId, sanitized);
+                }}
+                onFocus={(event) => event.currentTarget.select()}
+                className="absolute inset-0 h-full w-full cursor-text rounded-full border-none bg-transparent text-center text-base font-semibold text-transparent caret-primary focus:outline-none"
+                aria-label="Retenue"
+            />
+            <span
+                className={cn(
+                    'pointer-events-none text-base font-semibold text-foreground transition-colors',
+                    !value && 'text-muted-foreground',
+                    isCrossed && 'line-through decoration-4 decoration-destructive'
+                )}
+            >
+                {value || placeholder || ''}
+            </span>
+        </label>
+    );
+}
+
 // --- Problem Generation Logic ---
 
 const generateNumber = (digits: number): number => {
@@ -369,24 +426,20 @@ export function LongCalculationExercise() {
     const renderNoteInput = useCallback(
         (cellId: string, placeholder?: string) => {
             const value = calculationState[cellId]?.value || '';
+            const isCrossed = calculationState[cellId]?.isCrossed;
             return (
-                <input
+                <CarryNoteInput
                     key={cellId}
-                    id={cellId}
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={2}
+                    cellId={cellId}
                     placeholder={placeholder}
                     value={value}
-                    onChange={(event) => {
-                        const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
-                        handleInputChange(cellId, sanitized);
-                    }}
-                    className="w-full h-10 rounded-md border border-border bg-background text-center text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    isCrossed={isCrossed}
+                    onChange={handleInputChange}
+                    onToggleCrossed={handleToggleCrossed}
                 />
             );
         },
-        [calculationState, handleInputChange]
+        [calculationState, handleInputChange, handleToggleCrossed]
     );
 
     const renderResultInput = useCallback(
@@ -427,6 +480,10 @@ export function LongCalculationExercise() {
                     <button
                         type="button"
                         onClick={() => handleToggleCrossed(cellId)}
+                        onContextMenu={(event) => {
+                            event.preventDefault();
+                            handleToggleCrossed(cellId);
+                        }}
                         className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-foreground"
                     >
                         <span className={cn('transition-all', isCrossed && 'line-through decoration-4 decoration-destructive')}>
