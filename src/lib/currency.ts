@@ -1,3 +1,4 @@
+
 import OneCentImage from '../../public/images/monnaie/1cent.png';
 import TwoCentsImage from '../../public/images/monnaie/2cents.png';
 import FiveCentsImage from '../../public/images/monnaie/5cents.png';
@@ -11,8 +12,14 @@ import TenEurosImage from '../../public/images/monnaie/10euros.png';
 import TwentyEurosImage from '../../public/images/monnaie/20euros.png';
 import FiftyEurosImage from '../../public/images/monnaie/50euros.png';
 
+interface CurrencyItem {
+    name: string;
+    value: number;
+    image: string;
+    type: 'pièce' | 'billet';
+}
 
-export const currency = [
+export const currency: CurrencyItem[] = [
     { name: '1c', value: 0.01, image: OneCentImage.src, type: 'pièce' },
     { name: '2c', value: 0.02, image: TwoCentsImage.src, type: 'pièce' },
     { name: '5c', value: 0.05, image: FiveCentsImage.src, type: 'pièce' },
