@@ -1,0 +1,99 @@
+Le chat gris dort.
+La petite fille mange une pomme.
+Le chien aboie fort.
+Papa lit un livre.
+Le soleil brille haut.
+Maman prépare le repas.
+L'oiseau chante sur la branche.
+Le bébé pleure un peu.
+Le poisson nage vite.
+La voiture rouge roule.
+Mon frère joue au ballon.
+La fleur sent bon.
+Le garçon court dans le jardin.
+La cloche de l'école sonne.
+Le train arrive en gare.
+La lune éclaire la nuit.
+Une étoile scintille dans le ciel.
+Le lion est le roi.
+La vache donne du lait.
+Le cheval galope dans le pré.
+Mon stylo est bleu.
+La maîtresse écrit au tableau.
+Le livre est sur la table.
+J'aime le chocolat chaud.
+La pluie tombe doucement.
+Le vent souffle fort aujourd'hui.
+L'arbre a des feuilles vertes.
+Le vélo a deux roues.
+La porte de la maison est fermée.
+Le bateau flotte sur l'eau.
+J'ai un nouveau jouet.
+La soupe est très chaude.
+La glace fond au soleil.
+Hier, nous sommes allés au cinéma voir un film amusant.
+Quand le temps sera meilleur, nous irons nous promener dans la forêt.
+Le courageux chevalier a combattu le dragon pour sauver la princesse.
+La vieille sorcière préparait une potion magique dans son grand chaudron.
+Les astronautes ont marché sur la Lune il y a longtemps.
+Pour le goûter, maman a préparé un délicieux gâteau au chocolat.
+Le détective cherchait des indices pour résoudre la mystérieuse énigme.
+Si tu travailles bien à l'école, tu auras de bonnes notes.
+La petite sirène rêvait de découvrir le monde des humains.
+Pendant les vacances, nous construirons des châteaux de sable sur la plage.
+Le capitaine du navire a crié "À l'abordage !" à son équipage.
+Les explorateurs ont découvert une cité perdue au cœur de la jungle.
+Le savant fou a accidentellement transformé son chat en concombre géant.
+Demain, la classe entière visitera le musée des sciences naturelles.
+Le pharaon Toutânkhamon était un très jeune roi de l'Égypte ancienne.
+Malgré la pluie, les enfants ont décidé de sortir avec leurs bottes.
+Le robot a été programmé pour aider aux tâches ménagères.
+La fée a agité sa baguette magique et a fait apparaître un carrosse.
+Le loup s'est caché derrière un arbre pour surprendre le petit chaperon rouge.
+Les pirates ont suivi la carte pour trouver le trésor caché sur l'île.
+Le magicien a fait disparaître un lapin dans son chapeau.
+Le concert de rock a attiré une foule immense et enthousiaste.
+À cause de la tempête de neige, l'école sera fermée demain.
+Le célèbre peintre a passé des mois à réaliser ce magnifique tableau.
+L'alpiniste a atteint le sommet de la plus haute montagne du monde.
+Le fantôme du manoir hanté aimait faire des farces aux visiteurs.
+Le chef cuisinier a inventé une nouvelle recette de soupe à la citrouille.
+Le petit prince venait d'une planète à peine plus grande que lui.
+Les dinosaures ont disparu de la Terre il y a des millions d'années.
+Le message secret était écrit avec de l'encre invisible.
+Le super-héros a utilisé sa force surhumaine pour soulever le bus.
+La machine à voyager dans le temps a transporté les héros à l'époque médiévale.
+La perspective d'une collaboration intergalactique semblait à la fois exaltante et périlleuse.
+L'analyse quantitative des données a révélé une corrélation inattendue entre les deux variables.
+Le philosophe soutenait que la perception de la réalité est intrinsèquement subjective.
+La stratification sociale de cette civilisation ancienne était d'une complexité remarquable.
+L'implémentation de l'algorithme a nécessité une optimisation minutieuse pour être performante.
+La photosynthèse est le processus biochimique qui convertit l'énergie lumineuse en énergie chimique.
+L'herméneutique du texte sacré a suscité d'innombrables débats théologiques au fil des siècles.
+L'obsolescence programmée des appareils électroniques constitue un défi environnemental majeur.
+La dichotomie entre le déterminisme et le libre arbitre demeure un problème philosophique central.
+Le paradigme économique néoclassique a été remis en question par plusieurs crises financières.
+La prolifération des fake news menace la cohésion sociale et le débat démocratique.
+La mécanique quantique décrit le comportement des particules à une échelle subatomique.
+La résilience écologique d'un écosystème est sa capacité à se régénérer après une perturbation.
+L'épistémologie étudie la nature, l'origine et les limites de la connaissance humaine.
+Le processus de gentrification a profondément transformé la sociologie de nombreux quartiers urbains.
+La transduction du signal est un mécanisme fondamental de la communication cellulaire.
+L'ontologie, en tant que branche de la métaphysique, s'interroge sur la nature de l'être.
+L'architecture gothique se caractérise par l'utilisation de l'arc-boutant et de la voûte sur croisée d'ogives.
+La thermodynamique est la science qui étudie les relations entre la chaleur et les autres formes d'énergie.
+L'anthropomorphisme consiste à attribuer des caractéristiques humaines à des animaux ou des objets.
+La souveraineté d'une nation est un principe fondamental du droit international public.
+La symbiose est une association durable et réciproquement profitable entre deux organismes vivants.
+Le stoïcisme antique prônait une éthique de la vertu et de l'ataraxie face aux passions.
+La tectonique des plaques explique la plupart des phénomènes géologiques observés à la surface de la Terre.
+La cryptographie asymétrique a révolutionné la sécurité des communications numériques.
+La synesthésie est un phénomène neurologique où la stimulation d'un sens provoque une perception dans un autre.
+L'hégémonie culturelle d'une classe dominante s'exerce souvent de manière subtile et inconsciente.
+La neuroplasticité est la capacité du cerveau à se réorganiser en créant de nouvelles connexions neuronales.
+Le théorème d'incomplétude de Gödel a eu un impact profond sur la logique mathématique.
+La conurbation de plusieurs métropoles a créé une mégalopole s'étendant sur des centaines de kilomètres.
+La dissonance cognitive est un état de tension psychologique ressenti lorsqu'on a des croyances contradictoires.
+Le concept de développement durable vise à concilier le progrès économique, la justice sociale et la préservation de l'environnement.
+
+    
