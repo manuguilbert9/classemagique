@@ -1,4 +1,6 @@
 
+'use server';
+
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -9,6 +11,8 @@ interface FluenceText {
     content: string;
     wordCount: number;
     subCategory?: string;
+    // Préparation pour une future utilisation d'images
+    // imageSrc?: string; 
 }
 
 // Helper function to extract title and content from the file
@@ -23,15 +27,15 @@ function parseTextFile(content: string): Omit<FluenceText, 'level' | 'subCategor
     return { title, content: textContent, wordCount };
 }
 
-// Helper function to read texts from a directory
+// Helper function to read texts from a directory using modern fs/promises
 async function readTextsFromDir(directory: string, level: string, subCategory?: string): Promise<FluenceText[]> {
     const texts: FluenceText[] = [];
     try {
-        const dirEntries = await fs.readdir(directory, { withFileTypes: true });
+        const filenames = await fs.readdir(directory);
 
-        for (const entry of dirEntries) {
-            if (entry.isFile() && entry.name.endsWith('.txt')) {
-                const filePath = path.join(directory, entry.name);
+        for (const filename of filenames) {
+             if (filename.endsWith('.txt')) {
+                const filePath = path.join(directory, filename);
                 const fileContent = await fs.readFile(filePath, 'utf8');
                 const parsedData = parseTextFile(fileContent);
                 texts.push({
@@ -43,6 +47,7 @@ async function readTextsFromDir(directory: string, level: string, subCategory?: 
         }
     } catch (e) {
         // If directory doesn't exist or is not readable, just return an empty array.
+        // This is not an error, it just means there are no texts for this category/level.
         console.warn(`Could not read directory ${directory}, skipping.`);
     }
     return texts;
@@ -65,14 +70,18 @@ export async function GET(request: Request) {
         allTexts = allTexts.concat(rootTexts);
         
         // 2. Look for subdirectories and read from them (for B)
-        const dirEntries = await fs.readdir(textsDir, { withFileTypes: true });
-        for (const entry of dirEntries) {
-            if (entry.isDirectory()) {
-                const subCategory = entry.name;
-                const subDir = path.join(textsDir, subCategory);
-                const subDirTexts = await readTextsFromDir(subDir, level, subCategory);
-                allTexts = allTexts.concat(subDirTexts);
+        try {
+            const dirEntries = await fs.readdir(textsDir, { withFileTypes: true });
+            for (const entry of dirEntries) {
+                if (entry.isDirectory()) {
+                    const subCategory = entry.name;
+                    const subDir = path.join(textsDir, subCategory);
+                    const subDirTexts = await readTextsFromDir(subDir, level, subCategory);
+                    allTexts = allTexts.concat(subDirTexts);
+                }
             }
+        } catch (e) {
+            // This is not a fatal error, maybe the level directory just doesn't have subdirectories.
         }
 
         return NextResponse.json(allTexts);
@@ -82,5 +91,3 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: `Impossible de charger les textes pour le niveau ${level}.` }, { status: 500 });
     }
 }
-
-    
