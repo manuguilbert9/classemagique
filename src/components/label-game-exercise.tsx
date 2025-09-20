@@ -67,8 +67,8 @@ export function LabelGameExercise() {
     const isHomework = searchParams.get('from') === 'devoirs';
     const homeworkDate = searchParams.get('date');
     
-    const [level, setLevel] = useState<SkillLevel | null>(null);
-    const [allPhrases, setAllPhrases] = useState<string[]>(() => {
+    const [level, setLevel] = useState<SkillLevel>('B');
+    const [allPhrases] = useState<string[]>(() => {
         if (!PHRASES_RAW) return [];
         return PHRASES_RAW
             .split('\n')
@@ -104,8 +104,6 @@ export function LabelGameExercise() {
     useEffect(() => {
         if (student?.levels?.['label-game']) {
             setLevel(student.levels['label-game']);
-        } else {
-            setLevel('B');
         }
     }, [student]);
 
@@ -113,12 +111,23 @@ export function LabelGameExercise() {
         if (!level || allPhrases.length === 0) return;
 
         let phrasePool: string[] = [];
-        if (level === 'B') {
-            phrasePool = allPhrases.slice(0, 33);
-        } else if (level === 'C') {
-            phrasePool = allPhrases.slice(33, 66);
-        } else if (level === 'D') {
-            phrasePool = allPhrases.slice(66, 100);
+        
+        // Filter phrases based on word count for each level
+        if (level === 'B') { // 2 to 4 words
+            phrasePool = allPhrases.filter(p => {
+                const wordCount = p.split(/\s+/).length;
+                return wordCount >= 2 && wordCount <= 4;
+            });
+        } else if (level === 'C') { // 4 to 6 words
+             phrasePool = allPhrases.filter(p => {
+                const wordCount = p.split(/\s+/).length;
+                return wordCount > 4 && wordCount <= 6;
+            });
+        } else if (level === 'D') { // 7+ words
+             phrasePool = allPhrases.filter(p => {
+                const wordCount = p.split(/\s+/).length;
+                return wordCount > 6;
+            });
         }
 
         if (phrasePool.length > 0) {
@@ -128,15 +137,22 @@ export function LabelGameExercise() {
             
             setCurrentSentence(sentence);
             setOrderedLabels(shuffledLabels);
+        } else {
+             // Fallback if no phrases match the criteria for a level
+            const sentence = allPhrases[Math.floor(Math.random() * allPhrases.length)];
+            const words = sentence.split(/\s+/).filter(Boolean);
+            const shuffledLabels = shuffleArray(words.map((word, i) => ({ id: `${currentQuestionIndex}-${i}-${word}`, word })));
+            setCurrentSentence(sentence);
+            setOrderedLabels(shuffledLabels);
         }
     }, [level, allPhrases, currentQuestionIndex]);
 
     // Setup exercise on mount and for each new question
     useEffect(() => {
-        if (allPhrases.length > 0 && level) {
+        if (allPhrases.length > 0) {
             fetchNewSentence();
         }
-    }, [currentQuestionIndex, allPhrases, level, fetchNewSentence]);
+    }, [currentQuestionIndex, allPhrases, fetchNewSentence]);
 
     const handleNextQuestion = () => {
         setShowConfetti(false);
@@ -215,7 +231,7 @@ export function LabelGameExercise() {
         fetchNewSentence();
     };
 
-    if (!level) {
+    if (allPhrases.length === 0) {
         return (
             <Card className="w-full max-w-2xl mx-auto shadow-2xl p-6">
                 <CardHeader>
