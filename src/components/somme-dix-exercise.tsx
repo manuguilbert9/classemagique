@@ -13,6 +13,7 @@ import { saveHomeworkResult } from '@/services/homework';
 import { Progress } from './ui/progress';
 import { ScoreTube } from './score-tube';
 import { cn } from '@/lib/utils';
+import { VirtualKeyboard } from './virtual-keyboard';
 
 type Problem = {
     id: number;
@@ -249,6 +250,8 @@ export function SommeDixExercise() {
                 </CardContent>
             </Card>
             
+            <VirtualKeyboard onKeyPress={handleKeystroke} numericOnly />
+
             <style jsx>{`
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
