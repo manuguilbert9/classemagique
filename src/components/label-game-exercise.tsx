@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, RefreshCw, X, Loader2, ThumbsUp, GripVertical } from 'lucide-react';
+import { Check, RefreshCw, X, Loader2, ThumbsUp } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
@@ -56,7 +56,6 @@ function SortableLabel({ item }: { item: LabelItem }) {
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}
       className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm cursor-grab active:cursor-grabbing active:shadow-md"
     >
-      <GripVertical className="h-5 w-5 text-muted-foreground" />
       <span className="text-xl font-medium select-none">{item.word}</span>
     </div>
   );
