@@ -129,6 +129,13 @@ const generateMaze = (width: number, height: number): { grid: Tile[][], playerSt
     return { grid, playerStart, keyPos };
 };
 
+const isPathStraight = (path: Position[]): boolean => {
+    if (path.length < 2) return true;
+    const allSameX = path.every(p => p.x === path[0].x);
+    const allSameY = path.every(p => p.y === path[0].y);
+    return allSameX || allSameY;
+};
+
 
 const generateLevel = (level: SkillLevel): LevelData => {
     if (level === 'C') {
@@ -139,55 +146,66 @@ const generateLevel = (level: SkillLevel): LevelData => {
         return maze;
     }
     
-    const width = 7;
-    const height = 7;
-    const grid: Tile[][] = Array.from({ length: height }, () => Array(width).fill('empty'));
+    let attempts = 0;
+    while(attempts < 50) {
+        attempts++;
+        const width = 7;
+        const height = 7;
+        const grid: Tile[][] = Array.from({ length: height }, () => Array(width).fill('empty'));
 
-    const wallCount = Math.floor(Math.random() * 6) + 6; // 6 to 11 walls
+        const wallCount = Math.floor(Math.random() * 6) + 6; // 6 to 11 walls
+            
+        for (let i = 0; i < wallCount; i++) {
+            const x = Math.floor(Math.random() * width);
+            const y = Math.floor(Math.random() * height);
+            if (grid[y][x] === 'empty') {
+                grid[y][x] = 'wall';
+            }
+        }
+
+        let playerStart: Position, keyPos: Position;
+
+        const corners = [
+            { x: 0, y: 0 }, { x: width - 1, y: 0 },
+            { x: 0, y: height - 1 }, { x: width - 1, y: height - 1 }
+        ];
         
-    for (let i = 0; i < wallCount; i++) {
-        const x = Math.floor(Math.random() * width);
-        const y = Math.floor(Math.random() * height);
-        if (grid[y][x] === 'empty') {
-            grid[y][x] = 'wall';
+        let startCornerIndex, endCornerIndex;
+        
+        let cornerAttempts = 0;
+        do {
+            startCornerIndex = Math.floor(Math.random() * corners.length);
+            playerStart = corners[startCornerIndex];
+            cornerAttempts++;
+            if (cornerAttempts > 20) continue;
+        } while (grid[playerStart.y][playerStart.x] !== 'empty');
+
+        cornerAttempts = 0;
+        do {
+            endCornerIndex = Math.floor(Math.random() * corners.length);
+            keyPos = corners[endCornerIndex];
+            cornerAttempts++;
+            if (cornerAttempts > 20) continue;
+        } while (endCornerIndex === startCornerIndex || grid[keyPos.y][keyPos.x] !== 'empty');
+        
+        grid[playerStart.y][playerStart.x] = 'empty';
+        grid[keyPos.y][keyPos.x] = 'empty';
+
+        const shortestPath = findShortestPath(grid, playerStart, keyPos);
+
+        if (shortestPath) {
+             // For level B, ensure the path is not a straight line
+            if (level === 'B' && isPathStraight(shortestPath)) {
+                continue; // Regenerate if the path is straight
+            }
+            return { grid, playerStart, keyPos };
         }
     }
-
-    let playerStart: Position, keyPos: Position;
-
-    // For level A and B, ensure start and end points are distant.
-    const corners = [
-        { x: 0, y: 0 }, { x: width - 1, y: 0 },
-        { x: 0, y: height - 1 }, { x: width - 1, y: height - 1 }
-    ];
     
-    let startCornerIndex, endCornerIndex;
-    let attempts = 0;
-    
-    do {
-        startCornerIndex = Math.floor(Math.random() * corners.length);
-        playerStart = corners[startCornerIndex];
-        attempts++;
-        if (attempts > 20) return generateLevel(level); // fallback
-    } while (grid[playerStart.y][playerStart.x] !== 'empty');
-
-    attempts = 0;
-    do {
-        endCornerIndex = Math.floor(Math.random() * corners.length);
-        keyPos = corners[endCornerIndex];
-        attempts++;
-         if (attempts > 20) return generateLevel(level); // fallback
-    } while (endCornerIndex === startCornerIndex || grid[keyPos.y][keyPos.x] !== 'empty');
-
-
-    if (!isPathPossible(grid, playerStart, keyPos)) {
-        return generateLevel(level);
-    }
-    
-    grid[playerStart.y][playerStart.x] = 'empty'; // Temporarily empty to place key
-    grid[keyPos.y][keyPos.x] = 'empty';
-    
-    return { grid, playerStart, keyPos };
+    // Fallback if we can't generate a valid level after many attempts
+    console.warn("Failed to generate a valid level, returning a simple one.");
+    const fallbackGrid: Tile[][] = Array.from({ length: 7 }, () => Array(7).fill('empty'));
+    return { grid: fallbackGrid, playerStart: { x: 0, y: 0 }, keyPos: { x: 6, y: 6 } };
 };
 
 
@@ -318,7 +336,7 @@ export function CodedPathExercise() {
         if (move === 'up') nextPos.y--;
         if (move === 'down') nextPos.y++;
         if (move === 'left') nextPos.x--;
-        if (move === 'right') nextPos.x++;
+        if (move === 'right') nextPos.y++;
 
         const { y, x } = nextPos;
         if (y < 0 || y >= currentLevelData.grid.length || x < 0 || x >= currentLevelData.grid[0].length || currentLevelData.grid[y][x] === 'wall' || brokenTraps.some(t => t.x === x && t.y === y)) {
@@ -558,7 +576,7 @@ export function CodedPathExercise() {
                  {feedback === 'correct' && <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse"><ThumbsUp/> Super !</div>}
                  {feedback === 'incorrect' && level !== 'A' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X/> Oups, ce n'est pas le bon chemin.</div>}
             </CardFooter>
-             <style jsx>{`
+             <style jsx>{\`
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
                     10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -567,8 +585,7 @@ export function CodedPathExercise() {
                 .animate-shake {
                     animation: shake 0.5s ease-in-out;
                 }
-            `}</style>
+            \`}</style>
         </Card>
     );
 }
-
