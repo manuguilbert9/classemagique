@@ -576,7 +576,7 @@ export function CodedPathExercise() {
                  {feedback === 'correct' && <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse"><ThumbsUp/> Super !</div>}
                  {feedback === 'incorrect' && level !== 'A' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X/> Oups, ce n'est pas le bon chemin.</div>}
             </CardFooter>
-             <style jsx>{\`
+             <style jsx>{`
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
                     10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -585,7 +585,7 @@ export function CodedPathExercise() {
                 .animate-shake {
                     animation: shake 0.5s ease-in-out;
                 }
-            \`}</style>
+            `}</style>
         </Card>
     );
 }
