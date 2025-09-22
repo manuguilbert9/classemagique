@@ -71,9 +71,11 @@ export function AdaptiveMentalCalculationExercise() {
       await generateNextQuestion(combinedPerformance, null, true); // Start with an easy question
       setIsLoading(false);
     }
-    start();
+    if (student) {
+        start();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [student]);
 
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex];
@@ -303,9 +305,14 @@ export function AdaptiveMentalCalculationExercise() {
                                     }
                                 }
 
+                                const colorClass =
+                                  status === 'acquired' ? 'border-green-400' :
+                                  status === 'in-progress' ? 'border-yellow-400' :
+                                  'border-border';
+
 
                                 return (
-                                <div key={competency.id} className="flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50" style={{borderColor: status === 'acquired' ? 'hsl(var(--chart-2))' : status === 'in-progress' ? 'hsl(var(--chart-4))' : 'hsl(var(--border))'}}>
+                                <div key={competency.id} className={cn("flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50", colorClass)}>
                                     {status === 'acquired' && <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0"/>}
                                     {status === 'in-progress' && <Hourglass className="h-5 w-5 text-yellow-500 flex-shrink-0"/>}
                                     {status === 'not-started' && <BrainCircuit className="h-5 w-5 text-muted-foreground flex-shrink-0"/>}
@@ -377,7 +384,7 @@ export function AdaptiveMentalCalculationExercise() {
                 )}
             </CardFooter>
         </Card>
-        <style jsx>{\`
+        <style jsx>{`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -386,7 +393,8 @@ export function AdaptiveMentalCalculationExercise() {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        \`}</style>
+        `}</style>
     </div>
   );
 }
+
