@@ -43,32 +43,31 @@ export function AdaptiveMentalCalculationExercise() {
   const [lastAnswerWasCorrect, setLastAnswerWasCorrect] = useState(true);
   const [performance, setPerformance] = useState<StudentPerformance>({});
 
-  const generateNextQuestion = () => {
-    const lastCompetencyId = questions.length > 0 ? questions[questions.length - 1].competencyId || null : null;
-    const nextQuestion = generateAdaptiveMentalMathQuestion(lastCompetencyId, lastAnswerWasCorrect, performance);
+  const generateNextQuestion = (lastCompetencyId: string | null, wasCorrect: boolean, perf: StudentPerformance) => {
+    const nextQuestion = generateAdaptiveMentalMathQuestion(lastCompetencyId, wasCorrect, perf);
     setQuestions(prev => [...prev, nextQuestion]);
   };
-
+  
   useEffect(() => {
-    // Generate initial question
     setIsLoading(true);
-    generateNextQuestion();
+    // Generate the very first question when the component mounts
+    generateNextQuestion(null, true, {});
     setIsLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const currentQuestion = useMemo(() => {
-    if (questions.length > 0) {
-      return questions[currentQuestionIndex];
-    }
-    return null;
+    return questions[currentQuestionIndex];
   }, [questions, currentQuestionIndex]);
 
   const handleNextQuestion = () => {
     setShowConfetti(false);
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-      generateNextQuestion(); // Generate the *next* question based on current performance
+      
+      const lastCompetencyId = currentQuestion?.competencyId || null;
+      generateNextQuestion(lastCompetencyId, lastAnswerWasCorrect, performance);
+
       setUserInput('');
       setFeedback(null);
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -85,7 +84,7 @@ export function AdaptiveMentalCalculationExercise() {
     
     setLastAnswerWasCorrect(isCorrect);
     
-    // Update performance stats (can be moved to a service later)
+    // Update performance stats
     const competencyId = currentQuestion.competencyId;
     if (competencyId) {
         setPerformance(prev => {
@@ -156,11 +155,10 @@ export function AdaptiveMentalCalculationExercise() {
     setFeedback(null);
     setHasBeenSaved(false);
     setSessionDetails([]);
-    setQuestions([]); // Clear questions
-    setLastAnswerWasCorrect(true); // Reset adaptive state
+    setLastAnswerWasCorrect(true);
     setPerformance({});
+    
     setIsLoading(true);
-    // Generate the very first question again
     const firstQuestion = generateAdaptiveMentalMathQuestion(null, true, {});
     setQuestions([firstQuestion]);
     setIsLoading(false);
