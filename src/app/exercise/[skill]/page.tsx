@@ -31,6 +31,7 @@ import { CodedPathExercise } from '@/components/coded-path-exercise';
 import { LabelGameExercise } from '@/components/label-game-exercise';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { SpellingExercise } from '@/components/spelling-exercise';
+import { AdaptiveMentalCalculationExercise } from '@/components/adaptive-mental-calculation-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -57,6 +58,8 @@ export default function ExercisePage() {
         return <WordFamiliesExercise />;
       case 'mental-calculation':
         return <MentalCalculationExercise />;
+      case 'adaptive-mental-calculation':
+        return <AdaptiveMentalCalculationExercise />;
       case 'calendar':
         return <CalendarExercise />;
       case 'lire-des-phrases':

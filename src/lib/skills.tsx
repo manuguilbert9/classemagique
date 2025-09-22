@@ -28,6 +28,7 @@ import {
   Route,
   Tags,
   BrainCircuit,
+  Wand,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -279,6 +280,13 @@ export const skills: Skill[] = [
     allowedLevels: ['A', 'B', 'C', 'D'],
   },
   {
+    name: 'Calcul mental adaptatif',
+    slug: 'adaptive-mental-calculation',
+    description: "Un entraînement qui s'adapte à ton niveau pour progresser à ton rythme.",
+    icon: <Wand />,
+    category: 'Nombres et calcul',
+  },
+  {
     name: 'La Monnaie',
     slug: 'currency',
     description: 'Apprendre à utiliser les pièces et les billets en euros.',
@@ -352,5 +360,3 @@ export function difficultyLevelToString(
     // Fallback for any other case where level can't be determined
     return null;
 }
-
-    
