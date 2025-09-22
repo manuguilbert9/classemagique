@@ -37,7 +37,18 @@ const allCompetencies: MentalMathCompetency[] = [
 
     // --- Level B ---
     { id: 'B1', level: 'B', description: 'Dénombrer jusqu\'à 100', generate: () => { const a = randInt(30,99); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
-    { id: 'B2', level: 'B', description: 'Valeur de position (unités, dizaines)', generate: () => { const n = randInt(10, 99); const type = choice(['dizaines', 'unités']); const ans = type === 'dizaines' ? Math.floor(n/10) : n % 10; return { question: `Quel est le chiffre des ${type} dans ${n} ?`, answer: String(ans) }; } },
+    { id: 'B2', level: 'B', description: 'Valeur de position (unités, dizaines)', generate: () => { 
+        let n: number;
+        let d1: number, d2: number;
+        do {
+            d1 = randInt(1, 9);
+            d2 = randInt(0, 9);
+        } while (d1 === d2);
+        n = d1 * 10 + d2;
+        const type = choice(['dizaines', 'unités']); 
+        const ans = type === 'dizaines' ? d1 : d2; 
+        return { question: `Quel est le chiffre des ${type} dans ${n} ?`, answer: String(ans) }; 
+    } },
     { id: 'B3', level: 'B', description: 'Ajouter unités à dizaines entières', generate: () => { const a = randInt(1, 9) * 10; const b = randInt(1, 9); return { question: `${a} + ${b} = ?`, answer: String(a+b) }; } },
     { id: 'B4', level: 'B', description: 'Additions simples (< 20)', generate: () => { const a = randInt(1, 18); const b = randInt(1, 19-a); return { question: `${a} + ${b} = ?`, answer: String(a+b) }; } },
     { id: 'B5', level: 'B', description: 'Soustractions simples (résultat >= 0)', generate: () => { const a = randInt(5, 19); const b = randInt(1, a); return { question: `${a} - ${b} = ?`, answer: String(a-b) }; } },
@@ -48,7 +59,19 @@ const allCompetencies: MentalMathCompetency[] = [
     { id: 'B10', level: 'B', description: 'Additions/soustractions sans retenue', generate: () => { let a = randInt(21,98); let b = randInt(11, a-11); if ((a%10) < (b%10) || (a%10)+(b%10) > 9) return allCompetencies.find(c=>c.id==='B10')!.generate(); return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(a+b) } : { question: `${a} - ${b} = ?`, answer: String(a-b) }; } },
     
     // --- Level C ---
-    { id: 'C1', level: 'C', description: 'Valeur de position (centaines)', generate: () => { const n = randInt(100, 999); const type = choice(['centaines', 'dizaines']); const ans = type === 'centaines' ? Math.floor(n/100) : Math.floor((n%100)/10); return { question: `Quel est le chiffre des ${type} dans ${n} ?`, answer: String(ans) }; } },
+    { id: 'C1', level: 'C', description: 'Valeur de position (centaines)', generate: () => { 
+        let n: number;
+        let d1: number, d2: number, d3: number;
+        do {
+            d1 = randInt(1, 9);
+            d2 = randInt(0, 9);
+            d3 = randInt(0, 9);
+        } while (d1 === d2 || d1 === d3 || d2 === d3);
+        n = d1 * 100 + d2 * 10 + d3;
+        const type = choice(['centaines', 'dizaines']); 
+        const ans = type === 'centaines' ? d1 : d2; 
+        return { question: `Quel est le chiffre des ${type} dans ${n} ?`, answer: String(ans) }; 
+    } },
     { id: 'C2', level: 'C', description: 'Dénombrer jusqu\'à 1 000', generate: () => { const a = randInt(100,999); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
     { id: 'C3', level: 'C', description: 'Doubles (jusqu\'à 50 et dizaines)', generate: () => { const a = Math.random() > 0.5 ? randInt(11, 50) : randInt(1, 9) * 10; return { question: `Double de ${a} ?`, answer: String(a*2) }; } },
     { id: 'C4', level: 'C', description: 'Moitiés des nombres (< 100)', generate: () => { const a = randInt(1, 50) * 2; return { question: `Moitié de ${a} ?`, answer: String(a/2) }; } },
