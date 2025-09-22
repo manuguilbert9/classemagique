@@ -1,22 +1,25 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
-import { generateAdaptiveMentalMathQuestion, type StudentPerformance } from '@/lib/adaptive-mental-math';
+import { generateAdaptiveMentalMathQuestion, type StudentPerformance, allCompetencies } from '@/lib/adaptive-mental-math';
 import type { Question } from '@/lib/questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from './ui/input';
 import { cn } from '@/lib/utils';
-import { Check, RefreshCw, X, Loader2, ListTree } from 'lucide-react';
+import { Check, RefreshCw, X, Loader2, ListTree, Sparkles, CheckCircle, Hourglass, XCircle, BrainCircuit } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription, SheetFooter } from './ui/sheet';
+import { analyzeMentalMathPerformance } from '@/ai/flows/mental-math-analysis-flow';
+import { ScrollArea } from './ui/scroll-area';
+import { Badge } from './ui/badge';
 
 const NUM_QUESTIONS = 10;
 
@@ -42,6 +45,11 @@ export function AdaptiveMentalCalculationExercise() {
   // For adaptive logic
   const [lastAnswerWasCorrect, setLastAnswerWasCorrect] = useState(true);
   const [performance, setPerformance] = useState<StudentPerformance>({});
+  
+  // For AI Analysis
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string>('');
+
 
   const generateNextQuestion = (lastCompetencyId: string | null, wasCorrect: boolean, perf: StudentPerformance) => {
     const nextQuestion = generateAdaptiveMentalMathQuestion(lastCompetencyId, wasCorrect, perf);
@@ -157,11 +165,36 @@ export function AdaptiveMentalCalculationExercise() {
     setSessionDetails([]);
     setLastAnswerWasCorrect(true);
     setPerformance({});
+    setAnalysisResult('');
     
     setIsLoading(true);
     const firstQuestion = generateAdaptiveMentalMathQuestion(null, true, {});
     setQuestions([firstQuestion]);
     setIsLoading(false);
+  };
+
+  const handleAnalyzePerformance = async () => {
+    setIsAnalyzing(true);
+    setAnalysisResult('');
+    
+    const performanceData = Object.entries(performance).map(([id, data]) => {
+      const competency = allCompetencies.find(c => c.id === id);
+      return {
+        id,
+        description: competency?.description || 'Compétence inconnue',
+        ...data,
+      };
+    });
+
+    try {
+      const result = await analyzeMentalMathPerformance({ performance: performanceData });
+      setAnalysisResult(result.analysis);
+    } catch (e) {
+      console.error("AI Analysis failed", e);
+      setAnalysisResult("Désolé, l'analyse n'a pas pu être effectuée pour le moment.");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   if (isLoading || !currentQuestion) {
@@ -198,9 +231,60 @@ export function AdaptiveMentalCalculationExercise() {
        <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
         <Card className="shadow-2xl text-center relative overflow-hidden">
             <div className="absolute top-4 right-4">
-                <Button variant="outline" size="sm">
-                    <ListTree className="mr-2 h-4 w-4" /> Voir mes compétences
-                </Button>
+                <Sheet>
+                    <SheetTrigger asChild>
+                         <Button variant="outline" size="sm">
+                            <ListTree className="mr-2 h-4 w-4" /> Voir mes compétences
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent className="w-[400px] sm:w-[540px]">
+                        <SheetHeader>
+                            <SheetTitle>Progression en Calcul Mental</SheetTitle>
+                            <SheetDescription>
+                                Voici la liste des compétences et ta performance pendant cette session.
+                            </SheetDescription>
+                        </SheetHeader>
+                        <ScrollArea className="h-[calc(100%-160px)] pr-4">
+                        <div className="space-y-4 py-4">
+                            {allCompetencies.map(competency => {
+                                const perfData = performance[competency.id];
+                                let status: 'acquired' | 'in-progress' | 'not-started' | 'failed' = 'not-started';
+                                if (perfData) {
+                                    if (perfData.successes > 0 && perfData.failures === 0) status = 'acquired';
+                                    else if (perfData.successes > 0 && perfData.failures > 0) status = 'in-progress';
+                                    else if (perfData.failures > 0) status = 'failed';
+                                }
+
+                                return (
+                                <div key={competency.id} className="flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50" style={{borderColor: status === 'acquired' ? 'var(--chart-2)' : status === 'in-progress' ? 'var(--chart-4)' : status === 'failed' ? 'var(--chart-5)' : 'var(--border)'}}>
+                                    {status === 'acquired' && <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0"/>}
+                                    {status === 'in-progress' && <Hourglass className="h-5 w-5 text-yellow-500 flex-shrink-0"/>}
+                                    {status === 'failed' && <XCircle className="h-5 w-5 text-red-500 flex-shrink-0"/>}
+                                    {status === 'not-started' && <BrainCircuit className="h-5 w-5 text-muted-foreground flex-shrink-0"/>}
+                                    <p className="text-sm font-medium flex-grow">{competency.description}</p>
+                                    <Badge variant="outline">Niv. {competency.level}</Badge>
+                                </div>
+                                )
+                            })}
+                        </div>
+                        </ScrollArea>
+                        <SheetFooter className="pt-4 border-t">
+                            <div className="w-full space-y-3">
+                                {analysisResult && (
+                                    <Card className="bg-primary/10 border-primary/20">
+                                        <CardContent className="p-4 text-sm text-center">
+                                            {analysisResult}
+                                        </CardContent>
+                                    </Card>
+                                )}
+                                <Button onClick={handleAnalyzePerformance} disabled={isAnalyzing || Object.keys(performance).length === 0} className="w-full">
+                                    {isAnalyzing ? <Loader2 className="mr-2 animate-spin"/> : <Sparkles className="mr-2" />}
+                                    {analysisResult ? "Analyser à nouveau" : "Analyser mes compétences"}
+                                </Button>
+                            </div>
+                        </SheetFooter>
+                    </SheetContent>
+                </Sheet>
             </div>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
                 <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3, width: "10px", height: "10px"}} />
