@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
-import { generateAdaptiveMentalMathQuestion, type StudentPerformance, getAdaptiveMentalMathCompetencies, type MentalMathCompetency } from '@/lib/adaptive-mental-math';
+import { generateAdaptiveMentalMathQuestion, type StudentPerformance, getAdaptiveMentalMathCompetencies, type DisplayableMentalMathCompetency } from '@/lib/adaptive-mental-math';
 import type { Question } from '@/lib/questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
@@ -32,7 +32,7 @@ export function AdaptiveMentalCalculationExercise() {
   const isHomework = searchParams.get('from') === 'devoirs';
   const homeworkDate = searchParams.get('date');
 
-  const [allCompetencies, setAllCompetencies] = useState<MentalMathCompetency[]>([]);
+  const [allCompetencies, setAllCompetencies] = useState<DisplayableMentalMathCompetency[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,14 +77,14 @@ export function AdaptiveMentalCalculationExercise() {
     return questions[currentQuestionIndex];
   }, [questions, currentQuestionIndex]);
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
     setShowConfetti(false);
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       const lastAnswerWasCorrect = feedback === 'correct';
       const lastCompetencyId = currentQuestion?.competencyId || null;
       const combinedPerformance = { ...(student?.mentalMathPerformance || {}), ...sessionPerformance };
-      generateNextQuestion(combinedPerformance, lastCompetencyId, lastAnswerWasCorrect);
+      await generateNextQuestion(combinedPerformance, lastCompetencyId, lastAnswerWasCorrect);
 
       setUserInput('');
       setFeedback(null);
@@ -266,7 +266,7 @@ export function AdaptiveMentalCalculationExercise() {
                         <SheetHeader>
                             <SheetTitle>Progression en Calcul Mental</SheetTitle>
                             <SheetDescription>
-                                Voici la liste des compétences et ta performance globale.
+                                Voici la liste des compétences et ta performance globale. Une compétence est acquise après 4 réussites.
                             </SheetDescription>
                         </SheetHeader>
                         <ScrollArea className="h-[calc(100%-160px)] pr-4">
@@ -279,7 +279,7 @@ export function AdaptiveMentalCalculationExercise() {
 
                                 let status: 'acquired' | 'in-progress' | 'failed' | 'not-started' = 'not-started';
                                 
-                                if (totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION && totalFailures === 0) {
+                                if (totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION) {
                                     status = 'acquired';
                                 } else if (totalFailures > 0) {
                                     status = 'failed';
@@ -362,7 +362,7 @@ export function AdaptiveMentalCalculationExercise() {
                 )}
             </CardFooter>
         </Card>
-        <style jsx>{`
+        <style jsx>{\`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -371,7 +371,7 @@ export function AdaptiveMentalCalculationExercise() {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        `}</style>
+        \`}</style>
     </div>
   );
 }

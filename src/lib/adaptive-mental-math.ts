@@ -16,6 +16,9 @@ export interface MentalMathCompetency {
     generate: () => Omit<Question, 'id' | 'type' | 'level'| 'competencyId'>;
 }
 
+export type DisplayableMentalMathCompetency = Omit<MentalMathCompetency, 'generate'>;
+
+
 // --- New Granular Competencies ---
 
 const allCompetencies: MentalMathCompetency[] = [
@@ -58,7 +61,7 @@ const allCompetencies: MentalMathCompetency[] = [
     { id: 'D1', level: 'D', description: 'Multiplier par 5, 25, 50', generate: () => { const b = choice([5, 25, 50]); const a = randInt(2, 40); return { question: `${a} × ${b}`, answer: String(a * b) }; } },
     { id: 'D2', level: 'D', description: 'Calculer 10% d\'un nombre', generate: () => { const a = randInt(1, 100) * 10; return { question: `10% de ${a} ?`, answer: String(a * 0.1) }; } },
     { id: 'D3', level: 'D', description: 'Calculer 25%, 50%, 75% d\'un nombre', generate: () => { const a = randInt(1, 25) * 4; const p = choice([25, 50, 75]); return { question: `${p}% de ${a} ?`, answer: String(a * (p/100)) }; } },
-    { id: 'D4', level: 'D', description: 'Calculer une fraction d\'un nombre', generate: () => { const d = choice([2, 3, 4, 5]); const n = randInt(1, d-1); const a = randInt(2, 10) * d; return { question: `${n}/${d} de ${a} ?`, answer: String(a*n/d) }; } },
+    { id: 'D4', level: 'D', description: 'Calculer une fraction simple d\'un nombre', generate: () => { const d = choice([2, 3, 4, 5]); const n = randInt(1, d-1); const a = randInt(2, 10) * d; return { question: `${n}/${d} de ${a} ?`, answer: String(a*n/d) }; } },
     { id: 'D5', level: 'D', description: 'Addition/soustraction de décimaux simples', generate: () => { const a = randInt(1, 500)/10; const b = randInt(1, 500)/10; return Math.random() > 0.5 ? { question: `${String(a).replace('.',',')} + ${String(b).replace('.',',')}`, answer: String(a+b) } : { question: `${String(Math.max(a,b)).replace('.',',')} - ${String(Math.min(a,b)).replace('.',',')}`, answer: String(Math.max(a,b) - Math.min(a,b)) }; } },
     { id: 'D6', level: 'D', description: 'Carrés parfaits (1-12)', generate: () => { const a = randInt(1, 12); return { question: `${a}²`, answer: String(a*a) }; } },
     { id: 'D7', level: 'D', description: 'Critères de divisibilité', generate: () => { const d = choice([2, 3, 5, 9, 10]); const isDivisible = Math.random() > 0.5; let n; if(isDivisible) { n = randInt(2,100)*d; } else { n = randInt(10, 500); if(n%d===0) n++; } return { question: `${n} est-il divisible par ${d} ?`, answer: isDivisible ? 'oui' : 'non' }; } },
@@ -150,6 +153,7 @@ export async function generateAdaptiveMentalMathQuestion(lastCompetencyId: strin
 }
 
 
-export async function getAdaptiveMentalMathCompetencies(): Promise<MentalMathCompetency[]> {
-    return allCompetencies;
+export async function getAdaptiveMentalMathCompetencies(): Promise<DisplayableMentalMathCompetency[]> {
+    // Return all competencies but without the `generate` function, which cannot be sent to the client.
+    return allCompetencies.map(({ generate, ...rest }) => rest);
 }
