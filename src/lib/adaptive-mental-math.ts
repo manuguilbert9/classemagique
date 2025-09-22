@@ -1,3 +1,4 @@
+
 import type { Question } from './questions';
 import type { SkillLevel } from './skills';
 
@@ -13,45 +14,35 @@ export interface MentalMathCompetency {
     generate: () => Omit<Question, 'id' | 'type' | 'level'>;
 }
 
-// LEVEL A Competencies
+// --- LEVEL A Competencies ---
 const competencesNiveauA: MentalMathCompetency[] = [
     {
         id: 'A1',
         level: 'A',
         description: 'Comptage simple (1-10)',
-        generate: () => {
-            const num = randInt(1, 10);
-            return {
-                question: `Lis ce nombre : ${num}`,
-                answer: String(num),
-                // This could be enhanced with audio later
-            };
-        }
+        generate: () => ({
+            question: `Lis ce nombre : ${randInt(1, 10)}`,
+            answer: String(randInt(1, 10)), // The answer is not checked for this type, but good to have
+        })
     },
     {
         id: 'A2',
         level: 'A',
-        description: 'Ajout d\'unités (résultat ≤ 9)',
+        description: 'Ajout d’unités (résultat ≤ 9)',
         generate: () => {
             const a = randInt(1, 5);
             const b = randInt(1, 9 - a);
-            return {
-                question: `${a} + ${b} = ?`,
-                answer: String(a + b),
-            };
+            return { question: `${a} + ${b} = ?`, answer: String(a + b) };
         }
     },
     {
         id: 'A3',
         level: 'A',
-        description: 'Retrait d\'unités (résultat ≥ 0)',
+        description: 'Retrait d’unités (résultat ≥ 0)',
         generate: () => {
             const a = randInt(2, 9);
             const b = randInt(1, a);
-            return {
-                question: `${a} - ${b} = ?`,
-                answer: String(a - b),
-            };
+            return { question: `${a} - ${b} = ?`, answer: String(a - b) };
         }
     },
     {
@@ -61,29 +52,185 @@ const competencesNiveauA: MentalMathCompetency[] = [
         generate: () => {
             const target = choice([5, 10]);
             const a = randInt(1, target - 1);
-            return {
-                question: `De ${a} pour aller à ${target} ?`,
-                answer: String(target - a),
-            };
+            return { question: `De ${a} pour aller à ${target} ?`, answer: String(target - a) };
         }
     },
 ];
 
+// --- LEVEL B Competencies ---
+const competencesNiveauB: MentalMathCompetency[] = [
+    {
+        id: 'B1', level: 'B', description: 'Additions sans retenue (< 30)',
+        generate: () => {
+            let a = randInt(1, 28); let b = randInt(1, 29 - a);
+            if ((a % 10) + (b % 10) >= 10) { a = 11; b = 12; } // Fallback
+            return { question: `${a} + ${b} = ?`, answer: String(a + b) };
+        }
+    },
+    {
+        id: 'B2', level: 'B', description: 'Additions avec retenue (< 100)',
+        generate: () => {
+            let a = randInt(10, 89); let b = randInt(10, 99 - a);
+            if ((a % 10) + (b % 10) < 10) { a = 15; b = 16; } // Fallback
+            return { question: `${a} + ${b} = ?`, answer: String(a + b) };
+        }
+    },
+    {
+        id: 'B3', level: 'B', description: 'Soustractions sans retenue (< 30)',
+        generate: () => {
+            let a = randInt(11, 30); let b = randInt(1, a);
+            if (String(a).length === 2 && String(b).length === 2 && (a % 10) < (b % 10)) { a = 25; b = 12; } // Fallback
+            return { question: `${a} - ${b} = ?`, answer: String(a - b) };
+        }
+    },
+    {
+        id: 'B4', level: 'B', description: 'Soustractions avec retenue (< 100)',
+        generate: () => {
+            let a = randInt(20, 99); let b = randInt(1, a);
+            if (String(a).length === 2 && (a % 10) >= (b % 10)) { a = 42; b = 17; } // Fallback
+            return { question: `${a} - ${b} = ?`, answer: String(a - b) };
+        }
+    },
+    {
+        id: 'B5', level: 'B', description: 'Tables d’addition (0-10)',
+        generate: () => {
+            const a = randInt(0, 10); const b = randInt(0, 10);
+            return { question: `${a} + ${b} = ?`, answer: String(a + b) };
+        }
+    },
+    {
+        id: 'B6', level: 'B', description: 'Tables de multiplication (0-10)',
+        generate: () => {
+            const a = randInt(0, 10); const b = randInt(0, 10);
+            return { question: `${a} × ${b} = ?`, answer: String(a * b) };
+        }
+    },
+    {
+        id: 'B7', level: 'B', description: 'Double (< 50)',
+        generate: () => { const n = randInt(1, 50); return { question: `Double de ${n} ?`, answer: String(n * 2) }; }
+    },
+    {
+        id: 'B8', level: 'B', description: 'Moitié (< 100)',
+        generate: () => { const n = randInt(1, 50) * 2; return { question: `Moitié de ${n} ?`, answer: String(n / 2) }; }
+    },
+];
 
-// We will add other levels here later
+// --- LEVEL C Competencies ---
+const competencesNiveauC: MentalMathCompetency[] = [
+    {
+        id: 'C1', level: 'C', description: 'Additions/soustractions jusqu’à 1 000',
+        generate: () => {
+            const a = randInt(100, 900); const b = randInt(100, 999 - a);
+            return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(a + b) } : { question: `${a + b} - ${a} = ?`, answer: String(b) };
+        }
+    },
+    {
+        id: 'C2', level: 'C', description: 'Multiplication par 10, 100, 1 000',
+        generate: () => {
+            const a = randInt(1, 1000); const b = choice([10, 100, 1000]);
+            return { question: `${a} × ${b} = ?`, answer: String(a * b) };
+        }
+    },
+    {
+        id: 'C3', level: 'C', description: 'Divisions exactes',
+        generate: () => {
+            const divisor = randInt(2, 10); const quotient = randInt(10, 20); const dividend = divisor * quotient;
+            return { question: `${dividend} ÷ ${divisor} = ?`, answer: String(quotient) };
+        }
+    },
+    {
+        id: 'C4', level: 'C', description: 'Compléments à la centaine/millier',
+        generate: () => {
+            const target = choice([100, 1000]); const a = randInt(1, target - 1);
+            return { question: `De ${a} pour aller à ${target} ?`, answer: String(target - a) };
+        }
+    },
+    {
+        id: 'C5', level: 'C', description: 'Double/Moitié (< 1 000)',
+        generate: () => {
+            const isDouble = Math.random() > 0.5;
+            if (isDouble) {
+                const n = randInt(1, 500); return { question: `Double de ${n} ?`, answer: String(n * 2) };
+            } else {
+                const n = randInt(1, 500) * 2; return { question: `Moitié de ${n} ?`, answer: String(n / 2) };
+            }
+        }
+    },
+    {
+        id: 'C6', level: 'C', description: 'Stratégie de décomposition (add)',
+        generate: () => {
+            const a = randInt(20, 80); const b = randInt(20, 80);
+            return { question: `(Stratégie) ${a} + ${b} = ?`, answer: String(a + b) };
+        }
+    },
+];
+
+// --- LEVEL D Competencies ---
+const competencesNiveauD: MentalMathCompetency[] = [
+    {
+        id: 'D1', level: 'D', description: 'Opérations sur grands nombres',
+        generate: () => {
+            const a = randInt(1000, 10000); const b = randInt(1000, 10000);
+            return { question: `${a} + ${b} = ?`, answer: String(a + b) };
+        }
+    },
+    {
+        id: 'D2', level: 'D', description: 'Multiplication par décimaux simples',
+        generate: () => {
+            const a = randInt(10, 1000); const b = choice([0.5, 0.1, 10, 100]);
+            return { question: `${a} × ${b} = ?`, answer: String(a * b) };
+        }
+    },
+    {
+        id: 'D3', level: 'D', description: 'Division décimale simple',
+        generate: () => {
+            const divisor = choice([2, 4, 5, 10]); const a = randInt(1, 20) * divisor;
+            return { question: `${a} ÷ ${divisor} = ?`, answer: String(a / divisor) };
+        }
+    },
+    {
+        id: 'D4', level: 'D', description: 'Quart/Triple',
+        generate: () => {
+            const isTriple = Math.random() > 0.5;
+            if (isTriple) {
+                const n = randInt(10, 300); return { question: `Triple de ${n} ?`, answer: String(n * 3) };
+            } else {
+                const n = randInt(10, 250) * 4; return { question: `Quart de ${n} ?`, answer: String(n / 4) };
+            }
+        }
+    },
+    {
+        id: 'D5', level: 'D', description: 'Fraction d\'un nombre',
+        generate: () => {
+            const divisor = choice([2, 3, 4, 5, 10]);
+            const number = randInt(5, 50) * divisor;
+            const numerator = randInt(1, divisor - 1);
+            return { question: `${numerator}/${divisor} de ${number} ?`, answer: String((number * numerator) / divisor) };
+        }
+    },
+    {
+        id: 'D6', level: 'D', description: 'Opérations sur décimaux',
+        generate: () => {
+            const a = randInt(1, 100) / 10; const b = randInt(1, 100) / 10;
+            return { question: `${a} + ${b} = ?`.replace('.', ','), answer: String(a + b) };
+        }
+    }
+];
+
+
 export const allCompetencies: MentalMathCompetency[] = [
     ...competencesNiveauA,
-    // ...competencesNiveauB,
-    // ...competencesNiveauC,
-    // ...competencesNiveauD,
+    ...competencesNiveauB,
+    ...competencesNiveauC,
+    ...competencesNiveauD,
 ];
 
 // Main function to generate an adaptive question
-// For now, it will just pick a random question from Level A.
+// For now, it will just pick a random question from ALL competencies.
 // In the future, this function will take the student's history as an argument.
 export function generateAdaptiveMentalMathQuestion(studentHistory: any[] = []): Question {
-    // For now, ignore history and use Level A
-    const competency = choice(competencesNiveauA);
+    // For now, ignore history and use a random competency from all levels
+    const competency = choice(allCompetencies);
     const questionData = competency.generate();
 
     return {
