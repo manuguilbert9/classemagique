@@ -18,7 +18,7 @@ export interface MentalMathCompetency {
 
 // --- New Granular Competencies ---
 
-export const allCompetencies: MentalMathCompetency[] = [
+const allCompetencies: MentalMathCompetency[] = [
     // --- Level A ---
     { id: 'A1', level: 'A', description: 'Compter oralement jusqu\'à 10', generate: () => ({ question: `${randInt(1, 10)}`, answer: String(randInt(1, 10)) }) },
     { id: 'A2', level: 'A', description: 'Compter oralement jusqu\'à 30', generate: () => ({ question: `${randInt(1, 30)}`, answer: String(randInt(1, 30)) }) },
@@ -147,4 +147,9 @@ export async function generateAdaptiveMentalMathQuestion(lastCompetencyId: strin
         competencyId: competency.id,
         ...questionData
     };
+}
+
+
+export async function getAdaptiveMentalMathCompetencies(): Promise<MentalMathCompetency[]> {
+    return allCompetencies;
 }

@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
-import { generateAdaptiveMentalMathQuestion, type StudentPerformance, allCompetencies } from '@/lib/adaptive-mental-math';
+import { generateAdaptiveMentalMathQuestion, type StudentPerformance, getAdaptiveMentalMathCompetencies, type MentalMathCompetency } from '@/lib/adaptive-mental-math';
 import type { Question } from '@/lib/questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
@@ -32,6 +32,7 @@ export function AdaptiveMentalCalculationExercise() {
   const isHomework = searchParams.get('from') === 'devoirs';
   const homeworkDate = searchParams.get('date');
 
+  const [allCompetencies, setAllCompetencies] = useState<MentalMathCompetency[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,6 +62,8 @@ export function AdaptiveMentalCalculationExercise() {
   useEffect(() => {
     async function start() {
       setIsLoading(true);
+      const comps = await getAdaptiveMentalMathCompetencies();
+      setAllCompetencies(comps);
       // Combine session and global performance for the next question choice.
       const combinedPerformance = { ...(student?.mentalMathPerformance || {}), ...sessionPerformance };
       await generateNextQuestion(combinedPerformance, null, true); // Start with an easy question
@@ -195,6 +198,7 @@ export function AdaptiveMentalCalculationExercise() {
   };
 
   const handleAnalyzePerformance = async () => {
+    if (!allCompetencies.length) return;
     setIsAnalyzing(true);
     setAnalysisResult('');
     
@@ -218,7 +222,7 @@ export function AdaptiveMentalCalculationExercise() {
     }
   };
 
-  if (isLoading || !currentQuestion) {
+  if (isLoading || !currentQuestion || allCompetencies.length === 0) {
     return <Card className="w-full shadow-2xl p-8 text-center"><Loader2 className="mx-auto animate-spin" /></Card>;
   }
 
