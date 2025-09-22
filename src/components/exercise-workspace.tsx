@@ -98,6 +98,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 // Fallback for non-logged-in user
                 startNumberLevelExercise({ level: 'B' });
             }
+        } else if (skill.slug === 'currency') {
+            if (student?.levels?.[skill.slug]) {
+                const level = student.levels[skill.slug];
+                const difficulty = level.charCodeAt(0) - 'A'.charCodeAt(0);
+                startCurrencyExercise({ difficulty });
+            }
+            // If no level, the settings component will be shown
         }
     }
     if (!isUserLoading) {
@@ -383,6 +390,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       } else {
           startNumberLevelExercise({ level: 'B' });
       }
+    } else if (skill.slug === 'currency') {
+      // For currency, we want to show the settings screen again
+      // unless the student has a pre-set level.
+       if (student?.levels?.[skill.slug]) {
+            const level = student.levels[skill.slug];
+            const difficulty = level.charCodeAt(0) - 'A'.charCodeAt(0);
+            startCurrencyExercise({ difficulty });
+        }
     }
   };
 
@@ -821,6 +836,7 @@ const renderWrittenToAudioQCM = () => (
     </div>
   );
 }
+
 
 
 
