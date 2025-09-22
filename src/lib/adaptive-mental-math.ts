@@ -22,12 +22,12 @@ export const allCompetencies: MentalMathCompetency[] = [
     // --- Level A ---
     { id: 'A1', level: 'A', description: 'Compter oralement jusqu\'à 10', generate: () => ({ question: `${randInt(1, 10)}`, answer: String(randInt(1, 10)) }) },
     { id: 'A2', level: 'A', description: 'Compter oralement jusqu\'à 30', generate: () => ({ question: `${randInt(1, 30)}`, answer: String(randInt(1, 30)) }) },
-    { id: 'A3', level: 'A', description: 'Dénombrer des collections jusqu\'à 10', generate: () => ({ question: `Combien ? ${'● '.repeat(randInt(1,10))}`, answer: String(randInt(1, 10)) }) },
+    { id: 'A3', level: 'A', description: 'Dénombrer des collections jusqu\'à 10', generate: () => { const count = randInt(1,10); return { question: `Combien ? ${'● '.repeat(count)}`, answer: String(count) }; } },
     { id: 'A4', level: 'A', description: 'Compléments à 5', generate: () => { const a = randInt(1, 4); return { question: `${a} + ? = 5`, answer: String(5 - a) } } },
     { id: 'A5', level: 'A', description: 'Compléments à 10', generate: () => { const a = randInt(1, 9); return { question: `${a} + ? = 10`, answer: String(10 - a) } } },
-    { id: 'A6', level: 'A', description: 'Ajouter/retirer 1 ou 2', generate: () => { const a = randInt(3, 20); const b = choice([1, 2]); return Math.random() > 0.5 ? { question: `${a} + ${b}`, answer: String(a + b) } : { question: `${a} - ${b}`, answer: String(a - b) }; } },
-    { id: 'A7', level: 'A', description: 'Ajouter/retirer 5', generate: () => { const a = randInt(6, 20); return Math.random() > 0.5 ? { question: `${a} + 5`, answer: String(a + 5) } : { question: `${a} - 5`, answer: String(a - 5) }; } },
-    { id: 'A8', level: 'A', description: 'Ajouter/retirer 10', generate: () => { const a = randInt(11, 20); return Math.random() > 0.5 ? { question: `${a} + 10`, answer: String(a + 10) } : { question: `${a} - 10`, answer: String(a - 10) }; } },
+    { id: 'A6', level: 'A', description: 'Ajouter ou retirer 1 ou 2', generate: () => { const a = randInt(3, 20); const b = choice([1, 2]); return Math.random() > 0.5 ? { question: `${a} + ${b}`, answer: String(a + b) } : { question: `${a} - ${b}`, answer: String(a - b) }; } },
+    { id: 'A7', level: 'A', description: 'Ajouter ou retirer 5', generate: () => { const a = randInt(6, 20); return Math.random() > 0.5 ? { question: `${a} + 5`, answer: String(a + 5) } : { question: `${a} - 5`, answer: String(a - 5) }; } },
+    { id: 'A8', level: 'A', description: 'Ajouter ou retirer 10', generate: () => { const a = randInt(11, 20); return Math.random() > 0.5 ? { question: `${a} + 10`, answer: String(a + 10) } : { question: `${a} - 10`, answer: String(a - 10) }; } },
     
     // --- Level B ---
     { id: 'B1', level: 'B', description: 'Dénombrer jusqu\'à 100', generate: () => ({ question: `${randInt(30, 100)}`, answer: String(randInt(30, 100)) }) },
@@ -79,9 +79,18 @@ export type StudentPerformance = Record<string, { successes: number, failures: n
 // This is the core adaptive logic.
 function getNextCompetency(lastCompetencyId: string | null, wasCorrect: boolean, performance: StudentPerformance): MentalMathCompetency {
     
-    // On first question, start with the easiest
+    // On first question, find the lowest-level competency that isn't mastered yet.
     if (!lastCompetencyId) {
-        return competenciesByLevel['A'][0];
+        for (const competency of allCompetencies) {
+            const perf = performance[competency.id] || { successes: 0, failures: 0 };
+            // A competency is mastered if it has >= 4 successes and 0 failures.
+            const isMastered = perf.successes >= 4 && perf.failures === 0;
+            if (!isMastered) {
+                return competency;
+            }
+        }
+        // If all are mastered, return a random one from the highest level.
+        return choice(competenciesByLevel['D']);
     }
 
     const lastCompetency = allCompetencies.find(c => c.id === lastCompetencyId);
@@ -90,36 +99,39 @@ function getNextCompetency(lastCompetencyId: string | null, wasCorrect: boolean,
     const currentLevel = lastCompetency.level;
     const currentLevelIndex = levelOrder.indexOf(currentLevel);
 
-    if (wasCorrect) {
-        // SUCCESS: Try something harder
-        const rand = Math.random();
-        if (rand < 0.6) {
-            // 60% chance to stay at the same level, different competency
-            const otherCompetencies = competenciesByLevel[currentLevel].filter(c => c.id !== lastCompetencyId);
-            return choice(otherCompetencies.length > 0 ? otherCompetencies : [lastCompetency]);
-        } else if (rand < 0.9) {
-            // 30% chance to move up a level (if not at max level)
-            if (currentLevelIndex < levelOrder.length - 1) {
-                const nextLevel = levelOrder[currentLevelIndex + 1];
-                return choice(competenciesByLevel[nextLevel]);
-            }
-        }
-        // 10% chance to repeat the same competency for reinforcement
-        return lastCompetency;
+    // Find all competencies that are "in progress" (some attempts, but not mastered)
+    const inProgressCompetencies = allCompetencies.filter(c => {
+        const perf = performance[c.id] || { successes: 0, failures: 0 };
+        const isMastered = perf.successes >= 4 && perf.failures === 0;
+        const hasAttempts = perf.successes > 0 || perf.failures > 0;
+        return hasAttempts && !isMastered;
+    });
 
-    } else {
-        // FAILURE: Try something easier
-        const rand = Math.random();
-        if (rand < 0.7) {
-            // 70% chance to go down one level (if not at min level)
-            if (currentLevelIndex > 0) {
-                 const prevLevel = levelOrder[currentLevelIndex - 1];
-                 return choice(competenciesByLevel[prevLevel]);
-            }
+    if (wasCorrect) {
+        // SUCCESS: Prioritize other "in progress" skills or move up.
+        if (inProgressCompetencies.length > 0) {
+            // Pick another competency that's still being worked on.
+            return choice(inProgressCompetencies);
+        } else {
+            // If nothing is "in progress", find the next un-mastered skill.
+            const nextUnmastered = allCompetencies.find(c => {
+                const perf = performance[c.id] || { successes: 0, failures: 0 };
+                return perf.successes < 4 || perf.failures > 0;
+            });
+            return nextUnmastered || choice(competenciesByLevel['D']); // or a random hard one if all are mastered
         }
-        // 30% chance to stay at the same level, different competency
-        const otherCompetencies = competenciesByLevel[currentLevel].filter(c => c.id !== lastCompetencyId);
-        return choice(otherCompetencies.length > 0 ? otherCompetencies : [lastCompetency]);
+    } else {
+        // FAILURE: Re-test a lower-level skill or a different skill at the same level.
+        const rand = Math.random();
+        if (rand < 0.7 && currentLevelIndex > 0) {
+            // 70% chance to go down one level to reinforce basics.
+            const prevLevel = levelOrder[currentLevelIndex - 1];
+            return choice(competenciesByLevel[prevLevel]);
+        } else {
+            // 30% chance to try a different competency at the same level.
+            const otherCompetenciesAtLevel = competenciesByLevel[currentLevel].filter(c => c.id !== lastCompetencyId);
+            return choice(otherCompetenciesAtLevel.length > 0 ? otherCompetenciesAtLevel : [lastCompetency]);
+        }
     }
 }
 
