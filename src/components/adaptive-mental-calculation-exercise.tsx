@@ -25,6 +25,7 @@ import { Badge } from './ui/badge';
 
 const NUM_QUESTIONS = 10;
 const REQUIRED_SUCCESSES_FOR_ACQUISITION = 4;
+const SUCCESS_TO_FAILURE_RATIO = 4;
 
 export function AdaptiveMentalCalculationExercise() {
   const { student, refreshStudent } = useContext(UserContext);
@@ -277,22 +278,22 @@ export function AdaptiveMentalCalculationExercise() {
                                 const totalSuccesses = globalPerf.successes + sessionPerf.successes;
                                 const totalFailures = globalPerf.failures + sessionPerf.failures;
 
-                                let status: 'acquired' | 'in-progress' | 'failed' | 'not-started' = 'not-started';
+                                let status: 'acquired' | 'in-progress' | 'not-started' = 'not-started';
                                 
-                                if (totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION && totalFailures === 0) {
+                                const isAcquired = totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION && totalSuccesses >= totalFailures * SUCCESS_TO_FAILURE_RATIO;
+                                const hasAttempts = totalSuccesses > 0 || totalFailures > 0;
+
+                                if (isAcquired) {
                                     status = 'acquired';
-                                } else if (totalFailures > 0) {
-                                    status = 'failed';
-                                } else if (totalSuccesses > 0) {
+                                } else if (hasAttempts) {
                                     status = 'in-progress';
                                 }
 
 
                                 return (
-                                <div key={competency.id} className="flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50" style={{borderColor: status === 'acquired' ? 'hsl(var(--chart-2))' : status === 'in-progress' ? 'hsl(var(--chart-4))' : status === 'failed' ? 'hsl(var(--chart-5))' : 'hsl(var(--border))'}}>
+                                <div key={competency.id} className="flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50" style={{borderColor: status === 'acquired' ? 'hsl(var(--chart-2))' : status === 'in-progress' ? 'hsl(var(--chart-4))' : 'hsl(var(--border))'}}>
                                     {status === 'acquired' && <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0"/>}
                                     {status === 'in-progress' && <Hourglass className="h-5 w-5 text-yellow-500 flex-shrink-0"/>}
-                                    {status === 'failed' && <XCircle className="h-5 w-5 text-red-500 flex-shrink-0"/>}
                                     {status === 'not-started' && <BrainCircuit className="h-5 w-5 text-muted-foreground flex-shrink-0"/>}
                                     <p className="text-sm font-medium flex-grow text-left">{competency.description}</p>
                                     <Badge variant="outline">Niv. {competency.level}</Badge>
@@ -362,7 +363,7 @@ export function AdaptiveMentalCalculationExercise() {
                 )}
             </CardFooter>
         </Card>
-        <style jsx>{`
+        <style jsx>{\`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -371,7 +372,7 @@ export function AdaptiveMentalCalculationExercise() {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        `}</style>
+        \`}</style>
     </div>
   );
 }
