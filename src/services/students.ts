@@ -6,7 +6,10 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { skills } from '@/lib/skills';
 import { getGloballyEnabledSkills } from './teacher';
-import type { StudentPerformance } from '@/lib/adaptive-mental-math';
+
+export type StudentPerformance = Record<string, {
+    attempts: ('success' | 'failure')[];
+}>;
 
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';

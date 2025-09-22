@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
-import { generateAdaptiveMentalMathQuestion, type StudentPerformance, getAdaptiveMentalMathCompetencies, type DisplayableMentalMathCompetency } from '@/lib/adaptive-mental-math';
+import { generateAdaptiveMentalMathQuestion, getAdaptiveMentalMathCompetencies, type DisplayableMentalMathCompetency } from '@/lib/adaptive-mental-math';
 import type { Question } from '@/lib/questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
@@ -15,7 +16,7 @@ import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
-import { updateStudent } from '@/services/students';
+import { updateStudent, StudentPerformance } from '@/services/students';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription, SheetFooter } from './ui/sheet';
@@ -24,8 +25,8 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 
 const NUM_QUESTIONS = 10;
-const REQUIRED_SUCCESSES_FOR_ACQUISITION = 4;
-const SUCCESS_TO_FAILURE_RATIO = 4;
+const REQUIRED_CONSECUTIVE_SUCCESSES = 4;
+
 
 export function AdaptiveMentalCalculationExercise() {
   const { student, refreshStudent } = useContext(UserContext);
@@ -108,10 +109,9 @@ export function AdaptiveMentalCalculationExercise() {
         setSessionPerformance(prev => {
             const newPerformance = { ...prev };
             if (!newPerformance[competencyId]) {
-                newPerformance[competencyId] = { successes: 0, failures: 0 };
+                newPerformance[competencyId] = { attempts: [] };
             }
-            if (isCorrect) newPerformance[competencyId].successes++;
-            else newPerformance[competencyId].failures++;
+            newPerformance[competencyId].attempts.push(isCorrect ? 'success' : 'failure');
             return newPerformance;
         });
     }
@@ -147,11 +147,13 @@ export function AdaptiveMentalCalculationExercise() {
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
               
               // Merge session performance with global performance
-              const finalPerformance: StudentPerformance = { ...student.mentalMathPerformance };
-              Object.entries(sessionPerformance).forEach(([id, {successes, failures}]) => {
-                  if (!finalPerformance[id]) finalPerformance[id] = { successes: 0, failures: 0 };
-                  finalPerformance[id].successes += successes;
-                  finalPerformance[id].failures += failures;
+              const finalPerformance: StudentPerformance = JSON.parse(JSON.stringify(student.mentalMathPerformance || {}));
+              
+              Object.entries(sessionPerformance).forEach(([id, {attempts}]) => {
+                  if (!finalPerformance[id]) {
+                      finalPerformance[id] = { attempts: [] };
+                  }
+                  finalPerformance[id].attempts.push(...attempts);
               });
 
               if (isHomework && homeworkDate) {
@@ -203,12 +205,13 @@ export function AdaptiveMentalCalculationExercise() {
     setIsAnalyzing(true);
     setAnalysisResult('');
     
-    const performanceData = Object.entries(sessionPerformance).map(([id, data]) => {
+    const performanceData = Object.entries(sessionPerformance).map(([id, { attempts }]) => {
       const competency = allCompetencies.find(c => c.id === id);
       return {
         id,
         description: competency?.description || 'Compétence inconnue',
-        ...data,
+        successes: attempts.filter(a => a === 'success').length,
+        failures: attempts.filter(a => a === 'failure').length,
       };
     });
 
@@ -267,26 +270,37 @@ export function AdaptiveMentalCalculationExercise() {
                         <SheetHeader>
                             <SheetTitle>Progression en Calcul Mental</SheetTitle>
                             <SheetDescription>
-                                Voici la liste des compétences et ta performance globale. Une compétence est acquise après {REQUIRED_SUCCESSES_FOR_ACQUISITION} réussites.
+                                Une compétence est acquise après {REQUIRED_CONSECUTIVE_SUCCESSES} réussites consécutives après un échec, ou 4 réussites sans aucun échec.
                             </SheetDescription>
                         </SheetHeader>
                         <ScrollArea className="h-[calc(100%-160px)] pr-4">
                         <div className="space-y-4 py-4">
                             {allCompetencies.map(competency => {
-                                const globalPerf = student?.mentalMathPerformance?.[competency.id] || { successes: 0, failures: 0 };
-                                const sessionPerf = sessionPerformance[competency.id] || { successes: 0, failures: 0 };
-                                const totalSuccesses = globalPerf.successes + sessionPerf.successes;
-                                const totalFailures = globalPerf.failures + sessionPerf.failures;
+                                const globalPerf = student?.mentalMathPerformance?.[competency.id]?.attempts || [];
+                                const sessionPerf = sessionPerformance[competency.id]?.attempts || [];
+                                const allAttempts = [...globalPerf, ...sessionPerf];
 
                                 let status: 'acquired' | 'in-progress' | 'not-started' = 'not-started';
                                 
-                                const isAcquired = totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION && totalSuccesses >= totalFailures * SUCCESS_TO_FAILURE_RATIO;
-                                const hasAttempts = totalSuccesses > 0 || totalFailures > 0;
-
-                                if (isAcquired) {
-                                    status = 'acquired';
-                                } else if (hasAttempts) {
-                                    status = 'in-progress';
+                                if (allAttempts.length > 0) {
+                                    const lastFailureIndex = allAttempts.lastIndexOf('failure');
+                                    
+                                    if (lastFailureIndex === -1) {
+                                        // No failures, acquired if 4+ successes
+                                        if (allAttempts.length >= REQUIRED_CONSECUTIVE_SUCCESSES) {
+                                            status = 'acquired';
+                                        } else {
+                                            status = 'in-progress';
+                                        }
+                                    } else {
+                                        // Failures exist, check for 4 consecutive successes after the last one
+                                        const successesAfterFailure = allAttempts.slice(lastFailureIndex + 1);
+                                        if (successesAfterFailure.length >= REQUIRED_CONSECUTIVE_SUCCESSES && successesAfterFailure.every(a => a === 'success')) {
+                                            status = 'acquired';
+                                        } else {
+                                            status = 'in-progress';
+                                        }
+                                    }
                                 }
 
 

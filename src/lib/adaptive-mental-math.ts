@@ -18,6 +18,9 @@ export interface MentalMathCompetency {
 
 export type DisplayableMentalMathCompetency = Omit<MentalMathCompetency, 'generate'>;
 
+export type StudentPerformance = Record<string, {
+    attempts: ('success' | 'failure')[];
+}>;
 
 // --- New Granular Competencies ---
 
@@ -77,65 +80,43 @@ const competenciesByLevel: Record<SkillLevel, MentalMathCompetency[]> = {
 };
 const levelOrder: SkillLevel[] = ['A', 'B', 'C', 'D'];
 
-export type StudentPerformance = Record<string, { successes: number, failures: number }>;
+const isAcquired = (attempts: ('success' | 'failure')[]): boolean => {
+    if (!attempts || attempts.length === 0) return false;
+
+    const lastFailureIndex = attempts.lastIndexOf('failure');
+    // Case 1: No failures, need at least 4 successes
+    if (lastFailureIndex === -1) {
+        return attempts.length >= 4;
+    }
+    // Case 2: There was a failure, check for 4 consecutive successes after it
+    const successesAfterLastFailure = attempts.slice(lastFailureIndex + 1).length;
+    return successesAfterLastFailure >= 4;
+};
 
 // This is the core adaptive logic.
 function getNextCompetency(lastCompetencyId: string | null, wasCorrect: boolean, performance: StudentPerformance): MentalMathCompetency {
     
-    // On first question, find the lowest-level competency that isn't mastered yet.
-    if (!lastCompetencyId) {
-        for (const competency of allCompetencies) {
-            const perf = performance[competency.id] || { successes: 0, failures: 0 };
-            // A competency is mastered if it has >= 4 successes and 0 failures.
-            const isMastered = perf.successes >= 4 && perf.failures === 0;
-            if (!isMastered) {
-                return competency;
-            }
-        }
-        // If all are mastered, return a random one from the highest level.
-        return choice(competenciesByLevel['D']);
-    }
-
-    const lastCompetency = allCompetencies.find(c => c.id === lastCompetencyId);
-    if (!lastCompetency) return competenciesByLevel['A'][0]; // Fallback
-
-    const currentLevel = lastCompetency.level;
-    const currentLevelIndex = levelOrder.indexOf(currentLevel);
-
-    // Find all competencies that are "in progress" (some attempts, but not mastered)
+    // Find all competencies that are "in progress" (attempted but not yet acquired)
     const inProgressCompetencies = allCompetencies.filter(c => {
-        const perf = performance[c.id] || { successes: 0, failures: 0 };
-        const isMastered = perf.successes >= 4 && perf.failures === 0;
-        const hasAttempts = perf.successes > 0 || perf.failures > 0;
-        return hasAttempts && !isMastered;
+        const perf = performance[c.id];
+        return perf && perf.attempts.length > 0 && !isAcquired(perf.attempts);
     });
 
-    if (wasCorrect) {
-        // SUCCESS: Prioritize other "in progress" skills or move up.
-        if (inProgressCompetencies.length > 0) {
-            // Pick another competency that's still being worked on.
-            return choice(inProgressCompetencies);
-        } else {
-            // If nothing is "in progress", find the next un-mastered skill.
-            const nextUnmastered = allCompetencies.find(c => {
-                const perf = performance[c.id] || { successes: 0, failures: 0 };
-                return perf.successes < 4 || perf.failures > 0;
-            });
-            return nextUnmastered || choice(competenciesByLevel['D']); // or a random hard one if all are mastered
-        }
-    } else {
-        // FAILURE: Re-test a lower-level skill or a different skill at the same level.
-        const rand = Math.random();
-        if (rand < 0.7 && currentLevelIndex > 0) {
-            // 70% chance to go down one level to reinforce basics.
-            const prevLevel = levelOrder[currentLevelIndex - 1];
-            return choice(competenciesByLevel[prevLevel]);
-        } else {
-            // 30% chance to try a different competency at the same level.
-            const otherCompetenciesAtLevel = competenciesByLevel[currentLevel].filter(c => c.id !== lastCompetencyId);
-            return choice(otherCompetenciesAtLevel.length > 0 ? otherCompetenciesAtLevel : [lastCompetency]);
+    if (inProgressCompetencies.length > 0) {
+        // Prioritize competencies that are currently being worked on
+        return choice(inProgressCompetencies);
+    }
+
+    // If no competencies are "in progress", find the first one not yet acquired
+    for (const competency of allCompetencies) {
+        const perf = performance[competency.id];
+        if (!perf || !isAcquired(perf.attempts)) {
+            return competency;
         }
     }
+    
+    // If all are mastered, return a random one from the highest level.
+    return choice(competenciesByLevel['D']);
 }
 
 
