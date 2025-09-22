@@ -6,6 +6,8 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { skills } from '@/lib/skills';
 import { getGloballyEnabledSkills } from './teacher';
+import type { StudentPerformance } from '@/lib/adaptive-mental-math';
+
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
@@ -31,6 +33,7 @@ export interface Student {
     hasCustomSchedule?: boolean;
     schedule?: ScheduleStep[];
     themeColors?: ThemeColors;
+    mentalMathPerformance?: StudentPerformance;
 }
 
 
@@ -58,6 +61,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         enabledSkills: defaultEnabledSkills,
         hasCustomSchedule: false,
         schedule: [],
+        mentalMathPerformance: {},
     });
 
     return {
@@ -68,6 +72,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         enabledSkills: defaultEnabledSkills,
         hasCustomSchedule: false,
         schedule: [],
+        mentalMathPerformance: {},
     };
 }
 
@@ -139,7 +144,8 @@ export async function getStudents(): Promise<Student[]> {
                 enabledSkills: data.enabledSkills,
                 hasCustomSchedule: data.hasCustomSchedule || false,
                 schedule: data.schedule || [],
-                themeColors: data.themeColors
+                themeColors: data.themeColors,
+                mentalMathPerformance: data.mentalMathPerformance || {},
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -179,7 +185,8 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     enabledSkills: studentData.enabledSkills,
                     hasCustomSchedule: studentData.hasCustomSchedule || false,
                     schedule: studentData.schedule || [],
-                    themeColors: studentData.themeColors
+                    themeColors: studentData.themeColors,
+                    mentalMathPerformance: studentData.mentalMathPerformance || {},
                 };
             }
         }
@@ -212,7 +219,8 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 enabledSkills: data.enabledSkills,
                 hasCustomSchedule: data.hasCustomSchedule || false,
                 schedule: data.schedule || [],
-                themeColors: data.themeColors
+                themeColors: data.themeColors,
+                mentalMathPerformance: data.mentalMathPerformance || {},
             };
         }
         return null;

@@ -14,6 +14,7 @@ import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { updateStudent } from '@/services/students';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription, SheetFooter } from './ui/sheet';
@@ -24,7 +25,7 @@ import { Badge } from './ui/badge';
 const NUM_QUESTIONS = 10;
 
 export function AdaptiveMentalCalculationExercise() {
-  const { student } = useContext(UserContext);
+  const { student, refreshStudent } = useContext(UserContext);
   const searchParams = useSearchParams();
   const isHomework = searchParams.get('from') === 'devoirs';
   const homeworkDate = searchParams.get('date');
@@ -43,26 +44,25 @@ export function AdaptiveMentalCalculationExercise() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // For adaptive logic
-  const [lastAnswerWasCorrect, setLastAnswerWasCorrect] = useState(true);
-  const [performance, setPerformance] = useState<StudentPerformance>({});
+  const [sessionPerformance, setSessionPerformance] = useState<StudentPerformance>({});
   
   // For AI Analysis
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string>('');
 
 
-  const generateNextQuestion = (lastCompetencyId: string | null, wasCorrect: boolean, perf: StudentPerformance) => {
+  const generateNextQuestion = (perf: StudentPerformance, lastCompetencyId: string | null, wasCorrect: boolean) => {
     const nextQuestion = generateAdaptiveMentalMathQuestion(lastCompetencyId, wasCorrect, perf);
     setQuestions(prev => [...prev, nextQuestion]);
   };
   
   useEffect(() => {
     setIsLoading(true);
-    // Generate the very first question when the component mounts
-    generateNextQuestion(null, true, {});
+    const initialPerformance = student?.mentalMathPerformance || {};
+    generateNextQuestion(initialPerformance, null, true);
     setIsLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [student]);
 
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex];
@@ -72,9 +72,10 @@ export function AdaptiveMentalCalculationExercise() {
     setShowConfetti(false);
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-      
+      const lastAnswerWasCorrect = feedback === 'correct';
       const lastCompetencyId = currentQuestion?.competencyId || null;
-      generateNextQuestion(lastCompetencyId, lastAnswerWasCorrect, performance);
+      const combinedPerformance = { ...student?.mentalMathPerformance, ...sessionPerformance };
+      generateNextQuestion(combinedPerformance, lastCompetencyId, lastAnswerWasCorrect);
 
       setUserInput('');
       setFeedback(null);
@@ -90,12 +91,10 @@ export function AdaptiveMentalCalculationExercise() {
     const userAnswer = userInput.replace(',', '.').trim();
     const isCorrect = parseFloat(userAnswer) === parseFloat(currentQuestion.answer);
     
-    setLastAnswerWasCorrect(isCorrect);
-    
-    // Update performance stats
+    // Update performance stats for the session
     const competencyId = currentQuestion.competencyId;
     if (competencyId) {
-        setPerformance(prev => {
+        setSessionPerformance(prev => {
             const newPerformance = { ...prev };
             if (!newPerformance[competencyId]) {
                 newPerformance[competencyId] = { successes: 0, failures: 0 };
@@ -135,6 +134,15 @@ export function AdaptiveMentalCalculationExercise() {
            if (isFinished && student && !hasBeenSaved) {
               setHasBeenSaved(true);
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
+              
+              // Merge session performance with global performance
+              const finalPerformance: StudentPerformance = { ...student.mentalMathPerformance };
+              Object.entries(sessionPerformance).forEach(([id, {successes, failures}]) => {
+                  if (!finalPerformance[id]) finalPerformance[id] = { successes: 0, failures: 0 };
+                  finalPerformance[id].successes += successes;
+                  finalPerformance[id].failures += failures;
+              });
+
               if (isHomework && homeworkDate) {
                   await saveHomeworkResult({
                       userId: student.id,
@@ -150,10 +158,13 @@ export function AdaptiveMentalCalculationExercise() {
                       details: sessionDetails,
                   });
               }
+              // Save the updated performance map to the student's profile
+              await updateStudent(student.id, { mentalMathPerformance: finalPerformance });
+              refreshStudent(); // Refresh student context to get the latest performance data for next session
           }
       }
       saveFinalScore();
-  }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
+  }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate, sessionPerformance, refreshStudent]);
 
   const restartExercise = () => {
     setIsFinished(false);
@@ -163,13 +174,13 @@ export function AdaptiveMentalCalculationExercise() {
     setFeedback(null);
     setHasBeenSaved(false);
     setSessionDetails([]);
-    setLastAnswerWasCorrect(true);
-    setPerformance({});
+    setSessionPerformance({});
     setAnalysisResult('');
     
     setIsLoading(true);
-    const firstQuestion = generateAdaptiveMentalMathQuestion(null, true, {});
-    setQuestions([firstQuestion]);
+    const initialPerformance = student?.mentalMathPerformance || {};
+    generateNextQuestion(initialPerformance, null, true);
+    setQuestions(questions.slice(0, 1));
     setIsLoading(false);
   };
 
@@ -177,7 +188,7 @@ export function AdaptiveMentalCalculationExercise() {
     setIsAnalyzing(true);
     setAnalysisResult('');
     
-    const performanceData = Object.entries(performance).map(([id, data]) => {
+    const performanceData = Object.entries(sessionPerformance).map(([id, data]) => {
       const competency = allCompetencies.find(c => c.id === id);
       return {
         id,
@@ -196,6 +207,10 @@ export function AdaptiveMentalCalculationExercise() {
       setIsAnalyzing(false);
     }
   };
+  
+  const allTimePerformance = useMemo(() => {
+    return { ...student?.mentalMathPerformance, ...sessionPerformance };
+  }, [student, sessionPerformance]);
 
   if (isLoading || !currentQuestion) {
     return <Card className="w-full shadow-2xl p-8 text-center"><Loader2 className="mx-auto animate-spin" /></Card>;
@@ -247,7 +262,7 @@ export function AdaptiveMentalCalculationExercise() {
                         <ScrollArea className="h-[calc(100%-160px)] pr-4">
                         <div className="space-y-4 py-4">
                             {allCompetencies.map(competency => {
-                                const perfData = performance[competency.id];
+                                const perfData = allTimePerformance[competency.id];
                                 let status: 'acquired' | 'in-progress' | 'not-started' | 'failed' = 'not-started';
                                 if (perfData) {
                                     if (perfData.successes > 0 && perfData.failures === 0) status = 'acquired';
@@ -277,9 +292,9 @@ export function AdaptiveMentalCalculationExercise() {
                                         </CardContent>
                                     </Card>
                                 )}
-                                <Button onClick={handleAnalyzePerformance} disabled={isAnalyzing || Object.keys(performance).length === 0} className="w-full">
+                                <Button onClick={handleAnalyzePerformance} disabled={isAnalyzing || Object.keys(sessionPerformance).length === 0} className="w-full">
                                     {isAnalyzing ? <Loader2 className="mr-2 animate-spin"/> : <Sparkles className="mr-2" />}
-                                    {analysisResult ? "Analyser à nouveau" : "Analyser mes compétences"}
+                                    {analysisResult ? "Analyser à nouveau" : "Analyser ma session"}
                                 </Button>
                             </div>
                         </SheetFooter>
