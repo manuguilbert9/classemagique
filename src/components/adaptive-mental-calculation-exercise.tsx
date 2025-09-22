@@ -24,6 +24,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 
 const NUM_QUESTIONS = 10;
+const REQUIRED_SUCCESSES_FOR_ACQUISITION = 4;
 
 export function AdaptiveMentalCalculationExercise() {
   const { student, refreshStudent } = useContext(UserContext);
@@ -255,19 +256,32 @@ export function AdaptiveMentalCalculationExercise() {
                         <SheetHeader>
                             <SheetTitle>Progression en Calcul Mental</SheetTitle>
                             <SheetDescription>
-                                Voici la liste des compétences et ta performance pendant cette session.
+                                Voici la liste des compétences et ta performance globale.
                             </SheetDescription>
                         </SheetHeader>
                         <ScrollArea className="h-[calc(100%-160px)] pr-4">
                         <div className="space-y-4 py-4">
                             {allCompetencies.map(competency => {
-                                const perfData = sessionPerformance[competency.id];
+                                const globalPerf = student?.mentalMathPerformance?.[competency.id] || { successes: 0, failures: 0 };
+                                const sessionPerf = sessionPerformance[competency.id] || { successes: 0, failures: 0 };
+                                const totalSuccesses = globalPerf.successes + sessionPerf.successes;
+                                const totalFailures = globalPerf.failures + sessionPerf.failures;
+
                                 let status: 'acquired' | 'in-progress' | 'failed' | 'not-started' = 'not-started';
-                                if (perfData) {
-                                    if (perfData.successes > 0 && perfData.failures === 0) status = 'acquired';
-                                    else if (perfData.successes > 0 && perfData.failures > 0) status = 'in-progress';
-                                    else if (perfData.failures > 0) status = 'failed';
+                                
+                                if (totalSuccesses > 0 || totalFailures > 0) {
+                                    if (totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION && totalFailures === 0) {
+                                        status = 'acquired';
+                                    } else if (totalFailures > 0) {
+                                        status = 'failed'; // Or 'in-progress' if successes > 0
+                                        if (totalSuccesses > 0) {
+                                            status = 'in-progress';
+                                        }
+                                    } else {
+                                        status = 'in-progress';
+                                    }
                                 }
+
 
                                 return (
                                 <div key={competency.id} className="flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50" style={{borderColor: status === 'acquired' ? 'hsl(var(--chart-2))' : status === 'in-progress' ? 'hsl(var(--chart-4))' : status === 'failed' ? 'hsl(var(--chart-5))' : 'hsl(var(--border))'}}>
@@ -343,7 +357,7 @@ export function AdaptiveMentalCalculationExercise() {
                 )}
             </CardFooter>
         </Card>
-        <style jsx>{\`
+        <style jsx>{`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -352,7 +366,7 @@ export function AdaptiveMentalCalculationExercise() {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        \`}</style>
+        `}</style>
     </div>
   );
 }
