@@ -68,7 +68,7 @@ export function AdaptiveMentalCalculationExercise() {
       // Combine session and global performance for the next question choice.
       const initialPerformance = student?.mentalMathPerformance || {};
       const combinedPerformance = { ...initialPerformance, ...sessionPerformance };
-      await generateNextQuestion(combinedPerformance); // Start with an easy question
+      await generateNextQuestion(combinedPerformance);
       setIsLoading(false);
     }
     if (student !== undefined) { // Check if student context is resolved
