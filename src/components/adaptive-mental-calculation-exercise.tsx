@@ -53,17 +53,20 @@ export function AdaptiveMentalCalculationExercise() {
   const [analysisResult, setAnalysisResult] = useState<string>('');
 
 
-  const generateNextQuestion = (perf: StudentPerformance, lastCompetencyId: string | null, wasCorrect: boolean) => {
-    const nextQuestion = generateAdaptiveMentalMathQuestion(lastCompetencyId, wasCorrect, perf);
+  const generateNextQuestion = async (perf: StudentPerformance, lastCompetencyId: string | null, wasCorrect: boolean) => {
+    const nextQuestion = await generateAdaptiveMentalMathQuestion(lastCompetencyId, wasCorrect, perf);
     setQuestions(prev => [...prev, nextQuestion]);
   };
   
   useEffect(() => {
-    setIsLoading(true);
-    // Combine session and global performance for the next question choice.
-    const combinedPerformance = { ...(student?.mentalMathPerformance || {}), ...sessionPerformance };
-    generateNextQuestion(combinedPerformance, null, true); // Start with an easy question
-    setIsLoading(false);
+    async function start() {
+      setIsLoading(true);
+      // Combine session and global performance for the next question choice.
+      const combinedPerformance = { ...(student?.mentalMathPerformance || {}), ...sessionPerformance };
+      await generateNextQuestion(combinedPerformance, null, true); // Start with an easy question
+      setIsLoading(false);
+    }
+    start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -182,10 +185,13 @@ export function AdaptiveMentalCalculationExercise() {
     setSessionPerformance({});
     setAnalysisResult('');
     
-    setIsLoading(true);
-    const initialPerformance = student?.mentalMathPerformance || {};
-    generateNextQuestion(initialPerformance, null, true);
-    setIsLoading(false);
+    async function start() {
+      setIsLoading(true);
+      const initialPerformance = student?.mentalMathPerformance || {};
+      await generateNextQuestion(initialPerformance, null, true);
+      setIsLoading(false);
+    }
+    start();
   };
 
   const handleAnalyzePerformance = async () => {
@@ -269,17 +275,12 @@ export function AdaptiveMentalCalculationExercise() {
 
                                 let status: 'acquired' | 'in-progress' | 'failed' | 'not-started' = 'not-started';
                                 
-                                if (totalSuccesses > 0 || totalFailures > 0) {
-                                    if (totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION && totalFailures === 0) {
-                                        status = 'acquired';
-                                    } else if (totalFailures > 0) {
-                                        status = 'failed'; // Or 'in-progress' if successes > 0
-                                        if (totalSuccesses > 0) {
-                                            status = 'in-progress';
-                                        }
-                                    } else {
-                                        status = 'in-progress';
-                                    }
+                                if (totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION && totalFailures === 0) {
+                                    status = 'acquired';
+                                } else if (totalFailures > 0) {
+                                    status = 'failed';
+                                } else if (totalSuccesses > 0) {
+                                    status = 'in-progress';
                                 }
 
 

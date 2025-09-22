@@ -136,7 +136,7 @@ function getNextCompetency(lastCompetencyId: string | null, wasCorrect: boolean,
 }
 
 
-export function generateAdaptiveMentalMathQuestion(lastCompetencyId: string | null, wasCorrect: boolean, performance: StudentPerformance): Question {
+export async function generateAdaptiveMentalMathQuestion(lastCompetencyId: string | null, wasCorrect: boolean, performance: StudentPerformance): Promise<Question> {
     const competency = getNextCompetency(lastCompetencyId, wasCorrect, performance);
     const questionData = competency.generate();
 
