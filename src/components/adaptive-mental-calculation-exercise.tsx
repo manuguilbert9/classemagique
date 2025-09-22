@@ -140,6 +140,7 @@ export function AdaptiveMentalCalculationExercise() {
       setShowConfetti(true);
     } else {
       setFeedback('incorrect');
+      setFeedback('incorrect');
     }
     setTimeout(handleNextQuestion, 1500);
   };
@@ -160,7 +161,7 @@ export function AdaptiveMentalCalculationExercise() {
               
               Object.entries(sessionPerformance).forEach(([id, {attempts}]) => {
                   // Ensure the competency exists and has the correct structure (with `attempts` array)
-                  if (!finalPerformance[id] || !finalPerformance[id].attempts) {
+                  if (!finalPerformance[id] || !Array.isArray(finalPerformance[id].attempts)) {
                       finalPerformance[id] = { attempts: [] };
                   }
                   finalPerformance[id].attempts.push(...attempts);
@@ -210,11 +211,21 @@ export function AdaptiveMentalCalculationExercise() {
   };
 
   const handleAnalyzePerformance = async () => {
-    if (!allCompetencies.length) return;
+    if (!allCompetencies.length || !student) return;
     setIsAnalyzing(true);
     setAnalysisResult('');
+
+    // Combine historical and session performance for a complete view
+    const combinedPerformance: StudentPerformance = JSON.parse(JSON.stringify(student.mentalMathPerformance || {}));
+
+    Object.entries(sessionPerformance).forEach(([id, { attempts }]) => {
+      if (!combinedPerformance[id] || !Array.isArray(combinedPerformance[id].attempts)) {
+        combinedPerformance[id] = { attempts: [] };
+      }
+      combinedPerformance[id].attempts.push(...attempts);
+    });
     
-    const performanceData = Object.entries(sessionPerformance).map(([id, { attempts }]) => {
+    const performanceData = Object.entries(combinedPerformance).map(([id, { attempts }]) => {
       const competency = allCompetencies.find(c => c.id === id);
       return {
         id,
@@ -222,7 +233,7 @@ export function AdaptiveMentalCalculationExercise() {
         successes: attempts.filter(a => a === 'success').length,
         failures: attempts.filter(a => a === 'failure').length,
       };
-    });
+    }).filter(p => p.successes > 0 || p.failures > 0); // Only send competencies that have been tried
 
     try {
       const result = await analyzeMentalMathPerformance({ performance: performanceData });
@@ -339,9 +350,9 @@ export function AdaptiveMentalCalculationExercise() {
                                         </CardContent>
                                     </Card>
                                 )}
-                                <Button onClick={handleAnalyzePerformance} disabled={isAnalyzing || Object.keys(sessionPerformance).length === 0} className="w-full">
+                                <Button onClick={handleAnalyzePerformance} disabled={isAnalyzing} className="w-full">
                                     {isAnalyzing ? <Loader2 className="mr-2 animate-spin"/> : <Sparkles className="mr-2" />}
-                                    {analysisResult ? "Analyser à nouveau" : "Analyser ma session"}
+                                    {analysisResult ? "Analyser à nouveau" : "Analyser mes progrès"}
                                 </Button>
                             </div>
                         </SheetFooter>
