@@ -64,7 +64,7 @@ export function AdaptiveMentalCalculationExercise() {
     generateNextQuestion(combinedPerformance, null, true); // Start with an easy question
     setIsLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [student]);
+  }, []);
 
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex];
@@ -90,8 +90,9 @@ export function AdaptiveMentalCalculationExercise() {
   const checkAnswer = () => {
     if (!currentQuestion || feedback || !currentQuestion.answer) return;
     
-    const userAnswer = userInput.replace(',', '.').trim();
-    const isCorrect = parseFloat(userAnswer) === parseFloat(currentQuestion.answer);
+    const userAnswer = userInput.replace(',', '.').trim().toLowerCase();
+    const correctAnswer = String(currentQuestion.answer).toLowerCase();
+    const isCorrect = userAnswer === correctAnswer;
     
     // Update performance stats for the session
     const competencyId = currentQuestion.competencyId;
@@ -209,10 +210,6 @@ export function AdaptiveMentalCalculationExercise() {
       setIsAnalyzing(false);
     }
   };
-  
-  const allTimePerformance = useMemo(() => {
-    return { ...student?.mentalMathPerformance, ...sessionPerformance };
-  }, [student, sessionPerformance]);
 
   if (isLoading || !currentQuestion) {
     return <Card className="w-full shadow-2xl p-8 text-center"><Loader2 className="mx-auto animate-spin" /></Card>;
@@ -265,7 +262,7 @@ export function AdaptiveMentalCalculationExercise() {
                         <div className="space-y-4 py-4">
                             {allCompetencies.map(competency => {
                                 const perfData = sessionPerformance[competency.id];
-                                let status: 'acquired' | 'in-progress' | 'not-started' | 'failed' = 'not-started';
+                                let status: 'acquired' | 'in-progress' | 'failed' | 'not-started' = 'not-started';
                                 if (perfData) {
                                     if (perfData.successes > 0 && perfData.failures === 0) status = 'acquired';
                                     else if (perfData.successes > 0 && perfData.failures > 0) status = 'in-progress';
@@ -346,7 +343,7 @@ export function AdaptiveMentalCalculationExercise() {
                 )}
             </CardFooter>
         </Card>
-        <style jsx>{`
+        <style jsx>{\`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -355,9 +352,7 @@ export function AdaptiveMentalCalculationExercise() {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        `}</style>
+        \`}</style>
     </div>
   );
 }
-
-    
