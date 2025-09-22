@@ -13,6 +13,7 @@ import { generateEcouteLesNombresQuestion } from './number-listening-questions';
 import { generateNombresComplexesQuestion } from './complex-number-questions';
 import { generateLireLesNombresQuestion } from './reading-number-questions';
 import { generateCurrencyQuestion } from './currency-questions';
+import { generateAdaptiveMentalMathQuestion } from './adaptive-mental-math';
 
 
 export interface Question {
@@ -20,6 +21,8 @@ export interface Question {
   level: SkillLevel;
   type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple' | 'drag-and-drop-recognition' | 'qcm-image';
   question: string;
+  // For adaptive mental math
+  competencyId?: string;
   // For QCM
   options?: string[];
   answer?: string;

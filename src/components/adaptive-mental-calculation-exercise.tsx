@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
-import { generateAdaptiveMentalMathQuestion } from '@/lib/adaptive-mental-math';
+import { generateAdaptiveMentalMathQuestion, type StudentPerformance } from '@/lib/adaptive-mental-math';
 import type { Question } from '@/lib/questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
@@ -39,13 +39,22 @@ export function AdaptiveMentalCalculationExercise() {
   const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // For adaptive logic
+  const [lastAnswerWasCorrect, setLastAnswerWasCorrect] = useState(true);
+  const [performance, setPerformance] = useState<StudentPerformance>({});
+
+  const generateNextQuestion = () => {
+    const lastCompetencyId = questions.length > 0 ? questions[questions.length - 1].competencyId || null : null;
+    const nextQuestion = generateAdaptiveMentalMathQuestion(lastCompetencyId, lastAnswerWasCorrect, performance);
+    setQuestions(prev => [...prev, nextQuestion]);
+  };
+
   useEffect(() => {
-    // For now, we generate a set of questions at the beginning.
-    // Later, this will be one-by-one based on adaptive logic.
+    // Generate initial question
     setIsLoading(true);
-    const newQuestions = Array.from({ length: NUM_QUESTIONS }, () => generateAdaptiveMentalMathQuestion());
-    setQuestions(newQuestions);
+    generateNextQuestion();
     setIsLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const currentQuestion = useMemo(() => {
@@ -59,6 +68,7 @@ export function AdaptiveMentalCalculationExercise() {
     setShowConfetti(false);
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
+      generateNextQuestion(); // Generate the *next* question based on current performance
       setUserInput('');
       setFeedback(null);
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -73,6 +83,22 @@ export function AdaptiveMentalCalculationExercise() {
     const userAnswer = userInput.replace(',', '.').trim();
     const isCorrect = parseFloat(userAnswer) === parseFloat(currentQuestion.answer);
     
+    setLastAnswerWasCorrect(isCorrect);
+    
+    // Update performance stats (can be moved to a service later)
+    const competencyId = currentQuestion.competencyId;
+    if (competencyId) {
+        setPerformance(prev => {
+            const newPerformance = { ...prev };
+            if (!newPerformance[competencyId]) {
+                newPerformance[competencyId] = { successes: 0, failures: 0 };
+            }
+            if (isCorrect) newPerformance[competencyId].successes++;
+            else newPerformance[competencyId].failures++;
+            return newPerformance;
+        });
+    }
+
     const detail: ScoreDetail = {
       question: currentQuestion.question,
       userAnswer: userAnswer || "vide",
@@ -130,9 +156,13 @@ export function AdaptiveMentalCalculationExercise() {
     setFeedback(null);
     setHasBeenSaved(false);
     setSessionDetails([]);
+    setQuestions([]); // Clear questions
+    setLastAnswerWasCorrect(true); // Reset adaptive state
+    setPerformance({});
     setIsLoading(true);
-    const newQuestions = Array.from({ length: NUM_QUESTIONS }, () => generateAdaptiveMentalMathQuestion());
-    setQuestions(newQuestions);
+    // Generate the very first question again
+    const firstQuestion = generateAdaptiveMentalMathQuestion(null, true, {});
+    setQuestions([firstQuestion]);
     setIsLoading(false);
   };
 
