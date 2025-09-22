@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
@@ -312,7 +313,7 @@ export function AdaptiveMentalCalculationExercise() {
             </CardHeader>
             <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
                 <p className="font-body text-5xl sm:text-6xl font-bold tracking-wider">{currentQuestion.question}</p>
-                <div className="relative w-full max-w-sm">
+                <div className="relative w-full max-w-sm flex flex-col gap-4">
                     <Input
                         ref={inputRef}
                         type="text"
@@ -329,8 +330,12 @@ export function AdaptiveMentalCalculationExercise() {
                         disabled={!!feedback}
                         autoFocus
                     />
-                    {feedback === 'correct' && <Check className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 text-green-500"/>}
-                    {feedback === 'incorrect' && <X className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 text-red-500"/>}
+                     {feedback === 'correct' && <Check className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-green-500"/>}
+                     {feedback === 'incorrect' && <X className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-red-500"/>}
+
+                     <Button onClick={checkAnswer} disabled={!!feedback || !userInput} size="lg">
+                        Valider
+                    </Button>
                 </div>
             </CardContent>
             <CardFooter className="h-24 flex items-center justify-center">
