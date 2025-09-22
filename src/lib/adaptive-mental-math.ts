@@ -66,7 +66,7 @@ export const allCompetencies: MentalMathCompetency[] = [
 ];
 
 
-export const competenciesByLevel: Record<SkillLevel, MentalMathCompetency[]> = {
+const competenciesByLevel: Record<SkillLevel, MentalMathCompetency[]> = {
     'A': allCompetencies.filter(c => c.level === 'A'),
     'B': allCompetencies.filter(c => c.level === 'B'),
     'C': allCompetencies.filter(c => c.level === 'C'),
