@@ -56,7 +56,19 @@ export function AdaptiveMentalCalculationExercise() {
 
 
   const generateNextQuestion = async (perf: StudentPerformance) => {
-    const nextQuestion = await generateAdaptiveMentalMathQuestion(perf);
+    let nextQuestion: Question;
+    let attempts = 0;
+    const maxAttempts = 10; // To prevent infinite loops
+
+    do {
+        nextQuestion = await generateAdaptiveMentalMathQuestion(perf);
+        attempts++;
+    } while (
+        questions.length > 0 &&
+        nextQuestion.question === questions[questions.length - 1].question &&
+        attempts < maxAttempts
+    );
+
     setQuestions(prev => [...prev, nextQuestion]);
   };
   
