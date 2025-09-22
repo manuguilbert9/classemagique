@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
@@ -56,8 +55,8 @@ export function AdaptiveMentalCalculationExercise() {
   const [analysisResult, setAnalysisResult] = useState<string>('');
 
 
-  const generateNextQuestion = async (perf: StudentPerformance, lastCompetencyId: string | null, wasCorrect: boolean) => {
-    const nextQuestion = await generateAdaptiveMentalMathQuestion(lastCompetencyId, wasCorrect, perf);
+  const generateNextQuestion = async (perf: StudentPerformance) => {
+    const nextQuestion = await generateAdaptiveMentalMathQuestion(perf);
     setQuestions(prev => [...prev, nextQuestion]);
   };
   
@@ -67,11 +66,12 @@ export function AdaptiveMentalCalculationExercise() {
       const comps = await getAdaptiveMentalMathCompetencies();
       setAllCompetencies(comps);
       // Combine session and global performance for the next question choice.
-      const combinedPerformance = { ...(student?.mentalMathPerformance || {}), ...sessionPerformance };
-      await generateNextQuestion(combinedPerformance, null, true); // Start with an easy question
+      const initialPerformance = student?.mentalMathPerformance || {};
+      const combinedPerformance = { ...initialPerformance, ...sessionPerformance };
+      await generateNextQuestion(combinedPerformance); // Start with an easy question
       setIsLoading(false);
     }
-    if (student) {
+    if (student !== undefined) { // Check if student context is resolved
         start();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,10 +85,9 @@ export function AdaptiveMentalCalculationExercise() {
     setShowConfetti(false);
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-      const lastAnswerWasCorrect = feedback === 'correct';
-      const lastCompetencyId = currentQuestion?.competencyId || null;
-      const combinedPerformance = { ...(student?.mentalMathPerformance || {}), ...sessionPerformance };
-      await generateNextQuestion(combinedPerformance, lastCompetencyId, lastAnswerWasCorrect);
+      const studentPerformance = student?.mentalMathPerformance || {};
+      const combinedPerformance = { ...studentPerformance, ...sessionPerformance };
+      await generateNextQuestion(combinedPerformance);
 
       setUserInput('');
       setFeedback(null);
@@ -196,7 +195,7 @@ export function AdaptiveMentalCalculationExercise() {
     async function start() {
       setIsLoading(true);
       const initialPerformance = student?.mentalMathPerformance || {};
-      await generateNextQuestion(initialPerformance, null, true);
+      await generateNextQuestion(initialPerformance);
       setIsLoading(false);
     }
     start();
@@ -397,4 +396,3 @@ export function AdaptiveMentalCalculationExercise() {
     </div>
   );
 }
-
