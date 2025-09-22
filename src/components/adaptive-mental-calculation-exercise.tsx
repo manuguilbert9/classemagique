@@ -160,7 +160,6 @@ export function AdaptiveMentalCalculationExercise() {
               const finalPerformance: StudentPerformance = JSON.parse(JSON.stringify(student.mentalMathPerformance || {}));
               
               Object.entries(sessionPerformance).forEach(([id, {attempts}]) => {
-                  // Ensure the competency exists and has the correct structure (with `attempts` array)
                   if (!finalPerformance[id] || !Array.isArray(finalPerformance[id].attempts)) {
                       finalPerformance[id] = { attempts: [] };
                   }
