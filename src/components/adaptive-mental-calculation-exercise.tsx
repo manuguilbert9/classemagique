@@ -266,7 +266,7 @@ export function AdaptiveMentalCalculationExercise() {
                         <SheetHeader>
                             <SheetTitle>Progression en Calcul Mental</SheetTitle>
                             <SheetDescription>
-                                Voici la liste des compétences et ta performance globale. Une compétence est acquise après 4 réussites.
+                                Voici la liste des compétences et ta performance globale. Une compétence est acquise après {REQUIRED_SUCCESSES_FOR_ACQUISITION} réussites.
                             </SheetDescription>
                         </SheetHeader>
                         <ScrollArea className="h-[calc(100%-160px)] pr-4">
@@ -279,7 +279,7 @@ export function AdaptiveMentalCalculationExercise() {
 
                                 let status: 'acquired' | 'in-progress' | 'failed' | 'not-started' = 'not-started';
                                 
-                                if (totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION) {
+                                if (totalSuccesses >= REQUIRED_SUCCESSES_FOR_ACQUISITION && totalFailures === 0) {
                                     status = 'acquired';
                                 } else if (totalFailures > 0) {
                                     status = 'failed';
@@ -362,7 +362,7 @@ export function AdaptiveMentalCalculationExercise() {
                 )}
             </CardFooter>
         </Card>
-        <style jsx>{\`
+        <style jsx>{`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -371,7 +371,7 @@ export function AdaptiveMentalCalculationExercise() {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        \`}</style>
+        `}</style>
     </div>
   );
 }
