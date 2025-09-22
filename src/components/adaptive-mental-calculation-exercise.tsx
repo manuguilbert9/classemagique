@@ -77,13 +77,11 @@ export function AdaptiveMentalCalculationExercise() {
       setIsLoading(true);
       const comps = await getAdaptiveMentalMathCompetencies();
       setAllCompetencies(comps);
-      // Combine session and global performance for the next question choice.
       const initialPerformance = student?.mentalMathPerformance || {};
-      const combinedPerformance = { ...initialPerformance, ...sessionPerformance };
-      await generateNextQuestion(combinedPerformance);
+      await generateNextQuestion(initialPerformance);
       setIsLoading(false);
     }
-    if (student !== undefined) { // Check if student context is resolved
+    if (student !== undefined) {
         start();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,7 +114,6 @@ export function AdaptiveMentalCalculationExercise() {
     const correctAnswer = String(currentQuestion.answer).toLowerCase();
     const isCorrect = userAnswer === correctAnswer;
     
-    // Update performance stats for the session
     const competencyId = currentQuestion.competencyId;
     if (competencyId) {
         setSessionPerformance(prev => {
@@ -159,11 +156,11 @@ export function AdaptiveMentalCalculationExercise() {
               setHasBeenSaved(true);
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
               
-              // Merge session performance with global performance
               const finalPerformance: StudentPerformance = JSON.parse(JSON.stringify(student.mentalMathPerformance || {}));
               
               Object.entries(sessionPerformance).forEach(([id, {attempts}]) => {
-                  if (!finalPerformance[id]) {
+                  // Ensure the competency exists and has the correct structure (with `attempts` array)
+                  if (!finalPerformance[id] || !finalPerformance[id].attempts) {
                       finalPerformance[id] = { attempts: [] };
                   }
                   finalPerformance[id].attempts.push(...attempts);
@@ -184,9 +181,8 @@ export function AdaptiveMentalCalculationExercise() {
                       details: sessionDetails,
                   });
               }
-              // Save the updated performance map to the student's profile
               await updateStudent(student.id, { mentalMathPerformance: finalPerformance });
-              refreshStudent(); // Refresh student context to get the latest performance data for next session
+              refreshStudent();
           }
       }
       saveFinalScore();
@@ -289,7 +285,9 @@ export function AdaptiveMentalCalculationExercise() {
                         <ScrollArea className="h-[calc(100%-160px)] pr-4">
                         <div className="space-y-4 py-4">
                             {allCompetencies.map(competency => {
-                                const globalPerf = student?.mentalMathPerformance?.[competency.id]?.attempts || [];
+                                const globalPerfData = student?.mentalMathPerformance?.[competency.id];
+                                const globalPerf = globalPerfData?.attempts || [];
+                                
                                 const sessionPerf = sessionPerformance[competency.id]?.attempts || [];
                                 const allAttempts = [...globalPerf, ...sessionPerf];
 
@@ -299,14 +297,12 @@ export function AdaptiveMentalCalculationExercise() {
                                     const lastFailureIndex = allAttempts.lastIndexOf('failure');
                                     
                                     if (lastFailureIndex === -1) {
-                                        // No failures, acquired if 4+ successes
                                         if (allAttempts.length >= REQUIRED_CONSECUTIVE_SUCCESSES) {
                                             status = 'acquired';
                                         } else {
                                             status = 'in-progress';
                                         }
                                     } else {
-                                        // Failures exist, check for 4 consecutive successes after the last one
                                         const successesAfterFailure = allAttempts.slice(lastFailureIndex + 1);
                                         if (successesAfterFailure.length >= REQUIRED_CONSECUTIVE_SUCCESSES && successesAfterFailure.every(a => a === 'success')) {
                                             status = 'acquired';
