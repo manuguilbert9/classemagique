@@ -58,8 +58,9 @@ export function AdaptiveMentalCalculationExercise() {
   
   useEffect(() => {
     setIsLoading(true);
-    const initialPerformance = student?.mentalMathPerformance || {};
-    generateNextQuestion(initialPerformance, null, true);
+    // Combine session and global performance for the next question choice.
+    const combinedPerformance = { ...(student?.mentalMathPerformance || {}), ...sessionPerformance };
+    generateNextQuestion(combinedPerformance, null, true); // Start with an easy question
     setIsLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [student]);
@@ -74,7 +75,7 @@ export function AdaptiveMentalCalculationExercise() {
       setCurrentQuestionIndex(prev => prev + 1);
       const lastAnswerWasCorrect = feedback === 'correct';
       const lastCompetencyId = currentQuestion?.competencyId || null;
-      const combinedPerformance = { ...student?.mentalMathPerformance, ...sessionPerformance };
+      const combinedPerformance = { ...(student?.mentalMathPerformance || {}), ...sessionPerformance };
       generateNextQuestion(combinedPerformance, lastCompetencyId, lastAnswerWasCorrect);
 
       setUserInput('');
@@ -167,6 +168,7 @@ export function AdaptiveMentalCalculationExercise() {
   }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate, sessionPerformance, refreshStudent]);
 
   const restartExercise = () => {
+    setQuestions([]);
     setIsFinished(false);
     setCorrectAnswers(0);
     setCurrentQuestionIndex(0);
@@ -180,7 +182,6 @@ export function AdaptiveMentalCalculationExercise() {
     setIsLoading(true);
     const initialPerformance = student?.mentalMathPerformance || {};
     generateNextQuestion(initialPerformance, null, true);
-    setQuestions(questions.slice(0, 1));
     setIsLoading(false);
   };
 
@@ -262,7 +263,7 @@ export function AdaptiveMentalCalculationExercise() {
                         <ScrollArea className="h-[calc(100%-160px)] pr-4">
                         <div className="space-y-4 py-4">
                             {allCompetencies.map(competency => {
-                                const perfData = allTimePerformance[competency.id];
+                                const perfData = sessionPerformance[competency.id];
                                 let status: 'acquired' | 'in-progress' | 'not-started' | 'failed' = 'not-started';
                                 if (perfData) {
                                     if (perfData.successes > 0 && perfData.failures === 0) status = 'acquired';
@@ -271,12 +272,12 @@ export function AdaptiveMentalCalculationExercise() {
                                 }
 
                                 return (
-                                <div key={competency.id} className="flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50" style={{borderColor: status === 'acquired' ? 'var(--chart-2)' : status === 'in-progress' ? 'var(--chart-4)' : status === 'failed' ? 'var(--chart-5)' : 'var(--border)'}}>
+                                <div key={competency.id} className="flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50" style={{borderColor: status === 'acquired' ? 'hsl(var(--chart-2))' : status === 'in-progress' ? 'hsl(var(--chart-4))' : status === 'failed' ? 'hsl(var(--chart-5))' : 'hsl(var(--border))'}}>
                                     {status === 'acquired' && <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0"/>}
                                     {status === 'in-progress' && <Hourglass className="h-5 w-5 text-yellow-500 flex-shrink-0"/>}
                                     {status === 'failed' && <XCircle className="h-5 w-5 text-red-500 flex-shrink-0"/>}
                                     {status === 'not-started' && <BrainCircuit className="h-5 w-5 text-muted-foreground flex-shrink-0"/>}
-                                    <p className="text-sm font-medium flex-grow">{competency.description}</p>
+                                    <p className="text-sm font-medium flex-grow text-left">{competency.description}</p>
                                     <Badge variant="outline">Niv. {competency.level}</Badge>
                                 </div>
                                 )
@@ -353,3 +354,5 @@ export function AdaptiveMentalCalculationExercise() {
     </div>
   );
 }
+
+    
