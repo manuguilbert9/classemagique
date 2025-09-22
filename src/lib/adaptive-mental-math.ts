@@ -23,9 +23,9 @@ export type DisplayableMentalMathCompetency = Omit<MentalMathCompetency, 'genera
 
 const allCompetencies: MentalMathCompetency[] = [
     // --- Level A ---
-    { id: 'A1', level: 'A', description: 'Compter oralement jusqu\'à 10', generate: () => ({ question: `${randInt(1, 10)}`, answer: String(randInt(1, 10)) }) },
-    { id: 'A2', level: 'A', description: 'Compter oralement jusqu\'à 30', generate: () => ({ question: `${randInt(1, 30)}`, answer: String(randInt(1, 30)) }) },
-    { id: 'A3', level: 'A', description: 'Dénombrer des collections jusqu\'à 10', generate: () => { const count = randInt(1,10); return { question: `Combien ? ${'● '.repeat(count)}`, answer: String(count) }; } },
+    { id: 'A1', level: 'A', description: 'Compter jusqu\'à 10', generate: () => { const a = randInt(1,9); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
+    { id: 'A2', level: 'A', description: 'Compter jusqu\'à 30', generate: () => { const a = randInt(1,29); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
+    { id: 'A3', level: 'A', description: 'Dénombrer des collections jusqu\'à 10', generate: () => { const count = randInt(1,10); return { question: `Combien y a-t-il de cercles ? ${'● '.repeat(count)}`, answer: String(count) }; } },
     { id: 'A4', level: 'A', description: 'Compléments à 5', generate: () => { const a = randInt(1, 4); return { question: `${a} + ? = 5`, answer: String(5 - a) } } },
     { id: 'A5', level: 'A', description: 'Compléments à 10', generate: () => { const a = randInt(1, 9); return { question: `${a} + ? = 10`, answer: String(10 - a) } } },
     { id: 'A6', level: 'A', description: 'Ajouter ou retirer 1 ou 2', generate: () => { const a = randInt(3, 20); const b = choice([1, 2]); return Math.random() > 0.5 ? { question: `${a} + ${b}`, answer: String(a + b) } : { question: `${a} - ${b}`, answer: String(a - b) }; } },
@@ -33,7 +33,7 @@ const allCompetencies: MentalMathCompetency[] = [
     { id: 'A8', level: 'A', description: 'Ajouter ou retirer 10', generate: () => { const a = randInt(11, 20); return Math.random() > 0.5 ? { question: `${a} + 10`, answer: String(a + 10) } : { question: `${a} - 10`, answer: String(a - 10) }; } },
     
     // --- Level B ---
-    { id: 'B1', level: 'B', description: 'Dénombrer jusqu\'à 100', generate: () => ({ question: `${randInt(30, 100)}`, answer: String(randInt(30, 100)) }) },
+    { id: 'B1', level: 'B', description: 'Dénombrer jusqu\'à 100', generate: () => { const a = randInt(30,99); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
     { id: 'B2', level: 'B', description: 'Valeur de position (dizaines)', generate: () => { const n = randInt(10, 99); const type = choice(['dizaines', 'unités']); const ans = type === 'dizaines' ? Math.floor(n/10) : n % 10; return { question: `Combien de ${type} dans ${n} ?`, answer: String(ans) }; } },
     { id: 'B3', level: 'B', description: 'Ajouter unités à dizaines entières', generate: () => { const a = randInt(1, 9) * 10; const b = randInt(1, 9); return { question: `${a} + ${b}`, answer: String(a+b) }; } },
     { id: 'B4', level: 'B', description: 'Additions simples (< 20)', generate: () => { const a = randInt(1, 18); const b = randInt(1, 19-a); return { question: `${a} + ${b}`, answer: String(a+b) }; } },
