@@ -32,6 +32,7 @@ import { LabelGameExercise } from '@/components/label-game-exercise';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { SpellingExercise } from '@/components/spelling-exercise';
 import { AdaptiveMentalCalculationExercise } from '@/components/adaptive-mental-calculation-exercise';
+import { SyllableTableExercise } from '@/components/syllable-table-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -95,6 +96,8 @@ export default function ExercisePage() {
         return <LabelGameExercise />;
       case 'coded-path':
         return <CodedPathExercise />;
+      case 'syllable-table':
+        return <SyllableTableExercise />;
       case 'denombrement':
       case 'time':
       case 'lire-les-nombres':

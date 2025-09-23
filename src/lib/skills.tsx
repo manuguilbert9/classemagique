@@ -29,6 +29,7 @@ import {
   Tags,
   BrainCircuit,
   Wand,
+  Table,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -75,6 +76,14 @@ export interface Skill {
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
+  {
+    name: 'Tableaux de syllabes',
+    slug: 'syllable-table',
+    description: "Lis des tableaux de syllabes pour t'entraîner à la lecture rapide.",
+    icon: <Table />,
+    category: 'Phonologie',
+    isFixedLevel: 'A',
+  },
   {
     name: 'Syllabe d\'attaque',
     slug: 'syllabe-attaque',
