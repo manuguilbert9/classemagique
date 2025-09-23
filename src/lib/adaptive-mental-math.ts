@@ -24,7 +24,7 @@ export type StudentPerformance = Record<string, {
 
 // --- New Granular Competencies ---
 
-const allCompetencies: MentalMathCompetency[] = [
+export const allCompetencies: MentalMathCompetency[] = [
     // --- Level A ---
     { id: 'A1', level: 'A', description: 'Compter oralement jusqu\'à 10', generate: () => { const a = randInt(1,9); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
     { id: 'A2', level: 'A', description: 'Compter oralement jusqu\'à 30', generate: () => { const a = randInt(1,29); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
@@ -98,7 +98,7 @@ const allCompetencies: MentalMathCompetency[] = [
 
 const levelOrder: SkillLevel[] = ['A', 'B', 'C', 'D'];
 
-const isAcquired = (attempts: ('success' | 'failure')[]): boolean => {
+const isAcquired = (attempts: ('success' | 'failure')[]) => {
     if (!attempts || attempts.length === 0) return false;
 
     const lastFailureIndex = attempts.lastIndexOf('failure');
