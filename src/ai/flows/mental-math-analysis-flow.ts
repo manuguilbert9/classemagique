@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to analyze a student's mental math performance.
@@ -9,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { allCompetencies, type MentalMathCompetency } from '@/lib/adaptive-mental-math';
+import { getAdaptiveMentalMathCompetencies, type MentalMathCompetency } from '@/lib/adaptive-mental-math';
 
 const CompetencyPerformanceSchema = z.object({
   id: z.string(),
@@ -66,3 +67,5 @@ const mentalMathAnalysisFlow = ai.defineFlow(
 export async function analyzeMentalMathPerformance(input: MentalMathPerformanceInput): Promise<MentalMathAnalysisOutput> {
   return mentalMathAnalysisFlow(input);
 }
+
+    

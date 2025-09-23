@@ -24,7 +24,7 @@ export type StudentPerformance = Record<string, {
 
 // --- New Granular Competencies ---
 
-export const allCompetencies: MentalMathCompetency[] = [
+const allCompetencies: MentalMathCompetency[] = [
     // --- Level A ---
     { id: 'A1', level: 'A', description: 'Compter oralement jusqu\'à 10', generate: () => { const a = randInt(1,9); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
     { id: 'A2', level: 'A', description: 'Compter oralement jusqu\'à 30', generate: () => { const a = randInt(1,29); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
@@ -129,7 +129,7 @@ function getNextCompetency(performance: StudentPerformance): MentalMathCompetenc
     // If no competencies are "in progress", find the first one not yet acquired
     for (const competency of allCompetencies) {
         const perf = performance[competency.id];
-        if (!perf || !perf.attempts || !isAcquired(perf.attempts)) {
+        if (!perf || !isAcquired(perf.attempts)) {
             return competency;
         }
     }
@@ -158,3 +158,5 @@ export async function getAdaptiveMentalMathCompetencies(): Promise<DisplayableMe
     // Return all competencies but without the `generate` function, which cannot be sent to the client.
     return allCompetencies.map(({ generate, ...rest }) => rest);
 }
+
+    
