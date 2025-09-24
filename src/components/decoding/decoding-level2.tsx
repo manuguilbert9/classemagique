@@ -8,18 +8,55 @@ import { Button } from '@/components/ui/button';
 import { Play, Pause, RefreshCw } from 'lucide-react';
 
 const realWords = [
-    { word: 'salade', syllables: ['sa', 'la', 'd'], silent: 'e' },
-    { word: 'limace', syllables: ['li', 'ma', 'c'], silent: 'e' },
-    { word: 'tulipe', syllables: ['tu', 'li', 'p'], silent: 'e' },
-    { word: 'tapis', syllables: ['ta', 'pi'], silent: 's' },
-    { word: 'souris', syllables: ['sou', 'ri'], silent: 's' },
+    { word: 'lave', syllables: ['la', 've'], silent: '' },
+    { word: 'jupe', syllables: ['ju', 'pe'], silent: '' },
+    { word: 'rame', syllables: ['ra', 'me'], silent: '' },
+    { word: 'pile', syllables: ['pi', 'le'], silent: '' },
+    { word: 'sale', syllables: ['sa', 'le'], silent: '' },
+    { word: 'lune', syllables: ['lu', 'ne'], silent: '' },
+    { word: 'moto', syllables: ['mo', 'to'], silent: '' },
+    { word: 'purée', syllables: ['pu', 'rée'], silent: '' },
+    { word: 'repas', syllables: ['re', 'pa'], silent: 's' },
+    { word: 'rôti', syllables: ['rô', 'ti'], silent: '' },
+    { word: 'vide', syllables: ['vi', 'de'], silent: '' },
+    { word: 'mare', syllables: ['ma', 're'], silent: '' },
+    { word: 'momie', syllables: ['mo', 'mi'], silent: 'e' },
     { word: 'radis', syllables: ['ra', 'di'], silent: 's' },
-    { word: 'chapeau', syllables: ['cha', 'peau'], silent: '' },
-    { word: 'couteau', syllables: ['cou', 'teau'], silent: '' },
-    { word: 'rideau', syllables: ['ri', 'deau'], silent: '' },
-    { word: 'lundi', syllables: ['lun', 'di'], silent: '' },
-    { word: 'mardi', syllables: ['mar', 'di'], silent: '' },
-    { word: 'samedi', syllables: ['sa', 'me', 'di'], silent: '' },
+    { word: 'assis', syllables: ['as', 'si'], silent: 's' },
+    { word: 'relis', syllables: ['re', 'li'], silent: 's' },
+    { word: 'tapis', syllables: ['ta', 'pi'], silent: 's' },
+    { word: 'lama', syllables: ['la', 'ma'], silent: '' },
+    { word: 'furie', syllables: ['fu', 'ri'], silent: 'e' },
+    { word: 'folie', syllables: ['fo', 'li'], silent: 'e' },
+    { word: 'râle', syllables: ['râ', 'le'], silent: '' },
+    { word: 'série', syllables: ['sé', 'ri'], silent: 'e' },
+    { word: 'lasso', syllables: ['las', 'so'], silent: '' },
+    { word: 'tape', syllables: ['ta', 'pe'], silent: '' },
+    { word: 'rime', syllables: ['ri', 'me'], silent: '' },
+    { word: 'malle', syllables: ['mal', 'le'], silent: '' },
+    { word: 'Lola', syllables: ['Lo', 'la'], silent: '' },
+    { word: 'Rémi', syllables: ['Ré', 'mi'], silent: '' },
+    { word: 'mamie', syllables: ['ma', 'mi'], silent: 'e' },
+    { word: 'file', syllables: ['fi', 'le'], silent: '' },
+    { word: 'menue', syllables: ['me', 'nu'], silent: 'e' },
+    { word: 'roche', syllables: ['ro', 'che'], silent: '' },
+    { word: 'chassé', syllables: ['chas', 'sé'], silent: '' },
+    { word: 'morue', syllables: ['mo', 'ru'], silent: 'e' },
+    { word: 'lâche', syllables: ['lâ', 'che'], silent: '' },
+    { word: 'Mila', syllables: ['Mi', 'la'], silent: '' },
+    { word: 'passe', syllables: ['pas', 'se'], silent: '' },
+    { word: 'ruche', syllables: ['ru', 'che'], silent: '' },
+    { word: 'mari', syllables: ['ma', 'ri'], silent: '' },
+    { word: 'sirop', syllables: ['si', 'ro'], silent: 'p' },
+    { word: 'robot', syllables: ['ro', 'bo'], silent: 't' },
+    { word: 'mine', syllables: ['mi', 'ne'], silent: '' },
+    { word: 'salut', syllables: ['sa', 'lu'], silent: 't' },
+    { word: 'vache', syllables: ['va', 'che'], silent: '' },
+    { word: 'ami', syllables: ['a', 'mi'], silent: '' },
+    { word: 'nappe', syllables: ['nap', 'pe'], silent: '' },
+    { word: 'repas', syllables: ['re', 'pa'], silent: 's' }, // Duplicate from above but included as per image
+    { word: 'Jules', syllables: ['Ju', 'le'], silent: 's' },
+    { word: 'Paris', syllables: ['Pa', 'ri'], silent: 's' },
 ];
 
 const pseudoWords = [
@@ -75,7 +112,7 @@ export function DecodingLevel2() {
                 <CardTitle className="font-headline text-3xl">Mots à deux syllabes</CardTitle>
                 <CardDescription>Clique sur un mot pour l'entendre. Les syllabes sont colorées pour t'aider.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {realWords.map(({ word, syllables, silent }) => (
                     <Button key={word} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
                         <span className="text-blue-600">{syllables[0]}</span>
