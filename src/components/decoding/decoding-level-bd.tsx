@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { Button } from '../ui/button';
 
 const SyllableTable = ({ title, data, colored = false }: { title: string, data: string[][], colored?: boolean }) => {
   const handleSpeak = (text: string) => {
@@ -86,19 +87,54 @@ const tableBD = [
   ['be', 'do', 'by', 'du', 'di', 'ba'],
 ];
 
+const realWordsLvlBD1 = [
+    { word: 'vide', syllables: ['vi', 'de'], silent: '' },
+    { word: 'radis', syllables: ['ra', 'di'], silent: 's' },
+    { word: 'robot', syllables: ['ro', 'bo'], silent: 't' },
+    { word: 'balle', syllables: ['bal', 'le'], silent: '' },
+    { word: 'dame', syllables: ['da', 'me'], silent: '' },
+    { word: 'Dora', syllables: ['Do', 'ra'], silent: '' },
+    { word: 'barre', syllables: ['bar', 're'], silent: '' },
+];
+
+
 export function DecodingLevelBD() {
+  const handleSpeak = (text: string) => {
+    if (!text || !('speechSynthesis' in window)) return;
+    if (speechSynthesis.speaking) speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.9;
+    speechSynthesis.speak(utterance);
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-headline text-3xl text-center">Niveau Spécial : Confusion b/d</CardTitle>
         <CardDescription className="text-center">Clique sur les lettres et les syllabes pour les entendre.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
         <SyllableTable title="Tableau de syllabes avec la lettre b :" data={tableB} />
         <SyllableTable title="Tableau de syllabes avec la lettre d :" data={tableD} />
         <LetterLine title="Ligne de b ou d :" data={lineBD} />
         <SyllableTable title="Tableau de syllabes avec les lettres b et d :" data={tableBD} colored />
         <SyllableTable title="Tableau de syllabes avec les lettres b et d (sans aide) :" data={tableBD} />
+        
+        <div className="space-y-2">
+            <h4 className="font-semibold">Je lis des mots :</h4>
+             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {realWordsLvlBD1.map(({ word, syllables, silent }, index) => (
+                    <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
+                        <span className="text-blue-600">{syllables[0]}</span>
+                        <span className="text-red-600">{syllables[1]}</span>
+                        {syllables[2] && <span className="text-blue-600">{syllables[2]}</span>}
+                        {silent && <span className="text-gray-400">{silent}</span>}
+                    </Button>
+                ))}
+            </div>
+        </div>
+
       </CardContent>
     </Card>
   );
