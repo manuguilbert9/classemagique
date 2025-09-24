@@ -30,13 +30,17 @@ const SyllableTable = ({ title, data, colored = false }: { title: string, data: 
               {row.map((syllable, cellIndex) => (
                 <td
                   key={cellIndex}
-                  className={cn(
-                    "border p-2 text-center text-2xl cursor-pointer hover:bg-muted",
-                    colored && (cellIndex % 2 === 0 ? 'text-black' : 'text-red-600')
-                  )}
+                  className="border p-2 text-center text-2xl cursor-pointer hover:bg-muted"
                   onClick={() => handleSpeak(syllable)}
                 >
-                  {syllable}
+                  {colored ? (
+                     <span>
+                        <span className="text-red-600">{syllable.charAt(0)}</span>
+                        <span>{syllable.slice(1)}</span>
+                    </span>
+                  ) : (
+                    syllable
+                  )}
                 </td>
               ))}
             </tr>
