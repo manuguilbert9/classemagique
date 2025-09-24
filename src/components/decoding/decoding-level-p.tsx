@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -51,6 +50,24 @@ const tableP = [
     ['pe', 'po', 'py', 'pu', 'pi', 'pa'],
 ];
 
+const wordsData = [
+    { word: 'jupe', syllables: ['ju', 'pe'], silent: '' },
+    { word: 'pile', syllables: ['pi', 'le'], silent: '' },
+    { word: 'petit', syllables: ['pe', 'ti'], silent: 't' },
+    { word: 'purée', syllables: ['pu', 'rée'], silent: '' },
+    { word: 'repas', syllables: ['re', 'pa'], silent: 's' },
+    { word: 'tapis', syllables: ['ta', 'pi'], silent: 's' },
+    { word: 'tape', syllables: ['ta', 'pe'], silent: '' },
+    { word: 'Paris', syllables: ['Pa', 'ri'], silent: 's' },
+    { word: 'passe', syllables: ['pas', 'se'], silent: '' },
+    { word: 'nappe', syllables: ['nap', 'pe'], silent: '' },
+    { word: 'patate', syllables: ['pa', 'ta', 'te'], silent: '' },
+    { word: 'pirate', syllables: ['pi', 'ra', 'te'], silent: '' },
+    { word: 'piano', syllables: ['pia', 'no'], silent: '' },
+    { word: 'pyjama', syllables: ['py', 'ja', 'ma'], silent: '' },
+    { word: 'tulipe', syllables: ['tu', 'li', 'pe'], silent: '' },
+];
+
 
 export function DecodingLevelP() {
   const { student } = React.useContext(UserContext);
@@ -60,6 +77,14 @@ export function DecodingLevelP() {
   const { toast } = useToast();
   const [hasBeenSaved, setHasBeenSaved] = React.useState(false);
 
+  const handleSpeak = (text: string) => {
+    if (!text || !('speechSynthesis' in window)) return;
+    if (speechSynthesis.speaking) speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.9;
+    speechSynthesis.speak(utterance);
+  };
   
   const handleSaveScore = async () => {
     if (!student) {
@@ -108,10 +133,23 @@ export function DecodingLevelP() {
     <Card>
       <CardHeader>
         <CardTitle className="font-headline text-3xl text-center">Session : Le son [p]</CardTitle>
-        <CardDescription className="text-center">Clique sur les syllabes pour les entendre.</CardDescription>
+        <CardDescription className="text-center">Clique sur les syllabes et les mots pour les entendre.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
         <SyllableTable title="Tableau de syllabes avec le son [p] :" data={tableP} />
+        <div className="space-y-4">
+            <h4 className="font-semibold">Je lis des mots :</h4>
+             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {wordsData.map(({ word, syllables, silent }, index) => (
+                    <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
+                        <span className="text-blue-600">{syllables[0]}</span>
+                        <span className="text-red-600">{syllables[1]}</span>
+                        {syllables[2] && <span className="text-blue-600">{syllables[2]}</span>}
+                        {silent && <span className="text-gray-400">{silent}</span>}
+                    </Button>
+                ))}
+            </div>
+        </div>
       </CardContent>
        <CardContent className="pt-6 flex justify-center">
          <Button onClick={handleSaveScore} disabled={!student || hasBeenSaved} size="lg">
