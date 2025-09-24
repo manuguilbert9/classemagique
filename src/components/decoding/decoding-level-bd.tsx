@@ -11,17 +11,18 @@ import { UserContext } from '@/context/user-context';
 import { addScore, saveHomeworkResult } from '@/services/scores';
 import { Save, CheckCircle } from 'lucide-react';
 
+const syllablePronunciationMap: { [key: string]: string } = {
+  bo: "beau", do: "dos", ba: "bas", da: "das",
+  be: "beu", de: "de", bi: "bie", di: "die",
+  bu: "bue", du: "due", by: "bi", dy: "di",
+};
+
 const SyllableTable = ({ title, data, colored = false }: { title: string, data: string[][], colored?: boolean }) => {
   const handleSpeak = (text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
     if (speechSynthesis.speaking) speechSynthesis.cancel();
     
-    let textToSpeak = text;
-    if (text.length <= 2) {
-      textToSpeak = `${text} ${text}`;
-    } else {
-      textToSpeak = `${text}.`;
-    }
+    const textToSpeak = syllablePronunciationMap[text.toLowerCase()] || `${text}.`;
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';
@@ -65,12 +66,7 @@ const LetterLine = ({ title, data }: { title: string, data: string[] }) => {
         if (!text || !('speechSynthesis' in window)) return;
         if (speechSynthesis.speaking) speechSynthesis.cancel();
         
-        let textToSpeak = text;
-        if (text.length <= 2) {
-          textToSpeak = `${text} ${text}`;
-        } else {
-          textToSpeak = `${text}.`;
-        }
+        const textToSpeak = `${text}.`;
 
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         utterance.lang = 'fr-FR';
@@ -155,12 +151,7 @@ export function DecodingLevelBD() {
     if (!text || !('speechSynthesis' in window)) return;
     if (speechSynthesis.speaking) speechSynthesis.cancel();
     
-    let textToSpeak = text;
-    if (text.length <= 2) {
-      textToSpeak = `${text} ${text}`;
-    } else {
-      textToSpeak = `${text}.`;
-    }
+    const textToSpeak = syllablePronunciationMap[text.toLowerCase()] || `${text}.`;
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';

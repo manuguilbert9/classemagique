@@ -10,17 +10,16 @@ import { UserContext } from '@/context/user-context';
 import { addScore, saveHomeworkResult } from '@/services/scores';
 import { Save, CheckCircle } from 'lucide-react';
 
+const syllablePronunciationMap: { [key: string]: string } = {
+  cha: "chat", che: "cheu", chi: "chi", cho: "chaud", chu: "chu", chy: "chi",
+};
+
 const SyllableTable = ({ title, data }: { title: string, data: string[][] }) => {
   const handleSpeak = (text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
     if (speechSynthesis.speaking) speechSynthesis.cancel();
     
-    let textToSpeak = text;
-    if (text.length <= 2) {
-      textToSpeak = `${text} ${text}`;
-    } else {
-      textToSpeak = `${text}.`;
-    }
+    const textToSpeak = syllablePronunciationMap[text.toLowerCase()] || `${text}.`;
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';

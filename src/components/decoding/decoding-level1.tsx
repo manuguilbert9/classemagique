@@ -34,6 +34,19 @@ const raceTrackSyllables = [
 ];
 
 
+const syllablePronunciationMap: { [key: string]: string } = {
+  lo: "l'eau", fo: "faux", pa: "pas", va: "vas", ja: "jas",
+  la: "las", li: "lie", lu: "lue", le: "le",
+  ra: "ras", ri: "rie", ru: "rue", re: "re",
+  fa: "fas", fi: "fil", fu: "fut", fe: "feu",
+  ma: "mas", mi: "mie", mu: "mue", me: "meuh",
+  na: "nas", ni: "nie", nu: "nue", ne: "nez",
+  pi: "pie", pu: "pue", po: "peau", pe: "peu",
+  sa: "sas", si: "si", su: "su", so: "seau",
+  ta: "tas", ti: "tie", tu: "tu", to: "tôt",
+  vi: "vie", vu: "vue", vo: "veau", ve: "veu",
+};
+
 export function DecodingLevel1() {
   const { student } = useContext(UserContext);
   const searchParams = useSearchParams();
@@ -57,12 +70,7 @@ export function DecodingLevel1() {
       speechSynthesis.cancel();
     }
     
-    let textToSpeak = text;
-    if (text.length <= 2) {
-      textToSpeak = `${text} ${text}`;
-    } else {
-      textToSpeak = `${text}.`;
-    }
+    const textToSpeak = syllablePronunciationMap[text.toLowerCase()] || `${text}.`;
     
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';
