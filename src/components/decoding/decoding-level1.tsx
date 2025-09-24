@@ -56,7 +56,14 @@ export function DecodingLevel1() {
     if (speechSynthesis.speaking) {
       speechSynthesis.cancel();
     }
-    const textToSpeak = `${text}.`;
+    
+    let textToSpeak = text;
+    if (text.length <= 2) {
+      textToSpeak = `${text} ${text}`;
+    } else {
+      textToSpeak = `${text}.`;
+    }
+    
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';
     utterance.rate = 0.9;

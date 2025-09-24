@@ -30,8 +30,12 @@ export function SyllableTableExercise() {
       speechSynthesis.cancel();
     }
     
-    // Add a period to help the TTS engine pronounce syllables correctly instead of spelling letters.
-    const textToSpeak = text.length <= 3 ? `${text}.` : text;
+    let textToSpeak = text;
+    if (text.length <= 2) {
+      textToSpeak = `${text} ${text}`;
+    } else {
+      textToSpeak = `${text}.`;
+    }
     
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';

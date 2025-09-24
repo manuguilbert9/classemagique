@@ -14,7 +14,14 @@ const SyllableTable = ({ title, data }: { title: string, data: string[][] }) => 
   const handleSpeak = (text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
     if (speechSynthesis.speaking) speechSynthesis.cancel();
-    const textToSpeak = text.length <= 3 ? `${text}.` : text;
+    
+    let textToSpeak = text;
+    if (text.length <= 2) {
+      textToSpeak = `${text} ${text}`;
+    } else {
+      textToSpeak = `${text}.`;
+    }
+
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';
     utterance.rate = 0.9;
