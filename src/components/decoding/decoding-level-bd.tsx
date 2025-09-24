@@ -4,6 +4,11 @@ import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
+import { useSearchParams } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { UserContext } from '@/context/user-context';
+import { addScore, saveHomeworkResult } from '@/services/scores';
+import { Save, CheckCircle } from 'lucide-react';
 
 const SyllableTable = ({ title, data, colored = false }: { title: string, data: string[][], colored?: boolean }) => {
   const handleSpeak = (text: string) => {
@@ -118,6 +123,13 @@ const realWordsLvlBD2 = [
 
 
 export function DecodingLevelBD() {
+  const { student } = React.useContext(UserContext);
+  const searchParams = useSearchParams();
+  const isHomework = searchParams.get('from') === 'devoirs';
+  const homeworkDate = searchParams.get('date');
+  const { toast } = useToast();
+  const [hasBeenSaved, setHasBeenSaved] = React.useState(false);
+
   const handleSpeak = (text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
     if (speechSynthesis.speaking) speechSynthesis.cancel();
@@ -126,6 +138,50 @@ export function DecodingLevelBD() {
     utterance.rate = 0.9;
     speechSynthesis.speak(utterance);
   };
+  
+  const handleSaveScore = async () => {
+    if (!student) {
+        toast({
+            variant: "destructive",
+            title: "Non connecté",
+            description: "Vous devez être connecté pour enregistrer un score.",
+        });
+        return;
+    }
+    if (hasBeenSaved) return;
+
+    setHasBeenSaved(true);
+    const score = 100;
+
+    if (isHomework && homeworkDate) {
+        await saveHomeworkResult({
+            userId: student.id,
+            date: homeworkDate,
+            skillSlug: 'decoding',
+            score: score,
+        });
+    } else {
+        await addScore({
+            userId: student.id,
+            skill: 'decoding',
+            score: score,
+            details: [{
+                question: 'Niveau Spécial b/d',
+                userAnswer: `Exercice terminé`,
+                correctAnswer: 'Exercice terminé',
+                status: 'completed'
+            }],
+            // We use 'B' as a proxy for this special level as it's not in the regular A-D progression
+            numberLevelSettings: { level: 'B' }
+        });
+    }
+
+    toast({
+        title: "Exercice terminé !",
+        description: "Ton score a bien été enregistré.",
+    });
+  };
+
 
   return (
     <Card>
@@ -163,7 +219,12 @@ export function DecodingLevelBD() {
                 ))}
             </div>
         </div>
-
+      </CardContent>
+       <CardContent className="pt-6 flex justify-center">
+         <Button onClick={handleSaveScore} disabled={!student || hasBeenSaved} size="lg">
+            {hasBeenSaved ? <CheckCircle className="mr-2"/> : <Save className="mr-2"/>}
+            {hasBeenSaved ? "Score enregistré !" : "J'ai terminé, j'enregistre mon score"}
+        </Button>
       </CardContent>
     </Card>
   );
