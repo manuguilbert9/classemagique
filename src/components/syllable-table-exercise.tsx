@@ -23,17 +23,20 @@ export function SyllableTableExercise() {
 
   const handleSpeak = useCallback((text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
-    
-    // Quick check to prevent spamming
+
     if (speechSynthesis.speaking) {
-        speechSynthesis.cancel();
+      speechSynthesis.cancel();
     }
     
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Add a period to help the TTS engine pronounce syllables correctly instead of spelling letters.
+    const textToSpeak = text.length <= 3 ? `${text}.` : text;
+    
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';
     utterance.rate = 0.9;
     speechSynthesis.speak(utterance);
   }, []);
+
 
   useEffect(() => {
     if (isRunning) {
@@ -115,7 +118,7 @@ export function SyllableTableExercise() {
             <CardContent className="space-y-6">
                 {selectedTable.vowelCombinations && (
                     <div>
-                        <h3 className="font-semibold text-lg mb-2">Je combine les voyelles :</h3>
+                        <h3 className="font-semibold text-lg mb-2">Je lis les voyelles :</h3>
                         <div className="flex flex-wrap gap-2 text-xl">
                             {selectedTable.vowelCombinations.map((syllable, index) => (
                                 <Button key={index} variant="outline" onClick={() => handleSpeak(syllable)} className="px-4 py-2 h-auto text-xl">{syllable}</Button>
