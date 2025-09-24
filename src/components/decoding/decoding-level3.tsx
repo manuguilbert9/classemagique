@@ -49,6 +49,27 @@ const pseudoWords: PseudoWord[] = [
     { word: 'ruméfi', syllables: ['ru', 'mé', 'fi'] },
 ];
 
+const syllablePronunciationMap: { [key: string]: string } = {
+  bo: "beau", do: "dos", ba: "bas", da: "das",
+  be: "beu", de: "de", bi: "bie", di: "die",
+  bu: "bue", du: "due", by: "bi", dy: "di",
+  lo: "l'eau", fo: "faux", pa: "pas", va: "vas",
+  ne: "nœud", ve: "veux", jo: "j'eau", ro: "rot",
+  li: "lie", lu: "lue", le: "le",
+  ri: "rie", ru: "rue", re: "re",
+  fu: "fut", fe: "feu",
+  mi: "mie", mu: "mue", me: "meuh",
+  ni: "nie", nu: "nue",
+  pi: "pie", pu: "pue", po: "peau", pe: "peu",
+  si: "si", su: "su", so: "seau",
+  tu: "tu", to: "tôt",
+  vi: "vie", vu: "vue", vo: "veau",
+  // With y
+  fy: "fi", jy: "ji", ly: "li", my: "mi", ny: "ni", 
+  py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vie",
+};
+
+
 export function DecodingLevel3() {
   const { student } = useContext(UserContext);
   const searchParams = useSearchParams();
@@ -67,7 +88,10 @@ export function DecodingLevel3() {
   const handleSpeak = useCallback((text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
     if (speechSynthesis.speaking) speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    
+    const textToSpeak = syllablePronunciationMap[text.toLowerCase()] || `${text}.`;
+    
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';
     utterance.rate = 0.9;
     speechSynthesis.speak(utterance);

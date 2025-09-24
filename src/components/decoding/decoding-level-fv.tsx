@@ -11,11 +11,23 @@ import { addScore, saveHomeworkResult } from '@/services/scores';
 import { Save, CheckCircle } from 'lucide-react';
 
 const syllablePronunciationMap: { [key: string]: string } = {
-  fo: "faux", va: "vas",
-  ve: "veux",
-  vu: "vue",
-  vo: "veau", ro: "rot", jo: "j'eau",
-  fy: "fi", vy: "vie",
+  bo: "beau", do: "dos", ba: "bas", da: "das",
+  be: "beu", de: "de", bi: "bie", di: "die",
+  bu: "bue", du: "due", dy: "di",
+  lo: "l'eau", fo: "faux", pa: "pas", va: "vas",
+  ne: "nœud", ve: "veux", jo: "j'eau", ro: "rot",
+  li: "lie", lu: "lue", le: "le",
+  ri: "rie", ru: "rue", re: "re",
+  fu: "fut", fe: "feu",
+  mi: "mie", mu: "mue", me: "meuh",
+  ni: "nie", nu: "nue",
+  pi: "pie", pu: "pue", po: "peau", pe: "peu",
+  si: "si", su: "su", so: "seau",
+  tu: "tu", to: "tôt",
+  vi: "vie", vu: "vue", vo: "veau",
+  // With y
+  fy: "fi", jy: "ji", ly: "li", my: "mi", ny: "ni", 
+  py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vie",
 };
 
 const SyllableTable = ({ title, data, colored = false }: { title: string, data: string[][], colored?: boolean }) => {
