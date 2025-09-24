@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Play, Pause, RefreshCw } from 'lucide-react';
 
 const realWords = [
-    { word: 'salade', syllables: ['sa', 'la', 'de'], silent: 'e' },
-    { word: 'limace', syllables: ['li', 'ma', 'ce'], silent: 'e' },
-    { word: 'tulipe', syllables: ['tu', 'li', 'pe'], silent: 'e' },
-    { word: 'tapis', syllables: ['ta', 'pis'], silent: 's' },
-    { word: 'souris', syllables: ['sou', 'ris'], silent: 's' },
-    { word: 'radis', syllables: ['ra', 'dis'], silent: 's' },
+    { word: 'salade', syllables: ['sa', 'la', 'd'], silent: 'e' },
+    { word: 'limace', syllables: ['li', 'ma', 'c'], silent: 'e' },
+    { word: 'tulipe', syllables: ['tu', 'li', 'p'], silent: 'e' },
+    { word: 'tapis', syllables: ['ta', 'pi'], silent: 's' },
+    { word: 'souris', syllables: ['sou', 'ri'], silent: 's' },
+    { word: 'radis', syllables: ['ra', 'di'], silent: 's' },
     { word: 'chapeau', syllables: ['cha', 'peau'], silent: '' },
     { word: 'couteau', syllables: ['cou', 'teau'], silent: '' },
     { word: 'rideau', syllables: ['ri', 'deau'], silent: '' },
