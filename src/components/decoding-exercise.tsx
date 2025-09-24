@@ -115,37 +115,55 @@ export function DecodingExercise() {
                 <CardDescription>Lis les syllabes autour du circuit le plus vite possible. Chronomètre ton temps pour un tour complet !</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-6">
-                <div className="relative w-[300px] h-[450px] sm:w-[400px] sm:h-[600px]">
+                <div className="relative w-full h-[300px] sm:h-[400px]">
                     <svg
                       className="absolute inset-0 w-full h-full"
-                      viewBox="0 0 100 150"
-                      preserveAspectRatio="none"
+                      viewBox="0 0 200 120"
+                      preserveAspectRatio="xMidYMid meet"
                     >
+                      <defs>
+                        <pattern id="checkers" patternUnits="userSpaceOnUse" width="10" height="10">
+                          <rect width="5" height="5" fill="black"/>
+                          <rect x="5" y="5" width="5" height="5" fill="black"/>
+                          <rect y="5" width="5" height="5" fill="white"/>
+                          <rect x="5" width="5" height="5" fill="white"/>
+                        </pattern>
+                      </defs>
+                       {/* Outer track */}
                       <path
-                        d="M 50,5 
-                           A 45,70 0 1,1 50,145 
-                           A 45,70 0 1,1 50,5 Z"
-                        fill="hsl(var(--muted))"
-                        stroke="hsl(var(--border))"
-                        strokeWidth="1"
+                        d="M 100,10 
+                           A 90,50 0 1,1 100,110 
+                           A 90,50 0 1,1 100,10 Z"
+                        fill="#4A4A4A"
                       />
-                      <path
-                        d="M 50,25 
-                           A 25,50 0 1,1 50,125 
-                           A 25,50 0 1,1 50,25 Z"
+                       {/* Inner grass */}
+                       <path
+                        d="M 100,30 
+                           A 60,30 0 1,1 100,90 
+                           A 60,30 0 1,1 100,30 Z"
                         fill="hsl(var(--background))"
-                        stroke="hsl(var(--border))"
-                        strokeWidth="0.5"
                       />
+                      {/* Dashed line */}
+                      <path
+                        d="M 100,20
+                          A 75,40 0 1,1 100,100
+                          A 75,40 0 1,1 100,20 Z"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="1"
+                        strokeDasharray="4 4"
+                      />
+                      {/* Finish line */}
+                      <rect x="95" y="99" width="10" height="15" fill="url(#checkers)" transform="rotate(12, 100, 100)" />
                     </svg>
                     {raceTrackSyllables.map((syllable, index) => {
                         const total = raceTrackSyllables.length;
                         const angle = (index / total) * 2 * Math.PI;
-                        // Adjust these values to position syllables along the track
+                        
                         const xOffset = 50; // %
                         const yOffset = 50; // %
-                        const xRadius = 40; // %
-                        const yRadius = 46; // %
+                        const xRadius = 45; // %
+                        const yRadius = 40; // %
                         
                         const x = xOffset + xRadius * Math.cos(angle - Math.PI / 2);
                         const y = yOffset + yRadius * Math.sin(angle - Math.PI / 2);
@@ -153,7 +171,7 @@ export function DecodingExercise() {
                         return (
                             <div 
                                 key={index} 
-                                className="absolute text-lg sm:text-xl font-bold cursor-pointer hover:scale-110 transition-transform"
+                                className="absolute text-lg sm:text-xl font-bold cursor-pointer transition-transform hover:scale-110 p-2 rounded bg-yellow-300 border-2 border-black shadow-md"
                                 style={{ top: `${y}%`, left: `${x}%`, transform: 'translate(-50%, -50%)' }}
                                 onClick={() => handleSpeak(syllable)}
                             >
