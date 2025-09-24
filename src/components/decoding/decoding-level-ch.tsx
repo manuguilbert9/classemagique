@@ -10,7 +10,7 @@ import { addScore, saveHomeworkResult } from '@/services/scores';
 import { Save, CheckCircle } from 'lucide-react';
 
 const syllablePronunciationMap: { [key: string]: string } = {
-  cha: "chat", che: "cheu", chi: "chi", cho: "chaud", chu: "chu", chy: "chi",
+  cha: "chat", che: "cheu", chi: "chi", cho: "chaud", chu: "chu", chy: "chi", jo: "j'eau",
 };
 
 const SyllableTable = ({ title, data }: { title: string, data: string[][] }) => {

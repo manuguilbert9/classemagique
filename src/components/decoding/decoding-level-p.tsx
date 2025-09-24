@@ -10,7 +10,7 @@ import { addScore, saveHomeworkResult } from '@/services/scores';
 import { Save, CheckCircle } from 'lucide-react';
 
 const syllablePronunciationMap: { [key: string]: string } = {
-  pa: "pas", pe: "peu", pi: "pie", po: "peau", pu: "pue", py: "pi",
+  pa: "pas", pe: "peu", pi: "pie", po: "peau", pu: "pue", py: "pi", jo: "j'eau",
 };
 
 const SyllableTable = ({ title, data }: { title: string, data: string[][] }) => {

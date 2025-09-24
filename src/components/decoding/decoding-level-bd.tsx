@@ -13,7 +13,7 @@ import { Save, CheckCircle } from 'lucide-react';
 const syllablePronunciationMap: { [key: string]: string } = {
   bo: "beau", do: "dos", ba: "bas", da: "das",
   be: "beu", de: "de", bi: "bie", di: "die",
-  bu: "bue", du: "due", by: "bi", dy: "di",
+  bu: "bue", du: "due", by: "bi", dy: "di", jo: "j'eau"
 };
 
 const SyllableTable = ({ title, data, colored = false }: { title: string, data: string[][], colored?: boolean }) => {

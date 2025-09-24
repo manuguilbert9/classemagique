@@ -15,7 +15,7 @@ type ExerciseState = 'selecting' | 'reading';
 const ITEMS_PER_ROW = 8; // Number of items per row in the unified grid
 
 const syllablePronunciationMap: { [key: string]: string } = {
-  lo: "l'eau", fo: "faux", pa: "pas", va: "vas", ja: "jas",
+  lo: "l'eau", fo: "faux", pa: "pas", va: "vas", jo: "j'eau",
   li: "lie", lu: "lue", le: "le",
   ri: "rie", ru: "rue", re: "re",
   fi: "fil", fu: "fut", fe: "feu",
@@ -23,8 +23,8 @@ const syllablePronunciationMap: { [key: string]: string } = {
   ni: "nie", nu: "nue", ne: "nœud",
   pi: "pie", pu: "pue", po: "peau", pe: "peu",
   si: "si", su: "su", so: "seau",
-  tu: "tu", to: "tôt",
-  vi: "vie", vu: "vue", vo: "veau", ve: "vœux", ro: "rot",
+  tu: "tu", to: "tôt", ti: "ti.",
+  vi: "vie", vu: "vue", vo: "veau", ve: "veux", ro: "rot",
   // With y
   fy: "fi", jy: "ji", ly: "li", my: "mi", ny: "ni", 
   py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vie",
