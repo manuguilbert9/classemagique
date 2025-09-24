@@ -18,46 +18,49 @@ export interface SyllableTable {
     words?: string[];
 }
 
+const baseVowels = ['a', 'i', 'u', 'o', 'é'];
+// Helper to shuffle an array
+const shuffleArray = (array: any[]) => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+const generateVowelMix = () => shuffleArray([...baseVowels, ...baseVowels, ...baseVowels, ...baseVowels]);
+
+
 export const allSyllableTables: SyllableTable[] = [
     {
         id: 1,
         step: 'Étape 1 : Les voyelles simples',
-        title: 'Tableau 1 : Son [a]',
-        newSound: 'a (ananas)',
-        vowels: ['a'],
+        title: 'Je lis les voyelles (1)',
+        vowelCombinations: generateVowelMix(),
     },
     {
         id: 2,
         step: 'Étape 1 : Les voyelles simples',
-        title: 'Tableau 2 : Son [i]',
-        newSound: 'i (ibis)',
-        vowels: ['a', 'i'],
-        vowelCombinations: ['ai', 'ia'],
+        title: 'Je lis les voyelles (2)',
+        vowelCombinations: generateVowelMix(),
     },
     {
         id: 3,
         step: 'Étape 1 : Les voyelles simples',
-        title: 'Tableau 3 : Son [u]',
-        newSound: 'u (usine)',
-        vowels: ['a', 'i', 'u'],
-        vowelCombinations: ['au', 'ua', 'iu', 'ui', 'ai', 'ia'],
+        title: 'Je lis les voyelles (3)',
+        vowelCombinations: generateVowelMix(),
     },
     {
         id: 4,
         step: 'Étape 1 : Les voyelles simples',
-        title: 'Tableau 4 : Son [o]',
-        newSound: 'o (orange)',
-        vowels: ['a', 'i', 'u', 'o'],
-        vowelCombinations: ['oi', 'io', 'ou', 'ao', 'oa', 'ai', 'ia', 'au', 'ua', 'iu', 'ui'],
-        words: ['où'],
+        title: 'Je lis les voyelles (4)',
+        vowelCombinations: generateVowelMix(),
     },
     {
         id: 5,
         step: 'Étape 1 : Les voyelles simples',
-        title: 'Tableau 5 : Son [é]',
-        newSound: 'é, er, ez (bébé, panier, nez)',
-        vowels: ['a', 'i', 'u', 'o', 'é'],
-        vowelCombinations: ['éa', 'éi', 'éo', 'oé', 'ié', 'aé', 'oi', 'io', 'ou', 'ao', 'oa', 'ai', 'ia', 'au', 'ua', 'iu', 'ui'],
+        title: 'Je lis les voyelles (5)',
+        vowelCombinations: generateVowelMix(),
     },
     {
         id: 6,
