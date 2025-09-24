@@ -6,7 +6,7 @@ const nextConfig = {
   
   // Configuration pour le service des images
   images: {
-    unoptimized: true,
+    unoptimized: false,
   },
 };
 

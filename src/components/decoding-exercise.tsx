@@ -7,8 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RefreshCw, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
-import RaceTrackImage from '../../public/images/race-track.png';
 
 const syllableTable = {
     headers: ['a', 'e', 'i', 'o', 'u', 'y'],
@@ -118,7 +116,28 @@ export function DecodingExercise() {
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-6">
                 <div className="relative w-[300px] h-[450px] sm:w-[400px] sm:h-[600px]">
-                    <Image src={RaceTrackImage.src} layout="fill" objectFit="contain" alt="Circuit de course"/>
+                    <svg
+                      className="absolute inset-0 w-full h-full"
+                      viewBox="0 0 100 150"
+                      preserveAspectRatio="none"
+                    >
+                      <path
+                        d="M 50,5 
+                           A 45,70 0 1,1 50,145 
+                           A 45,70 0 1,1 50,5 Z"
+                        fill="hsl(var(--muted))"
+                        stroke="hsl(var(--border))"
+                        strokeWidth="1"
+                      />
+                      <path
+                        d="M 50,25 
+                           A 25,50 0 1,1 50,125 
+                           A 25,50 0 1,1 50,25 Z"
+                        fill="hsl(var(--background))"
+                        stroke="hsl(var(--border))"
+                        strokeWidth="0.5"
+                      />
+                    </svg>
                     {raceTrackSyllables.map((syllable, index) => {
                         const total = raceTrackSyllables.length;
                         const angle = (index / total) * 2 * Math.PI;
