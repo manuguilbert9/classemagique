@@ -8,10 +8,11 @@ import { DecodingLevel3 } from './decoding/decoding-level3';
 import { DecodingLevelBD } from './decoding/decoding-level-bd';
 import { DecodingLevelFV } from './decoding/decoding-level-fv';
 import { DecodingLevelP } from './decoding/decoding-level-p';
+import { DecodingLevelCH } from './decoding/decoding-level-ch';
 import { Button } from './ui/button';
 import { ArrowLeft } from 'lucide-react';
 
-type Level = 1 | 2 | 3 | 'bd' | 'fv' | 'p';
+type Level = 1 | 2 | 3 | 'bd' | 'fv' | 'p' | 'ch';
 
 export function DecodingExercise() {
   const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
@@ -30,6 +31,8 @@ export function DecodingExercise() {
         return <DecodingLevelFV />;
       case 'p':
         return <DecodingLevelP />;
+      case 'ch':
+        return <DecodingLevelCH />;
       default:
         return null;
     }
@@ -65,6 +68,9 @@ export function DecodingExercise() {
         </Button>
          <Button onClick={() => setSelectedLevel('p')} className="h-24 text-xl w-full">
           Son [p]
+        </Button>
+         <Button onClick={() => setSelectedLevel('ch')} className="h-24 text-xl w-full">
+          Son [ch]
         </Button>
          <Button onClick={() => setSelectedLevel('bd')} className="h-24 text-xl w-full">
           Confusion b / d
