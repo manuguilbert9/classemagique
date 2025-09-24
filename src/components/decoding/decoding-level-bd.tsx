@@ -97,6 +97,25 @@ const realWordsLvlBD1 = [
     { word: 'barre', syllables: ['bar', 're'], silent: '' },
 ];
 
+const realWordsLvlBD2 = [
+    { word: 'salade', syllables: ['sa', 'la', 'de'], silent: '' },
+    { word: 'malade', syllables: ['ma', 'la', 'de'], silent: '' },
+    { word: 'timide', syllables: ['ti', 'mi', 'de'], silent: '' },
+    { word: 'banane', syllables: ['ba', 'na', 'ne'], silent: '' },
+    { word: 'rapide', syllables: ['ra', 'pi', 'de'], silent: '' },
+    { word: 'lavabo', syllables: ['la', 'va', 'bo'], silent: '' },
+    { word: 'bobine', syllables: ['bo', 'bi', 'ne'], silent: '' },
+    { word: 'bassine', syllables: ['bas', 'si', 'ne'], silent: '' },
+    { word: 'défile', syllables: ['dé', 'fi', 'le'], silent: '' },
+    { word: 'dévale', syllables: ['dé', 'va', 'le'], silent: '' },
+    { word: 'solide', syllables: ['so', 'li', 'de'], silent: '' },
+    { word: 'adore', syllables: ['a', 'do', 're'], silent: '' },
+    { word: 'débute', syllables: ['dé', 'bu', 'te'], silent: '' },
+    { word: 'abime', syllables: ['a', 'bi', 'me'], silent: '' },
+    { word: 'domino', syllables: ['do', 'mi', 'no'], silent: '' },
+    { word: 'pédale', syllables: ['pé', 'da', 'le'], silent: '' },
+];
+
 
 export function DecodingLevelBD() {
   const handleSpeak = (text: string) => {
@@ -121,10 +140,20 @@ export function DecodingLevelBD() {
         <SyllableTable title="Tableau de syllabes avec les lettres b et d :" data={tableBD} colored />
         <SyllableTable title="Tableau de syllabes avec les lettres b et d (sans aide) :" data={tableBD} />
         
-        <div className="space-y-2">
+        <div className="space-y-4">
             <h4 className="font-semibold">Je lis des mots :</h4>
              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {realWordsLvlBD1.map(({ word, syllables, silent }, index) => (
+                    <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
+                        <span className="text-blue-600">{syllables[0]}</span>
+                        <span className="text-red-600">{syllables[1]}</span>
+                        {syllables[2] && <span className="text-blue-600">{syllables[2]}</span>}
+                        {silent && <span className="text-gray-400">{silent}</span>}
+                    </Button>
+                ))}
+            </div>
+             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {realWordsLvlBD2.map(({ word, syllables, silent }, index) => (
                     <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
                         <span className="text-blue-600">{syllables[0]}</span>
                         <span className="text-red-600">{syllables[1]}</span>
