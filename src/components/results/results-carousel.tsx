@@ -10,35 +10,58 @@ import type { Score } from '@/services/scores';
 import { getSkillBySlug, allSkillCategories, type SkillCategory } from '@/lib/skills';
 import { ScoreTube } from '../score-tube';
 import { Rocket } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 
 interface ResultCardProps {
     skillSlug: string;
     averageScore: number;
     count: number;
+    scores: Score[]; // Pass all scores for this skill to show details
 }
 
-function ResultCard({ skillSlug, averageScore, count }: ResultCardProps) {
+function ResultCard({ skillSlug, averageScore, count, scores }: ResultCardProps) {
     const skill = getSkillBySlug(skillSlug);
     if (!skill) return null;
 
+    const isMCLM = skill.slug === 'fluence' || skill.slug === 'reading-race';
+
     return (
-        <Card className="h-full flex flex-col items-center justify-center text-center p-4">
-            <div className="text-primary [&>svg]:h-12 [&>svg]:w-12 mb-2">
-                {skill.icon}
-            </div>
-            <h3 className="font-headline text-xl">{skill.name}</h3>
-            {skill.slug === 'fluence' || skill.slug === 'reading-race' ? (
-                <div className="flex flex-col items-center justify-center mt-2">
-                    <Rocket className="h-10 w-10 text-muted-foreground" />
-                    <p className="text-2xl font-bold font-headline mt-1">{averageScore}</p>
-                    <p className="text-xs text-muted-foreground">MCLM</p>
+        <Popover>
+            <PopoverTrigger asChild>
+                <Card className="h-full flex flex-col items-center justify-center text-center p-4 cursor-pointer hover:shadow-md hover:border-primary transition-all">
+                    <div className="text-primary [&>svg]:h-12 [&>svg]:w-12 mb-2">
+                        {skill.icon}
+                    </div>
+                    <h3 className="font-headline text-xl">{skill.name}</h3>
+                    {isMCLM ? (
+                        <div className="flex flex-col items-center justify-center mt-2">
+                            <Rocket className="h-10 w-10 text-muted-foreground" />
+                            <p className="text-2xl font-bold font-headline mt-1">{averageScore}</p>
+                            <p className="text-xs text-muted-foreground">MCLM</p>
+                        </div>
+                    ) : (
+                        <ScoreTube score={averageScore} />
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">({count} {count > 1 ? 'exercices' : 'exercice'})</p>
+                </Card>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2">
+                <div className="space-y-2">
+                    <h4 className="font-medium leading-none text-center pb-2 border-b">Historique</h4>
+                    <ul className="space-y-1">
+                        {scores.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5).map(score => (
+                            <li key={score.id} className="text-sm flex justify-between items-center p-1 rounded-md hover:bg-muted">
+                                <span>{format(new Date(score.createdAt), 'd MMM yy', { locale: fr })}</span>
+                                <span className="font-semibold">{isMCLM ? `${score.score} MCLM` : `${Math.round(score.score)}%`}</span>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
-            ) : (
-                <ScoreTube score={averageScore} />
-            )}
-            <p className="text-xs text-muted-foreground mt-1">({count} {count > 1 ? 'exercices' : 'exercice'})</p>
-        </Card>
+            </PopoverContent>
+        </Popover>
     )
 }
 
@@ -55,16 +78,17 @@ interface ResultsCarouselProps {
 export function ResultsCarousel({ title, subtitle, icon, scores, onPrevious, onNext, isNextDisabled }: ResultsCarouselProps) {
     
     const resultsBySkill = React.useMemo(() => {
-        const grouped: Record<string, { totalScore: number; count: number, category: SkillCategory }> = {};
+        const grouped: Record<string, { totalScore: number; count: number, category: SkillCategory, scores: Score[] }> = {};
         
         scores.forEach(score => {
             const skill = getSkillBySlug(score.skill);
             if(skill) {
                 if (!grouped[score.skill]) {
-                    grouped[score.skill] = { totalScore: 0, count: 0, category: skill.category };
+                    grouped[score.skill] = { totalScore: 0, count: 0, category: skill.category, scores: [] };
                 }
                 grouped[score.skill].totalScore += score.score;
                 grouped[score.skill].count += 1;
+                grouped[score.skill].scores.push(score);
             }
         });
 
@@ -73,6 +97,7 @@ export function ResultsCarousel({ title, subtitle, icon, scores, onPrevious, onN
             averageScore: Math.round(data.totalScore / data.count),
             count: data.count,
             category: data.category,
+            scores: data.scores,
         }));
         
         // Sort by category order, then by skill name
