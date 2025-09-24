@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -13,7 +14,8 @@ const SyllableTable = ({ title, data }: { title: string, data: string[][] }) => 
   const handleSpeak = (text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
     if (speechSynthesis.speaking) speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const textToSpeak = text.length <= 3 ? `${text}.` : text;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'fr-FR';
     utterance.rate = 0.9;
     speechSynthesis.speak(utterance);

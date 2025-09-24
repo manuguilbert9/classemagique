@@ -115,7 +115,7 @@ export function DecodingLevel1() {
             skill: 'decoding',
             score: score,
             details: [{
-                question: 'Niveau 1',
+                question: 'Syllabes simples',
                 userAnswer: `Temps: ${time}s, Vitesse: ${syllablesPerMinute} syll/min`,
                 correctAnswer: 'Exercice terminé',
                 status: 'completed'

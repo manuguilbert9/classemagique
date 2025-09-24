@@ -121,7 +121,7 @@ export function DecodingLevel3() {
             skill: 'decoding',
             score: score,
             details: [{
-                question: 'Niveau 3',
+                question: 'Mots à trois syllabes',
                 userAnswer: `Temps circuit: ${time}s, Vitesse: ${wordsPerMinute} mots/min`,
                 correctAnswer: 'Exercice terminé',
                 status: 'completed'

@@ -144,7 +144,7 @@ export function DecodingLevel2() {
             skill: 'decoding',
             score: score,
             details: [{
-                question: 'Niveau 2',
+                question: 'Mots à deux syllabes',
                 userAnswer: `Temps circuit: ${time}s, Vitesse: ${wordsPerMinute} mots/min`,
                 correctAnswer: 'Exercice terminé',
                 status: 'completed'
