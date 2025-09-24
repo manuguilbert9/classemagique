@@ -20,28 +20,28 @@ const realWords = [
     { word: 'rôti', syllables: ['rô', 'ti'], silent: '' },
     { word: 'vide', syllables: ['vi', 'de'], silent: '' },
     { word: 'mare', syllables: ['ma', 're'], silent: '' },
-    { word: 'momie', syllables: ['mo', 'mi'], silent: 'e' },
+    { word: 'momie', syllables: ['mo', 'mie'], silent: '' },
     { word: 'radis', syllables: ['ra', 'di'], silent: 's' },
-    { word: 'assis', syllables: ['as', 'si'], silent: 's' },
+    { word: 'assis', syllables: ['as', 'sis'], silent: '' },
     { word: 'relis', syllables: ['re', 'li'], silent: 's' },
     { word: 'tapis', syllables: ['ta', 'pi'], silent: 's' },
     { word: 'lama', syllables: ['la', 'ma'], silent: '' },
-    { word: 'furie', syllables: ['fu', 'ri'], silent: 'e' },
-    { word: 'folie', syllables: ['fo', 'li'], silent: 'e' },
+    { word: 'furie', syllables: ['fu', 'rie'], silent: '' },
+    { word: 'folie', syllables: ['fo', 'lie'], silent: '' },
     { word: 'râle', syllables: ['râ', 'le'], silent: '' },
-    { word: 'série', syllables: ['sé', 'ri'], silent: 'e' },
+    { word: 'série', syllables: ['sé', 'rie'], silent: '' },
     { word: 'lasso', syllables: ['las', 'so'], silent: '' },
     { word: 'tape', syllables: ['ta', 'pe'], silent: '' },
     { word: 'rime', syllables: ['ri', 'me'], silent: '' },
     { word: 'malle', syllables: ['mal', 'le'], silent: '' },
     { word: 'Lola', syllables: ['Lo', 'la'], silent: '' },
     { word: 'Rémi', syllables: ['Ré', 'mi'], silent: '' },
-    { word: 'mamie', syllables: ['ma', 'mi'], silent: 'e' },
+    { word: 'mamie', syllables: ['ma', 'mie'], silent: '' },
     { word: 'file', syllables: ['fi', 'le'], silent: '' },
-    { word: 'menue', syllables: ['me', 'nu'], silent: 'e' },
+    { word: 'menue', syllables: ['me', 'nue'], silent: '' },
     { word: 'roche', syllables: ['ro', 'che'], silent: '' },
     { word: 'chassé', syllables: ['chas', 'sé'], silent: '' },
-    { word: 'morue', syllables: ['mo', 'ru'], silent: 'e' },
+    { word: 'morue', syllables: ['mo', 'rue'], silent: '' },
     { word: 'lâche', syllables: ['lâ', 'che'], silent: '' },
     { word: 'Mila', syllables: ['Mi', 'la'], silent: '' },
     { word: 'passe', syllables: ['pas', 'se'], silent: '' },
@@ -54,9 +54,9 @@ const realWords = [
     { word: 'vache', syllables: ['va', 'che'], silent: '' },
     { word: 'ami', syllables: ['a', 'mi'], silent: '' },
     { word: 'nappe', syllables: ['nap', 'pe'], silent: '' },
-    { word: 'repas', syllables: ['re', 'pa'], silent: 's' }, // Duplicate from above but included as per image
-    { word: 'Jules', syllables: ['Ju', 'le'], silent: 's' },
-    { word: 'Paris', syllables: ['Pa', 'ri'], silent: 's' },
+    { word: 'repas', syllables: ['re', 'pa'], silent: 's' },
+    { word: 'Jules', syllables: ['Ju', 'les'], silent: '' },
+    { word: 'Paris', syllables: ['Pa', 'ris'], silent: '' },
 ];
 
 const pseudoWords = [
@@ -113,8 +113,8 @@ export function DecodingLevel2() {
                 <CardDescription>Clique sur un mot pour l'entendre. Les syllabes sont colorées pour t'aider.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {realWords.map(({ word, syllables, silent }) => (
-                    <Button key={word} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
+                {realWords.map(({ word, syllables, silent }, index) => (
+                    <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
                         <span className="text-blue-600">{syllables[0]}</span>
                         <span className="text-red-600">{syllables[1]}</span>
                         {syllables[2] && <span className="text-blue-600">{syllables[2]}</span>}
