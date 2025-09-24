@@ -28,7 +28,7 @@ const syllablePronunciationMap: { [key: string]: string } = {
   fy: "fi", jy: "ji", ly: "li", my: "mi", ny: "ni", 
   py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vie",
   // Son [ch]
-  cha: "chat", che: "cheu", chi: "chi", cho: "chaud", chu: "chu", chy: "chi",
+  cha: "chat", che: "cheu", chi: "chie", cho: "chaud", chu: "chue", chy: "chie",
 };
 
 const SyllableTable = ({ title, data }: { title: string, data: string[][] }) => {
