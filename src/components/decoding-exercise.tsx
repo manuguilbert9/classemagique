@@ -159,7 +159,7 @@ export function DecodingExercise() {
                         strokeDasharray="4 4"
                       />
                       {/* Finish line */}
-                      <rect x="95" y="99" width="10" height="15" fill="url(#checkers)" transform="rotate(12, 100, 100)" />
+                      <rect x="90" y="99" width="10" height="15" fill="url(#checkers)" transform="rotate(12, 100, 100)" />
                     </svg>
                     {isClient && raceTrackSyllables.map((syllable, index) => {
                         const total = raceTrackSyllables.length;
