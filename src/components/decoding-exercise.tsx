@@ -6,10 +6,11 @@ import { DecodingLevel1 } from './decoding/decoding-level1';
 import { DecodingLevel2 } from './decoding/decoding-level2';
 import { DecodingLevel3 } from './decoding/decoding-level3';
 import { DecodingLevelBD } from './decoding/decoding-level-bd';
+import { DecodingLevelFV } from './decoding/decoding-level-fv';
 import { Button } from './ui/button';
 import { ArrowLeft } from 'lucide-react';
 
-type Level = 1 | 2 | 3 | 'bd';
+type Level = 1 | 2 | 3 | 'bd' | 'fv';
 
 export function DecodingExercise() {
   const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
@@ -24,6 +25,8 @@ export function DecodingExercise() {
         return <DecodingLevel3 />;
       case 'bd':
         return <DecodingLevelBD />;
+      case 'fv':
+        return <DecodingLevelFV />;
       default:
         return null;
     }
@@ -47,7 +50,7 @@ export function DecodingExercise() {
         <CardTitle className="font-headline text-3xl text-center">Exercice de Décodage</CardTitle>
         <CardDescription className="text-center">Choisis ton niveau pour commencer l'entraînement.</CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-4 justify-center p-8">
+      <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4 justify-center p-8">
         <Button onClick={() => setSelectedLevel(1)} className="h-24 text-xl w-full">
           Niveau 1
           <span className="block text-sm font-normal mt-1">Syllabes simples</span>
@@ -63,6 +66,10 @@ export function DecodingExercise() {
          <Button onClick={() => setSelectedLevel('bd')} className="h-24 text-xl w-full">
           Niveau Spécial
           <span className="block text-sm font-normal mt-1">Confusion b / d</span>
+        </Button>
+         <Button onClick={() => setSelectedLevel('fv')} className="h-24 text-xl w-full">
+          Niveau Spécial
+          <span className="block text-sm font-normal mt-1">Confusion f / v</span>
         </Button>
       </CardContent>
     </Card>
