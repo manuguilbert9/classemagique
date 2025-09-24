@@ -5,12 +5,15 @@ import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '../ui/carousel';
 import { Button } from '../ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import type { Score } from '@/services/scores';
+import { ArrowLeft, ArrowRight, CheckCircle, FileText, XCircle } from 'lucide-react';
+import type { Score, ScoreDetail } from '@/services/scores';
 import { getSkillBySlug, allSkillCategories, type SkillCategory } from '@/lib/skills';
 import { ScoreTube } from '../score-tube';
 import { Rocket } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '../ui/scroll-area';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -24,44 +27,92 @@ interface ResultCardProps {
 
 function ResultCard({ skillSlug, averageScore, count, scores }: ResultCardProps) {
     const skill = getSkillBySlug(skillSlug);
+    const [selectedScore, setSelectedScore] = React.useState<Score | null>(null);
+
     if (!skill) return null;
 
     const isMCLM = skill.slug === 'fluence' || skill.slug === 'reading-race';
 
     return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <Card className="h-full flex flex-col items-center justify-center text-center p-4 cursor-pointer hover:shadow-md hover:border-primary transition-all">
-                    <div className="text-primary [&>svg]:h-12 [&>svg]:w-12 mb-2">
-                        {skill.icon}
-                    </div>
-                    <h3 className="font-headline text-xl">{skill.name}</h3>
-                    {isMCLM ? (
-                        <div className="flex flex-col items-center justify-center mt-2">
-                            <Rocket className="h-10 w-10 text-muted-foreground" />
-                            <p className="text-2xl font-bold font-headline mt-1">{averageScore}</p>
-                            <p className="text-xs text-muted-foreground">MCLM</p>
+        <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedScore(null)}>
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Card className="h-full flex flex-col items-center justify-center text-center p-4 cursor-pointer hover:shadow-md hover:border-primary transition-all">
+                        <div className="text-primary [&>svg]:h-12 [&>svg]:w-12 mb-2">
+                            {skill.icon}
                         </div>
-                    ) : (
-                        <ScoreTube score={averageScore} />
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">({count} {count > 1 ? 'exercices' : 'exercice'})</p>
-                </Card>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-2">
-                <div className="space-y-2">
-                    <h4 className="font-medium leading-none text-center pb-2 border-b">Historique</h4>
-                    <ul className="space-y-1">
-                        {scores.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5).map(score => (
-                            <li key={score.id} className="text-sm flex justify-between items-center p-1 rounded-md hover:bg-muted">
-                                <span>{format(new Date(score.createdAt), 'd MMM yy', { locale: fr })}</span>
-                                <span className="font-semibold">{isMCLM ? `${score.score} MCLM` : `${Math.round(score.score)}%`}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </PopoverContent>
-        </Popover>
+                        <h3 className="font-headline text-xl">{skill.name}</h3>
+                        {isMCLM ? (
+                            <div className="flex flex-col items-center justify-center mt-2">
+                                <Rocket className="h-10 w-10 text-muted-foreground" />
+                                <p className="text-2xl font-bold font-headline mt-1">{averageScore}</p>
+                                <p className="text-xs text-muted-foreground">MCLM</p>
+                            </div>
+                        ) : (
+                            <ScoreTube score={averageScore} />
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">({count} {count > 1 ? 'exercices' : 'exercice'})</p>
+                    </Card>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-2">
+                    <div className="space-y-2">
+                        <h4 className="font-medium leading-none text-center pb-2 border-b">Historique</h4>
+                        <ul className="space-y-1">
+                            {scores.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5).map(score => (
+                                <DialogTrigger asChild key={score.id}>
+                                    <li 
+                                        className="text-sm flex justify-between items-center p-1 rounded-md hover:bg-muted cursor-pointer"
+                                        onClick={() => setSelectedScore(score)}
+                                    >
+                                        <span>{format(new Date(score.createdAt), 'd MMM yy', { locale: fr })}</span>
+                                        <span className="font-semibold">{isMCLM ? `${score.score} MCLM` : `${Math.round(score.score)}%`}</span>
+                                    </li>
+                                </DialogTrigger>
+                            ))}
+                        </ul>
+                    </div>
+                </PopoverContent>
+            </Popover>
+
+            {selectedScore && (
+                <DialogContent className="max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Détail de la session</DialogTitle>
+                        <DialogDescription>
+                            {skill.name} - {format(new Date(selectedScore.createdAt), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedScore.details && selectedScore.details.length > 0 ? (
+                        <ScrollArea className="max-h-[60vh] pr-4">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Question</TableHead>
+                                        <TableHead>Ta réponse</TableHead>
+                                        <TableHead className="text-right">Statut</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {selectedScore.details?.map((detail, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell className="text-xs font-mono max-w-xs truncate">{detail.question}</TableCell>
+                                            <TableCell className="text-xs font-mono max-w-xs truncate">{detail.userAnswer}</TableCell>
+                                            <TableCell className="text-right">
+                                                {detail.status === 'correct' ? <CheckCircle className="h-4 w-4 text-green-500 inline"/> : <XCircle className="h-4 w-4 text-red-500 inline"/>}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
+                     ) : (
+                        <div className="py-8 text-center text-muted-foreground">
+                            Aucun détail disponible pour cette session.
+                        </div>
+                     )}
+                </DialogContent>
+            )}
+        </Dialog>
     )
 }
 
