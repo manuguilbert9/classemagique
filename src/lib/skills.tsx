@@ -82,7 +82,7 @@ const DecodageIcon = () => (
     xmlns="http://www.w3.org/2000/svg"
     width="1em"
     height="1em"
-    viewBox="0 0 120 40"
+    viewBox="0 0 180 40"
     fill="currentColor"
   >
     <text x="0" y="30" fontFamily="Arial, sans-serif" fontSize="40" fontWeight="bold">
