@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -17,14 +16,14 @@ const ITEMS_PER_ROW = 8; // Number of items per row in the unified grid
 
 const syllablePronunciationMap: { [key: string]: string } = {
   lo: "l'eau", fo: "faux", pa: "pas", va: "vas", ja: "jas",
-  la: "las", li: "lie", lu: "lue", le: "le",
-  ra: "ras", ri: "rie", ru: "rue", re: "re",
-  fa: "fas", fi: "fil", fu: "fut", fe: "feu",
-  ma: "mas", mi: "mie", mu: "mue", me: "meuh",
-  na: "nas", ni: "nie", nu: "nue", ne: "nez",
+  li: "lie", lu: "lue", le: "le",
+  ri: "rie", ru: "rue", re: "re",
+  fi: "fil", fu: "fut", fe: "feu",
+  mi: "mie", mu: "mue", me: "meuh",
+  ni: "nie", nu: "nue", ne: "nœud",
   pi: "pie", pu: "pue", po: "peau", pe: "peu",
-  sa: "sas", si: "si", su: "su", so: "seau",
-  ta: "tas", ti: "tie", tu: "tu", to: "tôt",
+  si: "si", su: "su", so: "seau",
+  ti: "tie", tu: "tu", to: "tôt",
   vi: "vie", vu: "vue", vo: "veau", ve: "veu",
   bo: "beau", do: "dos", da: "das",
   be: "beu", de: "de", bi: "bie", di: "die",

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -12,8 +11,12 @@ import { addScore, saveHomeworkResult } from '@/services/scores';
 import { Save, CheckCircle } from 'lucide-react';
 
 const syllablePronunciationMap: { [key: string]: string } = {
-  fa: "fas", fe: "feu", fi: "fil", fo: "faux", fu: "fut", fy: "fi",
-  va: "vas", ve: "veu", vi: "vie", vo: "veau", vu: "vue", vy: "vi",
+  fo: "faux", va: "vas",
+  fe: "feu", ve: "veu",
+  fi: "fil", vi: "vie",
+  fu: "fut", vu: "vue",
+  vo: "veau",
+  fy: "fi", vy: "vi",
 };
 
 const SyllableTable = ({ title, data, colored = false }: { title: string, data: string[][], colored?: boolean }) => {
