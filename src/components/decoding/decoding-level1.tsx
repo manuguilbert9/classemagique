@@ -45,6 +45,9 @@ const syllablePronunciationMap: { [key: string]: string } = {
   sa: "sas", si: "si", su: "su", so: "seau",
   ta: "tas", ti: "tie", tu: "tu", to: "tôt",
   vi: "vie", vu: "vue", vo: "veau", ve: "veu",
+  // With y
+  fy: "fi", jy: "ji", ly: "li", my: "mi", ny: "ni", 
+  py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vi",
 };
 
 export function DecodingLevel1() {

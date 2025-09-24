@@ -30,6 +30,9 @@ const syllablePronunciationMap: { [key: string]: string } = {
   be: "beu", de: "de", bi: "bie", di: "die",
   bu: "bue", du: "due", by: "bi", dy: "di",
   cha: "chat", che: "cheu", chi: "chi", cho: "chaud", chu: "chu",
+  // With y
+  fy: "fi", jy: "ji", ly: "li", my: "mi", ny: "ni", 
+  py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vi",
 };
 
 
