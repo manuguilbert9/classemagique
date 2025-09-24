@@ -23,15 +23,11 @@ const syllablePronunciationMap: { [key: string]: string } = {
   ni: "nie", nu: "nue", ne: "nœud",
   pi: "pie", pu: "pue", po: "peau", pe: "peu",
   si: "si", su: "su", so: "seau",
-  ti: "tie", tu: "tu", to: "tôt",
-  vi: "vie", vu: "vue", vo: "veau", ve: "veu",
-  bo: "beau", do: "dos", da: "das",
-  be: "beu", de: "de", bi: "bie", di: "die",
-  bu: "bue", du: "due", by: "bi", dy: "di",
-  cha: "chat", che: "cheu", chi: "chi", cho: "chaud", chu: "chu",
+  tu: "tu", to: "tôt",
+  vi: "vie", vu: "vue", vo: "veau", ve: "vœux", ro: "rot",
   // With y
   fy: "fi", jy: "ji", ly: "li", my: "mi", ny: "ni", 
-  py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vi",
+  py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vie",
 };
 
 

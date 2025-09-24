@@ -42,11 +42,11 @@ const syllablePronunciationMap: { [key: string]: string } = {
   ni: "nie", nu: "nue", ne: "nœud",
   pi: "pie", pu: "pue", po: "peau", pe: "peu",
   si: "si", su: "su", so: "seau",
-  ti: "tie", tu: "tu", to: "tôt",
-  vi: "vie", vu: "vue", vo: "veau", ve: "veu",
+  tu: "tu", to: "tôt",
+  vi: "vie", vu: "vue", vo: "veau", ve: "vœux", ro: "rot",
   // With y
   fy: "fi", jy: "ji", ly: "li", my: "mi", ny: "ni", 
-  py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vi",
+  py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vie",
 };
 
 export function DecodingLevel1() {

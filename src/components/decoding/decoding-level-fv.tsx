@@ -12,11 +12,11 @@ import { Save, CheckCircle } from 'lucide-react';
 
 const syllablePronunciationMap: { [key: string]: string } = {
   fo: "faux", va: "vas",
-  fe: "feu", ve: "veu",
+  fe: "feu", ve: "vœux",
   fi: "fil", vi: "vie",
   fu: "fut", vu: "vue",
-  vo: "veau",
-  fy: "fi", vy: "vi",
+  vo: "veau", ro: "rot",
+  fy: "fi", vy: "vie",
 };
 
 const SyllableTable = ({ title, data, colored = false }: { title: string, data: string[][], colored?: boolean }) => {
