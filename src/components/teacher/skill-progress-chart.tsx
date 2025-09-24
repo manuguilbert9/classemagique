@@ -12,11 +12,15 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
 import { Trash2, ChevronDown, ChevronUp, CheckCircle, XCircle, FileText } from 'lucide-react';
 import type { Score } from '@/services/scores';
 import { type Skill, difficultyLevelToString } from '@/lib/skills';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface SkillProgressChartProps {
   skill: Skill;
@@ -120,33 +124,67 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
             </TableHeader>
             <TableBody>
               {scores.map(score => (
-                <TableRow key={score.id}>
-                  <TableCell className="text-xs">{format(new Date(score.createdAt), 'd/MM/yy', { locale: fr })}</TableCell>
-                  <TableCell className="text-xs">{isMCLM ? `${score.score} MCLM` : `${Math.round(score.score)}%`}</TableCell>
-                  <TableCell className="text-right">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Supprimer ce résultat ?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Cette action est irréversible.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => onDeleteScore(score.id)} className="bg-destructive hover:bg-destructive/90">
-                            Supprimer
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
+                <Dialog key={score.id}>
+                    <DialogTrigger asChild>
+                        <TableRow className="cursor-pointer">
+                            <TableCell className="text-xs">{format(new Date(score.createdAt), 'd/MM/yy', { locale: fr })}</TableCell>
+                            <TableCell className="text-xs">{isMCLM ? `${score.score} MCLM` : `${Math.round(score.score)}%`}</TableCell>
+                            <TableCell className="text-right">
+                                <AlertDialog onOpenChange={(e) => e.stopPropagation()}>
+                                <AlertDialogTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
+                                    <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Supprimer ce résultat ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Cette action est irréversible.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => onDeleteScore(score.id)} className="bg-destructive hover:bg-destructive/90">
+                                            Supprimer
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                                </AlertDialog>
+                            </TableCell>
+                        </TableRow>
+                    </DialogTrigger>
+                     <DialogContent className="max-w-xl">
+                        <DialogHeader>
+                            <DialogTitle>Détail de la session</DialogTitle>
+                             <CardDescription>
+                                {skill.name} - {format(new Date(score.createdAt), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                            </CardDescription>
+                        </DialogHeader>
+                         <ScrollArea className="max-h-[60vh]">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Question</TableHead>
+                                        <TableHead>Réponse de l'élève</TableHead>
+                                        <TableHead className="text-right">Statut</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {score.details?.map((detail, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell className="text-xs font-mono max-w-xs truncate">{detail.question}</TableCell>
+                                            <TableCell className="text-xs font-mono max-w-xs truncate">{detail.userAnswer}</TableCell>
+                                            <TableCell className="text-right">
+                                                {detail.status === 'correct' ? <CheckCircle className="h-4 w-4 text-green-500 inline"/> : <XCircle className="h-4 w-4 text-red-500 inline"/>}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                         </ScrollArea>
+                    </DialogContent>
+                </Dialog>
               ))}
             </TableBody>
           </Table>
