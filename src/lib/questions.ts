@@ -19,7 +19,7 @@ import { generateAdaptiveMentalMathQuestion } from './adaptive-mental-math';
 export interface Question {
   id: number;
   level: SkillLevel;
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple' | 'drag-and-drop-recognition' | 'qcm-image';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple' | 'drag-and-drop-recognition' | 'qcm-image' | 'mystery-number';
   question: string;
   // For adaptive mental math
   competencyId?: string;
@@ -180,6 +180,11 @@ export async function generateQuestions(
         questionPromises.push(generateCurrencyQuestion(settings.currency!));
       }
       return Promise.all(questionPromises);
+  }
+  
+  if (skill === 'mystery-number') {
+      // This exercise manages its own state, so we just need a placeholder
+      return Promise.resolve([{ id: 1, level: 'B', type: 'mystery-number', question: '' }]);
   }
 
   // Fallback

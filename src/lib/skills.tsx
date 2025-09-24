@@ -31,6 +31,7 @@ import {
   Wand,
   Table,
   CircuitBoard,
+  HelpCircle,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -124,7 +125,7 @@ export const skills: Skill[] = [
     icon: <PenLine />,
     category: 'Orthographe',
   },
-  {
+    {
     name: 'Le son [an]',
     slug: 'son-an',
     description: "Choisis la bonne écriture (an, en, am, em) pour compléter les mots.",
@@ -209,6 +210,14 @@ export const skills: Skill[] = [
     icon: <Route />,
     category: 'Espace et géométrie',
     allowedLevels: ['A', 'B', 'C'],
+  },
+    {
+    name: 'Nombre Mystère',
+    slug: 'mystery-number',
+    description: "Devine le nombre secret en utilisant les indices qui apparaissent un par un.",
+    icon: <HelpCircle />,
+    category: 'Nombres et calcul',
+    allowedLevels: ['B', 'C', 'D'],
   },
   {
     name: 'Lire les nombres',

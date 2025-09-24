@@ -8,7 +8,6 @@ import { ArrowLeft } from 'lucide-react';
 import { getSkillBySlug } from '@/lib/skills';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
-import { Button } from '@/components/ui/button';
 import { LongCalculationExercise } from '@/components/long-calculation-exercise';
 import { WordFamiliesExercise } from '@/components/word-families-exercise';
 import { MentalCalculationExercise } from '@/components/mental-calculation-exercise';
@@ -34,6 +33,7 @@ import { SpellingExercise } from '@/components/spelling-exercise';
 import { AdaptiveMentalCalculationExercise } from '@/components/adaptive-mental-calculation-exercise';
 import { SyllableTableExercise } from '@/components/syllable-table-exercise';
 import { DecodingExercise } from '@/components/decoding-exercise';
+import { MysteryNumberExercise } from '@/components/mystery-number-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -101,6 +101,8 @@ export default function ExercisePage() {
         return <SyllableTableExercise />;
       case 'decoding':
         return <DecodingExercise />;
+      case 'mystery-number':
+        return <MysteryNumberExercise />;
       case 'denombrement':
       case 'time':
       case 'lire-les-nombres':
