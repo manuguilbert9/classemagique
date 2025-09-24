@@ -85,7 +85,7 @@ const DecodageIcon = () => (
     viewBox="0 0 120 40"
     fill="currentColor"
   >
-    <text x="0" y="30" fontFamily="Arial, sans-serif" fontSize="30" fontWeight="bold">
+    <text x="0" y="30" fontFamily="Arial, sans-serif" fontSize="40" fontWeight="bold">
       B+A=BA
     </text>
   </svg>
