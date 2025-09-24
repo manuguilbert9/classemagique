@@ -38,6 +38,16 @@ const getDigitName = (position: number, length: number): string => {
     return names[position] || `position ${position}`;
 };
 
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+};
+
 
 export function MysteryNumberExercise() {
     const { student } = useContext(UserContext);
@@ -97,9 +107,9 @@ export function MysteryNumberExercise() {
                 text: `Mon chiffre des ${getDigitName(position, numStr.length)} est ${digit}.`,
                 isRevealed: false
             };
-        }).reverse(); // Start with units
+        });
         
-        setClues(generatedClues);
+        setClues(shuffleArray(generatedClues));
         setRevealedClueCount(1); // Reveal first clue immediately
         setUserInput('');
         setAttempts(0);
