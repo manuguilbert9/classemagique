@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -8,10 +7,11 @@ import { DecodingLevel2 } from './decoding/decoding-level2';
 import { DecodingLevel3 } from './decoding/decoding-level3';
 import { DecodingLevelBD } from './decoding/decoding-level-bd';
 import { DecodingLevelFV } from './decoding/decoding-level-fv';
+import { DecodingLevelP } from './decoding/decoding-level-p';
 import { Button } from './ui/button';
 import { ArrowLeft } from 'lucide-react';
 
-type Level = 1 | 2 | 3 | 'bd' | 'fv';
+type Level = 1 | 2 | 3 | 'bd' | 'fv' | 'p';
 
 export function DecodingExercise() {
   const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
@@ -28,6 +28,8 @@ export function DecodingExercise() {
         return <DecodingLevelBD />;
       case 'fv':
         return <DecodingLevelFV />;
+      case 'p':
+        return <DecodingLevelP />;
       default:
         return null;
     }
@@ -60,6 +62,9 @@ export function DecodingExercise() {
         </Button>
          <Button onClick={() => setSelectedLevel(3)} className="h-24 text-xl w-full">
           Mots à trois syllabes
+        </Button>
+         <Button onClick={() => setSelectedLevel('p')} className="h-24 text-xl w-full">
+          Son [p]
         </Button>
          <Button onClick={() => setSelectedLevel('bd')} className="h-24 text-xl w-full">
           Confusion b / d
