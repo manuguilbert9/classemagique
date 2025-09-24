@@ -33,6 +33,7 @@ import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { SpellingExercise } from '@/components/spelling-exercise';
 import { AdaptiveMentalCalculationExercise } from '@/components/adaptive-mental-calculation-exercise';
 import { SyllableTableExercise } from '@/components/syllable-table-exercise';
+import { DecodingExercise } from '@/components/decoding-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -98,6 +99,8 @@ export default function ExercisePage() {
         return <CodedPathExercise />;
       case 'syllable-table':
         return <SyllableTableExercise />;
+      case 'decoding':
+        return <DecodingExercise />;
       case 'denombrement':
       case 'time':
       case 'lire-les-nombres':

@@ -30,6 +30,7 @@ import {
   BrainCircuit,
   Wand,
   Table,
+  CircuitBoard,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -76,6 +77,14 @@ export interface Skill {
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
+  {
+    name: 'Décodage',
+    slug: 'decoding',
+    description: "Lis les syllabes le plus vite possible sur le circuit de lecture.",
+    icon: <CircuitBoard />,
+    category: 'Phonologie',
+    isFixedLevel: 'A',
+  },
   {
     name: 'Tableaux de syllabes',
     slug: 'syllable-table',
