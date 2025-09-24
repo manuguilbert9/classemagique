@@ -77,12 +77,27 @@ export interface Skill {
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
+const DecodageIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    viewBox="0 0 120 40"
+    fill="currentColor"
+  >
+    <text x="0" y="30" fontFamily="Arial, sans-serif" fontSize="30" fontWeight="bold">
+      B+A=BA
+    </text>
+  </svg>
+);
+
+
 export const skills: Skill[] = [
   {
     name: 'Décodage',
     slug: 'decoding',
     description: "Lis les syllabes le plus vite possible sur le circuit de lecture.",
-    icon: <CircuitBoard />,
+    icon: <DecodageIcon />,
     category: 'Phonologie',
     isFixedLevel: 'A',
   },
