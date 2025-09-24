@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RefreshCw, Volume2 } from 'lucide-react';
+import { Play, Pause, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const syllableTable = {
@@ -35,6 +35,11 @@ export function DecodingExercise() {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleSpeak = useCallback((text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
@@ -156,7 +161,7 @@ export function DecodingExercise() {
                       {/* Finish line */}
                       <rect x="95" y="99" width="10" height="15" fill="url(#checkers)" transform="rotate(12, 100, 100)" />
                     </svg>
-                    {raceTrackSyllables.map((syllable, index) => {
+                    {isClient && raceTrackSyllables.map((syllable, index) => {
                         const total = raceTrackSyllables.length;
                         const angle = (index / total) * 2 * Math.PI;
                         
@@ -215,3 +220,5 @@ export function DecodingExercise() {
     </div>
   )
 }
+
+    
