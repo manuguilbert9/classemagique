@@ -13,6 +13,8 @@ import { Badge } from './ui/badge';
 
 type ExerciseState = 'selecting' | 'reading';
 
+const ITEMS_PER_ROW = 8; // Number of items per row in the unified grid
+
 export function SyllableTableExercise() {
   const [exerciseState, setExerciseState] = useState<ExerciseState>('selecting');
   const [selectedTable, setSelectedTable] = useState<SyllableTable | null>(null);
@@ -36,6 +38,40 @@ export function SyllableTableExercise() {
     utterance.rate = 0.9;
     speechSynthesis.speak(utterance);
   }, []);
+
+  const unifiedSyllableList = useMemo(() => {
+    if (!selectedTable) return [];
+    
+    let allItems: string[] = [];
+    
+    // Add items from cvTable first to maintain some structure
+    if (selectedTable.cvTable) {
+        selectedTable.cvTable.rows.forEach(row => {
+            allItems.push(...row.syllables);
+        });
+    }
+
+    if (selectedTable.vowelCombinations) {
+        allItems.push(...selectedTable.vowelCombinations);
+    }
+    if (selectedTable.vcSyllables) {
+        allItems.push(...selectedTable.vcSyllables);
+    }
+    if (selectedTable.pseudoWords) {
+        allItems.push(...selectedTable.pseudoWords);
+    }
+    if (selectedTable.words) {
+        allItems.push(...selectedTable.words);
+    }
+
+    // Chunk the flat array into rows for the table
+    const chunkedItems = [];
+    for (let i = 0; i < allItems.length; i += ITEMS_PER_ROW) {
+        chunkedItems.push(allItems.slice(i, i + ITEMS_PER_ROW));
+    }
+    return chunkedItems;
+
+  }, [selectedTable]);
 
 
   useEffect(() => {
@@ -115,72 +151,28 @@ export function SyllableTableExercise() {
                 <CardTitle className="font-headline text-3xl">{selectedTable.title}</CardTitle>
                 {selectedTable.newSound && <CardDescription>Nouveau son : {selectedTable.newSound}</CardDescription>}
             </CardHeader>
-            <CardContent className="space-y-6">
-                {selectedTable.vowelCombinations && (
-                    <div>
-                        <h3 className="font-semibold text-lg mb-2">Je lis les voyelles :</h3>
-                        <div className="flex flex-wrap gap-2 text-xl">
-                            {selectedTable.vowelCombinations.map((syllable, index) => (
-                                <Button key={index} variant="outline" onClick={() => handleSpeak(syllable)} className="px-4 py-2 h-auto text-xl">{syllable}</Button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                {selectedTable.cvTable && (
-                     <div>
-                        <h3 className="font-semibold text-lg mb-2">Je lis les syllabes (Consonne + Voyelle) :</h3>
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr>
-                                    <th className="border p-2 w-12"></th>
-                                    {selectedTable.cvTable.headers.map(header => <th key={header} className="border p-2 font-bold text-xl">{header}</th>)}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {selectedTable.cvTable.rows.map(row => (
-                                    <tr key={row.consonant}>
-                                        <td className="border p-2 font-bold text-xl text-center">{row.consonant}</td>
-                                        {row.syllables.map((syllable, index) => (
-                                            <td key={index} className="border p-2 text-center text-xl cursor-pointer hover:bg-muted" onClick={() => handleSpeak(syllable)}>
-                                                {syllable}
-                                            </td>
-                                        ))}
-                                    </tr>
+            <CardContent>
+                 <table className="w-full border-collapse">
+                    <tbody>
+                        {unifiedSyllableList.map((row, rowIndex) => (
+                            <tr key={rowIndex}>
+                                {row.map((item, itemIndex) => (
+                                    <td 
+                                        key={`${rowIndex}-${itemIndex}`} 
+                                        className="border p-2 text-center text-xl sm:text-2xl cursor-pointer hover:bg-muted"
+                                        onClick={() => handleSpeak(item)}
+                                    >
+                                        {item}
+                                    </td>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-                {selectedTable.vcSyllables && (
-                    <div>
-                        <h3 className="font-semibold text-lg mb-2">Je lis les syllabes (Voyelle + Consonne) :</h3>
-                        <div className="flex flex-wrap gap-2 text-xl">
-                            {selectedTable.vcSyllables.map((syllable, index) => (
-                                <Button key={index} variant="outline" onClick={() => handleSpeak(syllable)} className="px-4 py-2 h-auto text-xl">{syllable}</Button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                {selectedTable.pseudoWords && (
-                    <div>
-                        <h3 className="font-semibold text-lg mb-2">Je lis des pseudo-mots :</h3>
-                        <div className="flex flex-wrap gap-2 text-xl">
-                            {selectedTable.pseudoWords.map((word, index) => (
-                                <Button key={index} variant="ghost" onClick={() => handleSpeak(word)} className="px-4 py-2 h-auto text-xl">{word}</Button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                {selectedTable.words && (
-                    <div>
-                        <h3 className="font-semibold text-lg mb-2">Je lis mes premiers mots :</h3>
-                        <div className="flex flex-wrap gap-2 text-xl">
-                            {selectedTable.words.map((word, index) => (
-                                <Button key={index} variant="secondary" onClick={() => handleSpeak(word)} className="px-4 py-2 h-auto text-xl">{word}</Button>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                                {/* Fill empty cells in the last row if it's not full */}
+                                {row.length < ITEMS_PER_ROW && Array.from({ length: ITEMS_PER_ROW - row.length }).map((_, i) => (
+                                    <td key={`empty-${i}`} className="border p-2"></td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </CardContent>
         </Card>
 
