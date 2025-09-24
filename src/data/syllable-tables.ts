@@ -28,7 +28,7 @@ const shuffleArray = (array: any[]) => {
   }
   return newArray;
 };
-const generateVowelMix = () => shuffleArray([...baseVowels, ...baseVowels, ...baseVowels, ...baseVowels]);
+const generateVowelMix = () => shuffleArray([...baseVowels, ...baseVowels, ...baseVowels, ...baseVowels, ...baseVowels, ...baseVowels]);
 
 
 export const allSyllableTables: SyllableTable[] = [
@@ -72,8 +72,8 @@ export const allSyllableTables: SyllableTable[] = [
             rows: [{ consonant: 'l', syllables: ['la', 'li', 'lu', 'lo', 'lé'] }],
         },
         vcSyllables: ['al', 'il', 'ul', 'ol', 'él'],
-        pseudoWords: ['lila', 'lalo', 'luli', 'lilé', 'lola', 'alu', 'ila', 'olo'],
-        words: ['allo', 'lila'],
+        pseudoWords: ['lila', 'lalo', 'luli', 'lilé', 'lola', 'alu', 'ila', 'olo', 'ulal', 'ilélo', 'alil', 'lolu'],
+        words: ['allo', 'lila', 'le', 'la', 'les', 'lui'],
     },
     {
         id: 7,
@@ -88,8 +88,8 @@ export const allSyllableTables: SyllableTable[] = [
             ],
         },
         vcSyllables: ['ar', 'ir', 'ur', 'or', 'ér'],
-        pseudoWords: ['rila', 'rari', 'rolu', 'ralé', 'lora', 'ralo', 'aro', 'iré'],
-        words: ['rare', 'oral', 'lira', 'ara', 'rira'],
+        pseudoWords: ['rila', 'rari', 'rolu', 'ralé', 'lora', 'ralo', 'aro', 'iré', 'rula', 'lori', 'aril'],
+        words: ['rare', 'oral', 'lira', 'ara', 'rira', 'rue', 'rire', 'rat'],
     },
     {
         id: 8,
@@ -106,7 +106,7 @@ export const allSyllableTables: SyllableTable[] = [
         },
         vcSyllables: ['af', 'if', 'uf', 'of', 'éf'],
         pseudoWords: ['filu', 'fora', 'fari', 'féla', 'lifo', 'rofa', 'afi', 'ufo'],
-        words: ['fil', 'fer', 'fur', 'far', 'fifo'],
+        words: ['fil', 'fer', 'fur', 'far', 'fifo', 'fée', 'foi', 'rafale'],
     },
     {
         id: 9,
@@ -124,7 +124,7 @@ export const allSyllableTables: SyllableTable[] = [
         },
         vcSyllables: ['am', 'im', 'um', 'om', 'ém'],
         pseudoWords: ['mola', 'muri', 'mifa', 'mélo', 'rima', 'fuma', 'ami', 'omi'],
-        words: ['ami', 'mari', 'mur', 'mime', 'mal', 'film', 'formé'],
+        words: ['ami', 'mari', 'mur', 'mime', 'mal', 'film', 'formé', 'mort'],
     },
     {
         id: 10,
@@ -143,7 +143,7 @@ export const allSyllableTables: SyllableTable[] = [
         },
         vcSyllables: ['an', 'in', 'un', 'on', 'én'],
         pseudoWords: ['nina', 'noru', 'nali', 'némo', 'fina', 'roni', 'mano', 'uno'],
-        words: ['lune', 'animal', 'mine', 'fini', 'une', 'nom'],
+        words: ['lune', 'animal', 'mine', 'fini', 'une', 'nom', 'non', 'ananas'],
     },
     {
         id: 11,
@@ -158,8 +158,8 @@ export const allSyllableTables: SyllableTable[] = [
             ],
         },
         vcSyllables: ['ap', 'ip', 'up', 'op', 'ép'],
-        pseudoWords: ['pali', 'pira', 'pumo', 'péfa', 'lipa', 'ropu', 'napo', 'ipa'],
-        words: ['papa', 'pipe', 'papi', 'pur', 'pile', 'parole'],
+        pseudoWords: ['pali', 'pira', 'pumo', 'péfa', 'lipa', 'ropu', 'napo', 'ipa', 'pina', 'pori'],
+        words: ['papa', 'pipe', 'papi', 'pur', 'pile', 'parole', 'puni', 'parti'],
     },
     {
         id: 12,
@@ -174,8 +174,8 @@ export const allSyllableTables: SyllableTable[] = [
             ],
         },
         vcSyllables: ['at', 'it', 'ut', 'ot', 'ét'],
-        pseudoWords: ['tita', 'toru', 'tami', 'télo', 'patu', 'poti', 'rato', 'uti'],
-        words: ['patate', 'tortue', 'tape', 'petite', 'moto', 'pirate'],
+        pseudoWords: ['tita', 'toru', 'tami', 'télo', 'patu', 'poti', 'rato', 'uti', 'tapi', 'tora'],
+        words: ['patate', 'tortue', 'tape', 'petite', 'moto', 'pirate', 'tête', 'tard'],
     },
     {
         id: 13,
@@ -194,7 +194,7 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 't', syllables: ['ta', 'ti', 'tu', 'to', 'té', 'tou'] },
             ],
         },
-        words: ['loup', 'mou', 'pour', 'tout', 'tour', 'four', 'moule', 'roule'],
+        words: ['loup', 'mou', 'pour', 'tout', 'tour', 'four', 'moule', 'roule', 'boule', 'chou'],
     },
     {
         id: 14,
@@ -208,7 +208,8 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 's', syllables: ['sa', 'si', 'su', 'so', 'sé', 'sou'] },
             ],
         },
-        words: ['sol', 'si', 'sou', 'sale', 'salut', 'sirop', 'tasse', 'assis'],
+        pseudoWords: ['sita', 'suto', 'sora', 'sési', 'sula', 'tasu', 'sipa'],
+        words: ['sol', 'si', 'sou', 'sale', 'salut', 'sirop', 'tasse', 'assis', 'russe', 'os', 'sucre'],
     },
     {
         id: 15,
@@ -222,7 +223,8 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 'ch', syllables: ['cha', 'chi', 'chu', 'cho', 'ché', 'chou'] },
             ],
         },
-        words: ['chat', 'chou', 'niche', 'fiche', 'chute', 'chose', 'fâché'],
+        pseudoWords: ['chasi', 'chuso', 'chora', 'chésu', 'sacho', 'chipa'],
+        words: ['chat', 'chou', 'niche', 'fiche', 'chute', 'chose', 'fâché', 'riche', 'moche', 'sèche'],
     },
     {
         id: 16,
@@ -236,7 +238,8 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 'b', syllables: ['ba', 'bi', 'bu', 'bo', 'bé', 'bou'] },
             ],
         },
-        words: ['bal', 'bol', 'bulle', 'bébé', 'beau', 'un abri', 'robot'],
+        pseudoWords: ['bapo', 'bipu', 'boba', 'bapi', 'pabu', 'pobi'],
+        words: ['bal', 'bol', 'bulle', 'bébé', 'beau', 'un abri', 'robot', 'boule', 'bas', 'bus'],
     },
     {
         id: 17,
@@ -250,7 +253,8 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 'd', syllables: ['da', 'di', 'du', 'do', 'dé', 'dou'] },
             ],
         },
-        words: ['date', 'dé', 'dur', 'douche', 'malade', 'soda', 'rideau'],
+        pseudoWords: ['dato', 'ditu', 'doda', 'dati', 'tadu', 'todi'],
+        words: ['date', 'dé', 'dur', 'douche', 'malade', 'soda', 'rideau', 'mardi', 'dame'],
     },
     {
         id: 18,
@@ -264,7 +268,8 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 'v', syllables: ['va', 'vi', 'vu', 'vo', 'vé', 'vou'] },
             ],
         },
-        words: ['vie', 'vite', 'vélo', 'vuvu', 'lavabo', 'olive', 'valise'],
+        pseudoWords: ['vafo', 'vifu', 'vova', 'vafi', 'favu', 'fovi'],
+        words: ['vie', 'vite', 'vélo', 'vuvu', 'lavabo', 'olive', 'valise', 'neveu', 'cheval'],
     },
     {
         id: 19,
@@ -278,7 +283,8 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 'z', syllables: ['za', 'zi', 'zu', 'zo', 'zé', 'zou'] },
             ],
         },
-        words: ['zéro', 'zoo', 'gaz', 'onze', 'douze', 'case', 'base', 'vase'],
+        pseudoWords: ['zaso', 'zisu', 'zoza', 'zasi', 'sazu', 'sozi'],
+        words: ['zéro', 'zoo', 'gaz', 'onze', 'douze', 'case', 'base', 'vase', 'lizard', 'blouse'],
     },
     {
         id: 20,
@@ -292,7 +298,7 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 'qu', syllables: ['-', '-', '-', 'qui', 'qué'] },
             ],
         },
-        words: ['car', 'cube', 'cou', 'qui', 'coq', 'quatre', 'quand'],
+        words: ['car', 'cube', 'cou', 'qui', 'coq', 'quatre', 'quand', 'parc', 'sac', 'lac', 'avec', 'cinq', 'casque', 'équipe'],
     },
     {
         id: 21,
@@ -306,7 +312,7 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 'ç', syllables: ['-', '-', 'ça', 'ço', 'çu'] },
             ],
         },
-        words: ['ce', 'ceci', 'cinéma', 'leçon', 'façade', 'reçu'],
+        words: ['ce', 'ceci', 'cinéma', 'leçon', 'façade', 'reçu', 'place', 'merci', 'garçon', 'glaçon', 'balance'],
     },
     {
         id: 22,
@@ -320,7 +326,7 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 'gu', syllables: ['-', '-', '-', 'gui', 'gue'] },
             ],
         },
-        words: ['gare', 'gomme', 'figure', 'guide', 'guépard', 'vague'],
+        words: ['gare', 'gomme', 'figure', 'guide', 'guépard', 'vague', 'bague', 'longue', 'guitare', 'guy'],
     },
     {
         id: 23,
@@ -334,77 +340,77 @@ export const allSyllableTables: SyllableTable[] = [
                 { consonant: 'j', syllables: ['ja', 'jo', 'ju', 'je', 'ji'] },
             ],
         },
-        words: ['jupe', 'joli', 'pyjama', 'magie', 'page', 'pigeon'],
+        words: ['jupe', 'joli', 'pyjama', 'magie', 'page', 'pigeon', 'jeudi', 'judo', 'juste', 'rouge', 'manger'],
     },
     {
         id: 24,
         step: 'Étape 7 : Autres voyelles et sons complexes',
         title: 'Tableau 24 : Son [è]',
         newSound: 'è, ê, ai, ei',
-        words: ['mère', 'père', 'sel', 'elle', 'mer', 'lait', 'reine', 'treize', 'seize', 'forêt', 'arrêt', 'secret'],
+        words: ['mère', 'père', 'sel', 'elle', 'mer', 'lait', 'reine', 'treize', 'seize', 'forêt', 'arrêt', 'secret', 'balai', 'chaise', 'neige', 'peine', 'tête', 'bête'],
     },
     {
         id: 25,
         step: 'Étape 7 : Autres voyelles et sons complexes',
         title: 'Tableau 25 : Son [o ouvert]',
         newSound: 'au, eau',
-        words: ['auto', 'jaune', 'autre', 'beau', 'eau', 'cadeau', 'chapeau', 'gauche', 'faute'],
+        words: ['auto', 'jaune', 'autre', 'beau', 'eau', 'cadeau', 'chapeau', 'gauche', 'faute', 'épaule', 'marteau', 'taureau', 'oiseau', 'chaud'],
     },
     {
         id: 26,
         step: 'Étape 7 : Autres voyelles et sons complexes',
         title: 'Tableau 26 : Son [eu]',
         newSound: 'eu, œu',
-        words: ['feu', 'jeu', 'deux', 'neuf', 'leur', 'fleur', 'cœur', 'sœur', 'beurre', 'heure'],
+        words: ['feu', 'jeu', 'deux', 'neuf', 'leur', 'fleur', 'cœur', 'sœur', 'beurre', 'heure', 'jeune', 'bleu', 'pneu', 'nœud', 'œuf'],
     },
     {
         id: 27,
         step: 'Étape 7 : Autres voyelles et sons complexes',
         title: 'Tableau 27 : Son [oi]',
         newSound: 'oi',
-        words: ['roi', 'moi', 'toi', 'soir', 'noir', 'voir', 'poire', 'voiture', 'boire', 'miroir'],
+        words: ['roi', 'moi', 'toi', 'soir', 'noir', 'voir', 'poire', 'voiture', 'boire', 'miroir', 'trois', 'foi', 'loi', 'bois', 'noix'],
     },
     {
         id: 28,
         step: 'Étape 8 : Les voyelles nasales',
         title: 'Tableau 28 : Son [an]',
         newSound: 'an, en',
-        words: ['maman', 'enfant', 'dent', 'temps', 'grand', 'chanter', 'danser', 'entre'],
+        words: ['maman', 'enfant', 'dent', 'temps', 'grand', 'chanter', 'danser', 'entre', 'banc', 'tante', 'lampe', 'chambre', 'quand', 'vent'],
     },
     {
         id: 29,
         step: 'Étape 8 : Les voyelles nasales',
         title: 'Tableau 29 : Son [on]',
         newSound: 'on',
-        words: ['bonbon', 'pont', 'non', 'son', 'long', 'rond', 'mouton', 'maison', 'front', 'compte'],
+        words: ['bonbon', 'pont', 'non', 'son', 'long', 'rond', 'mouton', 'maison', 'front', 'compte', 'garçon', 'ballon', 'onze', 'monde'],
     },
     {
         id: 30,
         step: 'Étape 8 : Les voyelles nasales',
         title: 'Tableau 30 : Son [in]',
         newSound: 'in, ain, ein',
-        words: ['matin', 'sapin', 'moulin', 'pain', 'main', 'train', 'plein', 'peinture', 'faim', 'demain'],
+        words: ['matin', 'sapin', 'moulin', 'pain', 'main', 'train', 'plein', 'peinture', 'faim', 'demain', 'jardin', 'lapin', 'copain', 'frein'],
     },
     {
         id: 31,
         step: 'Étape 8 : Les voyelles nasales',
         title: 'Tableau 31 : Son [oin]',
         newSound: 'oin',
-        words: ['foin', 'coin', 'loin', 'point', 'moins', 'soin', 'besoin', 'rejoindre'],
+        words: ['foin', 'coin', 'loin', 'point', 'moins', 'soin', 'besoin', 'rejoindre', 'poing', 'témoin', 'jointure'],
     },
     {
         id: 32,
         step: 'Étape 9 : Derniers sons complexes',
         title: 'Tableau 32 : Son [gn]',
         newSound: 'gn',
-        words: ['montagne', 'campagne', 'chignon', 'champignon', 'magnifique', 'peigne', 'soigner', 'gagner'],
+        words: ['montagne', 'campagne', 'chignon', 'champignon', 'magnifique', 'peigne', 'soigner', 'gagner', 'araignée', 'cygne', 'poignet'],
     },
     {
         id: 33,
         step: 'Étape 9 : Derniers sons complexes',
         title: 'Tableau 33 : Son [ill]',
         newSound: 'ill',
-        words: ['fille', 'bille', 'quille', 'famille', 'vanille', 'papillon', 'feuille', 'grenouille', 'réveil'],
+        words: ['fille', 'bille', 'quille', 'famille', 'vanille', 'papillon', 'feuille', 'grenouille', 'réveil', 'soleil', 'travail', 'abeille', 'gorille'],
     },
     {
         id: 34,
@@ -427,16 +433,16 @@ export const allSyllableTables: SyllableTable[] = [
         title: 'Tableau 35 : Groupes avec l',
         newSound: 'bl, cl, fl, gl, pl',
         cvTable: {
-            headers: ['a', 'i', 'o'],
+            headers: ['a', 'i', 'o', 'u', 'é', 'è', 'on', 'ou'],
             rows: [
-                { consonant: 'bl', syllables: ['bla', 'bli', 'blo'] },
-                { consonant: 'cl', syllables: ['cla', 'cli', 'clo'] },
-                { consonant: 'fl', syllables: ['fla', 'fli', 'flo'] },
-                { consonant: 'gl', syllables: ['gla', 'gli', 'glo'] },
-                { consonant: 'pl', syllables: ['pla', 'pli', 'plo'] },
+                { consonant: 'bl', syllables: ['bla', 'bli', 'blo', 'blu', 'blé', 'blè', 'blon', 'blou'] },
+                { consonant: 'cl', syllables: ['cla', 'cli', 'clo', 'clu', 'clé', 'clè', 'clon', 'clou'] },
+                { consonant: 'fl', syllables: ['fla', 'fli', 'flo', 'flu', 'flé', 'flè', 'flon', 'flou'] },
+                { consonant: 'gl', syllables: ['gla', 'gli', 'glo', 'glu', 'glé', 'glè', 'glon', 'glou'] },
+                { consonant: 'pl', syllables: ['pla', 'pli', 'plo', 'plu', 'plé', 'plè', 'plon', 'plou'] },
             ],
         },
-        words: ['table', 'classe', 'flocon', 'plage', 'aigle', 'blanc', 'clou', 'flamme'],
+        words: ['table', 'classe', 'flocon', 'plage', 'aigle', 'blanc', 'clou', 'flamme', 'globe', 'simple', 'souple'],
     },
     {
         id: 36,
@@ -444,18 +450,18 @@ export const allSyllableTables: SyllableTable[] = [
         title: 'Tableau 36 : Groupes avec r',
         newSound: 'br, cr, dr, fr, gr, pr, tr, vr',
          cvTable: {
-            headers: ['a', 'i', 'o'],
+            headers: ['a', 'i', 'o', 'u', 'é', 'è', 'on', 'ou'],
             rows: [
-                { consonant: 'br', syllables: ['bra', 'bri', 'bro'] },
-                { consonant: 'cr', syllables: ['cra', 'cri', 'cro'] },
-                { consonant: 'dr', syllables: ['dra', 'dri', 'dro'] },
-                { consonant: 'fr', syllables: ['fra', 'fri', 'fro'] },
-                { consonant: 'gr', syllables: ['gra', 'gri', 'gro'] },
-                { consonant: 'pr', syllables: ['pra', 'pri', 'pro'] },
-                { consonant: 'tr', syllables: ['tra', 'tri', 'tro'] },
-                { consonant: 'vr', syllables: ['vra', 'vri', 'vro'] },
+                { consonant: 'br', syllables: ['bra', 'bri', 'bro', 'bru', 'bré', 'brè', 'bron', 'brou'] },
+                { consonant: 'cr', syllables: ['cra', 'cri', 'cro', 'cru', 'cré', 'crè', 'cron', 'crou'] },
+                { consonant: 'dr', syllables: ['dra', 'dri', 'dro', 'dru', 'dré', 'drè', 'dron', 'drou'] },
+                { consonant: 'fr', syllables: ['fra', 'fri', 'fro', 'fru', 'fré', 'frè', 'fron', 'frou'] },
+                { consonant: 'gr', syllables: ['gra', 'gri', 'gro', 'gru', 'gré', 'grè', 'gron', 'grou'] },
+                { consonant: 'pr', syllables: ['pra', 'pri', 'pro', 'pru', 'pré', 'prè', 'pron', 'prou'] },
+                { consonant: 'tr', syllables: ['tra', 'tri', 'tro', 'tru', 'tré', 'trè', 'tron', 'trou'] },
+                { consonant: 'vr', syllables: ['vra', 'vri', 'vro', 'vru', 'vré', 'vrè', 'vron', 'vrou'] },
             ],
         },
-        words: ['bras', 'cravate', 'drap', 'fruit', 'gros', 'prix', 'train', 'livre', 'abricot', 'crocodile'],
+        words: ['bras', 'cravate', 'drap', 'fruit', 'gros', 'prix', 'train', 'livre', 'abricot', 'crocodile', 'drôle', 'vrai'],
     },
 ];
