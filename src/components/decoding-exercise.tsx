@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -6,10 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DecodingLevel1 } from './decoding/decoding-level1';
 import { DecodingLevel2 } from './decoding/decoding-level2';
 import { DecodingLevel3 } from './decoding/decoding-level3';
+import { DecodingLevelBD } from './decoding/decoding-level-bd';
 import { Button } from './ui/button';
 import { ArrowLeft } from 'lucide-react';
 
-type Level = 1 | 2 | 3;
+type Level = 1 | 2 | 3 | 'bd';
 
 export function DecodingExercise() {
   const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
@@ -22,6 +22,8 @@ export function DecodingExercise() {
         return <DecodingLevel2 />;
       case 3:
         return <DecodingLevel3 />;
+      case 'bd':
+        return <DecodingLevelBD />;
       default:
         return null;
     }
@@ -40,23 +42,27 @@ export function DecodingExercise() {
 
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-2xl">
+    <Card className="w-full max-w-4xl mx-auto shadow-2xl">
       <CardHeader>
         <CardTitle className="font-headline text-3xl text-center">Exercice de Décodage</CardTitle>
         <CardDescription className="text-center">Choisis ton niveau pour commencer l'entraînement.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col sm:flex-row gap-4 justify-center p-8">
-        <Button onClick={() => setSelectedLevel(1)} className="h-24 text-xl w-full sm:w-64">
+      <CardContent className="grid grid-cols-2 gap-4 justify-center p-8">
+        <Button onClick={() => setSelectedLevel(1)} className="h-24 text-xl w-full">
           Niveau 1
           <span className="block text-sm font-normal mt-1">Syllabes simples</span>
         </Button>
-        <Button onClick={() => setSelectedLevel(2)} className="h-24 text-xl w-full sm:w-64">
+        <Button onClick={() => setSelectedLevel(2)} className="h-24 text-xl w-full">
           Niveau 2
           <span className="block text-sm font-normal mt-1">Mots à deux syllabes</span>
         </Button>
-         <Button onClick={() => setSelectedLevel(3)} className="h-24 text-xl w-full sm:w-64">
+         <Button onClick={() => setSelectedLevel(3)} className="h-24 text-xl w-full">
           Niveau 3
           <span className="block text-sm font-normal mt-1">Mots à trois syllabes</span>
+        </Button>
+         <Button onClick={() => setSelectedLevel('bd')} className="h-24 text-xl w-full">
+          Niveau Spécial
+          <span className="block text-sm font-normal mt-1">Confusion b / d</span>
         </Button>
       </CardContent>
     </Card>
