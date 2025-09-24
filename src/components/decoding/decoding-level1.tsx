@@ -2,10 +2,15 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useContext } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RefreshCw } from 'lucide-react';
+import { Play, Pause, RefreshCw, Save, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { UserContext } from '@/context/user-context';
+import { addScore } from '@/services/scores';
+import { saveHomeworkResult } from '@/services/homework';
 
 const syllableTable = {
     headers: ['a', 'e', 'i', 'o', 'u', 'y'],
@@ -30,11 +35,17 @@ const raceTrackSyllables = [
 
 
 export function DecodingLevel1() {
-  
+  const { student } = useContext(UserContext);
+  const searchParams = useSearchParams();
+  const isHomework = searchParams.get('from') === 'devoirs';
+  const homeworkDate = searchParams.get('date');
+  const { toast } = useToast();
+
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   React.useEffect(() => {
     setIsClient(true);
@@ -76,6 +87,48 @@ export function DecodingLevel1() {
     const minutes = time / 60;
     return Math.round(raceTrackSyllables.length / minutes);
   }, [time]);
+
+  const handleSaveScore = async () => {
+    if (!student) {
+        toast({
+            variant: "destructive",
+            title: "Non connecté",
+            description: "Vous devez être connecté pour enregistrer un score.",
+        });
+        return;
+    }
+    if (hasBeenSaved) return;
+
+    setHasBeenSaved(true);
+    const score = 100; // Signifies completion
+
+    if (isHomework && homeworkDate) {
+        await saveHomeworkResult({
+            userId: student.id,
+            date: homeworkDate,
+            skillSlug: 'decoding',
+            score: score,
+        });
+    } else {
+        await addScore({
+            userId: student.id,
+            skill: 'decoding',
+            score: score,
+            details: [{
+                question: 'Niveau 1',
+                userAnswer: `Temps: ${time}s, Vitesse: ${syllablesPerMinute} syll/min`,
+                correctAnswer: 'Exercice terminé',
+                status: 'completed'
+            }],
+            numberLevelSettings: { level: 'A' }
+        });
+    }
+
+    toast({
+        title: "Exercice terminé !",
+        description: "Ton score a bien été enregistré.",
+    });
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8">
@@ -215,7 +268,14 @@ export function DecodingLevel1() {
                 </div>
             </CardContent>
         </Card>
-
+        <Card>
+            <CardContent className="pt-6 flex justify-center">
+                 <Button onClick={handleSaveScore} disabled={!student || hasBeenSaved} size="lg">
+                    {hasBeenSaved ? <CheckCircle className="mr-2"/> : <Save className="mr-2"/>}
+                    {hasBeenSaved ? "Score enregistré !" : "J'ai terminé, j'enregistre mon score"}
+                </Button>
+            </CardContent>
+        </Card>
     </div>
   )
 }
