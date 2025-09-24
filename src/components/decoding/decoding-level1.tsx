@@ -34,16 +34,17 @@ const raceTrackSyllables = [
 
 
 const syllablePronunciationMap: { [key: string]: string } = {
-  lo: "l'eau", fo: "faux", pa: "pas", va: "vas", jo: "j'eau",
+  lo: "l'eau", fo: "faux", pa: "pas", va: "vas",
+  ne: "nœud", ve: "veux", jo: "j'eau", ro: "rot",
   li: "lie", lu: "lue", le: "le",
   ri: "rie", ru: "rue", re: "re",
-  fi: "fil", fu: "fut", fe: "feu",
+  fu: "fut", fe: "feu",
   mi: "mie", mu: "mue", me: "meuh",
-  ni: "nie", nu: "nue", ne: "nœud",
+  ni: "nie", nu: "nue",
   pi: "pie", pu: "pue", po: "peau", pe: "peu",
   si: "si", su: "su", so: "seau",
   tu: "tu", to: "tôt", ti: "ti.",
-  vi: "vie", vu: "vue", vo: "veau", ve: "veux", ro: "rot",
+  vi: "vie", vu: "vue", vo: "veau",
   // With y
   fy: "fi", jy: "ji", ly: "li", my: "mi", ny: "ni", 
   py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vie",
