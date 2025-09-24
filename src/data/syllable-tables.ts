@@ -40,7 +40,7 @@ export const allSyllableTables: SyllableTable[] = [
         title: 'Tableau 3 : Son [u]',
         newSound: 'u (usine)',
         vowels: ['a', 'i', 'u'],
-        vowelCombinations: ['au', 'ua', 'iu', 'ui'],
+        vowelCombinations: ['au', 'ua', 'iu', 'ui', 'ai', 'ia'],
     },
     {
         id: 4,
@@ -48,7 +48,7 @@ export const allSyllableTables: SyllableTable[] = [
         title: 'Tableau 4 : Son [o]',
         newSound: 'o (orange)',
         vowels: ['a', 'i', 'u', 'o'],
-        vowelCombinations: ['oi', 'io', 'ou', 'ao', 'oa'],
+        vowelCombinations: ['oi', 'io', 'ou', 'ao', 'oa', 'ai', 'ia', 'au', 'ua', 'iu', 'ui'],
         words: ['où'],
     },
     {
@@ -57,7 +57,7 @@ export const allSyllableTables: SyllableTable[] = [
         title: 'Tableau 5 : Son [é]',
         newSound: 'é, er, ez (bébé, panier, nez)',
         vowels: ['a', 'i', 'u', 'o', 'é'],
-        vowelCombinations: ['éa', 'éi', 'éo', 'oé', 'ié', 'aé'],
+        vowelCombinations: ['éa', 'éi', 'éo', 'oé', 'ié', 'aé', 'oi', 'io', 'ou', 'ao', 'oa', 'ai', 'ia', 'au', 'ua', 'iu', 'ui'],
     },
     {
         id: 6,
@@ -366,7 +366,7 @@ export const allSyllableTables: SyllableTable[] = [
         step: 'Étape 8 : Les voyelles nasales',
         title: 'Tableau 28 : Son [an]',
         newSound: 'an, en',
-        words: ['maman', 'enfant', 'dent', 'temps', 'grand', 'chanter', 'danser', 'banc', 'entre'],
+        words: ['maman', 'enfant', 'dent', 'temps', 'grand', 'chanter', 'danser', 'entre'],
     },
     {
         id: 29,
