@@ -14,7 +14,7 @@ import { z } from 'zod';
 const StoryInputSchema = z.object({
   emojis: z.array(z.string()).optional().describe('An array of emojis to inspire the story. Up to 6.'),
   description: z.string().optional().describe('A vocal description of the story to generate.'),
-  length: z.enum(['courte', 'moyenne', 'longue']).describe('The desired length of the story.'),
+  length: z.enum(['extra-courte', 'courte', 'moyenne', 'longue']).describe('The desired length of the story.'),
   tone: z.enum(['aventure', 'comique', 'effrayante']).describe('The tone of the story.'),
 });
 export type StoryInput = z.infer<typeof StoryInputSchema>;
@@ -28,6 +28,7 @@ export type StoryOutput = z.infer<typeof StoryOutputSchema>;
 
 
 const lengthInstructionMap = {
+    'extra-courte': 'moins de 60 mots au total, avec des phrases très courtes et simples. Idéal pour un enfant qui apprend à lire.',
     courte: 'entre 6 et 10 phrases',
     moyenne: 'entre 10 et 20 phrases',
     longue: 'd\'environ une page A4, soit à peu près 400-500 mots',

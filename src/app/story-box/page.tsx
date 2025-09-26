@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
@@ -39,7 +39,7 @@ const getRandomEmojis = (pool: string[], count: number): string[] => {
 };
 
 type CreationMode = 'emoji' | 'vocal';
-type StoryLength = 'courte' | 'moyenne' | 'longue';
+type StoryLength = 'extra-courte' | 'courte' | 'moyenne' | 'longue';
 type StoryTone = 'aventure' | 'comique' | 'effrayante';
 
 export default function StoryBoxPage() {
@@ -48,7 +48,7 @@ export default function StoryBoxPage() {
   // Inputs
   const [selectedEmojis, setSelectedEmojis] = useState<string[]>([]);
   const [vocalDescription, setVocalDescription] = useState('');
-  const [length, setLength] = useState<StoryLength>('moyenne');
+  const [length, setLength] = useState<StoryLength>('courte');
   const [tone, setTone] = useState<StoryTone>('aventure');
   
   // Story state
@@ -147,8 +147,9 @@ export default function StoryBoxPage() {
 
   const getFontSize = () => {
     switch (length) {
-      case 'courte': return 'text-xl leading-relaxed';
-      case 'moyenne': return 'text-lg leading-relaxed';
+      case 'extra-courte': return 'text-xl leading-relaxed';
+      case 'courte': return 'text-lg leading-relaxed';
+      case 'moyenne': return 'text-base leading-relaxed';
       case 'longue': return 'text-base leading-relaxed';
       default: return 'text-lg';
     }
@@ -314,7 +315,13 @@ export default function StoryBoxPage() {
                 {/* Length Selection */}
                 <div className="space-y-3">
                     <Label className="text-lg font-semibold">2. Choisis la longueur de l'histoire :</Label>
-                     <RadioGroup value={length} onValueChange={(v) => setLength(v as StoryLength)} className="grid grid-cols-3 gap-4">
+                     <RadioGroup value={length} onValueChange={(v) => setLength(v as StoryLength)} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <RadioGroupItem value="extra-courte" id="extra-courte" className="sr-only" />
+                            <Label htmlFor="extra-courte" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'extra-courte' && 'border-primary')}>
+                                <FileQuestion className="h-8 w-8 mb-2"/> Extra Courte
+                            </Label>
+                        </div>
                         <div>
                             <RadioGroupItem value="courte" id="courte" className="sr-only" />
                             <Label htmlFor="courte" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'courte' && 'border-primary')}>
