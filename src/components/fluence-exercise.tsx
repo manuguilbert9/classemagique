@@ -14,6 +14,8 @@ import { addScore } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { cn } from '@/lib/utils';
+import { categoryStyles } from '@/lib/skills';
 
 interface FluenceText {
   level: string;
@@ -183,8 +185,9 @@ export function FluenceExercise() {
   }
   
   if (exerciseState === 'selecting') {
+    const style = categoryStyles['Lecture / compréhension'];
     return (
-      <Card className="w-full max-w-2xl mx-auto shadow-2xl">
+      <Card className={cn("w-full max-w-2xl mx-auto shadow-2xl", style.bg, style.text)}>
         <CardHeader>
           <CardTitle className="font-headline text-3xl text-center">Choisis un texte à lire</CardTitle>
           <CardDescription className="text-center">Le but est de lire le texte à voix haute le plus vite et le mieux possible.</CardDescription>
@@ -311,5 +314,7 @@ export function FluenceExercise() {
 
   return null;
 }
+
+    
 
     
