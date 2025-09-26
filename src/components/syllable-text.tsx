@@ -120,7 +120,7 @@ export function SyllableText({ text }: SyllableTextProps) {
   let colorIndex = 0;
 
   return (
-    <p>
+    <p className="inline">
       {elements.map((element, i) => {
         if (element && !/(\s+|[.,;!?:\(\)])/.test(element)) {
           const syllabes = syllabify(element);

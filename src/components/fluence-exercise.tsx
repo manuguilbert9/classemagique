@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useContext } from 'react';
@@ -57,8 +58,9 @@ export function FluenceExercise() {
   const [mclm, setMclm] = useState(0);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
-  // Font size state
-  const [fontSize, setFontSize] = useState(20); // Default font size in px
+  // Display state
+  const [fontSize, setFontSize] = useState(20);
+  const [showSyllables, setShowSyllables] = useState(false);
   const fontSizes = [16, 18, 20, 24, 28, 32];
 
   useEffect(() => {
@@ -254,15 +256,20 @@ export function FluenceExercise() {
         <div className="w-full max-w-4xl mx-auto space-y-6">
             <header className="flex items-center justify-between">
                 <Button onClick={resetExercise} variant="outline"><ArrowLeft className="mr-2"/> Choisir un autre texte</Button>
-                <div className="flex items-center gap-4 w-64">
-                  <Label>Taille du texte</Label>
-                  <Slider
-                    min={0}
-                    max={fontSizes.length - 1}
-                    step={1}
-                    value={[fontSizes.indexOf(fontSize)]}
-                    onValueChange={(value) => setFontSize(fontSizes[value[0]])}
-                  />
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" onClick={() => setShowSyllables(prev => !prev)}>
+                        <SyllableText text="Syllabes" />
+                    </Button>
+                    <div className="flex items-center gap-2 w-48">
+                        <Label>Taille</Label>
+                        <Slider
+                            min={0}
+                            max={fontSizes.length - 1}
+                            step={1}
+                            value={[fontSizes.indexOf(fontSize)]}
+                            onValueChange={(value) => setFontSize(fontSizes[value[0]])}
+                        />
+                    </div>
                 </div>
             </header>
             <Card>
@@ -274,7 +281,11 @@ export function FluenceExercise() {
                     className="prose max-w-none leading-relaxed"
                     style={{ fontSize: `${fontSize}px` }}
                   >
-                    <SyllableText text={selectedText.content} />
+                    {showSyllables ? (
+                        <SyllableText text={selectedText.content} />
+                    ) : (
+                        <p>{selectedText.content}</p>
+                    )}
                 </CardContent>
             </Card>
 
