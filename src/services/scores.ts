@@ -3,8 +3,9 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc, writeBatch } from "firebase/firestore"; 
+import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc, writeBatch, runTransaction } from "firebase/firestore"; 
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, CountSettings, NumberLevelSettings, ReadingRaceSettings } from '@/lib/questions';
+import { getSkillBySlug } from '@/lib/skills';
 
 export interface CalculationState {
   [cellId: string]: {
@@ -41,22 +42,60 @@ export interface Score {
     readingRaceSettings?: ReadingRaceSettings;
 }
 
-// Adds a new score document to the 'scores' collection.
+// Calculates nuggets earned based on score.
+const calculateNuggets = (score: number, skillSlug: string): number => {
+    const skill = getSkillBySlug(skillSlug);
+    // For non-percentage based scores (like fluence, reading-race, or simple completion)
+    if (skill?.slug === 'fluence' || skill?.slug === 'reading-race') {
+        if (score > 0) return 2; // Fixed 2 nuggets for completing a reading race
+        return 0;
+    }
+    if (skill?.slug === 'decoding' || skill?.slug === 'syllable-table' || skill?.slug === 'writing-notebook' || skill?.slug === 'lire-des-phrases' ) {
+         return 2; // Fixed 2 nuggets for completion-based exercises
+    }
+
+    // For percentage-based scores
+    if (score >= 90) return 3;
+    if (score >= 80) return 2;
+    if (score >= 70) return 1;
+    return 0;
+};
+
+
+// Adds a new score document and updates student's nuggets.
 export async function addScore(scoreData: Omit<Score, 'id' | 'createdAt'>): Promise<{ success: boolean; error?: string }> {
     if (!scoreData.userId) {
         return { success: false, error: 'User ID is required.' };
     }
     try {
-        const dataToSave = {
-            ...scoreData,
-            details: scoreData.details || [], // Ensure details is an array
-            createdAt: Timestamp.now()
-        };
+        const studentRef = doc(db, "students", scoreData.userId);
 
-        await addDoc(collection(db, 'scores'), dataToSave);
+        await runTransaction(db, async (transaction) => {
+            const studentDoc = await transaction.get(studentRef);
+            if (!studentDoc.exists()) {
+                throw new Error("Student does not exist!");
+            }
+            
+            const nuggetsEarned = calculateNuggets(scoreData.score, scoreData.skill);
+            const currentNuggets = studentDoc.data().nuggets || 0;
+            const newNuggets = currentNuggets + nuggetsEarned;
+
+            // 1. Add the score
+            const scoreRef = doc(collection(db, "scores"));
+            transaction.set(scoreRef, {
+                ...scoreData,
+                details: scoreData.details || [],
+                createdAt: Timestamp.now()
+            });
+
+            // 2. Update the student's nugget count
+            transaction.update(studentRef, { nuggets: newNuggets });
+        });
+
         return { success: true };
+
     } catch (error) {
-        console.error("Error adding score to Firestore:", error);
+        console.error("Error adding score and updating nuggets:", error);
         if (error instanceof Error) {
             return { success: false, error: error.message };
         }
@@ -65,23 +104,39 @@ export async function addScore(scoreData: Omit<Score, 'id' | 'createdAt'>): Prom
 }
 
 /**
- * Saves a completed homework exercise result. This function is now part of the scores service.
+ * Saves a completed homework exercise result and updates nuggets.
  */
 export async function saveHomeworkResult(resultData: { userId: string, date: string, skillSlug: string, score: number }): Promise<{ success: boolean; error?: string }> {
    if (!resultData.userId) {
         return { success: false, error: 'User ID is required.' };
     }
-    if (!resultData.date) {
-        return { success: false, error: 'Homework date is required.' };
-    }
     try {
-        await addDoc(collection(db, 'homeworkResults'), {
-            ...resultData,
-            createdAt: Timestamp.now()
+         const studentRef = doc(db, "students", resultData.userId);
+
+         await runTransaction(db, async (transaction) => {
+            const studentDoc = await transaction.get(studentRef);
+            if (!studentDoc.exists()) {
+                throw new Error("Student does not exist!");
+            }
+            
+            const nuggetsEarned = calculateNuggets(resultData.score, resultData.skillSlug);
+            const currentNuggets = studentDoc.data().nuggets || 0;
+            const newNuggets = currentNuggets + nuggetsEarned;
+
+            // 1. Add the homework result
+            const hwResultRef = doc(collection(db, "homeworkResults"));
+            transaction.set(hwResultRef, {
+                ...resultData,
+                createdAt: Timestamp.now()
+            });
+
+            // 2. Update student's nuggets
+            transaction.update(studentRef, { nuggets: newNuggets });
         });
+        
         return { success: true };
     } catch (error) {
-        console.error("Error saving homework result to Firestore:", error);
+        console.error("Error saving homework result and updating nuggets:", error);
         if (error instanceof Error) {
             return { success: false, error: error.message };
         }

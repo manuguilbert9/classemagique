@@ -37,6 +37,7 @@ export interface Student {
     schedule?: ScheduleStep[];
     themeColors?: ThemeColors;
     mentalMathPerformance?: StudentPerformance;
+    nuggets?: number;
 }
 
 
@@ -65,6 +66,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         hasCustomSchedule: false,
         schedule: [],
         mentalMathPerformance: {},
+        nuggets: 0,
     });
 
     return {
@@ -76,6 +78,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         hasCustomSchedule: false,
         schedule: [],
         mentalMathPerformance: {},
+        nuggets: 0,
     };
 }
 
@@ -149,6 +152,7 @@ export async function getStudents(): Promise<Student[]> {
                 schedule: data.schedule || [],
                 themeColors: data.themeColors,
                 mentalMathPerformance: data.mentalMathPerformance || {},
+                nuggets: data.nuggets || 0,
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -190,6 +194,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     schedule: studentData.schedule || [],
                     themeColors: studentData.themeColors,
                     mentalMathPerformance: studentData.mentalMathPerformance || {},
+                    nuggets: studentData.nuggets || 0,
                 };
             }
         }
@@ -224,6 +229,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 schedule: data.schedule || [],
                 themeColors: data.themeColors,
                 mentalMathPerformance: data.mentalMathPerformance || {},
+                nuggets: data.nuggets || 0,
             };
         }
         return null;

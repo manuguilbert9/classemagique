@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { skills as allSkills, type Skill, allSkillCategories, categoryStyles } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { Home, BarChart3, CheckCircle, ListChecks } from 'lucide-react';
+import { Home, BarChart3, CheckCircle, ListChecks, Gem } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
@@ -127,7 +127,11 @@ export default function EnClassePage() {
         <Logo />
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
         <p className="text-lg sm:text-xl text-muted-foreground">Prêt(e) à relever un défi ?</p>
-         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
+         <div className="absolute top-0 right-0 flex items-center gap-2">
+             <div className="flex items-center gap-2 bg-amber-100 border border-amber-300 rounded-full px-3 py-1 text-amber-800 font-bold">
+                <Gem className="h-5 w-5" />
+                <span>{student.nuggets || 0}</span>
+             </div>
              <Button asChild variant="outline" size="sm">
                 <Link href="/results">
                     <BarChart3 className="mr-2" />
