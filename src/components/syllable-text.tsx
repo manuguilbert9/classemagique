@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
@@ -92,12 +91,12 @@ export function syllabify(mot: string): string[] {
         }
 
         // Ex: VCV -> coupe V-CV (ka-yak)
-        if (isVoyelle(motLower[i]) && isConsonne(char1) && isVoyelle(char2)) {
+        if (isVoyelle(motLower[i]) && char1 && isConsonne(char1) && char2 && isVoyelle(char2)) {
             syllabes.push(syllabeCourante);
             syllabeCourante = '';
         }
         // Ex: VCCV -> coupe VC-CV (par-tir), mais pas pour les groupes insécables (ta-bleau)
-        else if (isVoyelle(motLower[i]) && isConsonne(char1) && isConsonne(char2)) {
+        else if (isVoyelle(motLower[i]) && char1 && isConsonne(char1) && char2 && isConsonne(char2)) {
              const groupe = char1 + char2;
             if (!INSECABLES.has(groupe)) {
                 syllabeCourante += char1;
@@ -131,14 +130,14 @@ export function SyllableText({ text }: SyllableTextProps) {
       {elements.map((element, i) => {
         if (element && !/(\s+|[.,;!?:\(\)])/.test(element)) {
           const syllabes = syllabify(element);
+          const currentWordColorIndex = colorIndex;
+          colorIndex++;
           
           return (
             <React.Fragment key={i}>
               {syllabes.map((syllabe) => {
-                const currentColorIndex = colorIndex;
-                colorIndex++;
                 return (
-                  <span key={`${syllabe}-${currentColorIndex}`} className={currentColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
+                  <span key={`${syllabe}-${currentWordColorIndex}`} className={currentWordColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
                     {syllabe}
                   </span>
                 )
@@ -153,4 +152,3 @@ export function SyllableText({ text }: SyllableTextProps) {
     </p>
   );
 }
-
