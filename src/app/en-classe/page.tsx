@@ -18,24 +18,24 @@ import { cn } from '@/lib/utils';
 
 const categoryStyles: Record<SkillCategory, { bg: string; text: string }> = {
   // Pôle Français (teintes de bleu clair)
-  'Phonologie': { bg: 'bg-[#a9def9]', text: 'text-gray-800' },
-  'Lecture / compréhension': { bg: 'bg-[#a9def9]', text: 'text-gray-800' },
-  'Grammaire': { bg: 'bg-[#c3d4e5]', text: 'text-gray-800' },
-  'Conjugaison': { bg: 'bg-[#bde0f5]', text: 'text-gray-800' },
-  'Orthographe': { bg: 'bg-[#a9def9]', text: 'text-gray-800' },
-  'Vocabulaire': { bg: 'bg-[#e4e6f2]', text: 'text-gray-800' },
-  'Ecriture': { bg: 'bg-[#c3d4e5]', text: 'text-gray-800' },
+  'Phonologie': { bg: 'bg-gradient-to-br from-blue-100 to-blue-200', text: 'text-gray-800' },
+  'Lecture / compréhension': { bg: 'bg-gradient-to-br from-cyan-100 to-cyan-200', text: 'text-gray-800' },
+  'Grammaire': { bg: 'bg-gradient-to-br from-sky-100 to-sky-200', text: 'text-gray-800' },
+  'Conjugaison': { bg: 'bg-gradient-to-br from-indigo-100 to-indigo-200', text: 'text-gray-800' },
+  'Orthographe': { bg: 'bg-gradient-to-br from-blue-200 to-cyan-200', text: 'text-gray-800' },
+  'Vocabulaire': { bg: 'bg-gradient-to-br from-slate-100 to-slate-200', text: 'text-gray-800' },
+  'Ecriture': { bg: 'bg-gradient-to-br from-sky-200 to-indigo-200', text: 'text-gray-800' },
 
-  // Pôle Mathématiques (teintes de vert clair)
-  'Nombres et calcul': { bg: 'bg-[#d4f0d4]', text: 'text-gray-800' },
-  'Grandeurs et mesures': { bg: 'bg-[#c4e4c4]', text: 'text-gray-800' },
-  'Espace et géométrie': { bg: 'bg-[#b3d9b3]', text: 'text-gray-800' },
+  // Pôle Mathématiques (teintes de jaune/orange)
+  'Nombres et calcul': { bg: 'bg-gradient-to-br from-yellow-100 to-amber-200', text: 'text-gray-800' },
+  'Grandeurs et mesures': { bg: 'bg-gradient-to-br from-orange-100 to-yellow-200', text: 'text-gray-800' },
+  'Espace et géométrie': { bg: 'bg-gradient-to-br from-amber-100 to-orange-200', text: 'text-gray-800' },
   
   // Pôle Joker
-  'Problèmes': { bg: 'bg-[#fcf3cf]', text: 'text-gray-800' },
+  'Problèmes': { bg: 'bg-gradient-to-br from-lime-100 to-green-200', text: 'text-gray-800' },
   
   // Fallback/Other
-  'Organisation et gestion de données': { bg: 'bg-[#d6d6d6]', text: 'text-gray-800' },
+  'Organisation et gestion de données': { bg: 'bg-gradient-to-br from-gray-100 to-gray-200', text: 'text-gray-800' },
 };
 
 export default function EnClassePage() {
@@ -191,7 +191,7 @@ export default function EnClassePage() {
                             {skill.icon}
                           </div>
                           <h3 className="font-exercise text-2xl sm:text-3xl mb-2 drop-shadow-sm">{skill.name}</h3>
-                          <p className={cn("opacity-80 text-sm sm:text-base drop-shadow-sm", style.text === 'text-white' ? 'text-white/80' : 'text-black/80')}>{skill.description}</p>
+                          <p className={cn("opacity-80 text-sm sm:text-base", style.text === 'text-white' ? 'text-white/80' : 'text-black/80')}>{skill.description}</p>
                         </Card>
                       </Link>
                     )
