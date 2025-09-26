@@ -74,7 +74,7 @@ function ThemedLayout({ children }: { children: React.ReactNode }) {
         <meta name="description" content="Des exercices amusants et engageants pour développer vos compétences !" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@400;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap" rel="stylesheet" />
         {themeStyle && <style>{themeStyle}</style>}
       </head>
       <body className="font-body antialiased">

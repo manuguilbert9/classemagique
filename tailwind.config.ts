@@ -20,10 +20,10 @@ export default {
         'gradient-highlight': 'linear-gradient(to right, hsl(var(--primary)), hsl(270, 90%, 65%))',
       },
       fontFamily: {
-        body: ['Patrick Hand', 'cursive'],
+        body: ['Andika', 'sans-serif'],
         headline: ['Caveat', 'cursive'],
         code: ['monospace'],
-        numbers: ['Patrick Hand', 'cursive'],
+        numbers: ['Andika', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
