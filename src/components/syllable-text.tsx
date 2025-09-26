@@ -28,7 +28,25 @@ const LEXIQUE_EXCEPTIONS: { [key: string]: string[] } = {
 
 const VOYELLES = 'aàâeéèêëiîïoôuùûüœy';
 const CONSONNES = 'bcçdfghjklmnpqrstvwxz';
-const INSECABLES = new Set(['bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'gn', 'ph', 'pl', 'pr', 'th', 'tr', 'vr']);
+const INSECABLES = new Set([
+    'bl',
+    'br',
+    'ch',
+    'cl',
+    'cr',
+    'dr',
+    'fl',
+    'fr',
+    'gl',
+    'gr',
+    'gn',
+    'ph',
+    'pl',
+    'pr',
+    'th',
+    'tr',
+    'vr',
+]);
 
 // Fonctions utilitaires
 const isVoyelle = (char: string) => char && VOYELLES.includes(char.toLowerCase());
@@ -110,31 +128,44 @@ interface SyllableTextProps {
 }
 
 export function SyllableText({ text }: SyllableTextProps) {
-  const words = text.split(/(\s+)/); // Split by space but keep spaces
+  const lines = text.split(/\r?\n/);
+  const separatorRegex = /(\s+|[.,;!?:()])/;
 
   return (
     <p className="font-body leading-relaxed">
-      {words.map((word, wordIndex) => {
-        if (/\s+/.test(word) || word === '') {
-          return <React.Fragment key={wordIndex}>{word}</React.Fragment>;
-        }
-        
-        // Utilise la nouvelle fonction de syllabation
-        const syllabes = syllabify(word);
-        
-        return (
-          <span key={wordIndex} className="inline-block">
-            {syllabes.map((syllable, syllableIndex) => (
-              <span
-                key={syllableIndex}
-                className={syllableIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}
-              >
-                {syllable}
+      {lines.map((line, lineIndex) => (
+        <React.Fragment key={`line-${lineIndex}`}>
+          {line.split(separatorRegex).map((element, elementIndex) => {
+            if (element === '') {
+              return null;
+            }
+
+            if (separatorRegex.test(element)) {
+              return (
+                <React.Fragment key={`sep-${lineIndex}-${elementIndex}`}>
+                  {element}
+                </React.Fragment>
+              );
+            }
+
+            const syllabes = syllabify(element);
+
+            return (
+              <span key={`word-${lineIndex}-${elementIndex}`} className="inline-block">
+                {syllabes.map((syllable, syllableIndex) => (
+                  <span
+                    key={`syllable-${lineIndex}-${elementIndex}-${syllableIndex}`}
+                    className={syllableIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}
+                  >
+                    {syllable}
+                  </span>
+                ))}
               </span>
-            ))}
-          </span>
-        );
-      })}
+            );
+          })}
+          {lineIndex < lines.length - 1 && <br />}
+        </React.Fragment>
+      ))}
     </p>
   );
 }
