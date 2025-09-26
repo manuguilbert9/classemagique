@@ -17,6 +17,7 @@ import { Label } from './ui/label';
 import { cn } from '@/lib/utils';
 import { categoryStyles } from '@/lib/skills';
 import { Slider } from './ui/slider';
+import { SyllableText } from './syllable-text';
 
 interface FluenceText {
   level: string;
@@ -130,7 +131,6 @@ export function FluenceExercise() {
             userAnswer: `${mclm} MCLM`,
             correctAnswer: `Temps: ${time}s, Erreurs: ${errors}`,
             status: 'completed' as const,
-            mistakes: [],
         }];
 
         if (isHomework && homeworkDate) {
@@ -189,7 +189,7 @@ export function FluenceExercise() {
     );
   }
   
-  if (exerciseState === 'selecting') {
+  if (exerciseState === 'selecting' || !selectedText) {
     const style = categoryStyles['Lecture / compréhension'];
     return (
       <Card className={cn("w-full max-w-2xl mx-auto shadow-2xl", style.bg, style.text)}>
@@ -275,7 +275,7 @@ export function FluenceExercise() {
                     className="prose max-w-none leading-relaxed"
                     style={{ fontSize: `${fontSize}px` }}
                   >
-                    {selectedText.content}
+                    <SyllableText text={selectedText.content} />
                 </CardContent>
             </Card>
 
