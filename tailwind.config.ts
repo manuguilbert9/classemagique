@@ -21,7 +21,7 @@ export default {
       },
       fontFamily: {
         body: ['Andika', 'sans-serif'],
-        headline: ['Caveat', 'cursive'],
+        headline: ['FatMarker', 'cursive'],
         code: ['monospace'],
         numbers: ['Andika', 'sans-serif'],
       },
