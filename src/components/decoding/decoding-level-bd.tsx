@@ -241,9 +241,9 @@ export function DecodingLevelBD() {
         
         <div className="space-y-4">
             <h4 className="font-semibold">Je lis des mots :</h4>
-             <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-4", isUppercase && "uppercase")}>
+             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {realWordsLvlBD1.map(({ word, syllables, silent }, index) => (
-                    <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
+                    <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className={cn("h-auto justify-start text-2xl p-4", isUppercase && "uppercase")}>
                         <span className="text-blue-600">{syllables[0]}</span>
                         <span className="text-red-600">{syllables[1]}</span>
                         {syllables[2] && <span className="text-blue-600">{syllables[2]}</span>}
@@ -251,9 +251,9 @@ export function DecodingLevelBD() {
                     </Button>
                 ))}
             </div>
-             <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-4", isUppercase && "uppercase")}>
+             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {realWordsLvlBD2.map(({ word, syllables, silent }, index) => (
-                    <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
+                    <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className={cn("h-auto justify-start text-2xl p-4", isUppercase && "uppercase")}>
                         <span className="text-blue-600">{syllables[0]}</span>
                         <span className="text-red-600">{syllables[1]}</span>
                         {syllables[2] && <span className="text-blue-600">{syllables[2]}</span>}
