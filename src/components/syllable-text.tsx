@@ -27,8 +27,8 @@ const VOYELLES = 'aàâeéèêëiîïoôuùûüœy';
 const CONSONNES = 'bcçdfghjklmnpqrstvwxz';
 const INSECABLES = new Set(['bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'gn', 'ph', 'pl', 'pr', 'th', 'tr', 'vr']);
 
-function isVoyelle(char: string): boolean { return VOYELLES.includes(char); }
-function isConsonne(char: string): boolean { return CONSONNES.includes(char); }
+function isVoyelle(char: string): boolean { return VOYELLES.includes(char.toLowerCase()); }
+function isConsonne(char: string): boolean { return CONSONNES.includes(char.toLowerCase()); }
 
 function reconstructCase(original: string, syllabes: string[]): string[] {
     let result: string[] = [];
@@ -36,6 +36,14 @@ function reconstructCase(original: string, syllabes: string[]): string[] {
     for (const syllabe of syllabes) {
         result.push(original.substring(currentIndex, currentIndex + syllabe.length));
         currentIndex += syllabe.length;
+    }
+    // Gérer les restes si le découpage n'a pas couvert tout le mot
+    if (currentIndex < original.length) {
+        if (result.length > 0) {
+            result[result.length - 1] += original.substring(currentIndex);
+        } else {
+            result.push(original);
+        }
     }
     return result;
 }
@@ -48,7 +56,7 @@ export function syllabify(mot: string): string[] {
         return reconstructCase(motOriginal, LEXIQUE_EXCEPTIONS[motLower]);
     }
 
-    if (mot.length < 3) return [motOriginal];
+    if (mot.length <= 3) return [motOriginal];
 
     let syllabes: string[] = [];
     let syllabeCourante = '';
@@ -77,6 +85,7 @@ export function syllabify(mot: string): string[] {
     return reconstructCase(motOriginal, syllabes);
 }
 
+
 // --- Composant React ---
 
 interface SyllableTextProps {
@@ -85,6 +94,7 @@ interface SyllableTextProps {
 
 export function SyllableText({ text }: SyllableTextProps) {
   const elements = text.split(/(\s+|[.,;!?:\(\)])/);
+  let colorIndex = 0;
 
   return (
     <p>
@@ -93,11 +103,15 @@ export function SyllableText({ text }: SyllableTextProps) {
           const syllabes = syllabify(element);
           return (
             <React.Fragment key={i}>
-              {syllabes.map((syllabe, j) => (
-                <span key={j} className={j % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
-                  {syllabe}
-                </span>
-              ))}
+              {syllabes.map((syllabe, j) => {
+                const currentColorIndex = colorIndex;
+                colorIndex++;
+                return (
+                  <span key={j} className={currentColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
+                    {syllabe}
+                  </span>
+                )
+              })}
             </React.Fragment>
           );
         } else {
