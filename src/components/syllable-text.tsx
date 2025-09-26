@@ -1,10 +1,13 @@
 
+'use client';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 // --- MOTEUR DE SYLLABATION AMÉLIORÉ ---
 
 // 1. LEXIQUE D'EXCEPTIONS
+// Dictionnaire de mots avec leur découpage correct.
+// Idéal pour les mots irréguliers ou très fréquents.
 const LEXIQUE_EXCEPTIONS: { [key: string]: string[] } = {
     "monsieur": ["mon", "sieur"],
     "femme": ["fem", "me"],
@@ -29,8 +32,8 @@ const CONSONNES = 'bcçdfghjklmnpqrstvwxz';
 const INSECABLES = new Set(['bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'gn', 'ph', 'pl', 'pr', 'th', 'tr', 'vr']);
 
 // Fonctions utilitaires
-function isVoyelle(char: string): boolean { return char && VOYELLES.includes(char.toLowerCase()); }
-function isConsonne(char: string): boolean { return char && CONSONNES.includes(char.toLowerCase()); }
+function isVoyelle(char: string): boolean { return !!char && VOYELLES.includes(char.toLowerCase()); }
+function isConsonne(char: string): boolean { return !!char && CONSONNES.includes(char.toLowerCase()); }
 
 function reconstructCase(original: string, syllabes: string[]): string[] {
     let result: string[] = [];
@@ -68,30 +71,34 @@ export function syllabify(mot: string): string[] {
         syllabeCourante += motLower[i];
         let lookahead = motLower.substring(i + 1);
 
-        if (lookahead.length === 0) continue;
+        // Nouvelle règle VV (Voyelle-Voyelle)
+        if (isVoyelle(motLower[i]) && isVoyelle(lookahead[0])) {
+            syllabes.push(syllabeCourante);
+            syllabeCourante = '';
+            continue; // Passe à l'itération suivante
+        }
         
         let char1 = lookahead[0];
         let char2 = lookahead.length > 1 ? lookahead[1] : undefined;
         let char3 = lookahead.length > 2 ? lookahead[2] : undefined;
 
+        // Cas particulier "rbr" dans des mots comme "arbres"
+        if (char1 === 'r' && char2 === 'b' && char3 === 'r') {
+            syllabeCourante += char1; // syllabeCourante = "ar"
+            syllabes.push(syllabeCourante);
+            syllabeCourante = '';
+            i++; // Avance l'index pour sauter le 'r' déjà traité
+            continue;
+        }
+
         // Ex: VCV -> coupe V-CV (ka-yak)
-        if (isVoyelle(motLower[i]) && char1 && isConsonne(char1) && char2 && isVoyelle(char2)) {
+        if (isVoyelle(motLower[i]) && isConsonne(char1) && isVoyelle(char2)) {
             syllabes.push(syllabeCourante);
             syllabeCourante = '';
         }
         // Ex: VCCV -> coupe VC-CV (par-tir), mais pas pour les groupes insécables (ta-bleau)
-        else if (isVoyelle(motLower[i]) && char1 && isConsonne(char1) && char2 && isConsonne(char2)) {
+        else if (isVoyelle(motLower[i]) && isConsonne(char1) && isConsonne(char2)) {
              const groupe = char1 + char2;
-
-             // Cas particulier "rbr" dans des mots comme "arbres"
-             if (groupe === 'rb' && char3 && char3 === 'r') {
-                syllabeCourante += char1; // syllabeCourante = "ar"
-                syllabes.push(syllabeCourante);
-                syllabeCourante = '';
-                i++; // Avance l'index pour sauter le 'r' déjà traité
-                continue;
-            }
-
             if (!INSECABLES.has(groupe)) {
                 syllabeCourante += char1;
                 i++;
@@ -146,3 +153,4 @@ export function SyllableText({ text }: SyllableTextProps) {
     </p>
   );
 }
+
