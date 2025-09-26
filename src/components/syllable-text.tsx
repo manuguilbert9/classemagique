@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
@@ -130,14 +131,14 @@ export function SyllableText({ text }: SyllableTextProps) {
       {elements.map((element, i) => {
         if (element && !/(\s+|[.,;!?:\(\)])/.test(element)) {
           const syllabes = syllabify(element);
-          const currentWordColorIndex = colorIndex;
-          colorIndex++;
           
           return (
             <React.Fragment key={i}>
-              {syllabes.map((syllabe) => {
+              {syllabes.map((syllabe, sIndex) => {
+                const currentColorIndex = colorIndex;
+                colorIndex++;
                 return (
-                  <span key={`${syllabe}-${currentWordColorIndex}`} className={currentWordColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
+                  <span key={`${syllabe}-${sIndex}`} className={currentColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
                     {syllabe}
                   </span>
                 )
