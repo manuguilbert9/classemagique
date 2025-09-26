@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -27,8 +28,8 @@ const VOYELLES = 'aàâeéèêëiîïoôuùûüœy';
 const CONSONNES = 'bcçdfghjklmnpqrstvwxz';
 const INSECABLES = new Set(['bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'gn', 'ph', 'pl', 'pr', 'th', 'tr', 'vr']);
 
-function isVoyelle(char: string): boolean { return VOYELLES.includes(char.toLowerCase()); }
-function isConsonne(char: string): boolean { return CONSONNES.includes(char.toLowerCase()); }
+function isVoyelle(char: string): boolean { return char && VOYELLES.includes(char.toLowerCase()); }
+function isConsonne(char: string): boolean { return char && CONSONNES.includes(char.toLowerCase()); }
 
 function reconstructCase(original: string, syllabes: string[]): string[] {
     let result: string[] = [];
