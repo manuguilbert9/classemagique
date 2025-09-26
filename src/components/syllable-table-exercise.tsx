@@ -9,6 +9,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { allSyllableTables, SyllableTable } from '@/data/syllable-tables';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
+import { Switch } from './ui/switch';
+import { Label } from './ui/label';
 
 type ExerciseState = 'selecting' | 'reading';
 
@@ -42,6 +44,7 @@ export function SyllableTableExercise() {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [isUppercase, setIsUppercase] = useState(false);
 
   const handleSpeak = useCallback((text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
@@ -164,6 +167,11 @@ export function SyllableTableExercise() {
     <div className="w-full max-w-4xl mx-auto space-y-6">
         <header className="flex items-center justify-between">
             <Button onClick={handleBackToSelection} variant="outline"><ArrowLeft className="mr-2"/> Choisir un autre tableau</Button>
+             <div className="flex items-center space-x-2">
+                <Label htmlFor="case-switch">Script</Label>
+                <Switch id="case-switch" checked={isUppercase} onCheckedChange={setIsUppercase} />
+                <Label htmlFor="case-switch">Capitale</Label>
+            </div>
         </header>
         <Card>
             <CardHeader>
@@ -171,7 +179,7 @@ export function SyllableTableExercise() {
                 {selectedTable.newSound && <CardDescription>Nouveau son : {selectedTable.newSound}</CardDescription>}
             </CardHeader>
             <CardContent>
-                 <table className="w-full border-collapse">
+                 <table className={cn("w-full border-collapse", isUppercase && "uppercase")}>
                     <tbody>
                         {unifiedSyllableList.map((row, rowIndex) => (
                             <tr key={rowIndex}>

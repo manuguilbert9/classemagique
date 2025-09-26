@@ -10,6 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { UserContext } from '@/context/user-context';
 import { addScore } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
+import { cn } from '@/lib/utils';
 
 const syllableTable = {
     headers: ['a', 'e', 'i', 'o', 'u', 'y'],
@@ -62,6 +65,7 @@ export function DecodingLevel1() {
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+  const [isUppercase, setIsUppercase] = useState(false);
 
   React.useEffect(() => {
     setIsClient(true);
@@ -151,11 +155,18 @@ export function DecodingLevel1() {
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8">
         <Card>
-            <CardHeader>
-                <CardTitle className="font-headline text-3xl">Tableau de Syllabes - Niveau 1</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline text-3xl">Tableau de Syllabes - Niveau 1</CardTitle>
+                </div>
+                 <div className="flex items-center space-x-2">
+                    <Label htmlFor="case-switch">Script</Label>
+                    <Switch id="case-switch" checked={isUppercase} onCheckedChange={setIsUppercase} />
+                    <Label htmlFor="case-switch">Capitale</Label>
+                </div>
             </CardHeader>
             <CardContent>
-                 <table className="w-full border-collapse">
+                 <table className={cn("w-full border-collapse", isUppercase && "uppercase")}>
                      <thead>
                         <tr>
                             <th className="border p-2 w-12"></th>
@@ -246,7 +257,7 @@ export function DecodingLevel1() {
                         return (
                             <div 
                                 key={index} 
-                                className="absolute text-lg sm:text-xl font-bold cursor-pointer transition-transform hover:scale-110 p-2 rounded bg-yellow-300 border-2 border-black shadow-md"
+                                className={cn("absolute text-lg sm:text-xl font-bold cursor-pointer transition-transform hover:scale-110 p-2 rounded bg-yellow-300 border-2 border-black shadow-md", isUppercase && "uppercase")}
                                 style={{ top: `${y}%`, left: `${x}%`, transform: 'translate(-50%, -50%)' }}
                                 onClick={() => handleSpeak(syllable)}
                             >

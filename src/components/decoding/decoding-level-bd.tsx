@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { UserContext } from '@/context/user-context';
 import { addScore, saveHomeworkResult } from '@/services/scores';
 import { Save, CheckCircle } from 'lucide-react';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 
 const syllablePronunciationMap: { [key: string]: string } = {
   bo: "beau", do: "dos", ba: "bas", da: "das",
@@ -30,7 +32,7 @@ const syllablePronunciationMap: { [key: string]: string } = {
   py: "pi", ry: "ri", sy: "si", ty: "ti",
 };
 
-const SyllableTable = ({ title, data, colored = false }: { title: string, data: string[][], colored?: boolean }) => {
+const SyllableTable = ({ title, data, colored = false, isUppercase }: { title: string, data: string[][], colored?: boolean, isUppercase: boolean }) => {
   const handleSpeak = (text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
     if (speechSynthesis.speaking) speechSynthesis.cancel();
@@ -46,7 +48,7 @@ const SyllableTable = ({ title, data, colored = false }: { title: string, data: 
   return (
     <div className="space-y-2">
       <h4 className="font-semibold">{title}</h4>
-      <table className="w-full border-collapse">
+      <table className={cn("w-full border-collapse", isUppercase && "uppercase")}>
         <tbody>
           {data.map((row, rowIndex) => (
             <tr key={rowIndex}>
@@ -74,7 +76,7 @@ const SyllableTable = ({ title, data, colored = false }: { title: string, data: 
   );
 };
 
-const LetterLine = ({ title, data }: { title: string, data: string[] }) => {
+const LetterLine = ({ title, data, isUppercase }: { title: string, data: string[], isUppercase: boolean }) => {
     const handleSpeak = (text: string) => {
         if (!text || !('speechSynthesis' in window)) return;
         if (speechSynthesis.speaking) speechSynthesis.cancel();
@@ -90,7 +92,7 @@ const LetterLine = ({ title, data }: { title: string, data: string[] }) => {
     return (
         <div className="space-y-2">
              <h4 className="font-semibold">{title}</h4>
-             <div className="flex gap-4 p-4 border rounded-md justify-center">
+             <div className={cn("flex gap-4 p-4 border rounded-md justify-center", isUppercase && "uppercase")}>
                 {data.map((letter, index) => (
                     <span key={index} className="text-3xl font-bold cursor-pointer" onClick={() => handleSpeak(letter)}>{letter}</span>
                 ))}
@@ -159,6 +161,7 @@ export function DecodingLevelBD() {
   const homeworkDate = searchParams.get('date');
   const { toast } = useToast();
   const [hasBeenSaved, setHasBeenSaved] = React.useState(false);
+  const [isUppercase, setIsUppercase] = React.useState(false);
 
   const handleSpeak = (text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
@@ -218,20 +221,27 @@ export function DecodingLevelBD() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-headline text-3xl text-center">Niveau Spécial : Confusion b/d</CardTitle>
-        <CardDescription className="text-center">Clique sur les lettres et les syllabes pour les entendre.</CardDescription>
+      <CardHeader className="flex-row items-center justify-between">
+        <div>
+            <CardTitle className="font-headline text-3xl">Niveau Spécial : Confusion b/d</CardTitle>
+            <CardDescription>Clique sur les lettres et les syllabes pour les entendre.</CardDescription>
+        </div>
+        <div className="flex items-center space-x-2">
+            <Label htmlFor="case-switch">Script</Label>
+            <Switch id="case-switch" checked={isUppercase} onCheckedChange={setIsUppercase} />
+            <Label htmlFor="case-switch">Capitale</Label>
+        </div>
       </CardHeader>
       <CardContent className="space-y-8">
-        <SyllableTable title="Tableau de syllabes avec la lettre b :" data={tableB} />
-        <SyllableTable title="Tableau de syllabes avec la lettre d :" data={tableD} />
-        <LetterLine title="Ligne de b ou d :" data={lineBD} />
-        <SyllableTable title="Tableau de syllabes avec les lettres b et d :" data={tableBD} colored />
-        <SyllableTable title="Tableau de syllabes avec les lettres b et d (sans aide) :" data={tableBD} />
+        <SyllableTable title="Tableau de syllabes avec la lettre b :" data={tableB} isUppercase={isUppercase} />
+        <SyllableTable title="Tableau de syllabes avec la lettre d :" data={tableD} isUppercase={isUppercase} />
+        <LetterLine title="Ligne de b ou d :" data={lineBD} isUppercase={isUppercase} />
+        <SyllableTable title="Tableau de syllabes avec les lettres b et d :" data={tableBD} colored isUppercase={isUppercase} />
+        <SyllableTable title="Tableau de syllabes avec les lettres b et d (sans aide) :" data={tableBD} isUppercase={isUppercase} />
         
         <div className="space-y-4">
             <h4 className="font-semibold">Je lis des mots :</h4>
-             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+             <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-4", isUppercase && "uppercase")}>
                 {realWordsLvlBD1.map(({ word, syllables, silent }, index) => (
                     <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
                         <span className="text-blue-600">{syllables[0]}</span>
@@ -241,7 +251,7 @@ export function DecodingLevelBD() {
                     </Button>
                 ))}
             </div>
-             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+             <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-4", isUppercase && "uppercase")}>
                 {realWordsLvlBD2.map(({ word, syllables, silent }, index) => (
                     <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
                         <span className="text-blue-600">{syllables[0]}</span>

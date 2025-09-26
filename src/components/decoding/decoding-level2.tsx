@@ -10,6 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { UserContext } from '@/context/user-context';
 import { addScore } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
+import { cn } from '@/lib/utils';
 
 const realWords = [
     { word: 'lave', syllables: ['la', 've'], silent: '' },
@@ -103,6 +106,7 @@ export function DecodingLevel2() {
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+  const [isUppercase, setIsUppercase] = useState(false);
 
   React.useEffect(() => { setIsClient(true); }, []);
 
@@ -184,11 +188,18 @@ export function DecodingLevel2() {
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8">
         <Card>
-            <CardHeader>
-                <CardTitle className="font-headline text-3xl">Mots à deux syllabes</CardTitle>
-                <CardDescription>Clique sur un mot pour l'entendre. Les syllabes sont colorées pour t'aider.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline text-3xl">Mots à deux syllabes</CardTitle>
+                    <CardDescription>Clique sur un mot pour l'entendre. Les syllabes sont colorées pour t'aider.</CardDescription>
+                </div>
+                 <div className="flex items-center space-x-2">
+                    <Label htmlFor="case-switch-1">Script</Label>
+                    <Switch id="case-switch-1" checked={isUppercase} onCheckedChange={setIsUppercase} />
+                    <Label htmlFor="case-switch-1">Capitale</Label>
+                </div>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <CardContent className={cn("grid grid-cols-2 sm:grid-cols-4 gap-4", isUppercase && "uppercase")}>
                 {realWords.map(({ word, syllables, silent }, index) => (
                     <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
                         <span className="text-blue-600">{syllables[0]}</span>
@@ -201,9 +212,16 @@ export function DecodingLevel2() {
         </Card>
         
         <Card>
-            <CardHeader>
-                <CardTitle className="font-headline text-3xl">Circuit de Mots Inventés</CardTitle>
-                <CardDescription>Lis les mots inventés le plus vite possible et chronomètre ton temps.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                 <div>
+                    <CardTitle className="font-headline text-3xl">Circuit de Mots Inventés</CardTitle>
+                    <CardDescription>Lis les mots inventés le plus vite possible et chronomètre ton temps.</CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="case-switch-2">Script</Label>
+                    <Switch id="case-switch-2" checked={isUppercase} onCheckedChange={setIsUppercase} />
+                    <Label htmlFor="case-switch-2">Capitale</Label>
+                </div>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-6">
                 <div className="relative w-full h-[350px] sm:h-[450px]">
@@ -226,7 +244,7 @@ export function DecodingLevel2() {
                         return (
                             <div 
                                 key={index} 
-                                className="absolute text-lg sm:text-xl font-bold cursor-pointer transition-transform hover:scale-110 p-2 rounded bg-white border-2 border-black shadow-md"
+                                className={cn("absolute text-lg sm:text-xl font-bold cursor-pointer transition-transform hover:scale-110 p-2 rounded bg-white border-2 border-black shadow-md", isUppercase && "uppercase")}
                                 style={{ top: `${y}%`, left: `${x}%`, transform: 'translate(-50%, -50%)' }}
                                 onClick={() => handleSpeak(word)}
                             >
@@ -258,11 +276,18 @@ export function DecodingLevel2() {
         </Card>
 
         <Card>
-            <CardHeader>
-                <CardTitle className="font-headline text-3xl">Le Chemin des Mots</CardTitle>
-                <CardDescription>Lis les mots pour suivre le chemin.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline text-3xl">Le Chemin des Mots</CardTitle>
+                    <CardDescription>Lis les mots pour suivre le chemin.</CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="case-switch-3">Script</Label>
+                    <Switch id="case-switch-3" checked={isUppercase} onCheckedChange={setIsUppercase} />
+                    <Label htmlFor="case-switch-3">Capitale</Label>
+                </div>
             </CardHeader>
-            <CardContent className="flex flex-wrap items-center justify-center gap-2 p-6">
+            <CardContent className={cn("flex flex-wrap items-center justify-center gap-2 p-6", isUppercase && "uppercase")}>
                 {pathWords.map((word, index) => (
                     <React.Fragment key={word}>
                         <Button variant="outline" className="text-xl" onClick={() => handleSpeak(word)}>{word}</Button>

@@ -8,6 +8,9 @@ import { useToast } from '@/hooks/use-toast';
 import { UserContext } from '@/context/user-context';
 import { addScore, saveHomeworkResult } from '@/services/scores';
 import { Save, CheckCircle } from 'lucide-react';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
+import { cn } from '@/lib/utils';
 
 const syllablePronunciationMap: { [key: string]: string } = {
   bo: "beau", do: "dos", ba: "bas", da: "das",
@@ -29,7 +32,7 @@ const syllablePronunciationMap: { [key: string]: string } = {
   py: "pi", ry: "ri", sy: "si", ty: "ti", vy: "vie",
 };
 
-const SyllableTable = ({ title, data }: { title: string, data: string[][] }) => {
+const SyllableTable = ({ title, data, isUppercase }: { title: string, data: string[][], isUppercase: boolean }) => {
   const handleSpeak = (text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
     if (speechSynthesis.speaking) speechSynthesis.cancel();
@@ -45,7 +48,7 @@ const SyllableTable = ({ title, data }: { title: string, data: string[][] }) => 
   return (
     <div className="space-y-2">
       <h4 className="font-semibold">{title}</h4>
-      <table className="w-full border-collapse">
+      <table className={cn("w-full border-collapse", isUppercase && "uppercase")}>
         <tbody>
           {data.map((row, rowIndex) => (
             <tr key={rowIndex}>
@@ -99,6 +102,7 @@ export function DecodingLevelP() {
   const homeworkDate = searchParams.get('date');
   const { toast } = useToast();
   const [hasBeenSaved, setHasBeenSaved] = React.useState(false);
+  const [isUppercase, setIsUppercase] = React.useState(false);
 
   const handleSpeak = (text: string) => {
     if (!text || !('speechSynthesis' in window)) return;
@@ -154,15 +158,22 @@ export function DecodingLevelP() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-headline text-3xl text-center">Session : Le son [p]</CardTitle>
-        <CardDescription className="text-center">Clique sur les syllabes et les mots pour les entendre.</CardDescription>
+      <CardHeader className="flex-row items-center justify-between">
+        <div>
+            <CardTitle className="font-headline text-3xl">Session : Le son [p]</CardTitle>
+            <CardDescription>Clique sur les syllabes et les mots pour les entendre.</CardDescription>
+        </div>
+        <div className="flex items-center space-x-2">
+            <Label htmlFor="case-switch">Script</Label>
+            <Switch id="case-switch" checked={isUppercase} onCheckedChange={setIsUppercase} />
+            <Label htmlFor="case-switch">Capitale</Label>
+        </div>
       </CardHeader>
       <CardContent className="space-y-8">
-        <SyllableTable title="Tableau de syllabes avec le son [p] :" data={tableP} />
+        <SyllableTable title="Tableau de syllabes avec le son [p] :" data={tableP} isUppercase={isUppercase} />
         <div className="space-y-4">
             <h4 className="font-semibold">Je lis des mots :</h4>
-             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+             <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-4", isUppercase && "uppercase")}>
                 {wordsData.map(({ word, syllables, silent }, index) => (
                     <Button key={`${word}-${index}`} onClick={() => handleSpeak(word)} variant="outline" className="h-auto justify-start text-2xl p-4">
                         <span className="text-blue-600">{syllables[0]}</span>
