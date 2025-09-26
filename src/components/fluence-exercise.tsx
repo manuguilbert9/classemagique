@@ -16,6 +16,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { cn } from '@/lib/utils';
 import { categoryStyles } from '@/lib/skills';
+import { Slider } from './ui/slider';
 
 interface FluenceText {
   level: string;
@@ -55,6 +56,10 @@ export function FluenceExercise() {
   const [errors, setErrors] = useState(0);
   const [mclm, setMclm] = useState(0);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+
+  // Font size state
+  const [fontSize, setFontSize] = useState(20); // Default font size in px
+  const fontSizes = [16, 18, 20, 24, 28, 32];
 
   useEffect(() => {
     async function fetchTexts() {
@@ -250,13 +255,26 @@ export function FluenceExercise() {
         <div className="w-full max-w-4xl mx-auto space-y-6">
             <header className="flex items-center justify-between">
                 <Button onClick={resetExercise} variant="outline"><ArrowLeft className="mr-2"/> Choisir un autre texte</Button>
+                <div className="flex items-center gap-4 w-64">
+                  <Label>Taille du texte</Label>
+                  <Slider
+                    min={0}
+                    max={fontSizes.length - 1}
+                    step={1}
+                    value={[fontSizes.indexOf(fontSize)]}
+                    onValueChange={(value) => setFontSize(fontSizes[value[0]])}
+                  />
+                </div>
             </header>
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline text-3xl">{selectedText.title}</CardTitle>
                     <CardDescription>{selectedText.level}{selectedText.subCategory && ` - ${selectedText.subCategory}`} - {selectedText.wordCount} mots</CardDescription>
                 </CardHeader>
-                <CardContent className="prose max-w-none text-xl leading-relaxed">
+                <CardContent 
+                    className="prose max-w-none leading-relaxed"
+                    style={{ fontSize: `${fontSize}px` }}
+                  >
                     {selectedText.content}
                 </CardContent>
             </Card>
@@ -314,7 +332,3 @@ export function FluenceExercise() {
 
   return null;
 }
-
-    
-
-    
