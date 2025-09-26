@@ -165,6 +165,9 @@ export function ScoreTube({ score }: ScoreTubeProps) {
         {Math.round(score)}%
       </p>
       <style jsx>{`
+        .bg-gradient-highlight {
+          background-image: linear-gradient(to right, hsl(var(--primary)), hsl(270, 90%, 65%));
+        }
         @keyframes bubble-rise {
           0% {
             transform: translateY(0);

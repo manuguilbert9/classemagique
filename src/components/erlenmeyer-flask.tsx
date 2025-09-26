@@ -183,6 +183,9 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
         )}
       </svg>
        <style jsx>{`
+        .bg-gradient-highlight {
+          background-image: linear-gradient(to right, hsl(var(--primary)), hsl(270, 90%, 65%));
+        }
         @keyframes erlenmeyer-bubble-rise {
           0% {
             transform: translateY(0);
