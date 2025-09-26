@@ -28,6 +28,7 @@ const VOYELLES = 'aàâeéèêëiîïoôuùûüœy';
 const CONSONNES = 'bcçdfghjklmnpqrstvwxz';
 const INSECABLES = new Set(['bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'gn', 'ph', 'pl', 'pr', 'th', 'tr', 'vr']);
 
+// Fonctions utilitaires
 function isVoyelle(char: string): boolean { return char && VOYELLES.includes(char.toLowerCase()); }
 function isConsonne(char: string): boolean { return char && CONSONNES.includes(char.toLowerCase()); }
 
@@ -35,6 +36,7 @@ function reconstructCase(original: string, syllabes: string[]): string[] {
     let result: string[] = [];
     let currentIndex = 0;
     for (const syllabe of syllabes) {
+        if (currentIndex + syllabe.length > original.length) break;
         result.push(original.substring(currentIndex, currentIndex + syllabe.length));
         currentIndex += syllabe.length;
     }
@@ -64,14 +66,35 @@ export function syllabify(mot: string): string[] {
 
     for (let i = 0; i < motLower.length; i++) {
         syllabeCourante += motLower[i];
-        let lookahead = motLower.substring(i + 1, i + 4);
+        let lookahead = motLower.substring(i + 1);
 
-        if (isVoyelle(motLower[i]) && isConsonne(lookahead[0]) && isVoyelle(lookahead[1])) {
+        if (lookahead.length < 2) continue;
+        
+        let char1 = lookahead[0];
+        let char2 = lookahead[1];
+        let char3 = lookahead.length > 2 ? lookahead[2] : '';
+
+        // Ex: VCV -> coupe V-CV (ka-yak)
+        if (isVoyelle(motLower[i]) && isConsonne(char1) && isVoyelle(char2)) {
             syllabes.push(syllabeCourante);
             syllabeCourante = '';
-        } else if (isVoyelle(motLower[i]) && isConsonne(lookahead[0]) && isConsonne(lookahead[1]) && isVoyelle(lookahead[2])) {
-            if (!INSECABLES.has(lookahead.substring(0, 2))) {
-                syllabeCourante += lookahead[0];
+        }
+        // Ex: VCCV -> coupe VC-CV (par-tir), mais pas pour les groupes insécables (ta-bleau)
+        // ou des cas spécifiques comme 'rbr' (ar-bres)
+        else if (isVoyelle(motLower[i]) && isConsonne(char1) && isConsonne(char2) && isVoyelle(char3)) {
+            const groupe = char1 + char2;
+            
+            // Exception pour "rbr" -> "r-br"
+            if (groupe === 'rb' && lookahead.startsWith('rbr')) {
+                 syllabeCourante += char1;
+                 i++;
+                 syllabes.push(syllabeCourante);
+                 syllabeCourante = '';
+                 continue; // On continue à la prochaine itération
+            }
+
+            if (!INSECABLES.has(groupe)) {
+                syllabeCourante += char1;
                 i++;
                 syllabes.push(syllabeCourante);
                 syllabeCourante = '';
@@ -83,7 +106,7 @@ export function syllabify(mot: string): string[] {
         syllabes.push(syllabeCourante);
     }
     
-    return reconstructCase(motOriginal, syllabes);
+    return reconstructCase(motOriginal, syllabes.filter(Boolean));
 }
 
 
@@ -102,6 +125,8 @@ export function SyllableText({ text }: SyllableTextProps) {
       {elements.map((element, i) => {
         if (element && !/(\s+|[.,;!?:\(\)])/.test(element)) {
           const syllabes = syllabify(element);
+          const currentWordColorIndexStart = colorIndex;
+
           return (
             <React.Fragment key={i}>
               {syllabes.map((syllabe, j) => {
