@@ -6,6 +6,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { UserContext, UserProvider } from '@/context/user-context';
 import { useContext, useMemo } from 'react';
 import { hexToHsl } from '@/lib/utils';
+import { Caveat } from 'next/font/google';
+
+const caveat = Caveat({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-caveat',
+});
+
 
 // Function to calculate luminance and determine if a color is light or dark
 const getLuminance = (hex: string) => {
@@ -60,13 +68,13 @@ function ThemedLayout({ children }: { children: React.ReactNode }) {
   }, [student?.themeColors]);
 
   return (
-    <html lang="fr">
+    <html lang="fr" className={`${caveat.variable}`}>
       <head>
         <title>Classe Magique</title>
         <meta name="description" content="Des exercices amusants et engageants pour développer vos compétences !" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Belleza&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@400;700&display=swap" rel="stylesheet" />
         {themeStyle && <style>{themeStyle}</style>}
       </head>
       <body className="font-body antialiased">
