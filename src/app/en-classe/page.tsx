@@ -163,7 +163,7 @@ export default function EnClassePage() {
                         <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
                           {skill.icon}
                         </div>
-                        <h3 className="font-headline text-2xl sm:text-3xl mb-2">{skill.name}</h3>
+                        <h3 className="font-exercise text-2xl sm:text-3xl mb-2">{skill.name}</h3>
                         <p className="text-muted-foreground text-sm sm:text-base">{skill.description}</p>
                       </Card>
                     </Link>

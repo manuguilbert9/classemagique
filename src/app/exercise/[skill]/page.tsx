@@ -136,7 +136,7 @@ export default function ExercisePage() {
           <Card className="flex-grow mx-4 sm:mx-8">
             <CardHeader className="flex flex-row items-center justify-center space-x-4 p-4">
               <div className="text-primary [&>svg]:h-12 [&>svg]:w-12">{skill.icon}</div>
-              <CardTitle className="font-headline text-4xl">{skill.name}</CardTitle>
+              <CardTitle className="font-exercise text-4xl">{skill.name}</CardTitle>
             </CardHeader>
           </Card>
           <div className="w-10 sm:w-[150px] flex justify-end">
