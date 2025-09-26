@@ -4,6 +4,7 @@
 import * as React from 'react';
 
 // --- MOTEUR DE SYLLABATION AMÉLIORÉ ---
+// Logique transposée depuis le script fourni par l'utilisateur.
 
 // 1. LEXIQUE D'EXCEPTIONS
 const LEXIQUE_EXCEPTIONS: { [key: string]: string[] } = {
@@ -29,6 +30,10 @@ const VOYELLES = 'aàâeéèêëiîïoôuùûüœy';
 const CONSONNES = 'bcçdfghjklmnpqrstvwxz';
 const INSECABLES = new Set(['bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'gn', 'ph', 'pl', 'pr', 'th', 'tr', 'vr']);
 
+// Fonctions utilitaires
+const isVoyelle = (char: string) => char && VOYELLES.includes(char.toLowerCase());
+const isConsonne = (char: string) => char && CONSONNES.includes(char.toLowerCase());
+
 /**
  * Reconstruit la casse du mot original sur les syllabes découpées.
  * @param {string} original Le mot original.
@@ -39,14 +44,16 @@ function reconstructCase(original: string, syllabes: string[]): string[] {
     let result = [];
     let currentIndex = 0;
     for (const syllabe of syllabes) {
-        result.push(original.substring(currentIndex, currentIndex + syllabe.length));
-        currentIndex += syllabe.length;
+        const len = syllabe.length;
+        result.push(original.substring(currentIndex, currentIndex + len));
+        currentIndex += len;
     }
     return result;
 }
 
+
 /**
- * Fonction principale de syllabation.
+ * Fonction principale de syllabation, transposée du script JS fourni.
  * @param {string} mot Le mot à découper.
  * @returns {string[]} Un tableau contenant les syllabes.
  */
@@ -60,29 +67,29 @@ function syllabify(mot: string): string[] {
     }
 
     // Étape 2 : Appliquer l'algorithme de découpage si non trouvé
-    if (mot.length < 3) return [motOriginal];
+    if (mot.length <= 2) return [motOriginal];
 
     let syllabes: string[] = [];
     let syllabeCourante = '';
 
-    const isVoyelle = (char: string) => VOYELLES.includes(char);
-    const isConsonne = (char: string) => CONSONNES.includes(char);
-
     for (let i = 0; i < mot.length; i++) {
         syllabeCourante += mot[i];
 
-        let lookahead = mot.substring(i + 1, i + 4); // Regarde jusqu'à 3 caractères en avance
+        let char = mot[i];
+        let next1 = mot[i + 1];
+        let next2 = mot[i + 2];
+        let next3 = mot[i + 3];
         
         // Ex: VCV -> coupe V-CV (ka-yak)
-        if (isVoyelle(mot[i]) && isConsonne(lookahead[0]) && isVoyelle(lookahead[1])) {
+        if (isVoyelle(char) && isConsonne(next1) && isVoyelle(next2)) {
             syllabes.push(syllabeCourante);
             syllabeCourante = '';
         }
         // Ex: VCCV -> coupe VC-CV (par-tir)
-        else if (isVoyelle(mot[i]) && isConsonne(lookahead[0]) && isConsonne(lookahead[1]) && isVoyelle(lookahead[2])) {
+        else if (isVoyelle(char) && isConsonne(next1) && isConsonne(next2) && isVoyelle(next3)) {
              // Sauf si le groupe de consonnes est insécable (ta-bleau)
-            if (!INSECABLES.has(lookahead.substring(0, 2))) {
-                syllabeCourante += lookahead[0];
+            if (!INSECABLES.has(`${next1}${next2}`)) {
+                syllabeCourante += next1;
                 i++;
                 syllabes.push(syllabeCourante);
                 syllabeCourante = '';
@@ -108,7 +115,7 @@ export function SyllableText({ text }: SyllableTextProps) {
   return (
     <p className="font-body leading-relaxed">
       {words.map((word, wordIndex) => {
-        if (/\s+/.test(word)) {
+        if (/\s+/.test(word) || word === '') {
           return <React.Fragment key={wordIndex}>{word}</React.Fragment>;
         }
         
