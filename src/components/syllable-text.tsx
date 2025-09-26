@@ -68,29 +68,28 @@ export function syllabify(mot: string): string[] {
         syllabeCourante += motLower[i];
         let lookahead = motLower.substring(i + 1);
 
-        if (lookahead.length < 2) continue;
+        if (lookahead.length === 0) continue;
         
         let char1 = lookahead[0];
-        let char2 = lookahead[1];
-        let char3 = lookahead.length > 2 ? lookahead[2] : '';
+        let char2 = lookahead.length > 1 ? lookahead[1] : undefined;
+        let char3 = lookahead.length > 2 ? lookahead[2] : undefined;
 
         // Ex: VCV -> coupe V-CV (ka-yak)
-        if (isVoyelle(motLower[i]) && isConsonne(char1) && isVoyelle(char2)) {
+        if (isVoyelle(motLower[i]) && char1 && isConsonne(char1) && char2 && isVoyelle(char2)) {
             syllabes.push(syllabeCourante);
             syllabeCourante = '';
         }
         // Ex: VCCV -> coupe VC-CV (par-tir), mais pas pour les groupes insécables (ta-bleau)
-        // ou des cas spécifiques comme 'rbr' (ar-bres)
-        else if (isVoyelle(motLower[i]) && isConsonne(char1) && isConsonne(char2) && isVoyelle(char3)) {
-            const groupe = char1 + char2;
-            
-            // Exception pour "rbr" -> "r-br"
-            if (groupe === 'rb' && lookahead.startsWith('rbr')) {
-                 syllabeCourante += char1;
-                 i++;
-                 syllabes.push(syllabeCourante);
-                 syllabeCourante = '';
-                 continue; // On continue à la prochaine itération
+        else if (isVoyelle(motLower[i]) && char1 && isConsonne(char1) && char2 && isConsonne(char2)) {
+             const groupe = char1 + char2;
+
+             // Cas particulier "rbr" dans des mots comme "arbres"
+             if (groupe === 'rb' && char3 && char3 === 'r') {
+                syllabeCourante += char1; // syllabeCourante = "ar"
+                syllabes.push(syllabeCourante);
+                syllabeCourante = '';
+                i++; // Avance l'index pour sauter le 'r' déjà traité
+                continue;
             }
 
             if (!INSECABLES.has(groupe)) {
@@ -125,15 +124,14 @@ export function SyllableText({ text }: SyllableTextProps) {
       {elements.map((element, i) => {
         if (element && !/(\s+|[.,;!?:\(\)])/.test(element)) {
           const syllabes = syllabify(element);
-          const currentWordColorIndexStart = colorIndex;
-
+          
           return (
             <React.Fragment key={i}>
-              {syllabes.map((syllabe, j) => {
+              {syllabes.map((syllabe) => {
                 const currentColorIndex = colorIndex;
                 colorIndex++;
                 return (
-                  <span key={j} className={currentColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
+                  <span key={`${syllabe}-${currentColorIndex}`} className={currentColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
                     {syllabe}
                   </span>
                 )
@@ -141,6 +139,7 @@ export function SyllableText({ text }: SyllableTextProps) {
             </React.Fragment>
           );
         } else {
+          // Espace ou ponctuation, on le remet tel quel
           return <React.Fragment key={i}>{element}</React.Fragment>;
         }
       })}
