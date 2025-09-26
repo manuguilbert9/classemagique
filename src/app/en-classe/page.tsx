@@ -14,6 +14,29 @@ import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { getScoresForUser } from '@/services/scores';
 import { isToday } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+const categoryColors: Record<SkillCategory, string> = {
+    // Pôle Français
+    "Phonologie": "bg-[#3498db]",
+    "Lecture / compréhension": "bg-[#3498db]",
+    "Grammaire": "bg-[#2980b9]",
+    "Conjugaison": "bg-[#4a69bd]",
+    "Orthographe": "bg-[#1abc9c]",
+    "Vocabulaire": "bg-[#2c3e50]",
+    "Ecriture": "bg-[#9b59b6]", // Purple for creativity
+
+    // Pôle Mathématiques
+    "Nombres et calcul": "bg-[#2ecc71]",
+    "Grandeurs et mesures": "bg-[#27ae60]",
+    "Espace et géométrie": "bg-[#16a085]",
+
+    // Pôle Joker
+    "Problèmes": "bg-[#f1c40f]",
+    
+    // Fallback/Other
+    "Organisation et gestion de données": "bg-[#7f8c8d]",
+};
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
@@ -156,15 +179,17 @@ export default function EnClassePage() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
                   {categorySkills.map((skill) => (
                     <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
-                      <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10 relative">
+                      <Card className={cn("flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 relative text-white", categoryColors[skill.category] || 'bg-gray-400')}>
                         {skillsCompletedToday.has(skill.slug) && (
-                            <CheckCircle className="absolute top-3 right-3 h-6 w-6 text-green-500 rounded-full" />
+                            <div className="absolute top-3 right-3 h-7 w-7 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
+                               <CheckCircle className="h-6 w-6 text-white" />
+                            </div>
                         )}
-                        <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
+                        <div className="mb-4 transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
                           {skill.icon}
                         </div>
-                        <h3 className="font-exercise text-2xl sm:text-3xl mb-2">{skill.name}</h3>
-                        <p className="text-muted-foreground text-sm sm:text-base">{skill.description}</p>
+                        <h3 className="font-exercise text-2xl sm:text-3xl mb-2 drop-shadow-md">{skill.name}</h3>
+                        <p className="text-white/80 text-sm sm:text-base drop-shadow-sm">{skill.description}</p>
                       </Card>
                     </Link>
                   ))}
