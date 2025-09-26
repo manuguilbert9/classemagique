@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { getSkillBySlug } from '@/lib/skills';
+import { getSkillBySlug, categoryStyles } from '@/lib/skills';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
@@ -36,6 +36,7 @@ import { SyllableTableExercise } from '@/components/syllable-table-exercise';
 import { DecodingExercise } from '@/components/decoding-exercise';
 import { MysteryNumberExercise } from '@/components/mystery-number-exercise';
 import { MbpRuleExercise } from '@/components/mbp-rule-exercise';
+import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -50,63 +51,91 @@ export default function ExercisePage() {
     notFound();
   }
   
+  const style = categoryStyles[skill.category] || { bg: 'bg-gray-200', text: 'text-gray-800' };
   const returnHref = from === 'devoirs' ? '/devoirs' : '/en-classe';
 
   const renderExercise = () => {
+    let exerciseComponent;
     switch (skill.slug) {
       case 'somme-dix':
-        return <SommeDixExercise />;
+        exerciseComponent = <SommeDixExercise />;
+        break;
       case 'long-calculation':
-        return <LongCalculationExercise />;
+        exerciseComponent = <LongCalculationExercise />;
+        break;
       case 'word-families':
-        return <WordFamiliesExercise />;
+        exerciseComponent = <WordFamiliesExercise />;
+        break;
       case 'mental-calculation':
-        return <MentalCalculationExercise />;
+        exerciseComponent = <MentalCalculationExercise />;
+        break;
       case 'adaptive-mental-calculation':
-        return <AdaptiveMentalCalculationExercise />;
+        exerciseComponent = <AdaptiveMentalCalculationExercise />;
+        break;
       case 'calendar':
-        return <CalendarExercise />;
+        exerciseComponent = <CalendarExercise />;
+        break;
       case 'lire-des-phrases':
-        return <SentenceReadingExercise />;
+        exerciseComponent = <SentenceReadingExercise />;
+        break;
       case 'fluence':
-        return <FluenceExercise />;
+        exerciseComponent = <FluenceExercise />;
+        break;
       case 'simple-word-reading':
-        return <SimpleWordReadingExercise />;
+        exerciseComponent = <SimpleWordReadingExercise />;
+        break;
       case 'writing-notebook':
-        return <WritingNotebook />;
+        exerciseComponent = <WritingNotebook />;
+        break;
       case 'keyboard-copy':
-        return <KeyboardCopyExercise />;
+        exerciseComponent = <KeyboardCopyExercise />;
+        break;
       case 'letter-recognition':
-        return <LetterRecognitionExercise />;
+        exerciseComponent = <LetterRecognitionExercise />;
+        break;
       case 'reading-direction':
-        return <ReadingDirectionExercise />;
+        exerciseComponent = <ReadingDirectionExercise />;
+        break;
       case 'complement-dix':
-        return <ComplementDixExercise />;
+        exerciseComponent = <ComplementDixExercise />;
+        break;
       case 'son-an':
-        return <SonAnExercise />;
+        exerciseComponent = <SonAnExercise />;
+        break;
       case 'son-in':
-        return <SonInExercise />;
+        exerciseComponent = <SonInExercise />;
+        break;
       case 'nombres-complexes':
-        return <NombresComplexesExercise />;
+        exerciseComponent = <NombresComplexesExercise />;
+        break;
       case 'lettres-et-sons':
-        return <LettresEtSonsExercise />;
+        exerciseComponent = <LettresEtSonsExercise />;
+        break;
       case 'spelling':
         // The /spelling/[id] page handles specific exercises, but this renders the selector.
-        return <SpellingExercise exerciseId="" onFinish={() => {}} />;
+        exerciseComponent = <SpellingExercise exerciseId="" onFinish={() => {}} />;
+        break;
       case 'phrase-construction':
-        return <PhraseConstructionExercise />;
+        exerciseComponent = <PhraseConstructionExercise />;
+        break;
       case 'label-game':
-        return <LabelGameExercise />;
+        exerciseComponent = <LabelGameExercise />;
+        break;
       case 'coded-path':
-        return <CodedPathExercise />;
+        exerciseComponent = <CodedPathExercise />;
+        break;
       case 'syllable-table':
-        return <SyllableTableExercise />;
+        exerciseComponent = <SyllableTableExercise />;
+        break;
       case 'decoding':
-        return <DecodingExercise />;
+        exerciseComponent = <DecodingExercise />;
+        break;
       case 'mystery-number':
-        return <MysteryNumberExercise />;
+        exerciseComponent = <MysteryNumberExercise />;
+        break;
       case 'regle-mbp':
-        return <MbpRuleExercise />;
+        exerciseComponent = <MbpRuleExercise />;
+        break;
       case 'denombrement':
       case 'time':
       case 'lire-les-nombres':
@@ -114,8 +143,10 @@ export default function ExercisePage() {
       case 'syllabe-attaque':
       case 'currency':
       default:
-        return <ExerciseWorkspace skill={skill} />;
+        exerciseComponent = <ExerciseWorkspace skill={skill} />;
     }
+     // Wrap every exercise component in a Card with the correct style
+    return <div className={cn('rounded-lg p-0.5', style.bg)}><div className="bg-background rounded-md">{exerciseComponent}</div></div>;
   };
 
   return (
@@ -133,9 +164,9 @@ export default function ExercisePage() {
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
-          <Card className="flex-grow mx-4 sm:mx-8">
+          <Card className={cn("flex-grow mx-4 sm:mx-8", style.bg, style.text)}>
             <CardHeader className="flex flex-row items-center justify-center space-x-4 p-4">
-              <div className="text-primary [&>svg]:h-12 [&>svg]:w-12">{skill.icon}</div>
+              <div className="[&>svg]:h-12 [&>svg]:w-12">{skill.icon}</div>
               <CardTitle className="font-exercise text-4xl">{skill.name}</CardTitle>
             </CardHeader>
           </Card>

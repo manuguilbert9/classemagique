@@ -6,7 +6,7 @@ import { useContext, useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { skills as allSkills, type Skill, allSkillCategories, SkillCategory } from '@/lib/skills';
+import { skills as allSkills, type Skill, allSkillCategories, categoryStyles } from '@/lib/skills';
 import { Logo } from '@/components/logo';
 import { Home, BarChart3, CheckCircle, ListChecks } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,28 +15,6 @@ import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { getScoresForUser } from '@/services/scores';
 import { isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-
-const categoryStyles: Record<SkillCategory, { bg: string; text: string }> = {
-  // Pôle Français (teintes de bleu clair)
-  'Phonologie': { bg: 'bg-gradient-to-br from-blue-100 to-blue-200', text: 'text-gray-800' },
-  'Lecture / compréhension': { bg: 'bg-gradient-to-br from-cyan-100 to-cyan-200', text: 'text-gray-800' },
-  'Grammaire': { bg: 'bg-gradient-to-br from-sky-100 to-sky-200', text: 'text-gray-800' },
-  'Conjugaison': { bg: 'bg-gradient-to-br from-indigo-100 to-indigo-200', text: 'text-gray-800' },
-  'Orthographe': { bg: 'bg-gradient-to-br from-blue-200 to-cyan-200', text: 'text-gray-800' },
-  'Vocabulaire': { bg: 'bg-gradient-to-br from-slate-100 to-slate-200', text: 'text-gray-800' },
-  'Ecriture': { bg: 'bg-gradient-to-br from-sky-200 to-indigo-200', text: 'text-gray-800' },
-
-  // Pôle Mathématiques (teintes de jaune/orange)
-  'Nombres et calcul': { bg: 'bg-gradient-to-br from-yellow-100 to-amber-200', text: 'text-gray-800' },
-  'Grandeurs et mesures': { bg: 'bg-gradient-to-br from-orange-100 to-yellow-200', text: 'text-gray-800' },
-  'Espace et géométrie': { bg: 'bg-gradient-to-br from-amber-100 to-orange-200', text: 'text-gray-800' },
-  
-  // Pôle Joker
-  'Problèmes': { bg: 'bg-gradient-to-br from-lime-100 to-green-200', text: 'text-gray-800' },
-  
-  // Fallback/Other
-  'Organisation et gestion de données': { bg: 'bg-gradient-to-br from-gray-100 to-gray-200', text: 'text-gray-800' },
-};
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
