@@ -17,25 +17,25 @@ import { isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const categoryStyles: Record<SkillCategory, { bg: string; text: string }> = {
-    // Pôle Français
-    "Phonologie": { bg: "bg-[#3498db]", text: "text-white" },
-    "Lecture / compréhension": { bg: "bg-[#3498db]", text: "text-white" },
-    "Grammaire": { bg: "bg-[#2980b9]", text: "text-white" },
-    "Conjugaison": { bg: "bg-[#4a69bd]", text: "text-white" },
-    "Orthographe": { bg: "bg-[#3498db]", text: "text-white" },
-    "Vocabulaire": { bg: "bg-[#2c3e50]", text: "text-white" },
-    "Ecriture": { bg: "bg-[#2980b9]", text: "text-white" },
+  // Pôle Français (teintes de bleu clair)
+  'Phonologie': { bg: 'bg-[#a9def9]', text: 'text-gray-800' },
+  'Lecture / compréhension': { bg: 'bg-[#a9def9]', text: 'text-gray-800' },
+  'Grammaire': { bg: 'bg-[#c3d4e5]', text: 'text-gray-800' },
+  'Conjugaison': { bg: 'bg-[#bde0f5]', text: 'text-gray-800' },
+  'Orthographe': { bg: 'bg-[#a9def9]', text: 'text-gray-800' },
+  'Vocabulaire': { bg: 'bg-[#e4e6f2]', text: 'text-gray-800' },
+  'Ecriture': { bg: 'bg-[#c3d4e5]', text: 'text-gray-800' },
 
-    // Pôle Mathématiques
-    "Nombres et calcul": { bg: "bg-[#2ecc71]", text: "text-black" },
-    "Grandeurs et mesures": { bg: "bg-[#27ae60]", text: "text-white" },
-    "Espace et géométrie": { bg: "bg-[#16a085]", text: "text-white" },
-
-    // Pôle Joker
-    "Problèmes": { bg: "bg-[#f1c40f]", text: "text-black" },
-    
-    // Fallback/Other
-    "Organisation et gestion de données": { bg: "bg-[#7f8c8d]", text: "text-white" },
+  // Pôle Mathématiques (teintes de vert clair)
+  'Nombres et calcul': { bg: 'bg-[#d4f0d4]', text: 'text-gray-800' },
+  'Grandeurs et mesures': { bg: 'bg-[#c4e4c4]', text: 'text-gray-800' },
+  'Espace et géométrie': { bg: 'bg-[#b3d9b3]', text: 'text-gray-800' },
+  
+  // Pôle Joker
+  'Problèmes': { bg: 'bg-[#fcf3cf]', text: 'text-gray-800' },
+  
+  // Fallback/Other
+  'Organisation et gestion de données': { bg: 'bg-[#d6d6d6]', text: 'text-gray-800' },
 };
 
 export default function EnClassePage() {
@@ -178,19 +178,19 @@ export default function EnClassePage() {
                 <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
                   {categorySkills.map((skill) => {
-                    const style = categoryStyles[skill.category] || { bg: 'bg-gray-400', text: 'text-white' };
+                    const style = categoryStyles[skill.category] || { bg: 'bg-gray-200', text: 'text-gray-800' };
                     return (
                       <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
-                        <Card className={cn("flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 relative", style.bg, style.text)}>
+                        <Card className={cn("flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative", style.bg, style.text)}>
                           {skillsCompletedToday.has(skill.slug) && (
                               <div className="absolute top-3 right-3 h-7 w-7 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
                                 <CheckCircle className="h-6 w-6 text-white" />
                               </div>
                           )}
-                          <div className="mb-4 transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
+                          <div className={cn("mb-4 transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20", style.text)}>
                             {skill.icon}
                           </div>
-                          <h3 className="font-exercise text-2xl sm:text-3xl mb-2 drop-shadow-md">{skill.name}</h3>
+                          <h3 className="font-exercise text-2xl sm:text-3xl mb-2 drop-shadow-sm">{skill.name}</h3>
                           <p className={cn("opacity-80 text-sm sm:text-base drop-shadow-sm", style.text === 'text-white' ? 'text-white/80' : 'text-black/80')}>{skill.description}</p>
                         </Card>
                       </Link>
