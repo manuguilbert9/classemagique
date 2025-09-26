@@ -1,9 +1,8 @@
-import * as React from 'react';
-import { cn } from '@/lib/utils';
-
 // --- MOTEUR DE SYLLABATION AMÉLIORÉ ---
 
 // 1. LEXIQUE D'EXCEPTIONS
+// Dictionnaire de mots avec leur découpage correct.
+// Idéal pour les mots irréguliers ou très fréquents.
 const LEXIQUE_EXCEPTIONS: { [key: string]: string[] } = {
     "monsieur": ["mon", "sieur"],
     "femme": ["fem", "me"],
@@ -27,9 +26,16 @@ const VOYELLES = 'aàâeéèêëiîïoôuùûüœy';
 const CONSONNES = 'bcçdfghjklmnpqrstvwxz';
 const INSECABLES = new Set(['bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'gn', 'ph', 'pl', 'pr', 'th', 'tr', 'vr']);
 
+// Fonctions utilitaires
 function isVoyelle(char: string): boolean { return VOYELLES.includes(char); }
 function isConsonne(char: string): boolean { return CONSONNES.includes(char); }
 
+/**
+ * Reconstruit la casse du mot original sur les syllabes découpées.
+ * @param {string} original Le mot original.
+ * @param {string[]} syllabes Le tableau de syllabes en minuscule.
+ * @returns {string[]} Le tableau de syllabes avec la bonne casse.
+ */
 function reconstructCase(original: string, syllabes: string[]): string[] {
     let result: string[] = [];
     let currentIndex = 0;
@@ -40,27 +46,40 @@ function reconstructCase(original: string, syllabes: string[]): string[] {
     return result;
 }
 
+
+/**
+ * Fonction principale de syllabation.
+ * @param {string} mot Le mot à découper.
+ * @returns {string[]} Un tableau contenant les syllabes.
+ */
 export function syllabify(mot: string): string[] {
     const motOriginal = mot;
     const motLower = mot.toLowerCase();
 
+    // Étape 1 : Vérifier dans le lexique d'exceptions
     if (LEXIQUE_EXCEPTIONS[motLower]) {
         return reconstructCase(motOriginal, LEXIQUE_EXCEPTIONS[motLower]);
     }
 
-    if (mot.length < 3) return [motOriginal];
+    // Étape 2 : Appliquer l'algorithme de découpage si non trouvé
+    if (motLower.length < 3) return [motOriginal];
 
     let syllabes: string[] = [];
     let syllabeCourante = '';
 
     for (let i = 0; i < motLower.length; i++) {
         syllabeCourante += motLower[i];
-        let lookahead = motLower.substring(i + 1, i + 4);
 
+        let lookahead = motLower.substring(i + 1, i + 4); // Regarde jusqu'à 3 caractères en avance
+        
+        // Ex: VCV -> coupe V-CV (ka-yak)
         if (isVoyelle(motLower[i]) && isConsonne(lookahead[0]) && isVoyelle(lookahead[1])) {
             syllabes.push(syllabeCourante);
             syllabeCourante = '';
-        } else if (isVoyelle(motLower[i]) && isConsonne(lookahead[0]) && isConsonne(lookahead[1]) && isVoyelle(lookahead[2])) {
+        }
+        // Ex: VCCV -> coupe VC-CV (par-tir)
+        else if (isVoyelle(motLower[i]) && isConsonne(lookahead[0]) && isConsonne(lookahead[1]) && isVoyelle(lookahead[2])) {
+             // Sauf si le groupe de consonnes est insécable (ta-bleau)
             if (!INSECABLES.has(lookahead.substring(0, 2))) {
                 syllabeCourante += lookahead[0];
                 i++;
@@ -69,41 +88,10 @@ export function syllabify(mot: string): string[] {
             }
         }
     }
-
     if (syllabeCourante) {
         syllabes.push(syllabeCourante);
     }
     
+    // Remettre la casse originale
     return reconstructCase(motOriginal, syllabes);
-}
-
-// --- Composant React ---
-
-interface SyllableTextProps {
-  text: string;
-}
-
-export function SyllableText({ text }: SyllableTextProps) {
-  const elements = text.split(/(\s+|[.,;!?:\(\)])/);
-
-  return (
-    <p>
-      {elements.map((element, i) => {
-        if (element && !/(\s+|[.,;!?:\(\)])/.test(element)) {
-          const syllabes = syllabify(element);
-          return (
-            <React.Fragment key={i}>
-              {syllabes.map((syllabe, j) => (
-                <span key={j} className={j % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
-                  {syllabe}
-                </span>
-              ))}
-            </React.Fragment>
-          );
-        } else {
-          return <React.Fragment key={i}>{element}</React.Fragment>;
-        }
-      })}
-    </p>
-  );
 }
