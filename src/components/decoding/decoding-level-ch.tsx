@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 const syllablePronunciationMap: { [key: string]: string } = {
   bo: "beau", do: "dos", ba: "bas", da: "das",
   be: "beu", de: "de", bi: "bie", di: "die",
-  bu: "bue", du: "due", by: "bi", dy: "di",
+  bu: "bue", du: "due", by: "chie",
   lo: "l'eau", fo: "faux", pa: "pas", va: "vas",
   ne: "nœud", ve: "veux", jo: "j'eau", ro: "rot",
   li: "lie", lu: "lue", le: "le",
