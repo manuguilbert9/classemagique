@@ -27,6 +27,18 @@ export default {
         numbers: ['Andika', 'sans-serif'],
       },
       colors: {
+        yellow: {
+          DEFAULT: '#FFD76A',
+        },
+        orange: {
+          DEFAULT: '#FE9767',
+        },
+        pink: {
+          DEFAULT: '#FF63A7',
+        },
+        blue: {
+          DEFAULT: '#86B4FF',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
