@@ -3,65 +3,99 @@
 
 import * as React from 'react';
 
-// Simplified syllabation logic for French
-const syllabify = (word: string): string[] => {
-    // This is a very basic syllabation and will have errors.
-    // It's a placeholder for a more complex engine.
-    const vowels = 'aàâeéèêëiîïoôuùûœæ';
-    const consonants = 'bcdfghjklmnpqrstvwxz';
-    const digraphs = ['ch', 'ph', 'th', 'gn', 'ou', 'au', 'eau', 'ai', 'ei', 'eu', 'œu', 'oi', 'an', 'en', 'in', 'on', 'un', 'om', 'am', 'em', 'im', 'um'];
-    const trigraphs = ['oin', 'eau'];
+// --- MOTEUR DE SYLLABATION AMÉLIORÉ ---
 
-    let syllables: string[] = [];
-    let currentSyllable = '';
-
-    for (let i = 0; i < word.length; i++) {
-        let char = word[i];
-        let nextChar = word[i + 1] || '';
-        let nextTwoChars = word.substring(i + 1, i + 3);
-        let currentGroup = char + nextChar;
-        let currentTrigraph = char + nextTwoChars;
-
-        if (trigraphs.includes(currentTrigraph.toLowerCase())) {
-            currentSyllable += currentTrigraph;
-            i += 2;
-        } else if (digraphs.includes(currentGroup.toLowerCase())) {
-            currentSyllable += currentGroup;
-            i += 1;
-        } else {
-            currentSyllable += char;
-        }
-
-        // Basic rule: A syllable often ends after a vowel if followed by a consonant
-        if (vowels.includes(char.toLowerCase())) {
-            if (consonants.includes(nextChar.toLowerCase())) {
-                // Look ahead for consonant cluster (e.g., "tr", "pl")
-                let nextNextChar = word[i + 2] || '';
-                if (!['l', 'r'].includes(nextNextChar.toLowerCase()) || !consonants.includes(nextChar.toLowerCase())) {
-                    syllables.push(currentSyllable);
-                    currentSyllable = '';
-                }
-            }
-        }
-    }
-    
-    if (currentSyllable) {
-        syllables.push(currentSyllable);
-    }
-    
-    // Post-processing to merge single consonants with the previous syllable
-    if (syllables.length > 1) {
-       for (let i = syllables.length - 1; i > 0; i--) {
-            if (consonants.includes(syllables[i]) && syllables[i].length === 1) {
-                syllables[i-1] += syllables[i];
-                syllables.splice(i, 1);
-            }
-        }
-    }
-
-
-    return syllables.filter(s => s.length > 0);
+// 1. LEXIQUE D'EXCEPTIONS
+const LEXIQUE_EXCEPTIONS: { [key: string]: string[] } = {
+    "monsieur": ["mon", "sieur"],
+    "femme": ["fem", "me"],
+    "oeil": ["oeil"],
+    "aujourd'hui": ["au", "jour", "d'hui"],
+    "examen": ["e", "xa", "men"],
+    "second": ["se", "cond"],
+    "technique": ["tech", "nique"],
+    "automne": ["au", "tomne"],
+    "rythme": ["ryth", "me"],
+    "baptême": ["ba", "ptê", "me"],
+    "football": ["foot", "ball"],
+    "omnibus": ["om","ni","bus"],
+    "omniscient": ["om","ni","scient"],
+    "onze": ["onze"],
+    "quelqu'un": ["quel","qu'un"],
+    "solennel": ["so","len","nel"],
 };
+
+const VOYELLES = 'aàâeéèêëiîïoôuùûüœy';
+const CONSONNES = 'bcçdfghjklmnpqrstvwxz';
+const INSECABLES = new Set(['bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'gn', 'ph', 'pl', 'pr', 'th', 'tr', 'vr']);
+
+/**
+ * Reconstruit la casse du mot original sur les syllabes découpées.
+ * @param {string} original Le mot original.
+ * @param {string[]} syllabes Le tableau de syllabes en minuscule.
+ * @returns {string[]} Le tableau de syllabes avec la bonne casse.
+ */
+function reconstructCase(original: string, syllabes: string[]): string[] {
+    let result = [];
+    let currentIndex = 0;
+    for (const syllabe of syllabes) {
+        result.push(original.substring(currentIndex, currentIndex + syllabe.length));
+        currentIndex += syllabe.length;
+    }
+    return result;
+}
+
+/**
+ * Fonction principale de syllabation.
+ * @param {string} mot Le mot à découper.
+ * @returns {string[]} Un tableau contenant les syllabes.
+ */
+function syllabify(mot: string): string[] {
+    const motOriginal = mot;
+    mot = mot.toLowerCase();
+
+    // Étape 1 : Vérifier dans le lexique d'exceptions
+    if (LEXIQUE_EXCEPTIONS[mot]) {
+        return LEXIQUE_EXCEPTIONS[mot];
+    }
+
+    // Étape 2 : Appliquer l'algorithme de découpage si non trouvé
+    if (mot.length < 3) return [motOriginal];
+
+    let syllabes: string[] = [];
+    let syllabeCourante = '';
+
+    const isVoyelle = (char: string) => VOYELLES.includes(char);
+    const isConsonne = (char: string) => CONSONNES.includes(char);
+
+    for (let i = 0; i < mot.length; i++) {
+        syllabeCourante += mot[i];
+
+        let lookahead = mot.substring(i + 1, i + 4); // Regarde jusqu'à 3 caractères en avance
+        
+        // Ex: VCV -> coupe V-CV (ka-yak)
+        if (isVoyelle(mot[i]) && isConsonne(lookahead[0]) && isVoyelle(lookahead[1])) {
+            syllabes.push(syllabeCourante);
+            syllabeCourante = '';
+        }
+        // Ex: VCCV -> coupe VC-CV (par-tir)
+        else if (isVoyelle(mot[i]) && isConsonne(lookahead[0]) && isConsonne(lookahead[1]) && isVoyelle(lookahead[2])) {
+             // Sauf si le groupe de consonnes est insécable (ta-bleau)
+            if (!INSECABLES.has(lookahead.substring(0, 2))) {
+                syllabeCourante += lookahead[0];
+                i++;
+                syllabes.push(syllabeCourante);
+                syllabeCourante = '';
+            }
+        }
+    }
+    if (syllabeCourante) {
+        syllabes.push(syllabeCourante);
+    }
+    
+    // Remettre la casse originale
+    return reconstructCase(motOriginal, syllabes);
+}
 
 
 interface SyllableTextProps {
@@ -78,11 +112,12 @@ export function SyllableText({ text }: SyllableTextProps) {
           return <React.Fragment key={wordIndex}>{word}</React.Fragment>;
         }
         
-        const syllables = syllabify(word);
+        // Utilise la nouvelle fonction de syllabation
+        const syllabes = syllabify(word);
         
         return (
           <span key={wordIndex} className="inline-block">
-            {syllables.map((syllable, syllableIndex) => (
+            {syllabes.map((syllable, syllableIndex) => (
               <span
                 key={syllableIndex}
                 className={syllableIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}
