@@ -16,26 +16,26 @@ import { getScoresForUser } from '@/services/scores';
 import { isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-const categoryColors: Record<SkillCategory, string> = {
+const categoryStyles: Record<SkillCategory, { bg: string; text: string }> = {
     // Pôle Français
-    "Phonologie": "bg-[#3498db]",
-    "Lecture / compréhension": "bg-[#3498db]",
-    "Grammaire": "bg-[#2980b9]",
-    "Conjugaison": "bg-[#4a69bd]",
-    "Orthographe": "bg-[#3498db]", // Replaced green with light blue for consistency
-    "Vocabulaire": "bg-[#2c3e50]",
-    "Ecriture": "bg-[#2980b9]", // Replaced purple with a shade of blue
+    "Phonologie": { bg: "bg-[#3498db]", text: "text-white" },
+    "Lecture / compréhension": { bg: "bg-[#3498db]", text: "text-white" },
+    "Grammaire": { bg: "bg-[#2980b9]", text: "text-white" },
+    "Conjugaison": { bg: "bg-[#4a69bd]", text: "text-white" },
+    "Orthographe": { bg: "bg-[#3498db]", text: "text-white" },
+    "Vocabulaire": { bg: "bg-[#2c3e50]", text: "text-white" },
+    "Ecriture": { bg: "bg-[#2980b9]", text: "text-white" },
 
     // Pôle Mathématiques
-    "Nombres et calcul": "bg-[#2ecc71]",
-    "Grandeurs et mesures": "bg-[#27ae60]",
-    "Espace et géométrie": "bg-[#16a085]",
+    "Nombres et calcul": { bg: "bg-[#2ecc71]", text: "text-black" },
+    "Grandeurs et mesures": { bg: "bg-[#27ae60]", text: "text-white" },
+    "Espace et géométrie": { bg: "bg-[#16a085]", text: "text-white" },
 
     // Pôle Joker
-    "Problèmes": "bg-[#f1c40f]",
+    "Problèmes": { bg: "bg-[#f1c40f]", text: "text-black" },
     
     // Fallback/Other
-    "Organisation et gestion de données": "bg-[#7f8c8d]",
+    "Organisation et gestion de données": { bg: "bg-[#7f8c8d]", text: "text-white" },
 };
 
 export default function EnClassePage() {
@@ -177,22 +177,25 @@ export default function EnClassePage() {
               <div key={category}>
                 <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
-                  {categorySkills.map((skill) => (
-                    <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
-                      <Card className={cn("flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 relative text-white", categoryColors[skill.category] || 'bg-gray-400')}>
-                        {skillsCompletedToday.has(skill.slug) && (
-                            <div className="absolute top-3 right-3 h-7 w-7 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
-                               <CheckCircle className="h-6 w-6 text-white" />
-                            </div>
-                        )}
-                        <div className="mb-4 transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
-                          {skill.icon}
-                        </div>
-                        <h3 className="font-exercise text-2xl sm:text-3xl mb-2 drop-shadow-md">{skill.name}</h3>
-                        <p className="text-white/80 text-sm sm:text-base drop-shadow-sm">{skill.description}</p>
-                      </Card>
-                    </Link>
-                  ))}
+                  {categorySkills.map((skill) => {
+                    const style = categoryStyles[skill.category] || { bg: 'bg-gray-400', text: 'text-white' };
+                    return (
+                      <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
+                        <Card className={cn("flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 relative", style.bg, style.text)}>
+                          {skillsCompletedToday.has(skill.slug) && (
+                              <div className="absolute top-3 right-3 h-7 w-7 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                <CheckCircle className="h-6 w-6 text-white" />
+                              </div>
+                          )}
+                          <div className="mb-4 transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
+                            {skill.icon}
+                          </div>
+                          <h3 className="font-exercise text-2xl sm:text-3xl mb-2 drop-shadow-md">{skill.name}</h3>
+                          <p className={cn("opacity-80 text-sm sm:text-base drop-shadow-sm", style.text === 'text-white' ? 'text-white/80' : 'text-black/80')}>{skill.description}</p>
+                        </Card>
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
             );
