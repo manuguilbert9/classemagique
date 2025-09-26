@@ -35,6 +35,7 @@ import { AdaptiveMentalCalculationExercise } from '@/components/adaptive-mental-
 import { SyllableTableExercise } from '@/components/syllable-table-exercise';
 import { DecodingExercise } from '@/components/decoding-exercise';
 import { MysteryNumberExercise } from '@/components/mystery-number-exercise';
+import { MbpRuleExercise } from '@/components/mbp-rule-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -104,6 +105,8 @@ export default function ExercisePage() {
         return <DecodingExercise />;
       case 'mystery-number':
         return <MysteryNumberExercise />;
+      case 'regle-mbp':
+        return <MbpRuleExercise />;
       case 'denombrement':
       case 'time':
       case 'lire-les-nombres':

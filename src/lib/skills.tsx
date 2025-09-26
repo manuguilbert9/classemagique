@@ -32,6 +32,7 @@ import {
   Table,
   CircuitBoard,
   HelpCircle,
+  CaseUpper,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -153,6 +154,14 @@ export const skills: Skill[] = [
     slug: 'son-in',
     description: "Choisis la bonne écriture (in, im, ain, ein) pour compléter les mots.",
     icon: <ALargeSmall />,
+    category: 'Orthographe',
+    isFixedLevel: 'B',
+  },
+  {
+    name: 'La règle M,B,P',
+    slug: 'regle-mbp',
+    description: "Complète les mots avec 'n' ou 'm' en appliquant la règle du M, B, P.",
+    icon: <CaseUpper />,
     category: 'Orthographe',
     isFixedLevel: 'B',
   },
