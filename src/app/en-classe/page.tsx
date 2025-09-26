@@ -22,9 +22,9 @@ const categoryColors: Record<SkillCategory, string> = {
     "Lecture / compréhension": "bg-[#3498db]",
     "Grammaire": "bg-[#2980b9]",
     "Conjugaison": "bg-[#4a69bd]",
-    "Orthographe": "bg-[#1abc9c]",
+    "Orthographe": "bg-[#3498db]", // Replaced green with light blue for consistency
     "Vocabulaire": "bg-[#2c3e50]",
-    "Ecriture": "bg-[#9b59b6]", // Purple for creativity
+    "Ecriture": "bg-[#2980b9]", // Replaced purple with a shade of blue
 
     // Pôle Mathématiques
     "Nombres et calcul": "bg-[#2ecc71]",
