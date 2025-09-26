@@ -21,6 +21,7 @@ import { DayPicker } from 'react-day-picker';
 import { fr } from 'date-fns/locale';
 import 'react-day-picker/dist/style.css';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from './ui/input-otp';
+import { categoryStyles } from '@/lib/skills';
 
 const NUM_QUESTIONS = 5;
 
@@ -55,6 +56,7 @@ export function CalendarExercise() {
   const [selectedOption, setSelectedOption] = useState<string | undefined>();
   const [inputValue, setInputValue] = useState<string>('');
 
+  const style = categoryStyles['Grandeurs et mesures'];
 
   useEffect(() => {
     if (student?.levels?.['calendar']) {
@@ -208,7 +210,7 @@ export function CalendarExercise() {
   if (!level) {
       // Level selector if no student level is found
       return (
-        <Card className="w-full max-w-lg mx-auto shadow-2xl p-6">
+        <Card className={cn("w-full max-w-lg mx-auto shadow-2xl p-6", style.bg, style.text)}>
             <CardHeader>
                 <CardTitle>Choisis ton niveau</CardTitle>
             </CardHeader>

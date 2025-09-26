@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -146,7 +145,7 @@ export default function ExercisePage() {
         exerciseComponent = <ExerciseWorkspace skill={skill} />;
     }
      // Wrap every exercise component in a Card with the correct style
-    return <div className={cn('rounded-lg p-0.5', style.bg)}><div className="bg-background rounded-md">{exerciseComponent}</div></div>;
+    return <div className={cn("rounded-lg p-0.5", style.bg, style.text === 'text-white' ? 'text-white' : 'text-gray-800')}><div className="bg-background rounded-md">{exerciseComponent}</div></div>;
   };
 
   return (

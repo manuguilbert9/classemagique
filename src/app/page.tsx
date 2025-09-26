@@ -1,12 +1,11 @@
 
-
 'use client';
 
 import { useState, FormEvent, useContext } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2, BookHeart, Palette, BarChart3 } from 'lucide-react';
+import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2, BookHeart, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -182,12 +181,6 @@ export default function ModeSelectionPage() {
         </Link>
       </div>
       <div className="absolute bottom-4 right-4 flex items-center gap-2">
-            <Button asChild variant="ghost" size="icon">
-                <Link href="/customize">
-                    <Palette/>
-                    <span className="sr-only">Personnaliser</span>
-                </Link>
-            </Button>
              <Button asChild variant="ghost" size="sm">
                 <Link href="/teacher/login">
                     <School className="mr-2"/>

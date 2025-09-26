@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useCallback } from 'react';
@@ -17,6 +16,7 @@ import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
+import { categoryStyles } from '@/lib/skills';
 
 
 type Move = 'up' | 'down' | 'left' | 'right';
@@ -255,6 +255,7 @@ export function CodedPathExercise() {
     const [realtimePlayerPos, setRealtimePlayerPos] = useState<Position | null>(null);
     const [brokenTraps, setBrokenTraps] = useState<Position[]>([]);
 
+    const style = categoryStyles['Espace et géométrie'];
 
     useEffect(() => {
         if(student?.levels?.['coded-path']) {
@@ -448,7 +449,7 @@ export function CodedPathExercise() {
     
     if (!level) {
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl p-6">
+            <Card className={cn("w-full max-w-lg mx-auto shadow-2xl p-6", style.bg, style.text)}>
                 <CardHeader>
                     <CardTitle>Choisis ton niveau</CardTitle>
                 </CardHeader>
