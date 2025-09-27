@@ -10,10 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from './ui/progress';
 
 // --- CONSTANTES DU JEU ---
-const GAME_WIDTH = 800;
-const THROWING_AREA_HEIGHT = 250;
-const GAME_HEIGHT = 600;
-const TOTAL_HEIGHT = GAME_HEIGHT + THROWING_AREA_HEIGHT;
+const PLAY_AREA_WIDTH = 800;
+const PLAY_AREA_HEIGHT = 600;
+const THROWING_AREA_WIDTH = 250;
+const TOTAL_WIDTH = PLAY_AREA_WIDTH + THROWING_AREA_WIDTH;
+const TOTAL_HEIGHT = PLAY_AREA_HEIGHT;
+const PLAY_AREA_LEFT = THROWING_AREA_WIDTH;
+const PLAY_AREA_RIGHT = THROWING_AREA_WIDTH + PLAY_AREA_WIDTH;
 const BALL_RADIUS = 15;
 const FRICTION = 0.98;
 const MIN_VELOCITY = 0.05;
@@ -39,14 +42,21 @@ type Ball = {
   vx: number;
   vy: number;
   color: Player | 'white';
+  enteredPlayArea?: boolean;
 };
 
 const INITIAL_BALLS_PER_PLAYER = 6;
 const THROW_ORIGIN: Record<'white' | Player, Vector> = {
-  white: { x: GAME_WIDTH / 2, y: GAME_HEIGHT + THROWING_AREA_HEIGHT / 2 },
-  red: { x: GAME_WIDTH * 0.25, y: GAME_HEIGHT + THROWING_AREA_HEIGHT / 2 },
-  blue: { x: GAME_WIDTH * 0.75, y: GAME_HEIGHT + THROWING_AREA_HEIGHT / 2 }
+  white: { x: THROWING_AREA_WIDTH / 2, y: PLAY_AREA_HEIGHT / 2 },
+  red: { x: THROWING_AREA_WIDTH / 2, y: PLAY_AREA_HEIGHT * 0.3 },
+  blue: { x: THROWING_AREA_WIDTH / 2, y: PLAY_AREA_HEIGHT * 0.7 }
 };
+
+const isBallInPlayableZone = (ball: Pick<Ball, 'x' | 'y'>) =>
+  ball.x >= PLAY_AREA_LEFT &&
+  ball.x <= PLAY_AREA_RIGHT &&
+  ball.y >= BALL_RADIUS &&
+  ball.y <= PLAY_AREA_HEIGHT - BALL_RADIUS;
 
 export function BocciaGame({ onExit }: { onExit: () => void; }) {
   const [balls, setBalls] = React.useState<Ball[]>([]);
@@ -80,10 +90,10 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
         });
       } else {
         const jack = balls.find(b => b.color === 'white');
-        if (!jack || jack.y >= GAME_HEIGHT) {
+        if (!jack || !isBallInPlayableZone(jack)) {
             toast({
               title: "Lancer du Jack raté !",
-              description: "Le Jack doit s'arrêter dans la zone verte."
+              description: "Le Jack doit s'arrêter dans la zone de jeu."
             });
         } else {
             toast({
@@ -125,9 +135,9 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   const determineNextPlayer = React.useCallback((stateBalls: Ball[], stateBallsLeft: Record<Player, number>, activePlayer: Player): Player => {
     const jack = stateBalls.find(b => b.color === 'white');
 
-    if (!jack || jack.y >= GAME_HEIGHT) return activePlayer;
+    if (!jack || !isBallInPlayableZone(jack)) return activePlayer;
 
-    const inPlayBalls = stateBalls.filter(b => b.y < GAME_HEIGHT && b.color !== 'white');
+    const inPlayBalls = stateBalls.filter(b => isBallInPlayableZone(b) && b.color !== 'white');
 
     if (inPlayBalls.length === 0) {
       return activePlayer;
@@ -155,14 +165,14 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   
   const calculateRoundScore = React.useCallback((ballsInPlay: Ball[]) => {
     const jack = ballsInPlay.find(b => b.color === 'white');
-    if (!jack || jack.y >= GAME_HEIGHT) {
+    if (!jack || !isBallInPlayableZone(jack)) {
         setRoundWinner(null);
         setPhase('roundEnd');
         return;
     }
 
-    const redBallsInPlay = ballsInPlay.filter(b => b.color === 'red' && b.y < GAME_HEIGHT);
-    const blueBallsInPlay = ballsInPlay.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT);
+    const redBallsInPlay = ballsInPlay.filter(b => b.color === 'red' && isBallInPlayableZone(b));
+    const blueBallsInPlay = ballsInPlay.filter(b => b.color === 'blue' && isBallInPlayableZone(b));
 
     if(redBallsInPlay.length === 0 && blueBallsInPlay.length === 0) {
         setRoundWinner(null);
@@ -207,7 +217,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
   const getBallToPlay = React.useCallback(() => {
      if (jackNeedsPlacement) {
-        return { id: 0, x: THROW_ORIGIN.white.x, y: THROW_ORIGIN.white.y, vx: 0, vy: 0, color: 'white' as const };
+        return { id: 0, x: THROW_ORIGIN.white.x, y: THROW_ORIGIN.white.y, vx: 0, vy: 0, color: 'white' as const, enteredPlayArea: false };
      }
 
      if (ballsLeft[currentPlayer] <= 0) return null;
@@ -215,7 +225,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
      const newId = (currentPlayer === 'red' ? 100 : 200) + (INITIAL_BALLS_PER_PLAYER - ballsLeft[currentPlayer]);
      const origin = THROW_ORIGIN[currentPlayer];
 
-     return { id: newId, x: origin.x, y: origin.y, vx: 0, vy: 0, color: currentPlayer };
+     return { id: newId, x: origin.x, y: origin.y, vx: 0, vy: 0, color: currentPlayer, enteredPlayArea: false };
   }, [jackNeedsPlacement, ballsLeft, currentPlayer]);
   
   React.useEffect(() => {
@@ -273,7 +283,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     const wasJackTurn = ballToPlay.color === 'white';
     lastThrowerRef.current = wasJackTurn ? currentPlayer : ballToPlay.color as Player;
 
-    setBalls(prev => [...prev, { ...ballToPlay, ...velocity }]);
+    setBalls(prev => [...prev, { ...ballToPlay, ...velocity, enteredPlayArea: ballToPlay.enteredPlayArea ?? false }]);
 
     if (!wasJackTurn) {
       setBallsLeft(prev => ({ ...prev, [ballToPlay.color as Player]: prev[ballToPlay.color as Player] - 1 }));
@@ -364,7 +374,20 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
             if (newVx !== 0 || newVy !== 0) isMoving = true;
 
-            return { ...ball, vx: newVx, vy: newVy, x: ball.x + newVx, y: ball.y + newVy };
+            const nextBall: Ball = {
+              ...ball,
+              vx: newVx,
+              vy: newVy,
+              x: ball.x + newVx,
+              y: ball.y + newVy,
+              enteredPlayArea: ball.enteredPlayArea ?? false
+            };
+
+            if (!nextBall.enteredPlayArea && nextBall.x >= PLAY_AREA_LEFT) {
+              nextBall.enteredPlayArea = true;
+            }
+
+            return nextBall;
           });
 
           for (let i = 0; i < nextBalls.length; i++) {
@@ -400,8 +423,20 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                 b2.y += overlap * sin;
               }
             }
-            if (nextBalls[i].x < BALL_RADIUS) { nextBalls[i].x = BALL_RADIUS; nextBalls[i].vx *= -0.8; }
-            if (nextBalls[i].x > GAME_WIDTH - BALL_RADIUS) { nextBalls[i].x = GAME_WIDTH - BALL_RADIUS; nextBalls[i].vx *= -0.8; }
+            if (!nextBalls[i].enteredPlayArea && nextBalls[i].x >= PLAY_AREA_LEFT) {
+              nextBalls[i].enteredPlayArea = true;
+            }
+            if (!nextBalls[i].enteredPlayArea && nextBalls[i].x < BALL_RADIUS) {
+              nextBalls[i].x = BALL_RADIUS;
+              nextBalls[i].vx *= -0.8;
+            }
+            if (nextBalls[i].enteredPlayArea && nextBalls[i].x < PLAY_AREA_LEFT + BALL_RADIUS) {
+              nextBalls[i].x = PLAY_AREA_LEFT + BALL_RADIUS;
+              if (nextBalls[i].vx < 0) {
+                nextBalls[i].vx *= -0.8;
+              }
+            }
+            if (nextBalls[i].x > TOTAL_WIDTH - BALL_RADIUS) { nextBalls[i].x = TOTAL_WIDTH - BALL_RADIUS; nextBalls[i].vx *= -0.8; }
             if (nextBalls[i].y < BALL_RADIUS) { nextBalls[i].y = BALL_RADIUS; nextBalls[i].vy *= -0.8; }
             if (nextBalls[i].y > TOTAL_HEIGHT - BALL_RADIUS) {
               nextBalls[i].y = TOTAL_HEIGHT - BALL_RADIUS;
@@ -412,7 +447,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
           if (!isMoving) {
             const jackBall = nextBalls.find(b => b.color === 'white');
 
-            if (!jackBall || jackBall.y >= GAME_HEIGHT) {
+            if (!jackBall || !isBallInPlayableZone(jackBall)) {
               if (jackNeedsPlacement) {
                 if (hadJack) {
                   toast({
@@ -543,13 +578,19 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
             onPointerCancel={handlePointerCancel}
             onPointerLeave={handlePointerLeave}
             className={cn("relative border-4 border-yellow-700 rounded-md overflow-hidden touch-none", cursorClass)}
-            style={{ width: GAME_WIDTH, height: TOTAL_HEIGHT }}
+            style={{ width: TOTAL_WIDTH, height: TOTAL_HEIGHT }}
           >
-            {/* Main Playing Area */}
-            <div className="absolute top-0 left-0 bg-green-800" style={{width: GAME_WIDTH, height: GAME_HEIGHT }} />
-            
             {/* Throwing Area */}
-            <div className="absolute bottom-0 left-0 bg-green-900/50" style={{width: GAME_WIDTH, height: THROWING_AREA_HEIGHT }}/>
+            <div
+              className="absolute top-0 left-0 bg-green-900/50"
+              style={{ width: THROWING_AREA_WIDTH, height: TOTAL_HEIGHT }}
+            />
+
+            {/* Main Playing Area */}
+            <div
+              className="absolute top-0 bg-green-800 border-l-4 border-green-900"
+              style={{ left: THROWING_AREA_WIDTH, width: PLAY_AREA_WIDTH, height: TOTAL_HEIGHT }}
+            />
 
             {balls.map(ball => (
               <div
