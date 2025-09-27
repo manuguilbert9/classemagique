@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -82,18 +81,19 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
     const redBalls = balls.filter(b => b.color === 'red' && b.y < GAME_HEIGHT - 100);
     const blueBalls = balls.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT - 100);
+    
+    // Case where only the jack has been thrown
+    if(redBalls.length === 0 && blueBalls.length === 0) {
+        return currentPlayer === 'red' ? 'blue' : 'red';
+    }
 
     if (redBalls.length === 0 && ballsLeft.red > 0) return 'red';
     if (blueBalls.length === 0 && ballsLeft.blue > 0) return 'blue';
+    if(redBalls.length === 0 || blueBalls.length === 0) return currentPlayer;
 
     const redDistances = redBalls.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
     const blueDistances = blueBalls.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
-
-    if (redDistances.length === 0 && ballsLeft.red > 0) return 'red';
-    if (blueDistances.length === 0 && ballsLeft.blue > 0) return 'blue';
-    if(redDistances.length === 0 && blueDistances.length === 0) return currentPlayer;
-
-
+    
     const nextPlayer = redDistances[0] <= blueDistances[0] ? 'blue' : 'red';
     
     if (ballsLeft[nextPlayer] > 0) {
@@ -281,7 +281,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
             // Check if simulation should end
             if (!isMoving) {
                 const isJackThrown = nextBalls.some(b => b.color === 'white' && b.y < GAME_HEIGHT - 100);
-                const hasBallsToPlay = Object.values(ballsLeft).some(v => v > 0) || !isJackThrown;
+                const hasBallsToPlay = Object.values(ballsLeft).some(v => v > 0);
 
                 if (!hasBallsToPlay && isJackThrown) {
                      calculateRoundScore();
@@ -382,5 +382,3 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     </main>
   );
 }
-
-    
