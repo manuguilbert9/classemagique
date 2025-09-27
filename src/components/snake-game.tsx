@@ -17,7 +17,7 @@ const fruitEmojis = ['🍎', '🍌', '🍇', '🍓', '🍊', '🥝', '🍍', '�
 const choice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 const getRandomPosition = (snakeBody: Position[] = []): Position => {
-  let position;
+  let position: Position;
   do {
     position = {
       x: Math.floor(Math.random() * GRID_SIZE),
