@@ -144,7 +144,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     let score = 0;
     let winner: Player | null = null;
     
-    if (redDistances.length === 0 && blueDistances.length > 0) {
+    if (redBalls.length === 0 && blueBalls.length > 0) {
         winner = 'blue';
         score = blueBalls.length;
     } else if (blueDistances.length === 0 && redBalls.length > 0) {
@@ -440,4 +440,3 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     </main>
   );
 }
-`
