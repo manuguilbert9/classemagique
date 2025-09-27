@@ -153,16 +153,16 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     return nextPlayer === 'red' ? 'blue' : 'red';
   }, []);
   
-  const calculateRoundScore = React.useCallback(() => {
-    const jack = balls.find(b => b.color === 'white');
+  const calculateRoundScore = React.useCallback((ballsInPlay: Ball[]) => {
+    const jack = ballsInPlay.find(b => b.color === 'white');
     if (!jack || jack.y >= GAME_HEIGHT) {
         setRoundWinner(null);
         setPhase('roundEnd');
         return;
     }
 
-    const redBallsInPlay = balls.filter(b => b.color === 'red' && b.y < GAME_HEIGHT);
-    const blueBallsInPlay = balls.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT);
+    const redBallsInPlay = ballsInPlay.filter(b => b.color === 'red' && b.y < GAME_HEIGHT);
+    const blueBallsInPlay = ballsInPlay.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT);
 
     if(redBallsInPlay.length === 0 && blueBallsInPlay.length === 0) {
         setRoundWinner(null);
@@ -203,7 +203,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
       setNextStartingPlayer(roundStarterRef.current);
     }
     setPhase('roundEnd');
-  }, [balls]);
+  }, []);
 
   const getBallToPlay = React.useCallback(() => {
      if (jackNeedsPlacement) {
@@ -232,11 +232,11 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
               setPhase('turnEnd');
           } else {
               // Both players have no balls left. End of round simulation.
-              calculateRoundScore();
+              calculateRoundScore(balls);
           }
       }
     }
-  }, [phase, aimingPhase, getBallToPlay, ballsLeft, calculateRoundScore]);
+  }, [phase, aimingPhase, getBallToPlay, ballsLeft, calculateRoundScore, balls]);
 
 
   const getPointerPosition = React.useCallback((clientX: number, clientY: number): Vector | null => {
@@ -442,7 +442,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
             }
 
             if (ballsLeft.red === 0 && ballsLeft.blue === 0) {
-              calculateRoundScore();
+              calculateRoundScore(nextBalls);
             } else {
               const nextPlayer = determineNextPlayer(nextBalls, ballsLeft, currentPlayer);
               setCurrentPlayer(nextPlayer);
