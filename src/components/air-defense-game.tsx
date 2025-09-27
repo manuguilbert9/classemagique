@@ -11,7 +11,7 @@ const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 const TURRET_Y = GAME_HEIGHT - 30;
 const MAX_LANDED = 5;
-const WAVE_DURATION = 30000; // 30 seconds in ms
+const WAVE_DURATION = 60000; // 60 seconds in ms
 
 let objectIdCounter = 0;
 const getUniqueId = () => objectIdCounter++;
@@ -45,6 +45,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
   // Wave-specific state
   const [parachutistsToSpawn, setParachutistsToSpawn] = React.useState(0);
   const [nextHeliTime, setNextHeliTime] = React.useState(0);
+  const waveStartTimeRef = React.useRef<number>(0);
   
   const gameAreaRef = React.useRef<HTMLDivElement>(null);
   const gameLoopIntervalRef = React.useRef<NodeJS.Timeout>();
@@ -68,6 +69,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
         const numToSpawn = getParachutistsForWave(currentWave);
         setParachutistsToSpawn(numToSpawn);
         setGameState('playing');
+        waveStartTimeRef.current = Date.now();
         
         // End the wave after WAVE_DURATION
         waveTimeoutRef.current = setTimeout(() => {
@@ -148,16 +150,15 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
           type: 'helicopter',
           health: 3,
         }]);
-        // Schedule next helicopter based on remaining parachutists to spawn
-        const avgTimePerPara = WAVE_DURATION / getParachutistsForWave(wave);
-        setNextHeliTime(now + avgTimePerPara * (Math.random() * 0.5 + 0.75));
+        setNextHeliTime(now + 4000 / (1 + wave * 0.1)); // Less frequent helicopters
       }
       
       let parachutistsToDropThisFrame = 0;
       if (parachutistsToSpawn > 0) {
-        // Drop parachutists based on a probability that spreads them over the wave duration
-        const dropProbability = (parachutistsToSpawn / (WAVE_DURATION / 50)) * 0.05; 
-        if (Math.random() < dropProbability) {
+        const elapsedTime = now - waveStartTimeRef.current;
+        const timeRemaining = WAVE_DURATION - elapsedTime;
+        const dropRate = parachutistsToSpawn / (timeRemaining / 50); // Parachutists per tick
+        if (Math.random() < dropRate) {
            parachutistsToDropThisFrame = 1;
         }
       }
@@ -192,7 +193,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
               break;
             case 'helicopter':
               newObj.x += obj.vx!;
-              if (parachutistsToDropThisFrame > 0 && Math.random() < 1/helicopterCount) {
+              if (parachutistsToDropThisFrame > 0 && Math.random() < 1 / helicopterCount) {
                  parachutistsToDropThisFrame--;
                  setParachutistsToSpawn(p => p - 1);
                  newObjects.push({
