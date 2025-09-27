@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { ArrowLeft, RefreshCw, MousePointer, Power } from 'lucide-react';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,12 +34,12 @@ const INITIAL_BALLS_PER_PLAYER = 6;
 
 export function BocciaGame({ onExit }: { onExit: () => void; }) {
   const [balls, setBalls] = React.useState<Ball[]>([]);
-  const [phase, setPhase] = React.useState<GamePhase>('turnEnd');
+  const [phase, setPhase] = React.useState<GamePhase>('roundEnd');
   const [currentPlayer, setCurrentPlayer] = React.useState<Player>('red');
   const [ballsLeft, setBallsLeft] = React.useState<Record<Player, number>>({ red: INITIAL_BALLS_PER_PLAYER, blue: INITIAL_BALLS_PER_PLAYER });
   const [roundScore, setRoundScore] = React.useState<Record<Player, number>>({ red: 0, blue: 0 });
   const [totalScore, setTotalScore] = React.useState<Record<Player, number>>({ red: 0, blue: 0 });
-  const [roundWinner, setRoundWinner] = React.useState<Player | null>(null);
+  const [roundWinner, setRoundWinner] = React.useState<Player | null>('red'); // Red starts first game
 
   // Aiming state
   const [isAiming, setIsAiming] = React.useState(false);
@@ -53,20 +53,27 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   const { toast } = useToast();
 
   const startNewRound = React.useCallback(() => {
+    // The player who won the previous round starts the next one
+    const startingPlayer = roundWinner || 'red';
+    
     setBalls([
+      // Add the Jack at its starting position, ready to be thrown
       { id: 0, x: GAME_WIDTH / 2, y: GAME_HEIGHT - 40, vx: 0, vy: 0, color: 'white' },
+      // Add player balls at their starting positions
+      ...Array.from({length: INITIAL_BALLS_PER_PLAYER}).map((_, i) => ({ id: i + 1, x: 40 + i * 40, y: GAME_HEIGHT - 40, vx: 0, vy: 0, color: 'red' as Player })),
+      ...Array.from({length: INITIAL_BALLS_PER_PLAYER}).map((_, i) => ({ id: i + 1 + INITIAL_BALLS_PER_PLAYER, x: GAME_WIDTH - 40 - i * 40, y: GAME_HEIGHT - 40, vx: 0, vy: 0, color: 'blue' as Player })),
     ]);
     setPhase('turnEnd');
-    setCurrentPlayer(roundWinner || 'red'); // The winner of the last round starts
+    setCurrentPlayer(startingPlayer); 
     setBallsLeft({ red: INITIAL_BALLS_PER_PLAYER, blue: INITIAL_BALLS_PER_PLAYER });
     setRoundScore({ red: 0, blue: 0 });
-    setRoundWinner(null);
-    toast({ title: "Nouvelle Manche !", description: `Le joueur ${roundWinner === 'blue' ? 'Bleu' : 'Rouge'} commence par lancer le Jack.` });
+    // roundWinner is kept from previous round to decide who starts
+    toast({ title: "Nouvelle Manche !", description: `Le joueur ${startingPlayer === 'blue' ? 'Bleu' : 'Rouge'} commence par lancer le Jack.` });
   }, [toast, roundWinner]);
 
   const resetGame = React.useCallback(() => {
     setTotalScore({ red: 0, blue: 0 });
-    setRoundWinner(null); // Red starts the very first game
+    setRoundWinner('red'); // Red always starts the very first game
     startNewRound();
   }, [startNewRound]);
 
@@ -78,11 +85,11 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   // --- Game Logic ---
 
   const determineNextPlayer = React.useCallback((): Player | null => {
-    const thrownBalls = balls.filter(b => b.y < GAME_HEIGHT - 100 && b.color !== 'white');
-    if (thrownBalls.length === 0) return currentPlayer;
-
     const jack = balls.find(b => b.color === 'white');
-    if (!jack) return null;
+    if (!jack || jack.y > GAME_HEIGHT - 100) return currentPlayer; // Jack not thrown yet
+
+    const thrownBalls = balls.filter(b => b.color !== 'white' && b.y < GAME_HEIGHT - 100);
+    if (thrownBalls.length === 0) return currentPlayer; // First player throws after jack
 
     const distances = thrownBalls.map(b => ({
       dist: Math.hypot(b.x - jack.x, b.y - jack.y),
@@ -92,14 +99,13 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     if(distances.length === 0) return currentPlayer;
 
     const closest = distances.reduce((prev, curr) => prev.dist < curr.dist ? prev : curr);
-    
     const nextPlayer = closest.color === 'red' ? 'blue' : 'red';
     
     if (ballsLeft[nextPlayer] > 0) {
       return nextPlayer;
     } 
-    if (ballsLeft[closest.color] > 0) {
-      return closest.color;
+    if (ballsLeft[closest.color as Player] > 0) {
+      return closest.color as Player;
     }
     
     return null; // No balls left to play
@@ -109,8 +115,33 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     const jack = balls.find(b => b.color === 'white');
     if (!jack) return;
 
-    const redBalls = balls.filter(b => b.color === 'red');
-    const blueBalls = balls.filter(b => b.color === 'blue');
+    const redBalls = balls.filter(b => b.color === 'red' && b.y < GAME_HEIGHT-100);
+    const blueBalls = balls.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT-100);
+
+    // If one player has no balls on the field, the other wins by default if they have balls
+    if(redBalls.length === 0 && blueBalls.length > 0) {
+       setRoundWinner('blue');
+       setRoundScore({red: 0, blue: blueBalls.length});
+       setTotalScore(prev => ({...prev, blue: prev.blue + blueBalls.length}));
+       toast({ title: "Fin de la manche !", description: `Le joueur Bleu marque ${blueBalls.length} point(s).`});
+       setPhase('roundEnd');
+       return;
+    }
+     if(blueBalls.length === 0 && redBalls.length > 0) {
+       setRoundWinner('red');
+       setRoundScore({red: redBalls.length, blue: 0});
+       setTotalScore(prev => ({...prev, red: prev.red + redBalls.length}));
+       toast({ title: "Fin de la manche !", description: `Le joueur Rouge marque ${redBalls.length} point(s).`});
+       setPhase('roundEnd');
+       return;
+    }
+     if(blueBalls.length === 0 && redBalls.length === 0) {
+        setRoundWinner(null);
+        toast({ title: "Fin de la manche !", description: "Égalité, aucun point marqué."});
+        setPhase('roundEnd');
+        return;
+    }
+
 
     const redDistances = redBalls.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
     const blueDistances = blueBalls.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
@@ -121,20 +152,14 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     if (redDistances[0] < blueDistances[0]) {
       winner = 'red';
       for (const dist of redDistances) {
-        if (dist < blueDistances[0]) {
-          score++;
-        } else {
-          break;
-        }
+        if (dist < blueDistances[0]) score++;
+        else break;
       }
     } else if (blueDistances[0] < redDistances[0]) {
       winner = 'blue';
       for (const dist of blueDistances) {
-        if (dist < redDistances[0]) {
-          score++;
-        } else {
-          break;
-        }
+        if (dist < redDistances[0]) score++;
+        else break;
       }
     }
 
@@ -144,22 +169,17 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
       setRoundWinner(winner);
       toast({ title: "Fin de la manche !", description: `Le joueur ${winner === 'red' ? 'Rouge' : 'Bleu'} marque ${score} point(s).`});
     } else {
+      setRoundWinner(null);
       toast({ title: "Fin de la manche !", description: "Égalité, aucun point marqué."});
     }
     setPhase('roundEnd');
   }
 
-
   const getBallToPlay = (): Ball | undefined => {
     const isJackTurn = balls.find(b => b.color === 'white' && b.y >= GAME_HEIGHT - 100);
     if(isJackTurn) return isJackTurn;
     
-    const nextPlayer = determineNextPlayer();
-    if(nextPlayer) {
-       setCurrentPlayer(nextPlayer);
-       return balls.find(b => b.color === nextPlayer && b.y >= GAME_HEIGHT - 100);
-    }
-    return undefined;
+    return balls.find(b => b.color === currentPlayer && b.y >= GAME_HEIGHT - 100);
   }
 
   // --- Input Handlers ---
@@ -222,7 +242,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
       setBalls(currentBalls => {
         const nextBalls = currentBalls.map(ball => {
-          // 1. Apply friction and update position
           let newVx = ball.vx * FRICTION;
           let newVy = ball.vy * FRICTION;
           
@@ -234,7 +253,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
           return { ...ball, vx: newVx, vy: newVy, x: ball.x + newVx, y: ball.y + newVy };
         });
 
-        // 2. Handle collisions
         for (let i = 0; i < nextBalls.length; i++) {
             for (let j = i + 1; j < nextBalls.length; j++) {
                 const b1 = nextBalls[i];
@@ -268,7 +286,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                     b2.y += overlap * sin;
                 }
             }
-            // Wall collisions
             if (nextBalls[i].x < BALL_RADIUS) { nextBalls[i].x = BALL_RADIUS; nextBalls[i].vx *= -0.8; }
             if (nextBalls[i].x > GAME_WIDTH - BALL_RADIUS) { nextBalls[i].x = GAME_WIDTH - BALL_RADIUS; nextBalls[i].vx *= -0.8; }
             if (nextBalls[i].y < BALL_RADIUS) { nextBalls[i].y = BALL_RADIUS; nextBalls[i].vy *= -0.8; }
@@ -298,7 +315,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     return () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [phase, ballsLeft, determineNextPlayer]);
+  }, [phase, ballsLeft, determineNextPlayer, balls]);
 
 
   return (
@@ -386,5 +403,3 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     </main>
   );
 }
-
-    
