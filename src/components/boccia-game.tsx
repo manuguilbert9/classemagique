@@ -69,26 +69,32 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
           description: `Le joueur ${winner === 'red' ? 'Rouge' : 'Bleu'} marque ${roundScore[winner]} point(s).`
         });
       } else {
-         if (totalScore.red > 0 || totalScore.blue > 0) {
+        const jack = balls.find(b => b.color === 'white');
+        if (!jack || jack.y >= GAME_HEIGHT) {
+            toast({
+              title: "Lancer du Jack raté !",
+              description: "Le Jack doit s'arrêter dans la zone verte."
+            });
+        } else {
             toast({
               title: "Fin de la manche !",
               description: "Égalité, aucun point marqué."
             });
-         }
+        }
       }
     }
-  }, [phase, roundWinner, roundScore, toast, totalScore]);
+  }, [phase, roundWinner, roundScore, toast, balls]);
 
 
   const startNewRound = React.useCallback(() => {
+    // Le joueur qui commence est celui qui a gagné la manche précédente.
+    // Si la manche était nulle (lancer de jack raté), c'est à l'autre joueur.
     const startingPlayer = roundWinner === null ? (currentPlayer === 'red' ? 'blue' : 'red') : roundWinner;
     
     setBalls([]);
     setCurrentPlayer(startingPlayer); 
     setBallsLeft({ red: INITIAL_BALLS_PER_PLAYER, blue: INITIAL_BALLS_PER_PLAYER });
     setRoundScore({ red: 0, blue: 0 });
-    setBallToPlay(null);
-    setAimingPhase('idle');
     setPhase('newRound');
   }, [roundWinner, currentPlayer]);
 
@@ -115,7 +121,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     const redBallsInPlay = balls.filter(b => b.color === 'red' && b.y < GAME_HEIGHT);
     const blueBallsInPlay = balls.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT);
     
-    // If one player has no balls in play, it's their turn (if they have balls left)
     if (redBallsInPlay.length === 0 && ballsLeft.red > 0) return 'red';
     if (blueBallsInPlay.length === 0 && ballsLeft.blue > 0) return 'blue';
   
@@ -125,10 +130,8 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     const closestRed = redDistances[0] ?? Infinity;
     const closestBlue = blueDistances[0] ?? Infinity;
   
-    // The player who is NOT the closest gets to play
     const nextPlayer = closestRed <= closestBlue ? 'blue' : 'red';
   
-    // If that player has no balls left, the other player plays
     if (ballsLeft[nextPlayer] > 0) {
       return nextPlayer;
     }
@@ -186,7 +189,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   }
 
   const getBallToPlay = React.useCallback(() => {
-     // At the very start of a round, no balls are in play, so we must play the jack.
      const isJackTurn = !balls.some(b => b.color === 'white');
      
      if (isJackTurn) {
@@ -202,14 +204,23 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     if ((phase === 'newRound' || phase === 'turnEnd') && aimingPhase === 'idle') {
       const nextBall = getBallToPlay();
       setBallToPlay(nextBall);
-      // Automatically enter aiming mode if there's a ball to play
       if(nextBall) {
           setPhase('aiming');
+      } else {
+          // No balls left to play for current player, but maybe for the other one?
+          if(ballsLeft.red > 0 || ballsLeft.blue > 0) {
+              // This can happen if a player has finished their balls
+              setCurrentPlayer(p => p === 'red' ? 'blue' : 'red');
+              setPhase('turnEnd');
+          } else {
+              // Both players have no balls left. End of round simulation.
+              if (phase !== 'simulating' && phase !== 'roundEnd') {
+                calculateRoundScore();
+              }
+          }
       }
-    } else if (phase !== 'aiming') {
-      setBallToPlay(null);
     }
-  }, [phase, aimingPhase, getBallToPlay]);
+  }, [phase, aimingPhase, getBallToPlay, ballsLeft]);
 
 
   const handleClick = (e: React.MouseEvent) => {
@@ -222,9 +233,13 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
       if (dist < BALL_RADIUS) {
         setAimingPhase('arming');
       }
-    } else if (aimingPhase === 'arming' && ballToPlay && aimingLine) {
-      const directionVector = { x: aimingLine.end.x - ballToPlay.x, y: aimingLine.end.y - ballToPlay.y };
+    } else if (aimingPhase === 'arming' && ballToPlay) {
+      const rect = gameAreaRef.current.getBoundingClientRect();
+      const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      
+      const directionVector = { x: mousePos.x - ballToPlay.x, y: mousePos.y - ballToPlay.y };
       const angle = Math.atan2(directionVector.y, directionVector.x);
+      
       const velocity = { vx: Math.cos(angle) * power, vy: Math.sin(angle) * power };
   
       const wasJackTurn = ballToPlay.color === 'white';
@@ -331,7 +346,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
     animationFrameId = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [phase, determineNextPlayer, ballsLeft, currentPlayer]);
+  }, [phase, determineNextPlayer, ballsLeft]);
   
   const cursorClass = (phase === 'aiming' && aimingPhase === 'idle' && ballToPlay)
     ? (ballToPlay.color === 'white' ? 'cursor-[url(/cursors/white.svg),_pointer]' : (ballToPlay.color === 'red' ? 'cursor-[url(/cursors/red.svg),_pointer]' : 'cursor-[url(/cursors/blue.svg),_pointer]'))
@@ -448,7 +463,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                 <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10">
                     <h3 className="text-3xl font-bold">Fin de la manche</h3>
                      {roundWinner && <p className="text-xl mt-2">{`Le joueur ${roundWinner === 'red' ? 'Rouge' : 'Bleu'} marque ${roundScore[roundWinner]} point(s).`}</p>}
-                     {!roundWinner && (totalScore.red > 0 || totalScore.blue > 0) && <p className="text-xl mt-2">Égalité !</p>}
+                     {!roundWinner && <p className="text-xl mt-2">Aucun point marqué.</p>}
                     <Button onClick={startNewRound} className="mt-6">Manche Suivante</Button>
                 </div>
             )}
