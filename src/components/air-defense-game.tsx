@@ -63,6 +63,14 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
       resetGame();
     }
   };
+  
+  // Update wave based on score
+  React.useEffect(() => {
+    const newWave = Math.floor(score / 10) + 1;
+    if (newWave > wave) {
+        setWave(newWave);
+    }
+  }, [score, wave]);
 
   const handleShoot = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (gameState !== 'playing' || !gameAreaRef.current) return;
@@ -104,12 +112,12 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
           id: getUniqueId(),
           x: direction > 0 ? -50 : GAME_WIDTH + 50,
           y: 50 + Math.random() * 50,
-          vx: direction * (1 + wave * 0.2),
+          vx: direction * (0.8 + wave * 0.15), // Slower initial speed, more gradual increase
           vy: 0,
           type: 'helicopter',
           health: 3,
         }]);
-        setNextHeliTime(now + Math.max(1000, 4000 - wave * 200));
+        setNextHeliTime(now + Math.max(1200, 5000 - wave * 250)); // Slower initial spawn rate
       }
 
       setGameObjects(prevObjects => {
@@ -139,12 +147,13 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
               break;
             case 'helicopter':
               newObj.x += obj.vx!;
-              if (Math.random() < 0.01 + wave * 0.002) {
+              // Drop chance reduced and increases more slowly
+              if (Math.random() < 0.005 + wave * 0.0015) {
                  newObjects.push({
                    id: getUniqueId(),
                    x: obj.x,
                    y: obj.y + 20,
-                   vy: 0.5 + wave * 0.1,
+                   vy: 0.3 + wave * 0.08, // Slower initial drop speed
                    type: 'parachutist'
                  });
               }
@@ -239,8 +248,11 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
       <Card className="w-auto shadow-2xl bg-zinc-800 text-white border-zinc-700">
         <CardHeader className="flex flex-row items-center justify-between">
            <CardTitle className="font-headline text-3xl">Défense Aérienne</CardTitle>
-           <div className="font-bold text-2xl flex items-center gap-4">
-            <Trophy className="text-yellow-400" /> {score}
+           <div className="font-bold text-lg flex items-center gap-4">
+              <span>Vague : {wave}</span>
+              <div className="font-bold text-2xl flex items-center gap-2">
+                 <Trophy className="text-yellow-400" /> {score}
+              </div>
            </div>
         </CardHeader>
         <CardContent>
