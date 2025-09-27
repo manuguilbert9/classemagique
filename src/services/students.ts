@@ -3,7 +3,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, runTransaction } from "firebase/firestore";
 import { skills } from '@/lib/skills';
 import { getGloballyEnabledSkills } from './teacher';
 
@@ -236,5 +236,43 @@ export async function getStudentById(studentId: string): Promise<Student | null>
     } catch (error) {
         console.error("Error getting student by ID:", error);
         return null;
+    }
+}
+
+/**
+ * Deducts a specified amount of nuggets from a student's balance.
+ * This is done in a transaction to ensure atomicity.
+ * @param studentId The ID of the student.
+ * @param amount The number of nuggets to spend.
+ * @returns A promise indicating success or failure.
+ */
+export async function spendNuggets(studentId: string, amount: number): Promise<{ success: boolean; error?: string }> {
+    if (!studentId) return { success: false, error: "ID de l'élève requis." };
+    if (amount <= 0) return { success: false, error: "Le montant doit être positif." };
+
+    const studentRef = doc(db, "students", studentId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const studentDoc = await transaction.get(studentRef);
+            if (!studentDoc.exists()) {
+                throw new Error("L'élève n'existe pas.");
+            }
+
+            const currentNuggets = studentDoc.data().nuggets || 0;
+            if (currentNuggets < amount) {
+                throw new Error("Pépites insuffisantes.");
+            }
+
+            const newNuggets = currentNuggets - amount;
+            transaction.update(studentRef, { nuggets: newNuggets });
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error spending nuggets:", error);
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: "Une erreur inconnue est survenue." };
     }
 }

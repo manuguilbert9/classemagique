@@ -128,10 +128,10 @@ export default function EnClassePage() {
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
         <p className="text-lg sm:text-xl text-muted-foreground">Prêt(e) à relever un défi ?</p>
          <div className="absolute top-0 right-0 flex items-center gap-2">
-             <div className="flex items-center gap-2 bg-amber-100 border border-amber-300 rounded-full px-3 py-1 text-amber-800 font-bold">
+             <Link href="/rewards" className="flex items-center gap-2 bg-amber-100 border border-amber-300 rounded-full px-3 py-1 text-amber-800 font-bold transition-transform hover:scale-105 cursor-pointer">
                 <Gem className="h-5 w-5" />
                 <span>{student.nuggets || 0}</span>
-             </div>
+             </Link>
              <Button asChild variant="outline" size="sm">
                 <Link href="/results">
                     <BarChart3 className="mr-2" />
