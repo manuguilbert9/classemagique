@@ -1,15 +1,17 @@
+
 'use client';
 
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Gem } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from './ui/progress';
 
 // --- CONSTANTES DU JEU ---
 const GAME_WIDTH = 800;
-const THROWING_AREA_HEIGHT = 250; 
+const THROWING_AREA_HEIGHT = 250;
 const GAME_HEIGHT = 600;
 const TOTAL_HEIGHT = GAME_HEIGHT + THROWING_AREA_HEIGHT;
 const BALL_RADIUS = 15;
@@ -17,20 +19,18 @@ const FRICTION = 0.98;
 const MIN_VELOCITY = 0.05;
 const MAX_POWER = 15;
 
-
 // --- TYPES ---
 type Vector = { x: number; y: number };
 type Player = 'red' | 'blue';
-type GamePhase = 
+type GamePhase =
   | 'newRound'
   | 'aiming'
   | 'simulating'
   | 'turnEnd'
   | 'roundEnd'
-  | 'gameOver';       
-  
-type AimingPhase = 'idle' | 'arming';
+  | 'gameOver';
 
+type AimingPhase = 'idle' | 'arming';
 
 type Ball = {
   id: number;
@@ -54,14 +54,15 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
   const [aimingPhase, setAimingPhase] = React.useState<AimingPhase>('idle');
   const [ballToPlay, setBallToPlay] = React.useState<Ball | null>(null);
-  const [mousePosition, setMousePosition] = React.useState<Vector | null>(null);
-  
+  const [aimingLine, setAimingLine] = React.useState<{ start: Vector; end: Vector } | null>(null);
+  const [power, setPower] = React.useState(0);
+
   const gameAreaRef = React.useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  
+
   React.useEffect(() => {
     if (phase === 'roundEnd') {
-      const winner = roundWinner; 
+      const winner = roundWinner;
       if (winner) {
         toast({
           title: "Fin de la manche !",
@@ -83,11 +84,11 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     const startingPlayer = roundWinner === null ? (currentPlayer === 'red' ? 'blue' : 'red') : roundWinner;
     
     setBalls([]);
-    setPhase('newRound'); 
     setCurrentPlayer(startingPlayer); 
     setBallsLeft({ red: INITIAL_BALLS_PER_PLAYER, blue: INITIAL_BALLS_PER_PLAYER });
     setRoundScore({ red: 0, blue: 0 });
     setBallToPlay(null);
+    setPhase('newRound');
   }, [roundWinner, currentPlayer]);
 
   const resetGame = React.useCallback(() => {
@@ -102,26 +103,32 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   
   const determineNextPlayer = React.useCallback((): Player | null => {
     const jack = balls.find(b => b.color === 'white');
-    if (!jack || jack.y >= GAME_HEIGHT) return null; // Or handle invalid jack position
-  
+    if (!jack || jack.y >= GAME_HEIGHT) return null;
+
     const redBallsInPlay = balls.filter(b => b.color === 'red' && b.y < GAME_HEIGHT);
     const blueBallsInPlay = balls.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT);
-  
+
     if (ballsLeft.red === 0 && ballsLeft.blue === 0) return null;
     
-    const jackThrownButNoColors = redBallsInPlay.length === 0 && blueBallsInPlay.length === 0;
-    if (jackThrownButNoColors) {
-        return currentPlayer === 'red' ? 'blue' : 'red';
+    if(redBallsInPlay.length === 0 && blueBallsInPlay.length === 0) {
+       // After jack is thrown, the other player plays
+       return currentPlayer === 'red' ? 'blue' : 'red';
     }
 
-    if (redBallsInPlay.length === 0) return 'red';
-    if (blueBallsInPlay.length === 0) return 'blue';
+    if (redBallsInPlay.length === 0) {
+        if(ballsLeft.red > 0) return 'red';
+        if(ballsLeft.blue > 0) return 'blue';
+    }
+    if (blueBallsInPlay.length === 0) {
+        if(ballsLeft.blue > 0) return 'blue';
+        if(ballsLeft.red > 0) return 'red';
+    }
   
     const redDistances = redBallsInPlay.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
     const blueDistances = blueBallsInPlay.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
   
-    const closestRed = redDistances[0];
-    const closestBlue = blueDistances[0];
+    const closestRed = redDistances[0] ?? Infinity;
+    const closestBlue = blueDistances[0] ?? Infinity;
   
     const nextPlayer = closestRed <= closestBlue ? 'blue' : 'red';
   
@@ -186,48 +193,43 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     setPhase('roundEnd');
   }
 
-  const getBallToPlay = React.useCallback((): Ball | null => {
-     if (phase !== 'newRound' && phase !== 'turnEnd') return null;
-
+  const getBallToPlay = React.useCallback(() => {
      const isJackTurn = !balls.some(b => b.color === 'white' && b.y < GAME_HEIGHT);
      
-     let nextBall: Ball;
      if (isJackTurn) {
-         if (phase === 'newRound') {
-            nextBall = { id: 0, x: GAME_WIDTH / 2, y: TOTAL_HEIGHT - 50, vx: 0, vy: 0, color: 'white' as const };
-            return nextBall;
-         }
-         return null;
+        return { id: 0, x: GAME_WIDTH / 2, y: GAME_HEIGHT + THROWING_AREA_HEIGHT / 2, vx: 0, vy: 0, color: 'white' as const };
      } else {
          if (ballsLeft[currentPlayer] <= 0) return null;
          const newId = (currentPlayer === 'red' ? 100 : 200) + (INITIAL_BALLS_PER_PLAYER - ballsLeft[currentPlayer]);
-         nextBall = { id: newId, x: GAME_WIDTH / 2, y: TOTAL_HEIGHT - 50, vx: 0, vy: 0, color: currentPlayer };
-         return nextBall;
+         return { id: newId, x: GAME_WIDTH / 2, y: GAME_HEIGHT + THROWING_AREA_HEIGHT / 2, vx: 0, vy: 0, color: currentPlayer };
      }
-  }, [phase, balls, ballsLeft, currentPlayer]);
+  }, [balls, ballsLeft, currentPlayer]);
+  
+  React.useEffect(() => {
+    if ((phase === 'newRound' || phase === 'turnEnd') && aimingPhase === 'idle') {
+      setBallToPlay(getBallToPlay());
+    } else if (phase !== 'aiming') {
+      setBallToPlay(null);
+    }
+  }, [phase, aimingPhase, getBallToPlay]);
+
 
   const handleClick = (e: React.MouseEvent) => {
-    if (phase === 'simulating' || phase === 'roundEnd' || phase === 'gameOver') return;
+    if (phase === 'simulating' || phase === 'roundEnd' || phase === 'gameOver' || !gameAreaRef.current) return;
   
-    const rect = gameAreaRef.current!.getBoundingClientRect();
+    const rect = gameAreaRef.current.getBoundingClientRect();
     const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
   
-    if (aimingPhase === 'idle') {
-      const currentBall = getBallToPlay();
-      if (currentBall) {
-        const dist = Math.hypot(mousePos.x - currentBall.x, mousePos.y - currentBall.y);
-        if (dist < BALL_RADIUS) {
-          setAimingPhase('arming');
-          setBallToPlay(currentBall);
-          setPhase('aiming');
-        }
+    if (aimingPhase === 'idle' && ballToPlay) {
+      const dist = Math.hypot(mousePos.x - ballToPlay.x, mousePos.y - ballToPlay.y);
+      if (dist < BALL_RADIUS) {
+        setAimingPhase('arming');
+        setPhase('aiming');
       }
-    } else if (aimingPhase === 'arming' && ballToPlay) {
-      const directionVector = { x: mousePos.x - ballToPlay.x, y: mousePos.y - ballToPlay.y };
-      const dist = Math.hypot(directionVector.x, directionVector.y);
-      const power = Math.min(dist / 5, MAX_POWER);
-      const angle = Math.atan2(directionVector.y, directionVector.x);
-      const velocity = { vx: Math.cos(angle) * power, vy: Math.sin(angle) * power };
+    } else if (aimingPhase === 'arming' && ballToPlay && aimingLine) {
+        const directionVector = { x: aimingLine.end.x - aimingLine.start.x, y: aimingLine.end.y - aimingLine.start.y };
+        const angle = Math.atan2(directionVector.y, directionVector.x);
+        const velocity = { vx: Math.cos(angle) * power, vy: Math.sin(angle) * power };
   
       const wasJackTurn = ballToPlay.color === 'white';
   
@@ -240,14 +242,18 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
       setPhase('simulating');
       setAimingPhase('idle');
       setBallToPlay(null);
-      setMousePosition(null);
+      setAimingLine(null);
+      setPower(0);
     }
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {
     if (aimingPhase === 'arming' && ballToPlay) {
         const rect = gameAreaRef.current!.getBoundingClientRect();
-        setMousePosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+        const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        setAimingLine({start: ballToPlay, end: mousePos});
+        const dist = Math.hypot(mousePos.x - ballToPlay.x, mousePos.y - ballToPlay.y);
+        setPower(Math.min(dist / 10, MAX_POWER));
     }
   }
 
@@ -312,7 +318,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                     }
                 }
                 
-                 if (!isMoving) {
+                if (!isMoving) {
                     if (ballsLeft.red === 0 && ballsLeft.blue === 0) {
                         calculateRoundScore();
                     } else {
@@ -321,12 +327,10 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                             setCurrentPlayer(nextPlayer);
                             setPhase('turnEnd');
                         } else {
-                            // This means all balls have been played for one player, let the other finish
                             calculateRoundScore();
                         }
                     }
                 }
-
                 return nextBalls;
             });
         }
@@ -337,7 +341,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     return () => cancelAnimationFrame(animationFrameId);
   }, [phase, determineNextPlayer, ballsLeft]);
   
-  const cursorClass = (phase === 'newRound' || phase === 'turnEnd' || phase === 'aiming') && aimingPhase === 'idle'
+  const cursorClass = (phase === 'newRound' || phase === 'turnEnd' || (phase === 'aiming' && aimingPhase === 'idle'))
     ? (currentPlayer === 'red' ? 'cursor-[url(/cursors/red.svg),_pointer]' : 'cursor-[url(/cursors/blue.svg),_pointer]')
     : 'cursor-default';
     
@@ -356,8 +360,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
         </div>
     </div>
   );
-
-  const currentBall = getBallToPlay();
 
   return (
     <main className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
@@ -395,28 +397,59 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
             {/* Throwing Area */}
             <div className="absolute bottom-0 left-0 bg-green-900/50" style={{width: GAME_WIDTH, height: THROWING_AREA_HEIGHT }}/>
 
-            {[...balls, ballToPlay].filter(Boolean).map(ball => (
+            {balls.map(ball => (
               <div
-                key={ball!.id}
+                key={ball.id}
                 className={cn("absolute rounded-full border-2 shadow-lg", {
-                  'bg-white border-black': ball!.color === 'white',
-                  'bg-red-600 border-red-800': ball!.color === 'red',
-                  'bg-blue-600 border-blue-800': ball!.color === 'blue',
+                  'bg-white border-black': ball.color === 'white',
+                  'bg-red-600 border-red-800': ball.color === 'red',
+                  'bg-blue-600 border-blue-800': ball.color === 'blue',
                 })}
                 style={{
                   width: BALL_RADIUS * 2,
                   height: BALL_RADIUS * 2,
-                  transform: `translate(${ball!.x - BALL_RADIUS}px, ${ball!.y - BALL_RADIUS}px)`,
+                  transform: `translate(${ball.x - BALL_RADIUS}px, ${ball.y - BALL_RADIUS}px)`,
                   transition: phase === 'simulating' ? 'transform 16ms linear' : 'none'
                 }}
               />
             ))}
             
-             {aimingPhase === 'arming' && ballToPlay && mousePosition && (
+            {ballToPlay && (
+                 <div
+                    key={ballToPlay.id}
+                    className={cn("absolute rounded-full border-2 shadow-lg", {
+                    'bg-white border-black': ballToPlay.color === 'white',
+                    'bg-red-600 border-red-800': ballToPlay.color === 'red',
+                    'bg-blue-600 border-blue-800': ballToPlay.color === 'blue',
+                    })}
+                    style={{
+                    width: BALL_RADIUS * 2,
+                    height: BALL_RADIUS * 2,
+                    transform: `translate(${ballToPlay.x - BALL_RADIUS}px, ${ballToPlay.y - BALL_RADIUS}px)`,
+                    }}
+                />
+            )}
+            
+             {aimingPhase === 'arming' && aimingLine && (
                  <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                    <line x1={ballToPlay.x} y1={ballToPlay.y} x2={mousePosition.x} y2={mousePosition.y} stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeDasharray="5,5" />
+                    <defs>
+                        <linearGradient id="powerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style={{stopColor: 'lightgreen', stopOpacity: 1}} />
+                            <stop offset="50%" style={{stopColor: 'yellow', stopOpacity: 1}} />
+                            <stop offset="100%" style={{stopColor: 'red', stopOpacity: 1}} />
+                        </linearGradient>
+                    </defs>
+                    <line x1={aimingLine.start.x} y1={aimingLine.start.y} x2={aimingLine.end.x} y2={aimingLine.end.y} stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeDasharray="5,5" />
                  </svg>
             )}
+
+            {aimingPhase === 'arming' && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1/2">
+                    <p className="text-center text-sm mb-1">Puissance</p>
+                    <Progress value={ (power / MAX_POWER) * 100 } className="w-full h-4" />
+                </div>
+            )}
+
 
             {phase === 'roundEnd' && (
                 <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10">
@@ -441,5 +474,3 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     </main>
   );
 }
-
-    
