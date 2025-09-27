@@ -5,7 +5,7 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc, writeBatch, runTransaction } from "firebase/firestore"; 
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, CountSettings, NumberLevelSettings, ReadingRaceSettings } from '@/lib/questions';
-import { getSkillBySlug } from '@/lib/skills';
+import { calculateNuggets } from '@/lib/nuggets';
 
 export interface CalculationState {
   [cellId: string]: {
@@ -41,25 +41,6 @@ export interface Score {
     numberLevelSettings?: NumberLevelSettings;
     readingRaceSettings?: ReadingRaceSettings;
 }
-
-// Calculates nuggets earned based on score.
-const calculateNuggets = (score: number, skillSlug: string): number => {
-    const skill = getSkillBySlug(skillSlug);
-    // For non-percentage based scores (like fluence, reading-race, or simple completion)
-    if (skill?.slug === 'fluence' || skill?.slug === 'reading-race') {
-        if (score > 0) return 2; // Fixed 2 nuggets for completing a reading race
-        return 0;
-    }
-    if (skill?.slug === 'decoding' || skill?.slug === 'syllable-table' || skill?.slug === 'writing-notebook' || skill?.slug === 'lire-des-phrases' ) {
-         return 2; // Fixed 2 nuggets for completion-based exercises
-    }
-
-    // For percentage-based scores
-    if (score >= 90) return 3;
-    if (score >= 80) return 2;
-    if (score >= 70) return 1;
-    return 0;
-};
 
 
 // Adds a new score document and updates student's nuggets.

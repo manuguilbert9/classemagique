@@ -26,6 +26,9 @@ import { addScore, getScoresForUser, Score, saveHomeworkResult } from '@/service
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
 import { VirtualKeyboard } from './virtual-keyboard';
+import { useToast } from '@/hooks/use-toast';
+import { calculateNuggets } from '@/lib/nuggets';
+import { Gem } from 'lucide-react';
 
 
 const motivationalMessages = [
@@ -50,6 +53,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const searchParams = useSearchParams();
   const isHomework = searchParams.get('from') === 'devoirs';
   const homeworkDate = searchParams.get('date');
+  const { toast } = useToast();
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -295,7 +299,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 processIncorrectAnswer();
             }
        }
-  }, [feedback, userKeyboardInput, exerciseData]);
+  }, [feedback, userKeyboardInput, exerciseData, processCorrectAnswer, processIncorrectAnswer]);
 
 
   const handleAddToSum = (item: { name: string; value: number; image: string; hint?: string }) => {
@@ -346,6 +350,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         } else {
           await addScore(scoreData);
         }
+
+        const nuggetsEarned = calculateNuggets(newScoreValue, skill.slug);
+        if (nuggetsEarned > 0) {
+            toast({
+                title: `+${nuggetsEarned} pépite${nuggetsEarned > 1 ? 's' : ''} !`,
+                description: "Bravo pour tes efforts !",
+                className: "bg-amber-100 border-amber-300 text-amber-800",
+                icon: <Gem className="h-6 w-6 text-amber-500" />,
+            });
+        }
         
         try {
           const userSkillHistory = await getScoresForUser(student.id, skill.slug);
@@ -359,7 +373,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, hasBeenSaved, correctAnswers, calculationSettings, currencySettings, timeSettings, countSettings, numberLevelSettings, isTableauMode, isHomework, homeworkDate]);
+  }, [isFinished, student, skill.slug, hasBeenSaved, correctAnswers, calculationSettings, currencySettings, timeSettings, countSettings, numberLevelSettings, isTableauMode, isHomework, homeworkDate, toast]);
   
   const restartExercise = async () => {
     setQuestions([]);
@@ -836,6 +850,7 @@ const renderWrittenToAudioQCM = () => (
     </div>
   );
 }
+
 
 
 
