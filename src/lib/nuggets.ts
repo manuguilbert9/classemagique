@@ -1,6 +1,4 @@
 
-'use server';
-
 import { getSkillBySlug } from './skills';
 
 /**
