@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 // --- CONSTANTES DU JEU ---
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 500;
-const THROWING_AREA_HEIGHT = 100;
+const THROWING_AREA_HEIGHT = 150;
 const TOTAL_HEIGHT = GAME_HEIGHT + THROWING_AREA_HEIGHT;
 const BALL_RADIUS = 15;
 const FRICTION = 0.98;
@@ -49,7 +49,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   const [aimStart, setAimStart] = React.useState<Vector | null>(null);
   const [aimVector, setAimVector] = React.useState<Vector>({ x: 0, y: 0 });
   
-  const gameLoopRef = React.useRef<number>();
   const gameAreaRef = React.useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -57,35 +56,51 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     const startingPlayer = roundWinner || 'red';
     
     setBalls([]);
-    setPhase('turnEnd');
+    setPhase('turnEnd'); // This will trigger getBallToPlay to create the jack
     setCurrentPlayer(startingPlayer); 
     setBallsLeft({ red: INITIAL_BALLS_PER_PLAYER, blue: INITIAL_BALLS_PER_PLAYER });
     setRoundScore({ red: 0, blue: 0 });
-    toast({ title: "Nouvelle Manche !", description: `Le joueur ${startingPlayer === 'blue' ? 'Bleu' : 'Rouge'} commence par lancer le Jack.` });
-  }, [toast, roundWinner]);
+  }, [roundWinner]);
 
   const resetGame = React.useCallback(() => {
     setTotalScore({ red: 0, blue: 0 });
-    setRoundWinner('red'); 
+    setRoundWinner('red'); // Red always starts the first game
     startNewRound();
   }, [startNewRound]);
 
   React.useEffect(() => {
     resetGame();
   }, [resetGame]);
+
+  React.useEffect(() => {
+    if (phase === 'roundEnd' && roundWinner !== undefined) {
+      if (roundWinner) {
+        toast({
+          title: "Fin de la manche !",
+          description: `Le joueur ${roundWinner === 'red' ? 'Rouge' : 'Bleu'} marque ${roundScore[roundWinner]} point(s).`
+        });
+      } else {
+        toast({
+          title: "Fin de la manche !",
+          description: "Égalité, aucun point marqué."
+        });
+      }
+    }
+  }, [phase, roundWinner, roundScore, toast]);
   
   const determineNextPlayer = React.useCallback((): Player | null => {
     const jack = balls.find(b => b.color === 'white');
-    if (!jack || jack.y >= GAME_HEIGHT) return currentPlayer;
+    if (!jack || jack.y >= GAME_HEIGHT) {
+      const isJackThrown = balls.some(b => b.color === 'white');
+      if (isJackThrown) {
+        return currentPlayer === 'red' ? 'blue' : 'red';
+      }
+      return currentPlayer;
+    }
 
     const redBalls = balls.filter(b => b.color === 'red');
     const blueBalls = balls.filter(b => b.color === 'blue');
     
-    // Case where only the jack has been thrown
-    if (redBalls.length === 0 && blueBalls.length === 0) {
-        return currentPlayer === 'red' ? 'blue' : 'red';
-    }
-
     if (redBalls.length === 0 && ballsLeft.red > 0) return 'red';
     if (blueBalls.length === 0 && ballsLeft.blue > 0) return 'blue';
     if (redBalls.length === 0 || blueBalls.length === 0) return null;
@@ -115,7 +130,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
     if(redBalls.length === 0 && blueBalls.length === 0) {
         setRoundWinner(null);
-        toast({ title: "Fin de la manche !", description: "Égalité, aucun point marqué."});
         setPhase('roundEnd');
         return;
     }
@@ -150,10 +164,8 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
       setRoundScore({ red: winner === 'red' ? score : 0, blue: winner === 'blue' ? score : 0 });
       setTotalScore(prev => ({...prev, [winner!]: prev[winner!] + score}));
       setRoundWinner(winner);
-      toast({ title: "Fin de la manche !", description: `Le joueur ${winner === 'red' ? 'Rouge' : 'Bleu'} marque ${score} point(s).`});
     } else {
       setRoundWinner(null);
-      toast({ title: "Fin de la manche !", description: "Égalité, aucun point marqué."});
     }
     setPhase('roundEnd');
   }
@@ -411,7 +423,8 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
             {phase === 'roundEnd' && (
                 <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10">
                     <h3 className="text-3xl font-bold">Fin de la manche</h3>
-                     <p className="text-xl mt-2">{roundWinner ? `Le joueur ${roundWinner === 'red' ? 'Rouge' : 'Bleu'} marque ${roundScore[roundWinner]} points.` : "Égalité !"}</p>
+                     {roundWinner && <p className="text-xl mt-2">{`Le joueur ${roundWinner === 'red' ? 'Rouge' : 'Bleu'} marque ${roundScore[roundWinner]} points.`}</p>}
+                     {!roundWinner && <p className="text-xl mt-2">Égalité !</p>}
                     <Button onClick={startNewRound} className="mt-6">Manche Suivante</Button>
                 </div>
             )}
@@ -429,5 +442,3 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     </main>
   );
 }
-
-    
