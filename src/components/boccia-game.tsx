@@ -55,7 +55,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
   // New aiming state
   const [aimingPhase, setAimingPhase] = React.useState<AimingPhase>('idle');
-  const [currentMousePos, setCurrentMousePos] = React.useState<Vector | null>(null);
   const [ballToPlay, setBallToPlay] = React.useState<Ball | null>(null);
 
   const gameAreaRef = React.useRef<HTMLDivElement>(null);
@@ -111,6 +110,11 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     const redBallsInPlay = balls.filter(b => b.color === 'red' && b.y < GAME_HEIGHT);
     const blueBallsInPlay = balls.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT);
     
+    // Si un joueur n'a plus de boules à jouer, c'est forcément à l'autre de jouer
+    if (ballsLeft.red === 0 && ballsLeft.blue > 0) return 'blue';
+    if (ballsLeft.blue === 0 && ballsLeft.red > 0) return 'red';
+
+    // Si un joueur n'a pas encore joué, c'est à son tour
     if (redBallsInPlay.length === 0 && ballsLeft.red > 0) return 'red';
     if (blueBallsInPlay.length === 0 && ballsLeft.blue > 0) return 'blue';
     if (redBallsInPlay.length === 0) return ballsLeft.blue > 0 ? 'blue' : null;
@@ -185,159 +189,146 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     setPhase('roundEnd');
   }
 
-  const prepareNextBall = React.useCallback(() => {
-    if (phase !== 'newRound' && phase !== 'turnEnd') return;
+  const getBallToPlay = (): Ball | null => {
+     if (phase !== 'newRound' && phase !== 'turnEnd') return null;
 
-    const isJackTurn = !balls.some(b => b.color === 'white');
-    
-    let nextBall: Ball;
-    if (isJackTurn) {
-        nextBall = { id: 0, x: GAME_WIDTH / 2, y: TOTAL_HEIGHT - 50, vx: 0, vy: 0, color: 'white' as const };
-    } else {
-        const newId = (currentPlayer === 'red' ? 100 : 200) + (INITIAL_BALLS_PER_PLAYER - ballsLeft[currentPlayer]);
-        nextBall = { id: newId, x: GAME_WIDTH / 2, y: TOTAL_HEIGHT - 50, vx: 0, vy: 0, color: currentPlayer };
-    }
-    setBallToPlay(nextBall);
-  }, [balls, currentPlayer, ballsLeft, phase]);
-
+     const isJackTurn = !balls.some(b => b.color === 'white');
+     
+     let nextBall: Ball;
+     if (isJackTurn) {
+         nextBall = { id: 0, x: GAME_WIDTH / 2, y: TOTAL_HEIGHT - 50, vx: 0, vy: 0, color: 'white' as const };
+     } else {
+         if (ballsLeft[currentPlayer] <= 0) return null;
+         const newId = (currentPlayer === 'red' ? 100 : 200) + (INITIAL_BALLS_PER_PLAYER - ballsLeft[currentPlayer]);
+         nextBall = { id: newId, x: GAME_WIDTH / 2, y: TOTAL_HEIGHT - 50, vx: 0, vy: 0, color: currentPlayer };
+     }
+     return nextBall;
+  }
 
   const handleClick = (e: React.MouseEvent) => {
     if (phase === 'simulating' || phase === 'roundEnd') return;
 
     const rect = gameAreaRef.current!.getBoundingClientRect();
     const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const currentBall = getBallToPlay();
 
-    if (aimingPhase === 'idle' && ballToPlay) {
-        const dist = Math.hypot(mousePos.x - ballToPlay.x, mousePos.y - ballToPlay.y);
+    if (aimingPhase === 'idle' && currentBall) {
+        const dist = Math.hypot(mousePos.x - currentBall.x, mousePos.y - currentBall.y);
         if (dist < BALL_RADIUS) {
             setAimingPhase('arming');
+            setBallToPlay(currentBall); // Lock in the ball to play
             setPhase('aiming');
         }
-    } else if (aimingPhase === 'arming' && ballToPlay && currentMousePos) {
-        const pullVector = { x: ballToPlay.x - currentMousePos.x, y: ballToPlay.y - currentMousePos.y };
+    } else if (aimingPhase === 'arming' && ballToPlay) { // ballToPlay is now from state
+        const pullVector = { x: ballToPlay.x - mousePos.x, y: ballToPlay.y - mousePos.y };
         const dist = Math.hypot(pullVector.x, pullVector.y);
+        
+        const maxPull = THROWING_AREA_HEIGHT;
+        const power = (Math.min(dist, maxPull) / maxPull) * MAX_POWER;
+        const angle = Math.atan2(pullVector.y, pullVector.x);
+        const velocity = { vx: Math.cos(angle) * power, vy: Math.sin(angle) * power };
+        
+        const wasJackTurn = ballToPlay.color === 'white';
 
-        if (dist > 5) {
-            const maxPull = THROWING_AREA_HEIGHT;
-            const power = (Math.min(dist, maxPull) / maxPull) * MAX_POWER;
-            const angle = Math.atan2(pullVector.y, pullVector.x);
-            const velocity = { vx: Math.cos(angle) * power, vy: Math.sin(angle) * power };
-            
-            const wasJackTurn = ballToPlay.color === 'white';
-
-            setBalls(prev => [...prev, { ...ballToPlay, ...velocity }]);
-            
-            if (!wasJackTurn) {
-                setBallsLeft(prev => ({ ...prev, [ballToPlay.color as Player]: prev[ballToPlay.color as Player] - 1 }));
-            }
-            
-            setPhase('simulating');
-        } else {
-             setPhase(phase => phase === 'newRound' ? 'newRound' : 'turnEnd');
+        setBalls(prev => [...prev, { ...ballToPlay, ...velocity }]);
+        
+        if (!wasJackTurn) {
+            setBallsLeft(prev => ({ ...prev, [ballToPlay.color as Player]: prev[ballToPlay.color as Player] - 1 }));
         }
         
+        setPhase('simulating');
         setAimingPhase('idle');
-        setCurrentMousePos(null);
         setBallToPlay(null);
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (phase !== 'aiming' || aimingPhase !== 'arming' || !ballToPlay) return;
-    const rect = gameAreaRef.current!.getBoundingClientRect();
-    setCurrentMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  };
-  
-   React.useEffect(() => {
-    prepareNextBall();
-  }, [phase, prepareNextBall]);
-
   React.useEffect(() => {
     let animationFrameId: number;
-    let lastJackThrownPlayer: Player | null = null;
-    let jackJustThrown = false;
     
     const gameLoop = () => {
-        setBalls(currentBalls => {
-            if (phase !== 'simulating') return currentBalls;
-            
-            let isMoving = false;
-            const nextBalls = currentBalls.map(ball => {
-                let newVx = ball.vx * FRICTION;
-                let newVy = ball.vy * FRICTION;
+        if (phase === 'simulating') {
+            setBalls(currentBalls => {
+                let isMoving = false;
+                const nextBalls = currentBalls.map(ball => {
+                    let newVx = ball.vx * FRICTION;
+                    let newVy = ball.vy * FRICTION;
 
-                if (Math.abs(newVx) < MIN_VELOCITY) newVx = 0;
-                if (Math.abs(newVy) < MIN_VELOCITY) newVy = 0;
+                    if (Math.abs(newVx) < MIN_VELOCITY) newVx = 0;
+                    if (Math.abs(newVy) < MIN_VELOCITY) newVy = 0;
 
-                if(newVx !== 0 || newVy !== 0) isMoving = true;
+                    if(newVx !== 0 || newVy !== 0) isMoving = true;
 
-                return { ...ball, vx: newVx, vy: newVy, x: ball.x + newVx, y: ball.y + newVy };
-            });
+                    return { ...ball, vx: newVx, vy: newVy, x: ball.x + newVx, y: ball.y + newVy };
+                });
 
-            for (let i = 0; i < nextBalls.length; i++) {
-                for (let j = i + 1; j < nextBalls.length; j++) {
-                    const b1 = nextBalls[i];
-                    const b2 = nextBalls[j];
-                    const dx = b2.x - b1.x;
-                    const dy = b2.y - b1.y;
-                    const distance = Math.hypot(dx, dy);
+                for (let i = 0; i < nextBalls.length; i++) {
+                    for (let j = i + 1; j < nextBalls.length; j++) {
+                        const b1 = nextBalls[i];
+                        const b2 = nextBalls[j];
+                        const dx = b2.x - b1.x;
+                        const dy = b2.y - b1.y;
+                        const distance = Math.hypot(dx, dy);
 
-                    if (distance < BALL_RADIUS * 2) {
-                        const angle = Math.atan2(dy, dx);
-                        const sin = Math.sin(angle);
-                        const cos = Math.cos(angle);
-                        
-                        const vx1 = b1.vx * cos + b1.vy * sin;
-                        const vy1 = b1.vy * cos - b1.vx * sin;
-                        const vx2 = b2.vx * cos + b2.vy * sin;
-                        const vy2 = b2.vy * cos - b2.vx * sin;
+                        if (distance < BALL_RADIUS * 2) {
+                            const angle = Math.atan2(dy, dx);
+                            const sin = Math.sin(angle);
+                            const cos = Math.cos(angle);
+                            
+                            const vx1 = b1.vx * cos + b1.vy * sin;
+                            const vy1 = b1.vy * cos - b1.vx * sin;
+                            const vx2 = b2.vx * cos + b2.vy * sin;
+                            const vy2 = b2.vy * cos - b2.vx * sin;
 
-                        const vx1Final = vx2;
-                        const vx2Final = vx1;
+                            const vx1Final = vx2;
+                            const vx2Final = vx1;
 
-                        b1.vx = vx1Final * cos - vy1 * sin;
-                        b1.vy = vy1 * cos + vx1Final * sin;
-                        b2.vx = vx2Final * cos - vy2 * sin;
-                        b2.vy = vy2 * cos + vx2Final * sin;
-                        
-                        const overlap = (BALL_RADIUS * 2 - distance) / 2;
-                        b1.x -= overlap * cos;
-                        b1.y -= overlap * sin;
-                        b2.x += overlap * cos;
-                        b2.y += overlap * sin;
+                            b1.vx = vx1Final * cos - vy1 * sin;
+                            b1.vy = vy1 * cos + vx1Final * sin;
+                            b2.vx = vx2Final * cos - vy2 * sin;
+                            b2.vy = vy2 * cos + vx2Final * sin;
+                            
+                            const overlap = (BALL_RADIUS * 2 - distance) / 2;
+                            b1.x -= overlap * cos;
+                            b1.y -= overlap * sin;
+                            b2.x += overlap * cos;
+                            b2.y += overlap * sin;
+                        }
+                    }
+                    if (nextBalls[i].x < BALL_RADIUS) { nextBalls[i].x = BALL_RADIUS; nextBalls[i].vx *= -0.8; }
+                    if (nextBalls[i].x > GAME_WIDTH - BALL_RADIUS) { nextBalls[i].x = GAME_WIDTH - BALL_RADIUS; nextBalls[i].vx *= -0.8; }
+                    if (nextBalls[i].y < BALL_RADIUS) { nextBalls[i].y = BALL_RADIUS; nextBalls[i].vy *= -0.8; }
+                    if (nextBalls[i].y > GAME_HEIGHT - BALL_RADIUS && nextBalls[i].y < TOTAL_HEIGHT) { 
+                        nextBalls[i].y = GAME_HEIGHT - BALL_RADIUS; 
+                        nextBalls[i].vy *= -0.8; 
                     }
                 }
-                if (nextBalls[i].x < BALL_RADIUS) { nextBalls[i].x = BALL_RADIUS; nextBalls[i].vx *= -0.8; }
-                if (nextBalls[i].x > GAME_WIDTH - BALL_RADIUS) { nextBalls[i].x = GAME_WIDTH - BALL_RADIUS; nextBalls[i].vx *= -0.8; }
-                if (nextBalls[i].y < BALL_RADIUS) { nextBalls[i].y = BALL_RADIUS; nextBalls[i].vy *= -0.8; }
-                if (nextBalls[i].y > GAME_HEIGHT - BALL_RADIUS && nextBalls[i].y < TOTAL_HEIGHT) { 
-                    nextBalls[i].y = GAME_HEIGHT - BALL_RADIUS; 
-                    nextBalls[i].vy *= -0.8; 
-                }
-            }
 
-            if (!isMoving) {
-                // If this was the jack's first move, pass the turn
-                if (currentBalls.length === 1 && currentBalls[0].color === 'white') {
-                    setCurrentPlayer(p => p === 'red' ? 'blue' : 'red');
-                } else {
-                    const nextPlayer = determineNextPlayer();
-                    if(nextPlayer) {
-                        setCurrentPlayer(nextPlayer);
-                    } else {
+                if (!isMoving) {
+                    const wasJackTurn = currentBalls.length === 1 && currentBalls[0].color === 'white';
+                    
+                    if (wasJackTurn) {
+                        setCurrentPlayer(p => p === 'red' ? 'blue' : 'red');
+                        setPhase('turnEnd');
+                    } else if (ballsLeft.red === 0 && ballsLeft.blue === 0) {
                         calculateRoundScore();
                     }
+                    else {
+                        const nextPlayer = determineNextPlayer();
+                        if(nextPlayer) {
+                            setCurrentPlayer(nextPlayer);
+                        }
+                        setPhase('turnEnd');
+                    }
                 }
-                setPhase('turnEnd');
-            }
-            return nextBalls;
-        });
+                return nextBalls;
+            });
+        }
         animationFrameId = requestAnimationFrame(gameLoop);
     };
 
     animationFrameId = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [phase, determineNextPlayer, currentPlayer]);
+  }, [phase, determineNextPlayer, ballsLeft]);
   
   const cursorClass = (phase === 'newRound' || phase === 'turnEnd') && aimingPhase === 'idle'
     ? (currentPlayer === 'red' ? 'cursor-[url(/cursors/red.svg),_pointer]' : 'cursor-[url(/cursors/blue.svg),_pointer]')
@@ -362,13 +353,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     </div>
   );
 
-  let aimVector = { x: 0, y: 0 };
-  let powerPercent = 0;
-  if (phase === 'aiming' && ballToPlay && currentMousePos) {
-      aimVector = { x: ballToPlay.x - currentMousePos.x, y: ballToPlay.y - currentMousePos.y };
-      const dist = Math.hypot(aimVector.x, aimVector.y);
-      powerPercent = Math.min(dist / THROWING_AREA_HEIGHT, 1) * 100;
-  }
+  const currentBall = getBallToPlay();
 
   return (
     <main className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
@@ -390,7 +375,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
           <div
             ref={gameAreaRef}
             onClick={handleClick}
-            onMouseMove={handleMouseMove}
             className={cn("relative border-4 border-yellow-700 rounded-md overflow-hidden", cursorClass)}
             style={{ width: GAME_WIDTH, height: TOTAL_HEIGHT }}
           >
@@ -403,7 +387,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                 <RemainingBalls player="blue" count={ballsLeft.blue} />
             </div>
 
-            {[...balls, ballToPlay].filter(Boolean).map(ball => (
+            {[...balls, currentBall].filter(Boolean).map(ball => (
               <div
                 key={ball!.id}
                 className={cn("absolute rounded-full border-2 shadow-lg", {
@@ -419,30 +403,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                 }}
               />
             ))}
-            {phase === 'aiming' && ballToPlay && currentMousePos && (
-                <svg className="absolute inset-0 pointer-events-none w-full h-full">
-                    <defs>
-                        <linearGradient id="powerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" style={{stopColor: 'lightgreen'}} />
-                            <stop offset="50%" style={{stopColor: 'yellow'}} />
-                            <stop offset="100%" style={{stopColor: 'red'}} />
-                        </linearGradient>
-                    </defs>
-                    {/* Aiming line */}
-                    <line
-                        x1={ballToPlay.x}
-                        y1={ballToPlay.y}
-                        x2={ballToPlay.x + aimVector.x}
-                        y2={ballToPlay.y + aimVector.y}
-                        stroke="rgba(255, 255, 255, 0.5)"
-                        strokeWidth="2"
-                        strokeDasharray="5,5"
-                    />
-                     {/* Power bar */}
-                    <rect x={ballToPlay.x - 5} y={ballToPlay.y + 20} width="10" height="50" fill="rgba(0,0,0,0.5)" rx="2"/>
-                    <rect x={ballToPlay.x - 5} y={ballToPlay.y + 20 + (50 * (1-powerPercent/100))} width="10" height={50 * (powerPercent/100)} fill="url(#powerGradient)" rx="2"/>
-                </svg>
-            )}
+            
             {phase === 'roundEnd' && (
                 <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10">
                     <h3 className="text-3xl font-bold">Fin de la manche</h3>
@@ -465,3 +426,6 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     </main>
   );
 }
+
+
+    
