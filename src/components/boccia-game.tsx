@@ -104,7 +104,12 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   
   const determineNextPlayer = React.useCallback((): Player => {
     const jack = balls.find(b => b.color === 'white');
-    // If jack hasn't been played (or is out), the current player plays. This should be handled by the Jack turn logic.
+    
+    // Case 1: Jack has just been thrown. It's the other player's turn.
+    if (balls.length === 1 && jack) {
+        return currentPlayer === 'red' ? 'blue' : 'red';
+    }
+
     if (!jack || jack.y >= GAME_HEIGHT) return currentPlayer;
 
     const redBallsInPlay = balls.filter(b => b.color === 'red' && b.y < GAME_HEIGHT);
@@ -181,6 +186,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   }
 
   const getBallToPlay = React.useCallback(() => {
+     // At the very start of a round, no balls are in play, so we must play the jack.
      const isJackTurn = !balls.some(b => b.color === 'white');
      
      if (isJackTurn) {
@@ -196,6 +202,10 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     if ((phase === 'newRound' || phase === 'turnEnd') && aimingPhase === 'idle') {
       const nextBall = getBallToPlay();
       setBallToPlay(nextBall);
+      // Automatically enter aiming mode if there's a ball to play
+      if(nextBall) {
+          setPhase('aiming');
+      }
     } else if (phase !== 'aiming') {
       setBallToPlay(null);
     }
@@ -203,21 +213,19 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
 
   const handleClick = (e: React.MouseEvent) => {
-    if (phase === 'simulating' || phase === 'roundEnd' || phase === 'gameOver' || !gameAreaRef.current) return;
-  
-    const rect = gameAreaRef.current.getBoundingClientRect();
-    const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    if (phase !== 'aiming' || !gameAreaRef.current) return;
   
     if (aimingPhase === 'idle' && ballToPlay) {
+      const rect = gameAreaRef.current.getBoundingClientRect();
+      const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       const dist = Math.hypot(mousePos.x - ballToPlay.x, mousePos.y - ballToPlay.y);
       if (dist < BALL_RADIUS) {
         setAimingPhase('arming');
-        setPhase('aiming');
       }
     } else if (aimingPhase === 'arming' && ballToPlay && aimingLine) {
-        const directionVector = { x: aimingLine.end.x - aimingLine.start.x, y: aimingLine.end.y - aimingLine.start.y };
-        const angle = Math.atan2(directionVector.y, directionVector.x);
-        const velocity = { vx: Math.cos(angle) * power, vy: Math.sin(angle) * power };
+      const directionVector = { x: aimingLine.end.x - ballToPlay.x, y: aimingLine.end.y - ballToPlay.y };
+      const angle = Math.atan2(directionVector.y, directionVector.x);
+      const velocity = { vx: Math.cos(angle) * power, vy: Math.sin(angle) * power };
   
       const wasJackTurn = ballToPlay.color === 'white';
   
@@ -236,7 +244,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (aimingPhase === 'arming' && ballToPlay) {
+    if (phase === 'aiming' && aimingPhase === 'arming' && ballToPlay) {
         const rect = gameAreaRef.current!.getBoundingClientRect();
         const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
         setAimingLine({start: ballToPlay, end: mousePos});
@@ -307,13 +315,10 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                 }
                 
                 if (!isMoving) {
-                    const wasJackThrown = currentBalls.length === 1 && currentBalls[0].color === 'white';
-                    
                     if (ballsLeft.red === 0 && ballsLeft.blue === 0) {
                         calculateRoundScore();
                     } else {
-                        // If jack was just thrown, switch player. Otherwise, determine next player based on distance.
-                        const nextPlayer = wasJackThrown ? (currentPlayer === 'red' ? 'blue' : 'red') : determineNextPlayer();
+                        const nextPlayer = determineNextPlayer();
                         setCurrentPlayer(nextPlayer);
                         setPhase('turnEnd');
                     }
@@ -328,9 +333,10 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     return () => cancelAnimationFrame(animationFrameId);
   }, [phase, determineNextPlayer, ballsLeft, currentPlayer]);
   
-  const cursorClass = (phase === 'newRound' || phase === 'turnEnd' || (phase === 'aiming' && aimingPhase === 'idle'))
-    ? (ballToPlay?.color === 'white' ? 'cursor-[url(/cursors/white.svg),_pointer]' : (ballToPlay?.color === 'red' ? 'cursor-[url(/cursors/red.svg),_pointer]' : 'cursor-[url(/cursors/blue.svg),_pointer]'))
-    : 'cursor-default';
+  const cursorClass = (phase === 'aiming' && aimingPhase === 'idle' && ballToPlay)
+    ? (ballToPlay.color === 'white' ? 'cursor-[url(/cursors/white.svg),_pointer]' : (ballToPlay.color === 'red' ? 'cursor-[url(/cursors/red.svg),_pointer]' : 'cursor-[url(/cursors/blue.svg),_pointer]'))
+    : (phase === 'aiming' && aimingPhase === 'arming' ? 'cursor-crosshair' : 'cursor-default');
+
     
   const RemainingBalls = ({ player, count }: {player: Player, count: number}) => (
     <div className="flex flex-col items-center">
@@ -355,14 +361,14 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
            <CardTitle className="font-headline text-3xl">Boccia</CardTitle>
            <div className="flex gap-8 items-center">
              <div className="text-center">
-                <p className={cn("text-lg font-bold text-red-500", (phase === 'newRound' && roundWinner !== 'blue') || (phase !== 'roundEnd' && currentPlayer === 'red') ? 'animate-pulse' : '')}>Joueur Rouge</p>
+                <p className={cn("text-lg font-bold text-red-500", (phase !== 'roundEnd' && currentPlayer === 'red') ? 'animate-pulse' : '')}>Joueur Rouge</p>
                 <div className="flex items-center gap-4">
                   <span>Score: {totalScore.red}</span>
                   <RemainingBalls player="red" count={ballsLeft.red} />
                 </div>
              </div>
               <div className="text-center">
-                <p className={cn("text-lg font-bold text-blue-500", (phase === 'newRound' && roundWinner === 'blue') || (phase !== 'roundEnd' && currentPlayer === 'blue') ? 'animate-pulse' : '')}>Joueur Bleu</p>
+                <p className={cn("text-lg font-bold text-blue-500", (phase !== 'roundEnd' && currentPlayer === 'blue') ? 'animate-pulse' : '')}>Joueur Bleu</p>
                 <div className="flex items-center gap-4">
                   <span>Score: {totalScore.blue}</span>
                    <RemainingBalls player="blue" count={ballsLeft.blue} />
