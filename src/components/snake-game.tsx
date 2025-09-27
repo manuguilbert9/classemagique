@@ -88,11 +88,11 @@ export function SnakeGame({ onGameOver }: { onGameOver: () => void }) {
           case 'RIGHT': head.x += 1; break;
         }
 
-        // Wall collision
-        if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-          setIsLost(true);
-          return prevSnake;
-        }
+        // Wall wrapping logic
+        if (head.x < 0) head.x = GRID_SIZE - 1;
+        if (head.x >= GRID_SIZE) head.x = 0;
+        if (head.y < 0) head.y = GRID_SIZE - 1;
+        if (head.y >= GRID_SIZE) head.y = 0;
 
         // Self collision
         for (let i = 1; i < newSnake.length; i++) {
