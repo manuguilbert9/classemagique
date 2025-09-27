@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -11,6 +12,10 @@ const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 const TURRET_Y = GAME_HEIGHT - 30;
 const MAX_LANDED = 5;
+
+let objectIdCounter = 0;
+const getUniqueId = () => objectIdCounter++;
+
 
 type GameObject = {
   id: number;
@@ -43,6 +48,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
   const { toast } = useToast();
 
   const resetGame = React.useCallback(() => {
+    objectIdCounter = 0;
     setGameState('playing');
     setGameObjects([]);
     setScore(0);
@@ -76,7 +82,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     setLastShotTime(now);
 
     setGameObjects(prev => [...prev, {
-      id: now,
+      id: getUniqueId(),
       x: GAME_WIDTH / 2,
       y: TURRET_Y,
       type: 'projectile',
@@ -95,7 +101,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
       if (now > nextHeliTime) {
         const direction = Math.random() > 0.5 ? 1 : -1;
         setGameObjects(prev => [...prev, {
-          id: now,
+          id: getUniqueId(),
           x: direction > 0 ? -50 : GAME_WIDTH + 50,
           y: 50 + Math.random() * 50,
           vx: direction * (1 + wave * 0.2),
@@ -109,22 +115,33 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
       setGameObjects(prevObjects => {
         const newObjects: GameObject[] = [];
         let newLandedCount = landedCount;
+        let hitsToProcess: { projectileId: number, target: GameObject }[] = [];
 
+        // --- UPDATE POSITIONS & DETECT HITS ---
         for (const obj of prevObjects) {
           let newObj = { ...obj };
 
-          // --- UPDATE POSITIONS ---
           switch (obj.type) {
             case 'projectile':
               newObj.x += Math.cos(obj.angle!) * 15;
               newObj.y += Math.sin(obj.angle!) * 15;
+              // Check for collisions
+              for (const target of prevObjects) {
+                if (target.type === 'helicopter' || target.type === 'parachutist') {
+                    const dx = newObj.x - target.x;
+                    const dy = newObj.y - target.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 20) {
+                        hitsToProcess.push({ projectileId: obj.id, target });
+                        break; 
+                    }
+                }
+              }
               break;
             case 'helicopter':
               newObj.x += obj.vx!;
-              // Drop parachutist
               if (Math.random() < 0.01 + wave * 0.002) {
                  newObjects.push({
-                   id: Date.now() + Math.random(),
+                   id: getUniqueId(),
                    x: obj.x,
                    y: obj.y + 20,
                    vy: 0.5 + wave * 0.1,
@@ -134,69 +151,71 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
               break;
             case 'parachutist':
               newObj.y += obj.isFallingFast ? obj.vy! * 3 : obj.vy!;
+              // Check collision with debris
+              for (const debris of prevObjects) {
+                  if (debris.type === 'debris' && !newObj.isFallingFast) {
+                       const dx = newObj.x - debris.x;
+                       const dy = newObj.y - debris.y;
+                       if (Math.sqrt(dx * dx + dy * dy) < 15) {
+                           newObj.isFallingFast = true;
+                           setScore(s => s + 5);
+                       }
+                  }
+              }
               break;
             case 'debris':
               newObj.y += 4;
               break;
           }
-
-          // --- BOUNDARY CHECKS & REMOVAL ---
-          if (newObj.y > GAME_HEIGHT || newObj.x < -100 || newObj.x > GAME_WIDTH + 100) {
-             if (newObj.type === 'parachutist' && newObj.y > TURRET_Y) {
-               newLandedCount++;
-             }
-             continue; // Object is out of bounds, remove it
-          }
           
-          // --- COLLISION DETECTION ---
-          let hit = false;
-          if (newObj.type === 'projectile') {
-            for (const target of prevObjects) {
-              if (target.type === 'helicopter' || target.type === 'parachutist') {
-                const dx = newObj.x - target.x;
-                const dy = newObj.y - target.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance < 20) { // Simple radius collision
-                  hit = true;
-                  if (target.type === 'helicopter') {
-                    target.health = (target.health || 1) - 1;
-                    if(target.health <= 0) {
-                        setScore(s => s + 25);
-                        for(let i=0; i<3; i++) newObjects.push({id: Date.now() + Math.random() + i, x: target.x, y: target.y, type: 'debris'});
-                    } else {
-                        newObjects.push(target); // Update health
-                    }
-                  } else { // Parachutist
-                    setScore(s => s + 10);
-                  }
-                  break; // Projectile is used up
-                }
-              }
-            }
-          }
-           else if (newObj.type === 'debris') {
-             for (const target of prevObjects) {
-                if(target.type === 'parachutist' && !target.isFallingFast) {
-                   const dx = newObj.x - target.x;
-                   const dy = newObj.y - target.y;
-                   if (Math.sqrt(dx * dx + dy * dy) < 15) {
-                       target.isFallingFast = true;
-                       setScore(s => s + 5); // bonus points
-                   }
-                }
-             }
-           }
-           
-           // Don't add hit projectiles or destroyed helicopters
-           if (!hit && (obj.type !== 'helicopter' || obj.health! > 0)) {
-               newObjects.push(newObj);
-           }
+           // Add object to next frame if it's still valid
+           newObjects.push(newObj);
         }
         
+        // --- PROCESS HITS AND UPDATE OBJECTS ---
+        const hitProjectileIds = new Set(hitsToProcess.map(h => h.projectileId));
+        const destroyedTargetIds = new Set<number>();
+        
+        hitsToProcess.forEach(({ target }) => {
+            if (destroyedTargetIds.has(target.id)) return;
+
+            if (target.type === 'helicopter') {
+                target.health = (target.health || 1) - 1;
+                if (target.health <= 0) {
+                    destroyedTargetIds.add(target.id);
+                    setScore(s => s + 25);
+                    for (let i = 0; i < 3; i++) {
+                        newObjects.push({ id: getUniqueId(), x: target.x, y: target.y, type: 'debris' });
+                    }
+                }
+            } else if (target.type === 'parachutist') {
+                destroyedTargetIds.add(target.id);
+                setScore(s => s + 10);
+            }
+        });
+
+
+        // --- FILTER FINAL OBJECTS FOR NEXT FRAME ---
+        const finalObjects = newObjects.filter(obj => {
+            // Remove hit projectiles and destroyed targets
+            if (hitProjectileIds.has(obj.id) || destroyedTargetIds.has(obj.id)) {
+                return false;
+            }
+
+            // Boundary checks and removal
+            if (obj.y > GAME_HEIGHT || obj.x < -100 || obj.x > GAME_WIDTH + 100) {
+                if (obj.type === 'parachutist' && obj.y > TURRET_Y) {
+                    newLandedCount++;
+                }
+                return false; // Object is out of bounds, remove it
+            }
+
+            return true;
+        });
+
         if (newLandedCount !== landedCount) setLandedCount(newLandedCount);
         
-        return newObjects;
+        return finalObjects;
       });
     }, 50); // Game loop runs every 50ms (20 FPS)
 
