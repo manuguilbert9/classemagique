@@ -126,7 +126,7 @@ export default function RewardsPage() {
          <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
           <CardHeader>
             <CardTitle className="font-headline text-3xl">Défense Aérienne</CardTitle>
-            <CardDescription className="text-lg">Détruisez les hélicoptères !</CardDescription>
+            <CardDescription className="text-lg">Détruisez les envahisseurs !</CardDescription>
           </CardHeader>
           <CardContent>
             <Shield className="h-32 w-32 mx-auto text-primary" />

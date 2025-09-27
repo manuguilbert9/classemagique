@@ -286,7 +286,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
       toast({
         variant: 'destructive',
         title: "Oh non !",
-        description: `Vous avez laissé ${MAX_LANDED} parachutistes atterrir.`,
+        description: `Vous avez laissé ${MAX_LANDED} extraterrestres atterrir.`,
       });
     }
   }, [landedCount, toast]);
@@ -319,8 +319,8 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
                 transform: 'translate(-50%, -50%)',
               };
               if (obj.type === 'projectile') return <div key={obj.id} style={style} className="w-2 h-2 bg-yellow-300 rounded-full" />;
-              if (obj.type === 'helicopter') return <div key={obj.id} style={{ ...style, fontSize: '30px' }}>🚁</div>;
-              if (obj.type === 'parachutist') return <div key={obj.id} style={{ ...style, fontSize: '24px' }}>{obj.isFallingFast ? '🤸' : '🪂'}</div>;
+              if (obj.type === 'helicopter') return <div key={obj.id} style={{ ...style, fontSize: '30px' }}>🛸</div>;
+              if (obj.type === 'parachutist') return <div key={obj.id} style={{ ...style, fontSize: '24px' }}>👽</div>;
               if (obj.type === 'debris') return <div key={obj.id} style={{...style, fontSize: '10px'}}>💥</div>
               return null;
             })}
