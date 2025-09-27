@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserContext } from '@/context/user-context';
 import { Logo } from '@/components/logo';
-import { Home, Gem, Gamepad2, ArrowLeft, Shield } from 'lucide-react';
+import { Home, Gem, Gamepad2, ArrowLeft, Shield, Disc3 } from 'lucide-react';
 import { SnakeGame } from '@/components/snake-game';
 import { spendNuggets } from '@/services/students';
 import { useToast } from '@/hooks/use-toast';
 import { AirDefenseGame } from '@/components/air-defense-game';
+import { BocciaGame } from '@/components/boccia-game';
 
-type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'gameover';
+type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia';
 
 const GAME_COST = 2;
 
@@ -22,7 +23,7 @@ export default function RewardsPage() {
   const [gameState, setGameState] = useState<GameState>('selection');
   const { toast } = useToast();
 
-  const handlePlay = async (game: 'snake' | 'air_defense') => {
+  const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia') => {
     if (!student || (student.nuggets || 0) < GAME_COST) {
       toast({
         variant: 'destructive',
@@ -37,8 +38,10 @@ export default function RewardsPage() {
       refreshStudent();
       if (game === 'snake') {
         setGameState('playing_snake');
-      } else {
+      } else if (game === 'air_defense') {
         setGameState('playing_air_defense');
+      } else if (game === 'boccia') {
+        setGameState('playing_boccia');
       }
     } else {
       toast({
@@ -49,7 +52,7 @@ export default function RewardsPage() {
     }
   };
 
-  const handleGameOver = () => {
+  const handleExitGame = () => {
     setGameState('selection'); 
   };
   
@@ -70,7 +73,7 @@ export default function RewardsPage() {
   if (gameState === 'playing_snake') {
     return (
         <SnakeGame 
-            onGameOver={handleGameOver} 
+            onGameOver={handleExitGame} 
             onReplay={() => handlePlay('snake')}
             canReplay={(student?.nuggets || 0) >= GAME_COST}
             gameCost={GAME_COST}
@@ -81,10 +84,18 @@ export default function RewardsPage() {
   if (gameState === 'playing_air_defense') {
     return (
         <AirDefenseGame
-            onExit={handleGameOver}
+            onExit={handleExitGame}
             onReplay={() => handlePlay('air_defense')}
             canReplay={(student?.nuggets || 0) >= GAME_COST}
             gameCost={GAME_COST}
+        />
+    );
+  }
+  
+  if (gameState === 'playing_boccia') {
+    return (
+        <BocciaGame
+            onExit={handleExitGame}
         />
     );
   }
@@ -133,6 +144,21 @@ export default function RewardsPage() {
           </CardContent>
           <CardContent>
              <Button onClick={() => handlePlay('air_defense')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
+              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
+            </Button>
+            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
+          </CardContent>
+        </Card>
+        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
+          <CardHeader>
+            <CardTitle className="font-headline text-3xl">Boccia</CardTitle>
+            <CardDescription className="text-lg">Précision et stratégie !</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Disc3 className="h-32 w-32 mx-auto text-primary" />
+          </CardContent>
+          <CardContent>
+             <Button onClick={() => handlePlay('boccia')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
               Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
             {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
