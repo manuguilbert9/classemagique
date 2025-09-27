@@ -160,7 +160,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
       
       // Spawn Parachutists
       if (parachutistsToSpawn > 0 && now > nextParachuteTime) {
-        const helicopters = gameObjects.filter(obj => obj.type === 'helicopter');
+        const helicopters = gameObjects.filter(obj => obj.type === 'helicopter' && obj.x > 0 && obj.x < GAME_WIDTH);
         if (helicopters.length > 0) {
             const randomHeli = helicopters[Math.floor(Math.random() * helicopters.length)];
             setGameObjects(prev => [...prev, {
@@ -178,13 +178,14 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
       }
 
       setGameObjects(prevObjects => {
-        const newObjects: GameObject[] = [];
         let newLandedCount = landedCount;
         let hitsToProcess: { projectileId: number, target: GameObject }[] = [];
+        const nextFrameObjects: GameObject[] = [];
 
         // --- UPDATE POSITIONS & DETECT HITS ---
         for (const obj of prevObjects) {
           let newObj = { ...obj };
+          let keepObject = true;
 
           switch (obj.type) {
             case 'projectile':
@@ -224,8 +225,16 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
               break;
           }
           
-           // Add object to next frame if it's still valid
-           newObjects.push(newObj);
+          if (newObj.y > GAME_HEIGHT || newObj.x < -100 || newObj.x > GAME_WIDTH + 100) {
+              if(newObj.type === 'parachutist' && newObj.y > TURRET_Y) {
+                  newLandedCount++;
+              }
+              keepObject = false;
+          }
+
+          if (keepObject) {
+              nextFrameObjects.push(newObj);
+          }
         }
         
         // --- PROCESS HITS AND UPDATE OBJECTS ---
@@ -236,12 +245,15 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
             if (destroyedTargetIds.has(target.id)) return;
 
             if (target.type === 'helicopter') {
-                target.health = (target.health || 1) - 1;
-                if (target.health <= 0) {
-                    destroyedTargetIds.add(target.id);
-                    setScore(s => s + 25);
-                    for (let i = 0; i < 3; i++) {
-                        newObjects.push({ id: getUniqueId(), x: target.x, y: target.y, type: 'debris' });
+                const existingTarget = nextFrameObjects.find(o => o.id === target.id);
+                if(existingTarget) {
+                    existingTarget.health = (existingTarget.health || 1) - 1;
+                    if (existingTarget.health <= 0) {
+                        destroyedTargetIds.add(target.id);
+                        setScore(s => s + 25);
+                        for (let i = 0; i < 3; i++) {
+                            nextFrameObjects.push({ id: getUniqueId(), x: target.x, y: target.y, type: 'debris' });
+                        }
                     }
                 }
             } else if (target.type === 'parachutist') {
@@ -250,23 +262,9 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
             }
         });
 
-
         // --- FILTER FINAL OBJECTS FOR NEXT FRAME ---
-        const finalObjects = newObjects.filter(obj => {
-            // Remove hit projectiles and destroyed targets
-            if (hitProjectileIds.has(obj.id) || destroyedTargetIds.has(obj.id)) {
-                return false;
-            }
-
-            // Boundary checks and removal
-            if (obj.y > GAME_HEIGHT || obj.x < -100 || obj.x > GAME_WIDTH + 100) {
-                if (obj.type === 'parachutist' && obj.y > TURRET_Y) {
-                    newLandedCount++;
-                }
-                return false; // Object is out of bounds, remove it
-            }
-
-            return true;
+        const finalObjects = nextFrameObjects.filter(obj => {
+            return !hitProjectileIds.has(obj.id) && !destroyedTargetIds.has(obj.id);
         });
 
         if (newLandedCount !== landedCount) setLandedCount(newLandedCount);
@@ -276,7 +274,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     }, 50); // Game loop runs every 50ms (20 FPS)
 
     return () => clearInterval(gameLoopIntervalRef.current);
-  }, [gameState, wave, landedCount, nextHeliTime, parachutistsToSpawn, nextParachuteTime, gameObjects]);
+  }, [gameState, wave, landedCount, nextHeliTime, parachutistsToSpawn, nextParachuteTime]);
 
   // Game Over Check
   React.useEffect(() => {
@@ -318,7 +316,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
                 top: obj.y,
                 transform: 'translate(-50%, -50%)',
               };
-              if (obj.type === 'projectile') return <div key={obj.id} style={style} className="w-2 h-2 bg-yellow-300 rounded-full" />;
+              if (obj.type === 'projectile') return <div key={obj.id} style={{ ...style, transform: `translate(-50%, -50%) rotate(${obj.angle! * 180 / Math.PI + 90}deg)`}} className="w-1 h-4 bg-yellow-300 rounded-full shadow-[0_0_8px_2px_#fde047]" />;
               if (obj.type === 'helicopter') return <div key={obj.id} style={{ ...style, fontSize: '30px' }}>🛸</div>;
               if (obj.type === 'parachutist') return <div key={obj.id} style={{ ...style, fontSize: '24px' }}>👽</div>;
               if (obj.type === 'debris') return <div key={obj.id} style={{...style, fontSize: '10px'}}>💥</div>
@@ -371,3 +369,5 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     </main>
   );
 }
+
+  
