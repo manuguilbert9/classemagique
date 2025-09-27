@@ -19,12 +19,12 @@ export default function RewardsPage() {
   const [gameState, setGameState] = useState<GameState>('selection');
   const { toast } = useToast();
 
-  const handlePlaySnake = async () => {
+  const handlePlay = async () => {
     if (!student || (student.nuggets || 0) < 1) {
       toast({
         variant: 'destructive',
         title: 'Pépites insuffisantes',
-        description: "Tu n'as pas assez de pépites pour jouer à ce jeu.",
+        description: "Tu n'as pas assez de pépites pour jouer.",
       });
       return;
     }
@@ -37,7 +37,7 @@ export default function RewardsPage() {
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: "Impossible de dépenser les pépites. Réessaye plus tard.",
+        description: result.error || "Impossible de dépenser les pépites.",
       });
     }
   };
@@ -61,7 +61,13 @@ export default function RewardsPage() {
   }
 
   if (gameState === 'playing') {
-    return <SnakeGame onGameOver={handleGameOver} />;
+    return (
+        <SnakeGame 
+            onGameOver={handleGameOver} 
+            onReplay={handlePlay}
+            canReplay={(student?.nuggets || 0) >= 1}
+        />
+    );
   }
 
   return (
@@ -92,9 +98,10 @@ export default function RewardsPage() {
             <Gamepad2 className="h-32 w-32 mx-auto text-primary" />
           </CardContent>
           <CardContent>
-             <Button onClick={handlePlaySnake} size="lg" className="w-full text-lg">
+             <Button onClick={handlePlay} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < 1}>
               Jouer pour 1 <Gem className="ml-2 h-5 w-5" />
             </Button>
+            {(student.nuggets || 0) < 1 && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
           </CardContent>
         </Card>
       </div>

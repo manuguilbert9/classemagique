@@ -27,7 +27,15 @@ const getRandomPosition = (snakeBody: Position[] = []): Position => {
   return position;
 };
 
-export function SnakeGame({ onGameOver }: { onGameOver: () => void }) {
+export function SnakeGame({ 
+    onGameOver, 
+    onReplay,
+    canReplay 
+}: { 
+    onGameOver: () => void;
+    onReplay: () => void;
+    canReplay: boolean;
+}) {
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
   const [food, setFood] = useState<Position>(() => getRandomPosition(snake));
   const [foodEmoji, setFoodEmoji] = useState(() => choice(fruitEmojis));
@@ -35,6 +43,11 @@ export function SnakeGame({ onGameOver }: { onGameOver: () => void }) {
   const [isPaused, setIsPaused] = useState(false);
   const [isLost, setIsLost] = useState(false);
   const [score, setScore] = useState(0);
+
+  const handleReplayGame = () => {
+    onReplay();
+    resetGame();
+  }
 
   const resetGame = useCallback(() => {
     const initialSnake = [{ x: 10, y: 10 }];
@@ -163,13 +176,14 @@ export function SnakeGame({ onGameOver }: { onGameOver: () => void }) {
                     <h2 className="text-4xl font-bold">Game Over</h2>
                     <p className="text-xl mt-2">Score final : {score}</p>
                     <div className="flex gap-4 mt-6">
-                        <Button onClick={resetGame} variant="secondary">
-                            <RefreshCw className="mr-2" /> Rejouer
+                        <Button onClick={handleReplayGame} disabled={!canReplay} variant="secondary">
+                            <RefreshCw className="mr-2" /> Rejouer (1 pépite)
                         </Button>
                         <Button onClick={onGameOver}>
                             <ArrowLeft className="mr-2" /> Quitter
                         </Button>
                     </div>
+                     {!canReplay && <p className="text-xs text-amber-300 mt-2">Tu n'as plus assez de pépites pour rejouer.</p>}
                 </div>
             )}
              {isPaused && !isLost && (
