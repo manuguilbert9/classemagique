@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -45,8 +46,8 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
   // Wave-specific state
   const [parachutistsToSpawn, setParachutistsToSpawn] = React.useState(0);
   const [nextHeliTime, setNextHeliTime] = React.useState(0);
-  const waveStartTimeRef = React.useRef<number>(0);
-  
+  const [nextParachuteTime, setNextParachuteTime] = React.useState(0);
+
   const gameAreaRef = React.useRef<HTMLDivElement>(null);
   const gameLoopIntervalRef = React.useRef<NodeJS.Timeout>();
   const waveTimeoutRef = React.useRef<NodeJS.Timeout>();
@@ -68,10 +69,13 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     setTimeout(() => {
         const numToSpawn = getParachutistsForWave(currentWave);
         setParachutistsToSpawn(numToSpawn);
+        const parachuteInterval = WAVE_DURATION / numToSpawn;
+        setNextParachuteTime(Date.now() + parachuteInterval);
+
         setGameState('playing');
-        waveStartTimeRef.current = Date.now();
         
         // End the wave after WAVE_DURATION
+        if(waveTimeoutRef.current) clearTimeout(waveTimeoutRef.current);
         waveTimeoutRef.current = setTimeout(() => {
             setWave(w => w + 1);
         }, WAVE_DURATION);
@@ -86,6 +90,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     setLandedCount(0);
     setParachutistsToSpawn(0);
     setNextHeliTime(0);
+    setNextParachuteTime(0);
     if(waveTimeoutRef.current) clearTimeout(waveTimeoutRef.current);
     if(gameLoopIntervalRef.current) clearInterval(gameLoopIntervalRef.current);
     setWave(1); 
@@ -97,7 +102,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
   
   const handleReplayGame = () => {
     if (canReplay) {
-      onReplay(); // This deducts the nuggets
+      onReplay();
       resetGame();
     }
   };
@@ -150,16 +155,25 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
           type: 'helicopter',
           health: 3,
         }]);
-        setNextHeliTime(now + 4000 / (1 + wave * 0.1)); // Less frequent helicopters
+        setNextHeliTime(now + 6000 / (1 + wave * 0.1)); // Slower helicopter spawn rate
       }
       
-      let parachutistsToDropThisFrame = 0;
-      if (parachutistsToSpawn > 0) {
-        const elapsedTime = now - waveStartTimeRef.current;
-        const timeRemaining = WAVE_DURATION - elapsedTime;
-        const dropRate = parachutistsToSpawn / (timeRemaining / 50); // Parachutists per tick
-        if (Math.random() < dropRate) {
-           parachutistsToDropThisFrame = 1;
+      // Spawn Parachutists
+      if (parachutistsToSpawn > 0 && now > nextParachuteTime) {
+        const helicopters = gameObjects.filter(obj => obj.type === 'helicopter');
+        if (helicopters.length > 0) {
+            const randomHeli = helicopters[Math.floor(Math.random() * helicopters.length)];
+            setGameObjects(prev => [...prev, {
+                id: getUniqueId(),
+                x: randomHeli.x,
+                y: randomHeli.y + 20,
+                vy: 0.4 + wave * 0.05,
+                type: 'parachutist'
+            }]);
+            setParachutistsToSpawn(p => p - 1);
+            const numToSpawn = getParachutistsForWave(wave);
+            const parachuteInterval = WAVE_DURATION / numToSpawn;
+            setNextParachuteTime(now + parachuteInterval);
         }
       }
 
@@ -167,9 +181,6 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
         const newObjects: GameObject[] = [];
         let newLandedCount = landedCount;
         let hitsToProcess: { projectileId: number, target: GameObject }[] = [];
-        
-        let helicopterCount = prevObjects.filter(obj => obj.type === 'helicopter').length;
-        if(helicopterCount === 0) helicopterCount = 1; // avoid division by zero
 
         // --- UPDATE POSITIONS & DETECT HITS ---
         for (const obj of prevObjects) {
@@ -193,17 +204,6 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
               break;
             case 'helicopter':
               newObj.x += obj.vx!;
-              if (parachutistsToDropThisFrame > 0 && Math.random() < 1 / helicopterCount) {
-                 parachutistsToDropThisFrame--;
-                 setParachutistsToSpawn(p => p - 1);
-                 newObjects.push({
-                   id: getUniqueId(),
-                   x: obj.x,
-                   y: obj.y + 20,
-                   vy: 0.4 + wave * 0.05,
-                   type: 'parachutist'
-                 });
-              }
               break;
             case 'parachutist':
               newObj.y += obj.isFallingFast ? obj.vy! * 3 : obj.vy!;
@@ -276,7 +276,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     }, 50); // Game loop runs every 50ms (20 FPS)
 
     return () => clearInterval(gameLoopIntervalRef.current);
-  }, [gameState, wave, landedCount, nextHeliTime, parachutistsToSpawn]);
+  }, [gameState, wave, landedCount, nextHeliTime, parachutistsToSpawn, nextParachuteTime, gameObjects]);
 
   // Game Over Check
   React.useEffect(() => {
