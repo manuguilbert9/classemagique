@@ -15,6 +15,7 @@ const BALL_RADIUS = 15;
 const FRICTION = 0.98;
 const MIN_VELOCITY = 0.05;
 const MAX_POWER = 15;
+const MAX_AIM_DISTANCE = 150;
 
 // --- TYPES ---
 type Vector = { x: number; y: number };
@@ -41,25 +42,20 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   const [totalScore, setTotalScore] = React.useState<Record<Player, number>>({ red: 0, blue: 0 });
   const [roundWinner, setRoundWinner] = React.useState<Player | null>('red'); // Red starts first game
 
-  // Aiming state
+  // Aiming state (billiards style)
   const [isAiming, setIsAiming] = React.useState(false);
   const [aimStart, setAimStart] = React.useState<Vector | null>(null);
   const [aimVector, setAimVector] = React.useState<Vector>({ x: 0, y: 0 });
-  const [power, setPower] = React.useState(0);
-  const powerIntervalRef = React.useRef<NodeJS.Timeout>();
-
+  
   const gameLoopRef = React.useRef<number>();
   const gameAreaRef = React.useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const startNewRound = React.useCallback(() => {
-    // The player who won the previous round starts the next one
     const startingPlayer = roundWinner || 'red';
     
     setBalls([
-      // Add the Jack at its starting position, ready to be thrown
       { id: 0, x: GAME_WIDTH / 2, y: GAME_HEIGHT - 40, vx: 0, vy: 0, color: 'white' },
-      // Add player balls at their starting positions
       ...Array.from({length: INITIAL_BALLS_PER_PLAYER}).map((_, i) => ({ id: i + 1, x: 40 + i * 40, y: GAME_HEIGHT - 40, vx: 0, vy: 0, color: 'red' as Player })),
       ...Array.from({length: INITIAL_BALLS_PER_PLAYER}).map((_, i) => ({ id: i + 1 + INITIAL_BALLS_PER_PLAYER, x: GAME_WIDTH - 40 - i * 40, y: GAME_HEIGHT - 40, vx: 0, vy: 0, color: 'blue' as Player })),
     ]);
@@ -67,48 +63,48 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     setCurrentPlayer(startingPlayer); 
     setBallsLeft({ red: INITIAL_BALLS_PER_PLAYER, blue: INITIAL_BALLS_PER_PLAYER });
     setRoundScore({ red: 0, blue: 0 });
-    // roundWinner is kept from previous round to decide who starts
     toast({ title: "Nouvelle Manche !", description: `Le joueur ${startingPlayer === 'blue' ? 'Bleu' : 'Rouge'} commence par lancer le Jack.` });
   }, [toast, roundWinner]);
 
   const resetGame = React.useCallback(() => {
     setTotalScore({ red: 0, blue: 0 });
-    setRoundWinner('red'); // Red always starts the very first game
+    setRoundWinner('red'); 
     startNewRound();
   }, [startNewRound]);
-
 
   React.useEffect(() => {
     resetGame();
   }, [resetGame]);
   
-  // --- Game Logic ---
-
   const determineNextPlayer = React.useCallback((): Player | null => {
     const jack = balls.find(b => b.color === 'white');
-    if (!jack || jack.y > GAME_HEIGHT - 100) return currentPlayer; // Jack not thrown yet
+    if (!jack || jack.y > GAME_HEIGHT - 100) return currentPlayer;
 
-    const thrownBalls = balls.filter(b => b.color !== 'white' && b.y < GAME_HEIGHT - 100);
-    if (thrownBalls.length === 0) return currentPlayer; // First player throws after jack
+    const redBalls = balls.filter(b => b.color === 'red' && b.y < GAME_HEIGHT - 100);
+    const blueBalls = balls.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT - 100);
 
-    const distances = thrownBalls.map(b => ({
-      dist: Math.hypot(b.x - jack.x, b.y - jack.y),
-      color: b.color as Player
-    }));
-    
-    if(distances.length === 0) return currentPlayer;
+    if (redBalls.length === 0 && ballsLeft.red > 0) return 'red';
+    if (blueBalls.length === 0 && ballsLeft.blue > 0) return 'blue';
 
-    const closest = distances.reduce((prev, curr) => prev.dist < curr.dist ? prev : curr);
-    const nextPlayer = closest.color === 'red' ? 'blue' : 'red';
+    const redDistances = redBalls.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
+    const blueDistances = blueBalls.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
+
+    if (redDistances.length === 0 && ballsLeft.red > 0) return 'red';
+    if (blueDistances.length === 0 && ballsLeft.blue > 0) return 'blue';
+    if(redDistances.length === 0 && blueDistances.length === 0) return currentPlayer;
+
+
+    const nextPlayer = redDistances[0] <= blueDistances[0] ? 'blue' : 'red';
     
     if (ballsLeft[nextPlayer] > 0) {
       return nextPlayer;
     } 
-    if (ballsLeft[closest.color as Player] > 0) {
-      return closest.color as Player;
+    const otherPlayer = nextPlayer === 'red' ? 'blue' : 'red';
+    if (ballsLeft[otherPlayer] > 0) {
+      return otherPlayer;
     }
     
-    return null; // No balls left to play
+    return null;
   }, [balls, ballsLeft, currentPlayer]);
   
   const calculateRoundScore = () => {
@@ -118,30 +114,12 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     const redBalls = balls.filter(b => b.color === 'red' && b.y < GAME_HEIGHT-100);
     const blueBalls = balls.filter(b => b.color === 'blue' && b.y < GAME_HEIGHT-100);
 
-    // If one player has no balls on the field, the other wins by default if they have balls
-    if(redBalls.length === 0 && blueBalls.length > 0) {
-       setRoundWinner('blue');
-       setRoundScore({red: 0, blue: blueBalls.length});
-       setTotalScore(prev => ({...prev, blue: prev.blue + blueBalls.length}));
-       toast({ title: "Fin de la manche !", description: `Le joueur Bleu marque ${blueBalls.length} point(s).`});
-       setPhase('roundEnd');
-       return;
-    }
-     if(blueBalls.length === 0 && redBalls.length > 0) {
-       setRoundWinner('red');
-       setRoundScore({red: redBalls.length, blue: 0});
-       setTotalScore(prev => ({...prev, red: prev.red + redBalls.length}));
-       toast({ title: "Fin de la manche !", description: `Le joueur Rouge marque ${redBalls.length} point(s).`});
-       setPhase('roundEnd');
-       return;
-    }
-     if(blueBalls.length === 0 && redBalls.length === 0) {
+    if(redBalls.length === 0 && blueBalls.length === 0) {
         setRoundWinner(null);
         toast({ title: "Fin de la manche !", description: "Égalité, aucun point marqué."});
         setPhase('roundEnd');
         return;
     }
-
 
     const redDistances = redBalls.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
     const blueDistances = blueBalls.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
@@ -149,7 +127,13 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     let score = 0;
     let winner: Player | null = null;
     
-    if (redDistances[0] < blueDistances[0]) {
+    if (redDistances.length === 0) {
+        winner = 'blue';
+        score = blueBalls.length;
+    } else if (blueDistances.length === 0) {
+        winner = 'red';
+        score = redBalls.length;
+    } else if (redDistances[0] < blueDistances[0]) {
       winner = 'red';
       for (const dist of redDistances) {
         if (dist < blueDistances[0]) score++;
@@ -175,25 +159,27 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     setPhase('roundEnd');
   }
 
-  const getBallToPlay = (): Ball | undefined => {
-    const isJackTurn = balls.find(b => b.color === 'white' && b.y >= GAME_HEIGHT - 100);
-    if(isJackTurn) return isJackTurn;
-    
+  const getBallToPlay = React.useCallback(() => {
+    const isJackTurn = !balls.some(b => b.color === 'white' && b.y < GAME_HEIGHT - 100);
+    if(isJackTurn) return balls.find(b => b.color === 'white');
     return balls.find(b => b.color === currentPlayer && b.y >= GAME_HEIGHT - 100);
-  }
+  }, [balls, currentPlayer]);
 
-  // --- Input Handlers ---
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (phase !== 'turnEnd') return;
-    
     const ballToPlay = getBallToPlay();
     if (!ballToPlay) return;
 
-    setIsAiming(true);
-    setAimStart({ x: ballToPlay.x, y: ballToPlay.y });
-    powerIntervalRef.current = setInterval(() => {
-        setPower(p => (p + 0.5) % (MAX_POWER + 0.5));
-    }, 20);
+    const rect = gameAreaRef.current!.getBoundingClientRect();
+    const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+    // Check if click is on the ball to play
+    const dist = Math.hypot(mousePos.x - ballToPlay.x, mousePos.y - ballToPlay.y);
+    if(dist < BALL_RADIUS) {
+        setIsAiming(true);
+        setAimStart({ x: mousePos.x, y: mousePos.y });
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -209,11 +195,11 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     if (!isAiming || !aimStart) return;
 
     setIsAiming(false);
-    clearInterval(powerIntervalRef.current);
-    
     const ballToPlay = getBallToPlay();
     if (!ballToPlay) return;
-
+    
+    const dist = Math.hypot(aimVector.x, aimVector.y);
+    const power = (Math.min(dist, MAX_AIM_DISTANCE) / MAX_AIM_DISTANCE) * MAX_POWER;
     const angle = Math.atan2(-aimVector.y, -aimVector.x);
     const velocity = {
         vx: Math.cos(angle) * power,
@@ -225,98 +211,100 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
         setBallsLeft(prev => ({ ...prev, [ballToPlay.color as Player]: prev[ballToPlay.color as Player] - 1}));
     }
     setPhase('simulating');
-    setPower(0);
     setAimVector({x:0, y:0});
     setAimStart(null);
   };
 
-  // --- Main Game Loop ---
+  // Main Game Loop using useRef and requestAnimationFrame
   React.useEffect(() => {
+    let animationFrameId: number;
+
     const gameLoop = () => {
-      if (phase !== 'simulating') {
-        gameLoopRef.current = requestAnimationFrame(gameLoop);
-        return;
-      }
-      
-      let isMoving = false;
+        setBalls(currentBalls => {
+            if (phase !== 'simulating') return currentBalls;
 
-      setBalls(currentBalls => {
-        const nextBalls = currentBalls.map(ball => {
-          let newVx = ball.vx * FRICTION;
-          let newVy = ball.vy * FRICTION;
-          
-          if (Math.abs(newVx) < MIN_VELOCITY) newVx = 0;
-          if (Math.abs(newVy) < MIN_VELOCITY) newVy = 0;
-          
-          if(newVx !== 0 || newVy !== 0) isMoving = true;
+            let isMoving = false;
+            // Update positions and apply friction
+            const nextBalls = currentBalls.map(ball => {
+                let newVx = ball.vx * FRICTION;
+                let newVy = ball.vy * FRICTION;
 
-          return { ...ball, vx: newVx, vy: newVy, x: ball.x + newVx, y: ball.y + newVy };
-        });
+                if (Math.abs(newVx) < MIN_VELOCITY) newVx = 0;
+                if (Math.abs(newVy) < MIN_VELOCITY) newVy = 0;
 
-        for (let i = 0; i < nextBalls.length; i++) {
-            for (let j = i + 1; j < nextBalls.length; j++) {
-                const b1 = nextBalls[i];
-                const b2 = nextBalls[j];
-                const dx = b2.x - b1.x;
-                const dy = b2.y - b1.y;
-                const distance = Math.hypot(dx, dy);
+                if(newVx !== 0 || newVy !== 0) isMoving = true;
 
-                if (distance < BALL_RADIUS * 2) {
-                    const angle = Math.atan2(dy, dx);
-                    const sin = Math.sin(angle);
-                    const cos = Math.cos(angle);
-                    
-                    const vx1 = b1.vx * cos + b1.vy * sin;
-                    const vy1 = b1.vy * cos - b1.vx * sin;
-                    const vx2 = b2.vx * cos + b2.vy * sin;
-                    const vy2 = b2.vy * cos - b2.vx * sin;
+                return { ...ball, vx: newVx, vy: newVy, x: ball.x + newVx, y: ball.y + newVy };
+            });
 
-                    const vx1Final = vx2;
-                    const vx2Final = vx1;
+            // Handle collisions
+            for (let i = 0; i < nextBalls.length; i++) {
+                for (let j = i + 1; j < nextBalls.length; j++) {
+                    const b1 = nextBalls[i];
+                    const b2 = nextBalls[j];
+                    const dx = b2.x - b1.x;
+                    const dy = b2.y - b1.y;
+                    const distance = Math.hypot(dx, dy);
 
-                    b1.vx = vx1Final * cos - vy1 * sin;
-                    b1.vy = vy1 * cos + vx1Final * sin;
-                    b2.vx = vx2Final * cos - vy2 * sin;
-                    b2.vy = vy2 * cos + vx2Final * sin;
-                    
-                    const overlap = (BALL_RADIUS * 2 - distance) / 2;
-                    b1.x -= overlap * cos;
-                    b1.y -= overlap * sin;
-                    b2.x += overlap * cos;
-                    b2.y += overlap * sin;
+                    if (distance < BALL_RADIUS * 2) {
+                        const angle = Math.atan2(dy, dx);
+                        const sin = Math.sin(angle);
+                        const cos = Math.cos(angle);
+                        
+                        const vx1 = b1.vx * cos + b1.vy * sin;
+                        const vy1 = b1.vy * cos - b1.vx * sin;
+                        const vx2 = b2.vx * cos + b2.vy * sin;
+                        const vy2 = b2.vy * cos - b2.vx * sin;
+
+                        const vx1Final = vx2;
+                        const vx2Final = vx1;
+
+                        b1.vx = vx1Final * cos - vy1 * sin;
+                        b1.vy = vy1 * cos + vx1Final * sin;
+                        b2.vx = vx2Final * cos - vy2 * sin;
+                        b2.vy = vy2 * cos + vx2Final * sin;
+                        
+                        const overlap = (BALL_RADIUS * 2 - distance) / 2;
+                        b1.x -= overlap * cos;
+                        b1.y -= overlap * sin;
+                        b2.x += overlap * cos;
+                        b2.y += overlap * sin;
+                    }
+                }
+                // Wall collisions
+                if (nextBalls[i].x < BALL_RADIUS) { nextBalls[i].x = BALL_RADIUS; nextBalls[i].vx *= -0.8; }
+                if (nextBalls[i].x > GAME_WIDTH - BALL_RADIUS) { nextBalls[i].x = GAME_WIDTH - BALL_RADIUS; nextBalls[i].vx *= -0.8; }
+                if (nextBalls[i].y < BALL_RADIUS) { nextBalls[i].y = BALL_RADIUS; nextBalls[i].vy *= -0.8; }
+                if (nextBalls[i].y > GAME_HEIGHT - BALL_RADIUS) { nextBalls[i].y = GAME_HEIGHT - BALL_RADIUS; nextBalls[i].vy *= -0.8; }
+            }
+
+            // Check if simulation should end
+            if (!isMoving) {
+                const isJackThrown = nextBalls.some(b => b.color === 'white' && b.y < GAME_HEIGHT - 100);
+                const hasBallsToPlay = Object.values(ballsLeft).some(v => v > 0) || !isJackThrown;
+
+                if (!hasBallsToPlay && isJackThrown) {
+                     calculateRoundScore();
+                } else {
+                    setPhase('turnEnd');
+                    const nextPlayer = determineNextPlayer();
+                    if(nextPlayer) setCurrentPlayer(nextPlayer);
                 }
             }
-            if (nextBalls[i].x < BALL_RADIUS) { nextBalls[i].x = BALL_RADIUS; nextBalls[i].vx *= -0.8; }
-            if (nextBalls[i].x > GAME_WIDTH - BALL_RADIUS) { nextBalls[i].x = GAME_WIDTH - BALL_RADIUS; nextBalls[i].vx *= -0.8; }
-            if (nextBalls[i].y < BALL_RADIUS) { nextBalls[i].y = BALL_RADIUS; nextBalls[i].vy *= -0.8; }
-            if (nextBalls[i].y > GAME_HEIGHT - BALL_RADIUS) { nextBalls[i].y = GAME_HEIGHT - BALL_RADIUS; nextBalls[i].vy *= -0.8; }
-        }
-
-        return nextBalls;
-      });
-
-      if (!isMoving) {
-        const hasBallsToPlay = Object.values(ballsLeft).some(v => v > 0);
-        const isJackThrown = balls.some(b => b.color === 'white' && b.y < GAME_HEIGHT - 100);
-
-        if(!hasBallsToPlay && isJackThrown) {
-             calculateRoundScore();
-        } else {
-            setPhase('turnEnd');
-            const nextPlayer = determineNextPlayer();
-            if(nextPlayer) setCurrentPlayer(nextPlayer);
-        }
-      }
-
-      gameLoopRef.current = requestAnimationFrame(gameLoop);
+            return nextBalls;
+        });
+        animationFrameId = requestAnimationFrame(gameLoop);
     };
 
-    gameLoopRef.current = requestAnimationFrame(gameLoop);
-    return () => {
-      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
-    };
-  }, [phase, ballsLeft, determineNextPlayer, balls]);
-
+    animationFrameId = requestAnimationFrame(gameLoop);
+    return () => cancelAnimationFrame(animationFrameId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, ballsLeft, determineNextPlayer]);
+  
+  const ballToPlay = getBallToPlay();
+  const cursorClass = phase === 'turnEnd' 
+    ? (currentPlayer === 'red' ? 'cursor-[url(/cursors/red.svg),_pointer]' : 'cursor-[url(/cursors/blue.svg),_pointer]')
+    : 'cursor-default';
 
   return (
     <main className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
@@ -341,10 +329,9 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            className="relative bg-green-800 border-4 border-yellow-700 rounded-md cursor-crosshair overflow-hidden"
+            className={cn("relative bg-green-800 border-4 border-yellow-700 rounded-md overflow-hidden", cursorClass)}
             style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}
           >
-            {/* Balls rendering */}
             {balls.map(ball => (
               <div
                 key={ball.id}
@@ -361,27 +348,19 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                 }}
               />
             ))}
-             {/* Aiming line */}
-            {isAiming && aimStart && (
-                <svg className="absolute inset-0 pointer-events-none">
+            {isAiming && ballToPlay && (
+                <svg className="absolute inset-0 pointer-events-none w-full h-full">
                     <line
-                        x1={aimStart.x}
-                        y1={aimStart.y}
-                        x2={aimStart.x - aimVector.x}
-                        y2={aimStart.y - aimVector.y}
+                        x1={ballToPlay.x}
+                        y1={ballToPlay.y}
+                        x2={ballToPlay.x - aimVector.x}
+                        y2={ballToPlay.y - aimVector.y}
                         stroke="rgba(255, 255, 255, 0.5)"
                         strokeWidth="2"
                         strokeDasharray="5,5"
                     />
                 </svg>
             )}
-             {/* Power gauge */}
-            {isAiming && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1/2 h-6 bg-black/50 rounded-full border-2 border-white/50 flex items-center p-1">
-                    <div className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-full" style={{width: `${(power/MAX_POWER) * 100}%`}}></div>
-                </div>
-            )}
-            {/* Round end screen */}
             {phase === 'roundEnd' && (
                 <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10">
                     <h3 className="text-3xl font-bold">Fin de la manche</h3>
@@ -403,3 +382,5 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     </main>
   );
 }
+
+    
