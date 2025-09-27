@@ -14,13 +14,15 @@ import { useToast } from '@/hooks/use-toast';
 
 type GameState = 'selection' | 'playing' | 'gameover';
 
+const GAME_COST = 2;
+
 export default function RewardsPage() {
   const { student, refreshStudent } = useContext(UserContext);
   const [gameState, setGameState] = useState<GameState>('selection');
   const { toast } = useToast();
 
   const handlePlay = async () => {
-    if (!student || (student.nuggets || 0) < 1) {
+    if (!student || (student.nuggets || 0) < GAME_COST) {
       toast({
         variant: 'destructive',
         title: 'Pépites insuffisantes',
@@ -29,7 +31,7 @@ export default function RewardsPage() {
       return;
     }
     
-    const result = await spendNuggets(student.id, 1);
+    const result = await spendNuggets(student.id, GAME_COST);
     if (result.success) {
       refreshStudent(); // Refresh student data to show updated nugget count
       setGameState('playing');
@@ -65,7 +67,8 @@ export default function RewardsPage() {
         <SnakeGame 
             onGameOver={handleGameOver} 
             onReplay={handlePlay}
-            canReplay={(student?.nuggets || 0) >= 1}
+            canReplay={(student?.nuggets || 0) >= GAME_COST}
+            gameCost={GAME_COST}
         />
     );
   }
@@ -98,10 +101,10 @@ export default function RewardsPage() {
             <Gamepad2 className="h-32 w-32 mx-auto text-primary" />
           </CardContent>
           <CardContent>
-             <Button onClick={handlePlay} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < 1}>
-              Jouer pour 1 <Gem className="ml-2 h-5 w-5" />
+             <Button onClick={handlePlay} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
+              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
-            {(student.nuggets || 0) < 1 && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
+            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
           </CardContent>
         </Card>
       </div>

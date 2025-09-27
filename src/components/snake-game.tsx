@@ -30,11 +30,13 @@ const getRandomPosition = (snakeBody: Position[] = []): Position => {
 export function SnakeGame({ 
     onGameOver, 
     onReplay,
-    canReplay 
+    canReplay,
+    gameCost
 }: { 
     onGameOver: () => void;
     onReplay: () => void;
     canReplay: boolean;
+    gameCost: number;
 }) {
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
   const [food, setFood] = useState<Position>(() => getRandomPosition(snake));
@@ -177,7 +179,7 @@ export function SnakeGame({
                     <p className="text-xl mt-2">Score final : {score}</p>
                     <div className="flex gap-4 mt-6">
                         <Button onClick={handleReplayGame} disabled={!canReplay} variant="secondary">
-                            <RefreshCw className="mr-2" /> Rejouer (1 pépite)
+                            <RefreshCw className="mr-2" /> Rejouer ({gameCost} pépites)
                         </Button>
                         <Button onClick={onGameOver}>
                             <ArrowLeft className="mr-2" /> Quitter
