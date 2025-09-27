@@ -411,9 +411,9 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
               if (obj.type === 'projectile') return <div key={obj.id} style={{ ...style, transform: `translate(-50%, -50%) rotate(${obj.angle! * 180 / Math.PI + 90}deg)`}} className="w-1 h-4 bg-yellow-300 rounded-full shadow-[0_0_8px_2px_#fde047]" />;
               if (obj.type === 'saucer') {
                   const isBoss = gameState === 'bossFight';
-                  return <div key={obj.id} style={{ ...style, fontSize: isBoss ? '80px' : '30px' }}>👾</div>;
+                  return <div key={obj.id} style={{ ...style, fontSize: isBoss ? '80px' : '30px' }}>🛸</div>;
               }
-              if (obj.type === 'alien') return <div key={obj.id} style={{ ...style, fontSize: '24px' }}>👽</div>;
+              if (obj.type === 'alien') return <div key={obj.id} style={{ ...style, fontSize: '24px' }}>👾</div>;
               if (obj.type === 'debris') return <div key={obj.id} style={{...style, fontSize: '10px'}}>💥</div>
               if (obj.type === 'bomb') return <div key={obj.id} style={{...style, fontSize: '20px'}}>💣</div>
               return null;
