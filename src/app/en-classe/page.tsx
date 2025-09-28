@@ -8,19 +8,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { skills as allSkills, type Skill, allSkillCategories, categoryStyles } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { Home, BarChart3, CheckCircle, ListChecks, Gem } from 'lucide-react';
+import { Home, BarChart3, CheckCircle, ListChecks, Gem, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { getScoresForUser } from '@/services/scores';
 import { isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ChatManager } from '@/components/chat/chat-manager';
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [enabledSkillsList, setEnabledSkillsList] = useState<Skill[] | null>(null);
   const [skillsCompletedToday, setSkillsCompletedToday] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
       async function determineEnabledSkills() {
@@ -113,6 +115,7 @@ export default function EnClassePage() {
   }
 
   return (
+    <>
     <main className="container mx-auto px-4 py-8">
        <header className="mb-12 text-center space-y-4 relative">
         <div className="absolute top-0 left-0 flex items-center gap-2">
@@ -128,6 +131,9 @@ export default function EnClassePage() {
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
         <p className="text-lg sm:text-xl text-muted-foreground">Prêt(e) à relever un défi ?</p>
          <div className="absolute top-0 right-0 flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={() => setIsChatOpen(prev => !prev)}>
+                  <MessageSquare className="h-6 w-6" />
+              </Button>
              <Link href="/rewards" className="flex items-center gap-2 bg-amber-100 border border-amber-300 rounded-full px-3 py-1 text-amber-800 font-bold transition-transform hover:scale-105 cursor-pointer">
                 <Gem className="h-5 w-5" />
                 <span>{student.nuggets || 0}</span>
@@ -190,5 +196,7 @@ export default function EnClassePage() {
         </Card>
       )}
     </main>
+    {isChatOpen && <ChatManager onClose={() => setIsChatOpen(false)} />}
+    </>
   );
 }

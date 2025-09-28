@@ -30,6 +30,7 @@ export interface Student {
     id: string;
     name: string;
     code: string;
+    fcmToken?: string;
     groupId?: string; // Add groupId to student model
     levels?: Record<string, SkillLevel>;
     enabledSkills?: Record<string, boolean>;
@@ -145,6 +146,7 @@ export async function getStudents(): Promise<Student[]> {
                 id: doc.id,
                 name: data.name,
                 code: data.code,
+                fcmToken: data.fcmToken,
                 groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
@@ -187,6 +189,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     id: doc.id,
                     name: studentData.name,
                     code: studentData.code,
+                    fcmToken: studentData.fcmToken,
                     groupId: studentData.groupId,
                     levels: studentData.levels || {},
                     enabledSkills: studentData.enabledSkills,
@@ -222,6 +225,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 id: docSnap.id,
                 name: data.name,
                 code: data.code,
+                fcmToken: data.fcmToken,
                 groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
@@ -273,6 +277,25 @@ export async function spendNuggets(studentId: string, amount: number): Promise<{
         if (error instanceof Error) {
             return { success: false, error: error.message };
         }
+        return { success: false, error: "Une erreur inconnue est survenue." };
+    }
+}
+
+/**
+ * Saves the FCM token for a student to enable push notifications.
+ * @param studentId The ID of the student.
+ * @param token The FCM registration token.
+ * @returns A promise indicating success or failure.
+ */
+export async function saveFcmToken(studentId: string, token: string): Promise<{ success: boolean; error?: string }> {
+    if (!studentId) return { success: false, error: "ID de l'élève requis." };
+    try {
+        const studentRef = doc(db, "students", studentId);
+        await updateDoc(studentRef, { fcmToken: token });
+        return { success: true };
+    } catch (error) {
+        console.error("Error saving FCM token:", error);
+        if (error instanceof Error) return { success: false, error: error.message };
         return { success: false, error: "Une erreur inconnue est survenue." };
     }
 }
