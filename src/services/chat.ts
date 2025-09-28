@@ -24,8 +24,10 @@ export interface Message {
 export function listenToConversations(studentId: string, callback: (conversations: Conversation[]) => void): Unsubscribe {
     const q = query(
         collection(db, 'conversations'), 
-        where('participants', 'array-contains', studentId),
-        orderBy('lastMessage.createdAt', 'desc')
+        where('participants', 'array-contains', studentId)
+        // NOTE: orderBy('lastMessage.createdAt', 'desc') was removed.
+        // This query requires a composite index in Firestore. To avoid manual user setup,
+        // we fetch without ordering and sort on the client side.
     );
 
     return onSnapshot(q, (querySnapshot) => {
@@ -33,6 +35,14 @@ export function listenToConversations(studentId: string, callback: (conversation
         querySnapshot.forEach((doc) => {
             conversations.push({ id: doc.id, ...doc.data() } as Conversation);
         });
+        
+        // Sort conversations by last message timestamp, descending.
+        conversations.sort((a, b) => {
+            const timeA = a.lastMessage?.createdAt?.toMillis() || 0;
+            const timeB = b.lastMessage?.createdAt?.toMillis() || 0;
+            return timeB - timeA;
+        });
+
         callback(conversations);
     });
 }
