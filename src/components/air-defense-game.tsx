@@ -16,8 +16,6 @@ const MAX_LANDED = 5;
 const WAVE_DURATION = 60000; // 60 seconds in ms
 const BOSS_MAX_HEALTH = 15;
 const PLAYER_MAX_LIVES = 3;
-const COMBO_RESET_TIME = 3000; // 3 seconds in ms
-const MAX_SCORE_MULTIPLIER = 5;
 
 
 let objectIdCounter = 0;
@@ -47,11 +45,6 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
   const [wave, setWave] = React.useState(1);
   const [landedCount, setLandedCount] = React.useState(0);
   const [lastShotTime, setLastShotTime] = React.useState(0);
-  const [reticlePosition, setReticlePosition] = React.useState<{ x: number; y: number } | null>(null);
-  const reticleRef = React.useRef<{ x: number; y: number } | null>(null);
-  const comboTrackerRef = React.useRef({ count: 0, lastHitTime: 0 });
-  const [comboCount, setComboCount] = React.useState(0);
-  const [scoreMultiplier, setScoreMultiplier] = React.useState(1);
   
   // Wave-specific state
   const [parachutistsToSpawn, setParachutistsToSpawn] = React.useState(0);
@@ -78,31 +71,8 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     return 19 + (currentWave - 4) * 2;
   };
   
-  const resetCombo = React.useCallback(() => {
-    comboTrackerRef.current = { count: 0, lastHitTime: 0 };
-    setComboCount(0);
-    setScoreMultiplier(1);
-  }, []);
-
-  const registerSuccessfulHit = React.useCallback((basePoints: number) => {
-    const now = Date.now();
-    const tracker = comboTrackerRef.current;
-    if (now - tracker.lastHitTime <= COMBO_RESET_TIME) {
-      tracker.count += 1;
-    } else {
-      tracker.count = 1;
-    }
-    tracker.lastHitTime = now;
-
-    const multiplier = Math.min(1 + Math.floor(tracker.count / 3), MAX_SCORE_MULTIPLIER);
-    setComboCount(tracker.count);
-    setScoreMultiplier(multiplier);
-    setScore(prev => prev + Math.round(basePoints * multiplier));
-  }, []);
-
   const startWave = React.useCallback((currentWave: number) => {
     setGameState('waveTransition');
-    resetCombo();
 
     if (currentWave === 5) {
         // Transition to boss fight
@@ -113,19 +83,19 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
         }, 2000);
         return;
     }
-
+    
     // Show "Wave X" banner for 2 seconds, then start the wave
     setTimeout(() => {
         const numToSpawn = getParachutistsForWave(currentWave);
         setParachutistsToSpawn(numToSpawn);
         const parachuteInterval = WAVE_DURATION / numToSpawn;
         setNextParachuteTime(Date.now() + parachuteInterval);
-
+        
         const heliSpawnRate = 6000 / (1 + currentWave * 0.1);
         setNextHeliTime(Date.now() + heliSpawnRate);
 
         setGameState('playing');
-
+        
         // End the wave after WAVE_DURATION
         if(waveTimeoutRef.current) clearTimeout(waveTimeoutRef.current);
         waveTimeoutRef.current = setTimeout(() => {
@@ -133,7 +103,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
         }, WAVE_DURATION);
 
     }, 2000);
-  }, [resetCombo]);
+  }, []);
 
   const resetGame = React.useCallback(() => {
     objectIdCounter = 0;
@@ -146,26 +116,15 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     setPlayerLives(PLAYER_MAX_LIVES);
     setBossHealth(BOSS_MAX_HEALTH);
     setNextBombTime(0);
-    resetCombo();
 
     if(waveTimeoutRef.current) clearTimeout(waveTimeoutRef.current);
     if(gameLoopIntervalRef.current) clearInterval(gameLoopIntervalRef.current);
-    setWave(1);
-  }, [resetCombo]);
+    setWave(1); 
+  }, []);
 
   React.useEffect(() => {
     startWave(wave);
   }, [wave, startWave]);
-
-  React.useEffect(() => {
-    reticleRef.current = reticlePosition;
-  }, [reticlePosition]);
-
-  React.useEffect(() => {
-    if (gameState === 'gameOver') {
-      resetCombo();
-    }
-  }, [gameState, resetCombo]);
   
   const handleReplayGame = () => {
     if (canReplay) {
@@ -174,14 +133,18 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     }
   };
   
-  const attemptShoot = React.useCallback((targetX: number, targetY: number) => {
+  const handleShoot = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if ((gameState !== 'playing' && gameState !== 'bossFight') || !gameAreaRef.current) return;
-
+    
     const now = Date.now();
     if (now - lastShotTime < 200) return; // Fire rate limit
 
-    const deltaX = targetX - GAME_WIDTH / 2;
-    const deltaY = targetY - TURRET_Y;
+    const rect = gameAreaRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    const deltaX = clickX - GAME_WIDTH / 2;
+    const deltaY = clickY - TURRET_Y;
     const angle = Math.atan2(deltaY, deltaX);
 
     setTurretAngle(angle);
@@ -192,72 +155,9 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
       x: GAME_WIDTH / 2,
       y: TURRET_Y,
       type: 'projectile',
-      angle,
+      angle: angle,
     }]);
   }, [gameState, lastShotTime]);
-
-  const handleShoot = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!gameAreaRef.current) return;
-    const rect = gameAreaRef.current.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-    attemptShoot(clickX, clickY);
-  }, [attemptShoot]);
-
-  const handleMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!gameAreaRef.current) return;
-    const rect = gameAreaRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    setReticlePosition({ x: mouseX, y: mouseY });
-    reticleRef.current = { x: mouseX, y: mouseY };
-    if (gameState === 'playing' || gameState === 'bossFight') {
-      const deltaX = mouseX - GAME_WIDTH / 2;
-      const deltaY = mouseY - TURRET_Y;
-      setTurretAngle(Math.atan2(deltaY, deltaX));
-    }
-  }, [gameState]);
-
-  const handleMouseLeave = React.useCallback(() => {
-    setReticlePosition(null);
-    reticleRef.current = null;
-  }, []);
-
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'Space') {
-        event.preventDefault();
-        const target = reticleRef.current ?? { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 };
-        attemptShoot(target.x, target.y);
-      }
-      if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
-        event.preventDefault();
-        setTurretAngle(prev => {
-          const delta = event.code === 'ArrowLeft' ? -0.1 : 0.1;
-          return Math.max(-Math.PI * 0.95, Math.min(Math.PI * 0.95, prev + delta));
-        });
-      }
-      if (event.code === 'ArrowUp') {
-        event.preventDefault();
-        const target = reticleRef.current ?? { x: GAME_WIDTH / 2, y: 0 };
-        attemptShoot(target.x, target.y);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [attemptShoot]);
-
-  React.useEffect(() => {
-    if (comboCount === 0) return;
-    const timer = setInterval(() => {
-      const tracker = comboTrackerRef.current;
-      if (tracker.count > 0 && Date.now() - tracker.lastHitTime > COMBO_RESET_TIME) {
-        resetCombo();
-      }
-    }, 500);
-    return () => clearInterval(timer);
-  }, [comboCount, resetCombo]);
 
   // Main Game Loop
   React.useEffect(() => {
@@ -270,6 +170,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
       const now = Date.now();
       
       let currentSaucers: GameObject[] = [];
+      let currentAliens: GameObject[] = [];
 
       // Spawning logic (only in 'playing' state)
       if (gameState === 'playing') {
@@ -421,10 +322,10 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
                     if (existingTarget.health <= 0) {
                         destroyedTargetIds.add(target.id);
                         if(gameState === 'bossFight') {
-                             registerSuccessfulHit(100);
+                             setScore(s => s + 500); // Big bonus for boss
                              setGameState('gameOver'); // You win!
                         } else {
-                            registerSuccessfulHit(25);
+                            setScore(s => s + 25);
                         }
                         // Create debris
                         for (let i = 0; i < 3; i++) {
@@ -433,17 +334,17 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
                     } else {
                         // Boss was hit but not destroyed
                         if (gameState === 'bossFight') {
-                             registerSuccessfulHit(10);
+                             setScore(s => s + 10);
                              setBossHealth(h => h - 1);
                         }
                     }
                 }
             } else if (target.type === 'alien') {
                 destroyedTargetIds.add(target.id);
-                registerSuccessfulHit(10);
+                setScore(s => s + 10);
             } else if (target.type === 'bomb') {
                 destroyedTargetIds.add(target.id);
-                registerSuccessfulHit(5); // Score for shooting a bomb
+                setScore(s => s + 5); // Score for shooting a bomb
             }
         });
 
@@ -452,21 +353,15 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
             return !hitProjectileIds.has(obj.id) && !destroyedTargetIds.has(obj.id);
         });
 
-        if (newLandedCount !== landedCount) {
-            setLandedCount(newLandedCount);
-            resetCombo();
-        }
-        if (playerLostLife) {
-            setPlayerLives(p => Math.max(0, p - 1));
-            resetCombo();
-        }
-
+        if (newLandedCount !== landedCount) setLandedCount(newLandedCount);
+        if (playerLostLife) setPlayerLives(p => Math.max(0, p - 1));
+        
         return finalObjects;
       });
     }, 50); // Game loop runs every 50ms (20 FPS)
 
     return () => clearInterval(gameLoopIntervalRef.current);
-  }, [gameState, wave, landedCount, nextHeliTime, parachutistsToSpawn, nextParachuteTime, bossHealth, nextBombTime, registerSuccessfulHit, resetCombo]);
+  }, [gameState, wave, landedCount, nextHeliTime, parachutistsToSpawn, nextParachuteTime, bossHealth, nextBombTime]);
 
   // Game Over Check
   React.useEffect(() => {
@@ -481,23 +376,20 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
     }
   }, [landedCount, playerLives, toast]);
   
+  const handleTestBoss = () => {
+    setWave(4);
+    setScore(4 * 10); // Give some score to simulate playing
+  };
+
   return (
     <main className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
       <Card className="w-auto shadow-2xl bg-zinc-800 text-white border-zinc-700">
         <CardHeader className="flex flex-row items-center justify-between">
            <CardTitle className="font-headline text-3xl">Défense Aérienne</CardTitle>
-           <div className="font-bold text-lg flex items-center gap-6">
-              <div className="flex flex-col items-end text-sm uppercase tracking-wide text-zinc-300">
-                <span>Vague</span>
-                <span className="text-2xl text-white">{wave}</span>
-              </div>
+           <div className="font-bold text-lg flex items-center gap-4">
+              <span>Vague : {wave}</span>
               <div className="font-bold text-2xl flex items-center gap-2">
                  <Trophy className="text-yellow-400" /> {score}
-              </div>
-              <div className={cn('flex flex-col items-end transition-opacity duration-300', comboCount === 0 ? 'opacity-60' : 'opacity-100')}>
-                  <span className="text-xs uppercase tracking-wide text-emerald-200/80">Multiplicateur</span>
-                  <span className="text-2xl text-emerald-300 font-headline">x{scoreMultiplier}</span>
-                  {comboCount > 0 && <span className="text-xs text-emerald-100">Série : {comboCount}</span>}
               </div>
            </div>
         </CardHeader>
@@ -505,8 +397,6 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
           <div
             ref={gameAreaRef}
             onClick={handleShoot}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
             className="relative overflow-hidden cursor-crosshair"
             style={{ width: GAME_WIDTH, height: GAME_HEIGHT, background: 'linear-gradient(to bottom, #0d1b2a, #415a77)' }}
           >
@@ -518,7 +408,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
                 top: obj.y,
                 transform: 'translate(-50%, -50%)',
               };
-              if (obj.type === 'projectile') return <div key={obj.id} style={{ ...style, transform: `translate(-50%, -50%) rotate(${obj.angle! * 180 / Math.PI + 90}deg)`}} className="w-1 h-4 bg-yellow-300 rounded-full shadow-[0_0_12px_3px_#fde047]" />;
+              if (obj.type === 'projectile') return <div key={obj.id} style={{ ...style, transform: `translate(-50%, -50%) rotate(${obj.angle! * 180 / Math.PI + 90}deg)`}} className="w-1 h-4 bg-yellow-300 rounded-full shadow-[0_0_8px_2px_#fde047]" />;
               if (obj.type === 'saucer') {
                   const isBoss = gameState === 'bossFight';
                   return <div key={obj.id} style={{ ...style, fontSize: isBoss ? '80px' : '30px' }}>🛸</div>;
@@ -528,20 +418,6 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
               if (obj.type === 'bomb') return <div key={obj.id} style={{...style, fontSize: '20px'}}>💣</div>
               return null;
             })}
-
-            {reticlePosition && (
-              <div
-                className="absolute pointer-events-none"
-                style={{
-                  left: reticlePosition.x,
-                  top: reticlePosition.y,
-                  transform: 'translate(-50%, -50%)',
-                }}
-              >
-                <div className="w-10 h-10 border border-emerald-400/70 rounded-full animate-ping" />
-                <div className="absolute inset-0 m-auto w-4 h-4 border border-emerald-300/90 rounded-full" />
-              </div>
-            )}
 
             {/* Render Turret */}
             <div
@@ -590,20 +466,20 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
                 {Array.from({ length: playerLives }).map((_, i) => <Heart key={i} className="h-6 w-6 text-red-500 fill-red-500" />)}
                 {Array.from({ length: PLAYER_MAX_LIVES - playerLives }).map((_, i) => <Heart key={i} className="h-6 w-6 text-gray-500" />)}
              </div>
-             {(landedCount >= MAX_LANDED - 1 || playerLives === 1) && (gameState === 'playing' || gameState === 'bossFight') && (
-                <div className="absolute inset-x-0 bottom-16 text-center text-amber-300 font-semibold animate-pulse drop-shadow">
-                  Danger ! Les envahisseurs approchent !
-                </div>
-             )}
              {/* Boss Health Bar */}
              {gameState === 'bossFight' && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2">
                     <Progress value={(bossHealth / BOSS_MAX_HEALTH) * 100} className="h-4 bg-red-800 border border-red-400 [&>div]:bg-red-500" />
                 </div>
              )}
+              {/* Dev button */}
+             {process.env.NODE_ENV === 'development' && (
+                <Button size="sm" variant="ghost" className="absolute top-2 right-2" onClick={handleTestBoss}>Test Boss</Button>
+            )}
           </div>
         </CardContent>
       </Card>
     </main>
   );
 }
+
