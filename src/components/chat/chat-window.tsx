@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { sendMessage, markAsRead, listenToMessages, findOrCreateConversation, type Message } from '@/services/chat';
 import { type Student } from '@/services/students';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, Users } from 'lucide-react';
+import { Send, Loader2, Users, MessageSquare, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
