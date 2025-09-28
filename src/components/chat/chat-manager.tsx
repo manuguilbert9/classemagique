@@ -5,6 +5,7 @@ import { useState, useEffect, useContext } from 'react';
 import { Card } from '@/components/ui/card';
 import { ConversationList } from './conversation-list';
 import { ChatWindow } from './chat-window';
+import { Button } from '@/components/ui/button';
 import { X, MessageSquare, Users } from 'lucide-react';
 import { getStudents, type Student } from '@/services/students';
 import { ChatContext } from '@/context/chat-context';
