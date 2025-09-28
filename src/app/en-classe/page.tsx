@@ -16,6 +16,7 @@ import { getScoresForUser } from '@/services/scores';
 import { isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ChatManager } from '@/components/chat/chat-manager';
+import { ChatContext } from '@/context/chat-context';
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
@@ -23,6 +24,7 @@ export default function EnClassePage() {
   const [skillsCompletedToday, setSkillsCompletedToday] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { totalUnreadCount } = useContext(ChatContext);
 
   useEffect(() => {
       async function determineEnabledSkills() {
@@ -36,7 +38,6 @@ export default function EnClassePage() {
 
         setIsLoading(true);
         
-        // Fetch scores to determine which exercises were completed today
         const scores = await getScoresForUser(student.id);
         const completedToday = new Set<string>();
         scores.forEach(score => {
@@ -48,14 +49,13 @@ export default function EnClassePage() {
 
         const studentSkills = student.enabledSkills;
 
-        // Default to all skills enabled if the student record doesn't have the property
         const defaultAllEnabled: Record<string, boolean> = {};
         allSkills.forEach(skill => defaultAllEnabled[skill.slug] = true);
         
         const effectiveEnabledSkills = studentSkills ?? defaultAllEnabled;
 
         const filteredSkills = allSkills.filter(skill => {
-           return effectiveEnabledSkills[skill.slug] ?? false; // Default to false if a new skill is added and not in the student's map
+           return effectiveEnabledSkills[skill.slug] ?? false;
         });
         
         setEnabledSkillsList(filteredSkills);
@@ -131,8 +131,14 @@ export default function EnClassePage() {
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
         <p className="text-lg sm:text-xl text-muted-foreground">Prêt(e) à relever un défi ?</p>
          <div className="absolute top-0 right-0 flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setIsChatOpen(prev => !prev)}>
+              <Button variant="ghost" size="icon" className="relative" onClick={() => setIsChatOpen(prev => !prev)}>
                   <MessageSquare className="h-6 w-6" />
+                  {totalUnreadCount > 0 && (
+                      <span className="absolute top-0 right-0 flex h-4 w-4">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-xs items-center justify-center">{totalUnreadCount}</span>
+                      </span>
+                  )}
               </Button>
              <Link href="/rewards" className="flex items-center gap-2 bg-amber-100 border border-amber-300 rounded-full px-3 py-1 text-amber-800 font-bold transition-transform hover:scale-105 cursor-pointer">
                 <Gem className="h-5 w-5" />
@@ -159,7 +165,7 @@ export default function EnClassePage() {
         <div className="space-y-12">
           {allSkillCategories.map(category => {
             const categorySkills = skillsByCategory[category] || [];
-            if (categorySkills.length === 0) return null; // Hide category if no skills are enabled for it
+            if (categorySkills.length === 0) return null;
             
             return (
               <div key={category}>
@@ -196,7 +202,7 @@ export default function EnClassePage() {
         </Card>
       )}
     </main>
-    {isChatOpen && <ChatManager onClose={() => setIsChatOpen(false)} />}
+    {isChatOpen && student && <ChatManager student={student} onClose={() => setIsChatOpen(false)} />}
     </>
   );
 }
