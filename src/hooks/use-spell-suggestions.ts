@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { STARTER_WORDS } from "@/data/dictionaries/fr-dictionary";
 import { CONTEXTUAL_CONTINUATIONS } from "@/data/dictionaries/fr-contextual-continuations";
 import { getPrefixSuggestions } from "@/lib/prefix-suggester";
@@ -21,11 +21,22 @@ export interface UseSpellSuggestionsOptions {
   contextWindow?: number;
 }
 
+export type SuggestionSource = "starter" | "context" | "prefix" | "remote";
+
+export interface SuggestionBucket {
+  id: SuggestionSource;
+  label: string;
+  suggestions: string[];
+  description?: string;
+}
+
 export interface UseSpellSuggestionsResult {
   wordSuggestions: string[];
   localSuggestions: string[];
   contextWords: string[];
+  suggestionBuckets: SuggestionBucket[];
   isLoading: boolean;
+  refresh: () => void;
 }
 
 const DEFAULT_OPTIONS: Required<UseSpellSuggestionsOptions> = {
@@ -114,9 +125,11 @@ export function useSpellSuggestions(
 
   const [remoteSuggestions, setRemoteSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshNonce, setRefreshNonce] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const cacheRef = useRef<Map<string, string[]>>(new Map());
   const controllerRef = useRef<AbortController | null>(null);
+  const latestTrimmedTextRef = useRef<string>("");
 
   const trimmedText = text.trim();
   const hasTrailingWhitespace = /\s$/.test(text);
@@ -146,6 +159,10 @@ export function useSpellSuggestions(
 
   const starterSuggestions = useMemo(() => {
     return trimmedText ? [] : STARTER_WORDS;
+  }, [trimmedText]);
+
+  useEffect(() => {
+    latestTrimmedTextRef.current = trimmedText;
   }, [trimmedText]);
 
   useEffect(() => {
@@ -216,13 +233,37 @@ export function useSpellSuggestions(
         controllerRef.current = null;
       }
     };
-  }, [trimmedText, resolvedOptions]);
+  }, [trimmedText, resolvedOptions, refreshNonce]);
 
   const filteredRemoteSuggestions = useMemo(() => {
     if (!activeWord) return remoteSuggestions;
     const normalized = activeWord.toLowerCase();
     return remoteSuggestions.filter(suggestion => suggestion.toLowerCase().startsWith(normalized));
   }, [remoteSuggestions, activeWord]);
+
+  const remoteRankedSuggestions = useMemo(() => {
+    if (!filteredRemoteSuggestions.length) return filteredRemoteSuggestions;
+
+    const normalize = (value: string) => value.toLowerCase();
+    const base = normalize(activeWord);
+
+    const score = (suggestion: string) => {
+      if (!base) return suggestion.length;
+      const normalized = normalize(suggestion);
+      const maxLength = Math.max(normalized.length, base.length);
+      let penalty = Math.abs(normalized.length - base.length);
+
+      for (let i = 0; i < Math.min(normalized.length, base.length); i += 1) {
+        if (normalized[i] !== base[i]) {
+          penalty += 1;
+        }
+      }
+
+      return penalty / Math.max(maxLength, 1);
+    };
+
+    return [...filteredRemoteSuggestions].sort((a, b) => score(a) - score(b));
+  }, [filteredRemoteSuggestions, activeWord]);
 
   const localSuggestions = useMemo(() => {
     const lists: string[][] = [];
@@ -248,21 +289,92 @@ export function useSpellSuggestions(
   const wordSuggestions = useMemo(() => {
     const lists: string[][] = [];
     if (localSuggestions.length) lists.push(localSuggestions);
-    if (filteredRemoteSuggestions.length) lists.push(filteredRemoteSuggestions);
+    if (remoteRankedSuggestions.length) lists.push(remoteRankedSuggestions);
     if (!lists.length) lists.push(starterSuggestions);
 
     return mergeSuggestionLists(lists, resolvedOptions.maxVisibleSuggestions);
   }, [
     localSuggestions,
-    filteredRemoteSuggestions,
+    remoteRankedSuggestions,
     starterSuggestions,
     resolvedOptions.maxVisibleSuggestions,
   ]);
+
+  const suggestionBuckets = useMemo<SuggestionBucket[]>(() => {
+    const buckets: SuggestionBucket[] = [];
+
+    if (!trimmedText && starterSuggestions.length) {
+      buckets.push({
+        id: "starter",
+        label: "Mots fréquents",
+        description: "Idées pour démarrer la discussion",
+        suggestions: starterSuggestions.slice(0, resolvedOptions.maxVisibleSuggestions),
+      });
+    }
+
+    if (contextSuggestions.length) {
+      buckets.push({
+        id: "context",
+        label: contextWords.length
+          ? `Après "${contextWords.slice(-resolvedOptions.contextWindow).join(" ")}"`
+          : "Continuer la phrase",
+        description: "Complétions adaptées au contexte",
+        suggestions: mergeSuggestionLists(
+          [contextSuggestions],
+          resolvedOptions.maxVisibleSuggestions,
+        ),
+      });
+    }
+
+    if (activeWord && prefixSuggestions.length) {
+      buckets.push({
+        id: "prefix",
+        label: `Compléter "${activeWord}"`,
+        description: "Finir le mot en cours de saisie",
+        suggestions: mergeSuggestionLists(
+          [prefixSuggestions],
+          resolvedOptions.maxVisibleSuggestions,
+        ),
+      });
+    }
+
+    if (remoteRankedSuggestions.length) {
+      buckets.push({
+        id: "remote",
+        label: "Suggestions intelligentes",
+        description: "Propositions générées automatiquement",
+        suggestions: remoteRankedSuggestions.slice(0, resolvedOptions.maxVisibleSuggestions),
+      });
+    }
+
+    return buckets;
+  }, [
+    trimmedText,
+    starterSuggestions,
+    contextSuggestions,
+    contextWords,
+    resolvedOptions.contextWindow,
+    resolvedOptions.maxVisibleSuggestions,
+    activeWord,
+    prefixSuggestions,
+    remoteRankedSuggestions,
+  ]);
+
+  const refresh = useCallback(() => {
+    const currentTrimmed = latestTrimmedTextRef.current;
+    if (!currentTrimmed) return;
+
+    const cacheKey = `${resolvedOptions.lang}:${currentTrimmed.toLowerCase()}`;
+    cacheRef.current.delete(cacheKey);
+    setRefreshNonce((value) => value + 1);
+  }, [resolvedOptions.lang]);
 
   return {
     wordSuggestions,
     localSuggestions,
     contextWords,
+    suggestionBuckets,
     isLoading,
+    refresh,
   };
 }
