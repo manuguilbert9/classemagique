@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings, Wrench, Sparkles, Trash2, Clock } from 'lucide-react';
+import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings, Wrench, Sparkles, Trash2, Clock, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportAllData, importAllData } from '@/services/database';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
