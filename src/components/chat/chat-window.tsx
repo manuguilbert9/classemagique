@@ -132,8 +132,19 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     };
     
     const handleApplySuggestion = (suggestion: string) => {
-       setNewMessage(prev => prev.replace(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/, suggestion) + ' ');
-       textareaRef.current?.focus();
+        setNewMessage((prev) => {
+            if (!prev.trim()) {
+                return `${suggestion} `;
+            }
+
+            const wordMatch = prev.match(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/);
+            if (wordMatch) {
+                return `${prev.slice(0, prev.length - wordMatch[1].length)}${suggestion} `;
+            }
+
+            return `${prev}${prev.endsWith(' ') ? '' : ' '}${suggestion} `;
+        });
+        textareaRef.current?.focus();
     }
     
 
