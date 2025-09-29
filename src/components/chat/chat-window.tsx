@@ -221,9 +221,8 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
             </ScrollArea>
              <div className="p-4 border-t space-y-2">
                  {suggestions.length > 0 && (
-                    <div className="flex gap-2 items-center">
-                        <span className="text-xs text-muted-foreground">Suggestions:</span>
-                        {suggestions.slice(0, 3).map(s => (
+                    <div className="grid grid-cols-3 gap-2">
+                        {suggestions.slice(0, 6).map(s => (
                             <Button key={s} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s)}>{s}</Button>
                         ))}
                     </div>
@@ -242,7 +241,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                         placeholder="Écris ton message..."
                         className="pr-12 min-h-[44px] h-11 resize-none"
                         disabled={isSending}
-                        spellCheck="true"
+                        spellCheck
                     />
                     <Button
                         size="icon"
