@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { sendMessage, markAsRead, listenToMessages, findOrCreateConversation, type Message, updateMessageCorrection } from '@/services/chat';
 import { type Student } from '@/services/students';
@@ -15,7 +15,6 @@ import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 
 interface ChatWindowProps {
@@ -128,8 +127,8 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         setIsSavingCorrection(false);
         setCorrectionTarget(null);
     };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const text = e.target.value;
         setNewMessage(text);
     };
@@ -221,20 +220,25 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
             </ScrollArea>
              <div className="p-4 border-t space-y-2">
                 <div className="relative">
-                    <Input
+                    <Textarea
                         id="chat-input"
                         value={newMessage}
                         onChange={handleInputChange}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                        onKeyDown={(e) => {
+                           if (e.key === 'Enter' && !e.shiftKey) {
+                               e.preventDefault();
+                               handleSendMessage();
+                           }
+                        }}
                         placeholder="Écris ton message..."
-                        className="pr-12 h-11"
+                        className="pr-12 min-h-[44px] h-11 resize-none"
                         disabled={isSending}
                         autoComplete="off"
                         spellCheck="true"
                     />
                     <Button
                         size="icon"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9"
+                        className="absolute right-1 bottom-1 h-9 w-9"
                         onClick={handleSendMessage}
                         disabled={isSending || !newMessage.trim()}
                     >
