@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { sendMessage, markAsRead, listenToMessages, findOrCreateConversation, type Message, updateMessageCorrection } from '@/services/chat';
 import { type Student } from '@/services/students';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, Users, MessageSquare, User, Pencil, Sparkles } from 'lucide-react';
+import { Send, Loader2, Users, MessageSquare, User, Pencil, Sparkles, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,8 @@ interface ChatWindowProps {
     setSelectedConversationId: (id: string | null) => void;
 }
 
+const WORDS_SUGGESTION_COUNT = 3;
+
 export function ChatWindow({ conversationId, currentStudent, allStudents, isCreatingNew, setIsCreatingNew, setSelectedConversationId }: ChatWindowProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -35,6 +37,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     
     const { toast } = useToast();
     const { wordSuggestions, phraseSuggestions, isLoading: isLoadingSuggestions } = useSpellSuggestions(newMessage, "fr");
+    const [suggestionPage, setSuggestionPage] = useState(0);
 
     // State for correction dialog
     const [correctionTarget, setCorrectionTarget] = useState<Message | null>(null);
@@ -44,6 +47,10 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const lastReadConversationId = useRef<string | null>(null);
 
+    useEffect(() => {
+        setSuggestionPage(0);
+    }, [newMessage]);
+    
     useEffect(() => {
         if (scrollAreaRef.current) {
             scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
@@ -130,13 +137,23 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         setCorrectionTarget(null);
     };
     
-    const handleApplyWordSuggestion = (suggestion: string) => {
-        setNewMessage(prev => prev.replace(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/, suggestion) + ' ');
+    const handleApplySuggestion = (suggestion: string, isWord: boolean) => {
+       if (isWord) {
+         setNewMessage(prev => prev.replace(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/, suggestion) + ' ');
+       } else {
+         setNewMessage(prev => `${prev.trim()} ${suggestion}`);
+       }
     }
-
-    const handleApplyPhraseSuggestion = (suggestion: string) => {
-        setNewMessage(prev => `${prev} ${suggestion}`);
+    
+    const cycleSuggestions = () => {
+        const totalPages = Math.ceil(wordSuggestions.length / WORDS_SUGGESTION_COUNT);
+        setSuggestionPage(prev => (prev + 1) % totalPages);
     }
+    
+    const currentWordSuggestions = wordSuggestions.slice(
+        suggestionPage * WORDS_SUGGESTION_COUNT,
+        (suggestionPage + 1) * WORDS_SUGGESTION_COUNT
+    );
 
     if (isCreatingNew) {
         return (
@@ -225,16 +242,21 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
             </ScrollArea>
              <div className="p-4 border-t space-y-2">
                  {(wordSuggestions.length > 0 || phraseSuggestions.length > 0) && (
-                    <div className="flex flex-wrap gap-2">
-                        {wordSuggestions.slice(0, 3).map((s, i) => (
-                            <Button key={`word-${s}-${i}`} size="sm" variant="outline" onMouseDown={() => handleApplyWordSuggestion(s)}>{s}</Button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {currentWordSuggestions.map((s, i) => (
+                            <Button key={`${s}-${i}`} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s, true)}>{s}</Button>
                         ))}
                         {phraseSuggestions.slice(0, 2).map((s, i) => (
-                             <Button key={`phrase-${s}-${i}`} size="sm" variant="outline" onMouseDown={() => handleApplyPhraseSuggestion(s)} className="text-blue-600 border-blue-300">
+                             <Button key={`phrase-${s}-${i}`} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s, false)} className="text-blue-600 border-blue-300">
                                 <Sparkles className="mr-2 h-4 w-4 text-blue-500" /> {s}
                              </Button>
                         ))}
-                         {isLoadingSuggestions && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                        {wordSuggestions.length > WORDS_SUGGESTION_COUNT && (
+                            <Button size="icon" variant="ghost" onClick={cycleSuggestions} className="h-8 w-8">
+                                <RefreshCw className="h-4 w-4" />
+                            </Button>
+                        )}
+                        {isLoadingSuggestions && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
                     </div>
                 )}
                 <div className="relative">
