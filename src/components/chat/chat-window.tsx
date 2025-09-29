@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
-
+import { getWordSuggestions, initializeDictionary } from '@/lib/word-predictor';
 
 interface ChatWindowProps {
     conversationId: string | null;
@@ -40,9 +40,17 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const [correctionTarget, setCorrectionTarget] = useState<Message | null>(null);
     const [correctedText, setCorrectedText] = useState('');
     const [isSavingCorrection, setIsSavingCorrection] = useState(false);
+    
+    // State for word prediction
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [currentWord, setCurrentWord] = useState('');
 
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const lastReadConversationId = useRef<string | null>(null);
+
+    useEffect(() => {
+        initializeDictionary();
+    }, []);
 
     useEffect(() => {
         // Scroll to bottom whenever new messages arrive
@@ -91,6 +99,8 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         
         if (result.success) {
             setNewMessage('');
+            setSuggestions([]);
+            setCurrentWord('');
         } else {
             toast({
                 variant: 'destructive',
@@ -125,6 +135,30 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         }
         setIsSavingCorrection(false);
         setCorrectionTarget(null);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const text = e.target.value;
+        setNewMessage(text);
+
+        const words = text.split(' ');
+        const lastWord = words[words.length - 1];
+
+        if (lastWord) {
+            setCurrentWord(lastWord);
+            setSuggestions(getWordSuggestions(lastWord));
+        } else {
+            setCurrentWord('');
+            setSuggestions([]);
+        }
+    };
+    
+    const handleSuggestionClick = (suggestion: string) => {
+        const words = newMessage.split(' ');
+        words[words.length - 1] = suggestion;
+        setNewMessage(words.join(' ') + ' ');
+        setSuggestions([]);
+        setCurrentWord('');
     };
 
 
@@ -213,11 +247,20 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                     })}
                 </div>
             </ScrollArea>
-            <div className="p-4 border-t">
+             <div className="p-4 border-t space-y-2">
+                 {suggestions.length > 0 && (
+                    <div className="flex gap-2">
+                        {suggestions.map(s => (
+                            <Button key={s} variant="outline" size="sm" onClick={() => handleSuggestionClick(s)}>
+                                {s}
+                            </Button>
+                        ))}
+                    </div>
+                )}
                 <div className="relative">
                     <Input
                         value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
+                        onChange={handleInputChange}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Écris ton message..."
                         className="pr-12 h-11"
