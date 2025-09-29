@@ -27,8 +27,6 @@ interface ChatWindowProps {
     setSelectedConversationId: (id: string | null) => void;
 }
 
-const WORDS_SUGGESTION_COUNT = 3;
-
 export function ChatWindow({ conversationId, currentStudent, allStudents, isCreatingNew, setIsCreatingNew, setSelectedConversationId }: ChatWindowProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -36,8 +34,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const [isSending, setIsSending] = useState(false);
     
     const { toast } = useToast();
-    const { wordSuggestions, phraseSuggestions, isLoading: isLoadingSuggestions } = useSpellSuggestions(newMessage, "fr");
-    const [suggestionPage, setSuggestionPage] = useState(0);
+    const { wordSuggestions, isLoading: isLoadingSuggestions } = useSpellSuggestions(newMessage, "fr");
 
     // State for correction dialog
     const [correctionTarget, setCorrectionTarget] = useState<Message | null>(null);
@@ -46,10 +43,6 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const lastReadConversationId = useRef<string | null>(null);
-
-    useEffect(() => {
-        setSuggestionPage(0);
-    }, [newMessage]);
     
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -137,23 +130,10 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         setCorrectionTarget(null);
     };
     
-    const handleApplySuggestion = (suggestion: string, isWord: boolean) => {
-       if (isWord) {
-         setNewMessage(prev => prev.replace(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/, suggestion) + ' ');
-       } else {
-         setNewMessage(prev => `${prev.trim()} ${suggestion}`);
-       }
+    const handleApplySuggestion = (suggestion: string) => {
+       setNewMessage(prev => prev.replace(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/, suggestion) + ' ');
     }
     
-    const cycleSuggestions = () => {
-        const totalPages = Math.ceil(wordSuggestions.length / WORDS_SUGGESTION_COUNT);
-        setSuggestionPage(prev => (prev + 1) % totalPages);
-    }
-    
-    const currentWordSuggestions = wordSuggestions.slice(
-        suggestionPage * WORDS_SUGGESTION_COUNT,
-        (suggestionPage + 1) * WORDS_SUGGESTION_COUNT
-    );
 
     if (isCreatingNew) {
         return (
@@ -241,22 +221,12 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                 </div>
             </ScrollArea>
              <div className="p-4 border-t space-y-2">
-                 {(wordSuggestions.length > 0 || phraseSuggestions.length > 0) && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {currentWordSuggestions.map((s, i) => (
-                            <Button key={`${s}-${i}`} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s, true)}>{s}</Button>
+                 {(wordSuggestions.length > 0 || isLoadingSuggestions) && (
+                    <div className="grid grid-cols-4 gap-2">
+                        {wordSuggestions.slice(0, 12).map((s, i) => (
+                            <Button key={s + i} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s)}>{s}</Button>
                         ))}
-                        {phraseSuggestions.slice(0, 2).map((s, i) => (
-                             <Button key={`phrase-${s}-${i}`} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s, false)} className="text-blue-600 border-blue-300">
-                                <Sparkles className="mr-2 h-4 w-4 text-blue-500" /> {s}
-                             </Button>
-                        ))}
-                        {wordSuggestions.length > WORDS_SUGGESTION_COUNT && (
-                            <Button size="icon" variant="ghost" onClick={cycleSuggestions} className="h-8 w-8">
-                                <RefreshCw className="h-4 w-4" />
-                            </Button>
-                        )}
-                        {isLoadingSuggestions && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                         {isLoadingSuggestions && <div className="col-span-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
                     </div>
                 )}
                 <div className="relative">
