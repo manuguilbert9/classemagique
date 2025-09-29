@@ -42,6 +42,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const [isSavingCorrection, setIsSavingCorrection] = useState(false);
     
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const lastReadConversationId = useRef<string | null>(null);
     
     useEffect(() => {
@@ -132,6 +133,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     
     const handleApplySuggestion = (suggestion: string) => {
        setNewMessage(prev => prev.replace(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/, suggestion) + ' ');
+       textareaRef.current?.focus();
     }
     
 
@@ -231,6 +233,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                 )}
                 <div className="relative">
                     <Textarea
+                        ref={textareaRef}
                         id="chat-input"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
