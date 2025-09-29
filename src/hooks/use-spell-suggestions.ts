@@ -2,17 +2,61 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { STARTER_WORDS } from "@/data/dictionaries/fr-dictionary";
 import { getPrefixSuggestions } from "@/lib/prefix-suggester";
 
-function getLastWord(s: string): string {
-  const m = s.match(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/);
-  return m?.[1] || "";
+const WORD_PATTERN = /([A-Za-zÀ-ÖØ-öø-ÿ'-]+)/g;
+const WORD_CHARACTER_PATTERN = /[A-Za-zÀ-ÖØ-öø-ÿ'-]$/;
+
+function getLastWord(value: string): string {
+  const match = value.match(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/);
+  return match?.[1] || "";
 }
 
-const MAX_VISIBLE_SUGGESTIONS = 8;
-const MIN_REMOTE_LENGTH = 3;
-const STARTER_SUGGESTIONS = STARTER_WORDS.slice(0, MAX_VISIBLE_SUGGESTIONS);
-const WORD_REGEX = /[A-Za-zÀ-ÖØ-öø-ÿ'-]+/g;
+function extractWords(value: string): string[] {
+  return value.match(WORD_PATTERN)?.map(word => word.trim()).filter(Boolean) ?? [];
+}
 
-export function useSpellSuggestions(text: string, lang = "fr") {
+export interface UseSpellSuggestionsOptions {
+  lang?: string;
+  maxVisibleSuggestions?: number;
+  minRemoteLength?: number;
+  debounceMs?: number;
+  contextWindow?: number;
+}
+
+export interface UseSpellSuggestionsResult {
+  wordSuggestions: string[];
+  localSuggestions: string[];
+  contextWords: string[];
+  isLoading: boolean;
+}
+
+const DEFAULT_OPTIONS: Required<UseSpellSuggestionsOptions> = {
+  lang: "fr",
+  maxVisibleSuggestions: 8,
+  minRemoteLength: 3,
+  debounceMs: 120,
+  contextWindow: 3,
+};
+
+function resolveOptions(
+  langOrOptions: string | UseSpellSuggestionsOptions | undefined,
+  options: UseSpellSuggestionsOptions | undefined,
+): Required<UseSpellSuggestionsOptions> {
+  if (typeof langOrOptions === "string" || langOrOptions === undefined) {
+    return {
+      ...DEFAULT_OPTIONS,
+      ...options,
+      lang: langOrOptions ?? options?.lang ?? DEFAULT_OPTIONS.lang,
+    };
+  }
+
+  return {
+    ...DEFAULT_OPTIONS,
+    ...langOrOptions,
+    lang: langOrOptions.lang ?? DEFAULT_OPTIONS.lang,
+  };
+}
+
+
   const [remoteSuggestions, setRemoteSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const debounceWord = useRef<number>();
@@ -21,31 +65,7 @@ export function useSpellSuggestions(text: string, lang = "fr") {
 
   const trimmedText = text.trim();
   const lastWord = useMemo(() => getLastWord(text), [text]);
-  const contextWords = useMemo(() => {
-    if (!text) return [] as string[];
-    if (!lastWord) {
-      return text.match(WORD_REGEX) ?? [];
-    }
-    const prefixLength = text.length - lastWord.length;
-    const beforeLastWord = text.slice(0, Math.max(0, prefixLength));
-    return beforeLastWord.match(WORD_REGEX) ?? [];
-  }, [lastWord, text]);
-  const hasTypedContent = trimmedText.length > 0;
 
-  const localSuggestions = useMemo(() => {
-    if (!hasTypedContent || !lastWord) {
-      return STARTER_SUGGESTIONS;
-    }
-    const suggestions = getPrefixSuggestions(
-      lastWord,
-      MAX_VISIBLE_SUGGESTIONS,
-      contextWords,
-    );
-    if (suggestions.length === 0) {
-      return STARTER_SUGGESTIONS;
-    }
-    return suggestions;
-  }, [contextWords, hasTypedContent, lastWord]);
 
   useEffect(() => {
     if (debounceWord.current) window.clearTimeout(debounceWord.current);
@@ -54,13 +74,13 @@ export function useSpellSuggestions(text: string, lang = "fr") {
       controllerRef.current = null;
     }
 
-    if (!hasTypedContent || !lastWord || lastWord.length < MIN_REMOTE_LENGTH) {
+
       setIsLoading(false);
       setRemoteSuggestions([]);
       return () => undefined;
     }
 
-    const cacheKey = `${lang}:${lastWord.toLowerCase()}`;
+
     const cached = cacheRef.current.get(cacheKey);
     if (cached) {
       setRemoteSuggestions(cached);
@@ -75,17 +95,12 @@ export function useSpellSuggestions(text: string, lang = "fr") {
         const response = await fetch("/api/spell", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: lastWord, lang }),
+
           signal: controllerRef.current.signal,
         });
         if (response.ok) {
           const data = await response.json();
-          const suggestions = Array.isArray(data.suggestions)
-            ? data.suggestions.filter(
-                (suggestion): suggestion is string =>
-                  typeof suggestion === "string" && suggestion.trim().length > 0,
-              )
-            : [];
+
           cacheRef.current.set(cacheKey, suggestions);
           setRemoteSuggestions(suggestions);
         } else {
@@ -100,7 +115,7 @@ export function useSpellSuggestions(text: string, lang = "fr") {
         setIsLoading(false);
         controllerRef.current = null;
       }
-    }, 120);
+
 
     return () => {
       if (debounceWord.current) window.clearTimeout(debounceWord.current);
@@ -109,11 +124,7 @@ export function useSpellSuggestions(text: string, lang = "fr") {
         controllerRef.current = null;
       }
     };
-  }, [hasTypedContent, lang, lastWord]);
 
-  const wordSuggestions = useMemo(() => {
-    if (!hasTypedContent) {
-      return STARTER_SUGGESTIONS;
     }
 
     const merged: string[] = [];
@@ -127,18 +138,14 @@ export function useSpellSuggestions(text: string, lang = "fr") {
         if (seen.has(trimmedSuggestion)) continue;
         merged.push(trimmedSuggestion);
         seen.add(trimmedSuggestion);
-        if (merged.length >= MAX_VISIBLE_SUGGESTIONS) {
+
           return merged;
         }
       }
     }
 
     if (merged.length === 0) {
-      return localSuggestions.slice(0, MAX_VISIBLE_SUGGESTIONS);
-    }
 
-    return merged;
-  }, [hasTypedContent, localSuggestions, remoteSuggestions]);
 
-  return { wordSuggestions, isLoading };
+  return { wordSuggestions, localSuggestions, contextWords, isLoading };
 }
