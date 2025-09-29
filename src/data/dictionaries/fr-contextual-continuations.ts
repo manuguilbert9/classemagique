@@ -14,15 +14,54 @@ export const CONTEXTUAL_CONTINUATIONS: ContextualContinuation[] = [
       "dois",
       "reviens",
       "pense",
+      "crois",
+      "comprends",
+      "viens",
     ],
   },
   {
     context: ["je", "ne"],
-    suggestions: ["sais", "suis", "peux", "veux"],
+    suggestions: ["sais", "suis", "peux", "veux", "pense"],
+  },
+  {
+    context: ["je", "suis"],
+    suggestions: ["là", "désolé", "fatigué", "pressé", "prêt", "en route"],
+  },
+  {
+    context: ["je", "vais"],
+    suggestions: ["bien", "arriver", "venir", "faire", "essayer", "voir"],
+  },
+  {
+    context: ["je", "peux"],
+    suggestions: ["venir", "aider", "essayer", "répondre", "passer", "t'aider"],
+  },
+  {
+    context: ["je", "dois"],
+    suggestions: ["partir", "rendre", "finir", "y aller", "me dépêcher"],
+  },
+  {
+    context: ["je", "voudrais"],
+    suggestions: ["savoir", "venir", "te voir", "qu'on parle"],
   },
   {
     context: ["tu"],
-    suggestions: ["es", "vas", "peux", "veux", "dois"],
+    suggestions: ["es", "vas", "peux", "veux", "dois", "fais"],
+  },
+  {
+    context: ["tu", "es"],
+    suggestions: ["où", "prêt", "là", "dispo", "libre"],
+  },
+  {
+    context: ["tu", "peux"],
+    suggestions: ["venir", "m'aider", "répondre", "passer", "me dire"],
+  },
+  {
+    context: ["tu", "veux"],
+    suggestions: ["venir", "qu'on", "faire", "dire", "essayer"],
+  },
+  {
+    context: ["tu", "as"],
+    suggestions: ["vu", "pris", "fini", "besoin"],
   },
   {
     context: ["il"],
@@ -34,7 +73,11 @@ export const CONTEXTUAL_CONTINUATIONS: ContextualContinuation[] = [
   },
   {
     context: ["on"],
-    suggestions: ["va", "se", "peut", "arrive"],
+    suggestions: ["va", "se", "peut", "arrive", "se retrouve"],
+  },
+  {
+    context: ["on", "se"],
+    suggestions: ["voit", "retrouve", "tient", "dit", "capte"],
   },
   {
     context: ["nous"],
@@ -54,27 +97,39 @@ export const CONTEXTUAL_CONTINUATIONS: ContextualContinuation[] = [
   },
   {
     context: ["il", "y"],
-    suggestions: ["a", "avait", "aura"],
+    suggestions: ["a", "avait", "aura", "en a"],
   },
   {
     context: ["c"],
     suggestions: ["est", "était", "sera", "serait"],
   },
   {
+    context: ["c'est"],
+    suggestions: ["bon", "noté", "parti", "super", "ok"],
+  },
+  {
     context: ["ça"],
-    suggestions: ["va", "marche", "se passe"],
+    suggestions: ["va", "marche", "se passe", "change"],
   },
   {
     context: ["merci"],
-    suggestions: ["beaucoup", "pour", "d'avance"],
+    suggestions: ["beaucoup", "pour", "d'avance", "à toi"],
+  },
+  {
+    context: ["merci", "pour"],
+    suggestions: ["ton", "ta", "votre", "l'aide", "tout"],
   },
   {
     context: ["bon"],
-    suggestions: ["jour", "soir", "courage"],
+    suggestions: ["jour", "soir", "courage", "appétit", "anniversaire"],
   },
   {
     context: ["à"],
-    suggestions: ["bientôt", "plus", "demain", "tout"],
+    suggestions: ["bientôt", "plus", "demain", "tout", "tout de suite", "lundi"],
+  },
+  {
+    context: ["à", "tout"],
+    suggestions: ["de suite", "à l'heure", "moment"],
   },
   {
     context: ["qu"],
@@ -85,6 +140,10 @@ export const CONTEXTUAL_CONTINUATIONS: ContextualContinuation[] = [
     suggestions: ["que"],
   },
   {
+    context: ["est-ce", "que"],
+    suggestions: ["tu", "je", "vous", "nous", "c'est"],
+  },
+  {
     context: ["d"],
     suggestions: ["accord", "ailleurs", "avance"],
   },
@@ -93,11 +152,15 @@ export const CONTEXTUAL_CONTINUATIONS: ContextualContinuation[] = [
     suggestions: ["es", "as", "inquiète"],
   },
   {
+    context: ["pas"],
+    suggestions: ["de souci", "de problème", "grave", "encore"],
+  },
+  {
     context: ["bien"],
-    suggestions: ["sûr", "joué", "merci"],
+    suggestions: ["sûr", "joué", "merci", "vu"],
   },
   {
     context: ["très"],
-    suggestions: ["bien", "vite", "content"],
+    suggestions: ["bien", "vite", "content", "drôle"],
   },
 ];
