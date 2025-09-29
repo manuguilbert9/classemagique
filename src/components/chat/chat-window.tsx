@@ -132,17 +132,24 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     };
     
     const handleApplySuggestion = (suggestion: string) => {
+        const normalizedSuggestion = suggestion.trim();
+        if (!normalizedSuggestion) return;
+
         setNewMessage((prev) => {
             if (!prev.trim()) {
-                return `${suggestion} `;
+                return `${normalizedSuggestion} `;
             }
 
-            const wordMatch = prev.match(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/);
-            if (wordMatch) {
-                return `${prev.slice(0, prev.length - wordMatch[1].length)}${suggestion} `;
+            const trailingWhitespace = /\s+$/.test(prev);
+            if (!trailingWhitespace) {
+                const wordMatch = prev.match(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/);
+                if (wordMatch) {
+                    return `${prev.slice(0, prev.length - wordMatch[1].length)}${normalizedSuggestion} `;
+                }
             }
 
-            return `${prev}${prev.endsWith(' ') ? '' : ' '}${suggestion} `;
+            const base = trailingWhitespace ? prev : `${prev}${prev.endsWith(' ') ? '' : ' '}`;
+            return `${base}${normalizedSuggestion} `;
         });
         textareaRef.current?.focus();
     }
