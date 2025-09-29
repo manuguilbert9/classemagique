@@ -93,9 +93,9 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
     }
 
     return (
-        <div className="fixed bottom-0 right-4 z-50 flex items-end gap-4">
-            <Card className="w-[600px] h-[500px] shadow-2xl flex flex-col rounded-t-lg overflow-hidden">
-                <header className="bg-primary text-primary-foreground border-b p-3">
+        <div className="fixed inset-0 z-50 flex flex-col bg-background">
+            <Card className="flex h-full flex-col rounded-none border-0 shadow-none overflow-hidden">
+                <header className="bg-primary text-primary-foreground border-b p-4 sm:p-3">
                     <div className="grid gap-3 md:grid-cols-[auto,1fr,auto] md:items-center">
                         <div className="flex items-center gap-2">
                             <MessageSquare />
@@ -143,9 +143,9 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
                         </button>
                     </div>
                 </header>
-                <div className="flex flex-grow overflow-hidden">
-                    <div className="w-1/3 border-r bg-muted/30 flex flex-col">
-                        <header className="p-2 border-b">
+                <div className="flex flex-grow flex-col overflow-hidden md:flex-row">
+                    <div className="flex flex-col bg-muted/30 border-b md:w-1/3 md:max-w-sm md:border-b-0 md:border-r md:flex-none">
+                        <header className="p-3 border-b sm:p-2">
                             <Button onClick={handleStartNewConversation} className="w-full">
                                 <Users className="mr-2 h-4 w-4"/> Nouvelle discussion
                             </Button>
@@ -159,7 +159,7 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
                             presenceByStudentId={presenceByStudentId}
                         />
                     </div>
-                    <div className="w-2/3 flex flex-col">
+                    <div className="flex flex-1 flex-col overflow-hidden">
                         <ChatWindow
                            currentStudent={student}
                            allStudents={allStudents}
