@@ -5,10 +5,11 @@ import * as React from 'react';
 import { Conversation } from '@/services/chat';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '../ui/skeleton';
 import { User } from 'lucide-react';
+import type { StudentPresenceState } from '@/services/student-presence';
 
 interface ConversationListProps {
     conversations: Conversation[];
@@ -16,6 +17,7 @@ interface ConversationListProps {
     selectedConversationId: string | null;
     onSelectConversation: (conversationId: string) => void;
     isLoading: boolean;
+    presenceByStudentId: Record<string, StudentPresenceState>;
 }
 
 export function ConversationList({
@@ -23,7 +25,8 @@ export function ConversationList({
     currentStudentId,
     selectedConversationId,
     onSelectConversation,
-    isLoading
+    isLoading,
+    presenceByStudentId
 }: ConversationListProps) {
 
     if (isLoading) {
@@ -48,7 +51,14 @@ export function ConversationList({
                 {conversations.map(convo => {
                     const otherParticipantId = convo.participants.find(p => p !== currentStudentId);
                     const otherParticipantName = otherParticipantId ? convo.participantNames[otherParticipantId] : "Inconnu";
-                    
+                    const presence = otherParticipantId ? presenceByStudentId[otherParticipantId] : undefined;
+                    const isOnline = presence?.isOnline ?? false;
+                    const lastSeenText = !isOnline && presence?.lastSeenAt
+                        ? formatDistanceToNow(presence.lastSeenAt, { addSuffix: true, locale: fr })
+                        : null;
+                    const presenceLabel = isOnline ? 'En ligne' : 'Hors ligne';
+                    const presenceDescription = isOnline ? 'En ligne' : lastSeenText ? `Hors ligne · vu ${lastSeenText}` : 'Hors ligne';
+
                     const isUnread = convo.lastMessage && convo.lastMessage.senderId !== currentStudentId && !convo.lastMessage.readBy[currentStudentId];
                     const lastMessageText = convo.lastMessage ? (convo.lastMessage.senderId === currentStudentId ? "Vous: " : "") + convo.lastMessage.text : "Aucun message";
                     const lastMessageDate = convo.lastMessage ? formatDistanceToNow(convo.lastMessage.createdAt.toDate(), { addSuffix: true, locale: fr }) : '';
@@ -67,14 +77,40 @@ export function ConversationList({
                                 <div className="h-10 w-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
                                     <User />
                                 </div>
+                                <span
+                                    className={cn(
+                                        'absolute -top-1 -right-1 block h-3 w-3 rounded-full border-2 border-muted/40',
+                                        isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
+                                    )}
+                                    title={presenceDescription}
+                                    aria-label={`Statut : ${presenceDescription}`}
+                                />
                                 {isUnread && (
                                     <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-muted/30" />
                                 )}
                             </div>
                             <div className="flex-grow overflow-hidden">
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center gap-2">
                                     <p className="truncate">{otherParticipantName}</p>
-                                    <p className="text-xs text-muted-foreground flex-shrink-0">{lastMessageDate}</p>
+                                    <div className="flex items-center gap-2">
+                                        <span
+                                            className={cn(
+                                                'flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide',
+                                                isOnline ? 'text-emerald-600' : 'text-muted-foreground'
+                                            )}
+                                            title={presenceDescription}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    'h-2.5 w-2.5 rounded-full',
+                                                    isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
+                                                )}
+                                                aria-hidden="true"
+                                            />
+                                            {presenceLabel}
+                                        </span>
+                                        <p className="text-xs text-muted-foreground flex-shrink-0">{lastMessageDate}</p>
+                                    </div>
                                 </div>
                                 <p className={cn("text-sm truncate", isUnread ? "text-foreground" : "text-muted-foreground")}>
                                     {lastMessageText}

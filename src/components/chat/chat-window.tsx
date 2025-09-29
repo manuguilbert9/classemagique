@@ -8,24 +8,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { sendMessage, markAsRead, listenToMessages, findOrCreateConversation, type Message, updateMessageCorrection } from '@/services/chat';
 import { type Student } from '@/services/students';
+import type { StudentPresenceState } from '@/services/student-presence';
 import { cn } from '@/lib/utils';
 import { Send, Loader2, Users, MessageSquare, User, Pencil, Sparkles, RefreshCw } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 import { useSpellSuggestions } from '@/hooks/use-spell-suggestions';
-import { Switch } from '../ui/switch';
-import { Slider } from '../ui/slider';
 import { Badge } from '../ui/badge';
 import { SyllableText } from '../syllable-text';
-
-const MESSAGE_SCALE_MIN = 0.85;
-const MESSAGE_SCALE_MAX = 1.4;
-const MESSAGE_SCALE_STEP = 0.05;
-
 interface ChatWindowProps {
     conversationId: string | null;
     currentStudent: Student;
@@ -33,15 +27,26 @@ interface ChatWindowProps {
     isCreatingNew: boolean;
     setIsCreatingNew: (isCreating: boolean) => void;
     setSelectedConversationId: (id: string | null) => void;
+    colorizeSyllables: boolean;
+    messageScale: number;
+    presenceByStudentId: Record<string, StudentPresenceState>;
 }
 
-export function ChatWindow({ conversationId, currentStudent, allStudents, isCreatingNew, setIsCreatingNew, setSelectedConversationId }: ChatWindowProps) {
+export function ChatWindow({
+    conversationId,
+    currentStudent,
+    allStudents,
+    isCreatingNew,
+    setIsCreatingNew,
+    setSelectedConversationId,
+    colorizeSyllables,
+    messageScale,
+    presenceByStudentId,
+}: ChatWindowProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSending, setIsSending] = useState(false);
-    const [colorizeSyllables, setColorizeSyllables] = useState(false);
-    const [messageScale, setMessageScale] = useState(1);
     const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
 
     const { toast } = useToast();
@@ -71,44 +76,6 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         () => trimmedMessageLength >= 3,
         [trimmedMessageLength]
     );
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        try {
-            const storedColor = localStorage.getItem('chat:syllable-color');
-            if (storedColor !== null) {
-                setColorizeSyllables(storedColor === 'true');
-            }
-            const storedScale = localStorage.getItem('chat:message-scale');
-            if (storedScale) {
-                const parsed = parseFloat(storedScale);
-                if (!Number.isNaN(parsed)) {
-                    const clamped = Math.min(MESSAGE_SCALE_MAX, Math.max(MESSAGE_SCALE_MIN, parsed));
-                    setMessageScale(clamped);
-                }
-            }
-        } catch (error) {
-            console.warn('Impossible de charger les préférences de discussion', error);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        try {
-            localStorage.setItem('chat:syllable-color', String(colorizeSyllables));
-        } catch (error) {
-            console.warn('Impossible de sauvegarder la préférence de colorisation', error);
-        }
-    }, [colorizeSyllables]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        try {
-            localStorage.setItem('chat:message-scale', messageScale.toString());
-        } catch (error) {
-            console.warn('Impossible de sauvegarder la taille des messages', error);
-        }
-    }, [messageScale]);
 
     useEffect(() => {
         setActiveSuggestionIndex(0);
@@ -147,13 +114,30 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
 
     }, [conversationId, currentStudent.id]);
     
-     const otherStudentName = useMemo(() => {
-        if (!conversationId) return "Nouveau message";
+    const otherStudentInfo = useMemo(() => {
+        if (!conversationId) {
+            return { id: null as string | null, name: 'Nouveau message' };
+        }
         const parts = conversationId.split('_');
-        const otherId = parts.find(p => p !== currentStudent.id);
-        const otherStudent = allStudents.find(s => s.id === otherId);
-        return otherStudent?.name || "Discussion";
+        const otherId = parts.find((p) => p !== currentStudent.id) ?? null;
+        const otherStudent = otherId ? allStudents.find((s) => s.id === otherId) : undefined;
+
+        return {
+            id: otherId,
+            name: otherStudent?.name || 'Discussion',
+        };
     }, [conversationId, allStudents, currentStudent.id]);
+
+    const otherStudentPresence = otherStudentInfo.id ? presenceByStudentId[otherStudentInfo.id] : undefined;
+    const isOtherStudentOnline = otherStudentPresence?.isOnline ?? false;
+    const otherStudentLastSeen = !isOtherStudentOnline && otherStudentPresence?.lastSeenAt
+        ? formatDistanceToNow(otherStudentPresence.lastSeenAt, { addSuffix: true, locale: fr })
+        : null;
+    const otherStudentPresenceText = isOtherStudentOnline
+        ? 'En ligne'
+        : otherStudentLastSeen
+            ? `Hors ligne · vu ${otherStudentLastSeen}`
+            : 'Hors ligne';
 
 
     const handleSendMessage = useCallback(async () => {
@@ -262,19 +246,59 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                     <h3 className="font-semibold text-lg flex items-center gap-2"><Users/> Démarrer une nouvelle discussion</h3>
                 </header>
                 <ScrollArea className="flex-grow">
-                     <div className="p-2 space-y-1">
-                        {allStudents.map(student => (
-                            <div key={student.id} onClick={() => handleStartConversation(student)} className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-accent/50">
-                                <div className="h-10 w-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
-                                    <User />
+                    <div className="p-2 space-y-1">
+                        {allStudents.map((student) => {
+                            const presence = presenceByStudentId[student.id];
+                            const isOnline = presence?.isOnline ?? false;
+                            const lastSeen = !isOnline && presence?.lastSeenAt
+                                ? formatDistanceToNow(presence.lastSeenAt, { addSuffix: true, locale: fr })
+                                : null;
+                            const presenceText = isOnline ? 'En ligne' : lastSeen ? `Hors ligne · vu ${lastSeen}` : 'Hors ligne';
+
+                            return (
+                                <div
+                                    key={student.id}
+                                    onClick={() => handleStartConversation(student)}
+                                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-accent/50"
+                                >
+                                    <div className="relative">
+                                        <div className="h-10 w-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
+                                            <User />
+                                        </div>
+                                        <span
+                                            className={cn(
+                                                'absolute -top-1 -right-1 block h-3 w-3 rounded-full border-2 border-muted/40',
+                                                isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
+                                            )}
+                                            aria-label={`Statut : ${presenceText}`}
+                                            title={presenceText}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <p className="font-semibold leading-tight">{student.name}</p>
+                                        <span
+                                            className={cn(
+                                                'text-xs font-medium uppercase tracking-wide flex items-center gap-1',
+                                                isOnline ? 'text-emerald-600' : 'text-muted-foreground'
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    'h-2.5 w-2.5 rounded-full',
+                                                    isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
+                                                )}
+                                                aria-hidden="true"
+                                            />
+                                            {presenceText}
+                                        </span>
+                                    </div>
                                 </div>
-                                <p className="font-semibold">{student.name}</p>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </ScrollArea>
             </div>
-        )
+        );
     }
 
     if (!conversationId) {
@@ -294,7 +318,25 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     return (
         <div className="flex flex-col h-full">
             <header className="p-4 border-b">
-                <h3 className="font-semibold text-lg">{otherStudentName}</h3>
+                <div className="flex flex-col">
+                    <h3 className="font-semibold text-lg">{otherStudentInfo.name}</h3>
+                    <span
+                        className={cn(
+                            'mt-1 text-sm font-medium flex items-center gap-2',
+                            isOtherStudentOnline ? 'text-emerald-600' : 'text-muted-foreground'
+                        )}
+                        title={otherStudentPresenceText}
+                    >
+                        <span
+                            className={cn(
+                                'h-2.5 w-2.5 rounded-full',
+                                isOtherStudentOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
+                            )}
+                            aria-hidden="true"
+                        />
+                        {otherStudentPresenceText}
+                    </span>
+                </div>
             </header>
             <ScrollArea className="flex-grow p-4 bg-muted/10" viewportRef={scrollAreaRef}>
                 <div className="space-y-4">
@@ -356,8 +398,8 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                     })}
                 </div>
             </ScrollArea>
-             <div className="p-4 border-t space-y-2">
-                 {(hasSuggestions || isLoadingSuggestions || hasTypedInput) && (
+            <div className="p-4 border-t space-y-2">
+                {(hasSuggestions || isLoadingSuggestions || hasTypedInput) && (
                     <div className="rounded-xl border bg-background/90 p-3 shadow-sm">
                         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             <span className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> Suggestions</span>
@@ -420,59 +462,29 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                         })}
                     </div>
                 )}
-                <div className="flex flex-col gap-3 rounded-xl border bg-background/90 p-3 shadow-sm">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3">
-                            <Switch
-                                id="toggle-syllables"
-                                checked={colorizeSyllables}
-                                onCheckedChange={(checked) => setColorizeSyllables(Boolean(checked))}
-                            />
-                            <Label htmlFor="toggle-syllables" className="text-sm">Coloriser les syllabes dans le fil</Label>
-                        </div>
-                        <div className="flex flex-col gap-2 sm:items-center sm:gap-3 sm:flex-row">
-                            <Label htmlFor="message-size" className="text-sm">Taille du texte</Label>
-                            <div className="flex items-center gap-3">
-                                <Slider
-                                    id="message-size"
-                                    min={MESSAGE_SCALE_MIN}
-                                    max={MESSAGE_SCALE_MAX}
-                                    step={MESSAGE_SCALE_STEP}
-                                    value={[messageScale]}
-                                    onValueChange={(value) => {
-                                        if (!value.length) return;
-                                        setMessageScale(Number(value[0]));
-                                    }}
-                                    className="w-40"
-                                />
-                                <span className="text-xs text-muted-foreground w-12 text-right">{Math.round(messageScale * 100)}%</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="relative">
-                        <Textarea
-                            ref={textareaRef}
-                            id="chat-input"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={handleInputKeyDown}
-                            placeholder="Écris ton message..."
-                            className="pr-12 min-h-[44px] h-20 resize-none"
-                            disabled={isSending}
-                            spellCheck
-                        />
-                        <Button
-                            size="icon"
-                            className="absolute right-1 bottom-1 h-9 w-9"
-                            onClick={handleSendMessage}
-                            disabled={isSending || !hasTypedInput}
-                        >
-                            {isSending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4" />}
-                        </Button>
-                    </div>
+                <div className="relative rounded-xl border bg-background/90 p-3 shadow-sm">
+                    <Textarea
+                        ref={textareaRef}
+                        id="chat-input"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleInputKeyDown}
+                        placeholder="Écris ton message..."
+                        className="pr-12 min-h-[44px] h-20 resize-none"
+                        disabled={isSending}
+                        spellCheck
+                    />
+                    <Button
+                        size="icon"
+                        className="absolute right-1 bottom-1 h-9 w-9"
+                        onClick={handleSendMessage}
+                        disabled={isSending || !hasTypedInput}
+                    >
+                        {isSending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4" />}
+                    </Button>
                 </div>
             </div>
-            
+
             <Dialog open={!!correctionTarget} onOpenChange={(isOpen) => !isOpen && setCorrectionTarget(null)}>
                 <DialogContent>
                     <DialogHeader>
