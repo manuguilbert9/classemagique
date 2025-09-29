@@ -1,30 +1,55 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DICTIONARY } from "@/data/dictionaries/fr-dictionary";
+import { suggestSentenceCompletion } from "@/ai/flows/sentence-completion-flow";
 
-function getLastToken(s: string) {
+function getLastWord(s: string): string {
   const m = s.match(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/);
   return m?.[1]?.toLowerCase() || "";
 }
 
 export function useSpellSuggestions(text: string, lang = "fr") {
-  const [sugg, setSugg] = useState<string[]>([]);
+  const [wordSuggestions, setWordSuggestions] = useState<string[]>([]);
+  const [phraseSuggestions, setPhraseSuggestions] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const debounceTimeout = useRef<number>();
 
   useEffect(() => {
-    const last = getLastToken(text);
-    if (last.length < 1) {
-      setSugg([]);
-      return;
+    // Instant word suggestions
+    const lastWord = getLastWord(text);
+    if (lastWord) {
+      const localSuggestions = DICTIONARY.filter(word => word.startsWith(lastWord));
+      localSuggestions.sort((a, b) => a.length - b.length);
+      setWordSuggestions(localSuggestions);
+    } else {
+      setWordSuggestions([]);
     }
 
-    // Perform a local search in the dictionary
-    const suggestions = DICTIONARY.filter(word => word.startsWith(last));
-    
-    // Sort suggestions to prioritize shorter, more common words first
-    suggestions.sort((a, b) => a.length - b.length);
+    // Debounced phrase suggestions (Smart Compose)
+    if (debounceTimeout.current) window.clearTimeout(debounceTimeout.current);
 
-    setSugg(suggestions);
+    if (text.trim().length > 5 && text.endsWith(' ')) { // Trigger on space after a few words
+      setIsLoading(true);
+      debounceTimeout.current = window.setTimeout(async () => {
+        try {
+          const result = await suggestSentenceCompletion({ text });
+          setPhraseSuggestions(result.suggestions ?? []);
+        } catch (error) {
+          console.error("Smart Compose failed:", error);
+          setPhraseSuggestions([]);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 500); // 500ms debounce
+    } else {
+      setPhraseSuggestions([]);
+      setIsLoading(false);
+    }
+
+    return () => {
+      if (debounceTimeout.current) window.clearTimeout(debounceTimeout.current);
+    };
 
   }, [text, lang]);
 
-  return sugg;
+  return { wordSuggestions, phraseSuggestions, isLoading };
 }

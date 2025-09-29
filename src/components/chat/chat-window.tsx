@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { sendMessage, markAsRead, listenToMessages, findOrCreateConversation, type Message, updateMessageCorrection } from '@/services/chat';
 import { type Student } from '@/services/students';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, Users, MessageSquare, User, Pencil } from 'lucide-react';
+import { Send, Loader2, Users, MessageSquare, User, Pencil, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +34,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const [isSending, setIsSending] = useState(false);
     
     const { toast } = useToast();
-    const suggestions = useSpellSuggestions(newMessage, "fr");
+    const { wordSuggestions, phraseSuggestions, isLoading: isLoadingSuggestions } = useSpellSuggestions(newMessage, "fr");
 
     // State for correction dialog
     const [correctionTarget, setCorrectionTarget] = useState<Message | null>(null);
@@ -130,8 +130,12 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         setCorrectionTarget(null);
     };
     
-    const handleApplySuggestion = (suggestion: string) => {
+    const handleApplyWordSuggestion = (suggestion: string) => {
         setNewMessage(prev => prev.replace(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/, suggestion) + ' ');
+    }
+
+    const handleApplyPhraseSuggestion = (suggestion: string) => {
+        setNewMessage(prev => `${prev} ${suggestion}`);
     }
 
     if (isCreatingNew) {
@@ -220,11 +224,17 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                 </div>
             </ScrollArea>
              <div className="p-4 border-t space-y-2">
-                 {suggestions.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2">
-                        {suggestions.slice(0, 6).map(s => (
-                            <Button key={s} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s)}>{s}</Button>
+                 {(wordSuggestions.length > 0 || phraseSuggestions.length > 0) && (
+                    <div className="flex flex-wrap gap-2">
+                        {wordSuggestions.slice(0, 3).map((s, i) => (
+                            <Button key={`word-${s}-${i}`} size="sm" variant="outline" onMouseDown={() => handleApplyWordSuggestion(s)}>{s}</Button>
                         ))}
+                        {phraseSuggestions.slice(0, 2).map((s, i) => (
+                             <Button key={`phrase-${s}-${i}`} size="sm" variant="outline" onMouseDown={() => handleApplyPhraseSuggestion(s)} className="text-blue-600 border-blue-300">
+                                <Sparkles className="mr-2 h-4 w-4 text-blue-500" /> {s}
+                             </Button>
+                        ))}
+                         {isLoadingSuggestions && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
                     </div>
                 )}
                 <div className="relative">
