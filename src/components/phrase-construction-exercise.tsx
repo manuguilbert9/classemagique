@@ -12,8 +12,7 @@ import { cn } from '@/lib/utils';
 import { Check, RefreshCw, X, Loader2, Wand2, ThumbsUp, Send, Gem } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
-import { addScore, ScoreDetail } from '@/services/scores';
-import { saveHomeworkResult } from '@/services/homework';
+import { addScore, ScoreDetail, saveHomeworkResult as saveHomeworkResultWithNuggets } from '@/services/scores';
 import { generatePhraseWords, validateConstructedPhrase, type ValidatePhraseOutput } from '@/ai/flows/phrase-construction-flow';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
@@ -156,9 +155,9 @@ export function PhraseConstructionExercise() {
             }, 0);
             const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
             
-            let result;
+            let result: { success: boolean; error?: string; nuggetsEarned?: number };
             if (isHomework && homeworkDate) {
-                result = await saveHomeworkResult({
+                result = await saveHomeworkResultWithNuggets({
                     userId: student.id,
                     date: homeworkDate,
                     skillSlug: 'phrase-construction',
