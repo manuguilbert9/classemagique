@@ -233,7 +233,6 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                         placeholder="Écris ton message..."
                         className="pr-12 min-h-[44px] h-11 resize-none"
                         disabled={isSending}
-                        autoComplete="off"
                         spellCheck="true"
                     />
                     <Button
