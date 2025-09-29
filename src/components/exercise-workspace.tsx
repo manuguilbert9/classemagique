@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Keyboard } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Keyboard, Gem } from 'lucide-react';
 import { AnalogClock } from '@/components/analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings } from '@/lib/questions';
 import { currency as currencyData, formatCurrency } from '@/lib/currency';
@@ -27,8 +27,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Label } from './ui/label';
 import { VirtualKeyboard } from './virtual-keyboard';
 import { useToast } from '@/hooks/use-toast';
-import { calculateNuggets } from '@/lib/nuggets';
-import { Gem } from 'lucide-react';
 
 
 const motivationalMessages = [
@@ -323,7 +321,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         
         const newScoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         
-        const scoreData: Omit<Score, 'createdAt' | 'id'> = {
+        const scoreData: Omit<Score, 'id' | 'createdAt'> = {
             userId: student.id,
             skill: skill.slug,
             score: newScoreValue,
@@ -345,16 +343,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             scoreData.numberLevelSettings = numberLevelSettings;
         }
         
+        let result;
         if (isHomework && homeworkDate) {
-          await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: skill.slug, score: newScoreValue });
+          result = await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: skill.slug, score: newScoreValue });
         } else {
-          await addScore(scoreData);
+          result = await addScore(scoreData);
         }
 
-        const nuggetsEarned = calculateNuggets(newScoreValue, skill.slug);
-        if (nuggetsEarned > 0) {
+        if (result.success && result.nuggetsEarned && result.nuggetsEarned > 0) {
             toast({
-                title: `+${nuggetsEarned} pépite${nuggetsEarned > 1 ? 's' : ''} !`,
+                title: `+${result.nuggetsEarned} pépite${result.nuggetsEarned > 1 ? 's' : ''} !`,
                 description: "Bravo pour tes efforts !",
                 className: "bg-amber-100 border-amber-300 text-amber-800",
                 icon: <Gem className="h-6 w-6 text-amber-500" />,
@@ -850,6 +848,7 @@ const renderWrittenToAudioQCM = () => (
     </div>
   );
 }
+
 
 
 

@@ -44,12 +44,13 @@ export interface Score {
 
 
 // Adds a new score document and updates student's nuggets.
-export async function addScore(scoreData: Omit<Score, 'id' | 'createdAt'>): Promise<{ success: boolean; error?: string }> {
+export async function addScore(scoreData: Omit<Score, 'id' | 'createdAt'>): Promise<{ success: boolean; error?: string, nuggetsEarned?: number }> {
     if (!scoreData.userId) {
         return { success: false, error: 'User ID is required.' };
     }
     try {
         const studentRef = doc(db, "students", scoreData.userId);
+        let nuggetsEarned = 0;
 
         await runTransaction(db, async (transaction) => {
             const studentDoc = await transaction.get(studentRef);
@@ -57,7 +58,7 @@ export async function addScore(scoreData: Omit<Score, 'id' | 'createdAt'>): Prom
                 throw new Error("Student does not exist!");
             }
             
-            const nuggetsEarned = calculateNuggets(scoreData.score, scoreData.skill);
+            nuggetsEarned = calculateNuggets(scoreData.score, scoreData.skill);
             const currentNuggets = studentDoc.data().nuggets || 0;
             const newNuggets = currentNuggets + nuggetsEarned;
 
@@ -73,7 +74,7 @@ export async function addScore(scoreData: Omit<Score, 'id' | 'createdAt'>): Prom
             transaction.update(studentRef, { nuggets: newNuggets });
         });
 
-        return { success: true };
+        return { success: true, nuggetsEarned };
 
     } catch (error) {
         console.error("Error adding score and updating nuggets:", error);
@@ -87,12 +88,13 @@ export async function addScore(scoreData: Omit<Score, 'id' | 'createdAt'>): Prom
 /**
  * Saves a completed homework exercise result and updates nuggets.
  */
-export async function saveHomeworkResult(resultData: { userId: string, date: string, skillSlug: string, score: number }): Promise<{ success: boolean; error?: string }> {
+export async function saveHomeworkResult(resultData: { userId: string, date: string, skillSlug: string, score: number }): Promise<{ success: boolean; error?: string, nuggetsEarned?: number }> {
    if (!resultData.userId) {
         return { success: false, error: 'User ID is required.' };
     }
     try {
          const studentRef = doc(db, "students", resultData.userId);
+         let nuggetsEarned = 0;
 
          await runTransaction(db, async (transaction) => {
             const studentDoc = await transaction.get(studentRef);
@@ -100,7 +102,7 @@ export async function saveHomeworkResult(resultData: { userId: string, date: str
                 throw new Error("Student does not exist!");
             }
             
-            const nuggetsEarned = calculateNuggets(resultData.score, resultData.skillSlug);
+            nuggetsEarned = calculateNuggets(resultData.score, resultData.skillSlug);
             const currentNuggets = studentDoc.data().nuggets || 0;
             const newNuggets = currentNuggets + nuggetsEarned;
 
@@ -115,7 +117,7 @@ export async function saveHomeworkResult(resultData: { userId: string, date: str
             transaction.update(studentRef, { nuggets: newNuggets });
         });
         
-        return { success: true };
+        return { success: true, nuggetsEarned };
     } catch (error) {
         console.error("Error saving homework result and updating nuggets:", error);
         if (error instanceof Error) {

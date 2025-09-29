@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useContext, useCallback, useMemo } from 'react';
@@ -8,7 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import { Button } from '../components/ui/button';
 import { Textarea } from './ui/textarea';
 import { cn } from '@/lib/utils';
-import { Check, RefreshCw, X, Loader2, Wand2, ThumbsUp, Send } from 'lucide-react';
+import { Check, RefreshCw, X, Loader2, Wand2, ThumbsUp, Send, Gem } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
@@ -18,6 +19,7 @@ import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { Progress } from './ui/progress';
 import { ScoreTube } from './score-tube';
+import { useToast } from '@/hooks/use-toast';
 
 const NUM_SENTENCES_PER_SESSION = 5;
 
@@ -42,6 +44,7 @@ export function PhraseConstructionExercise() {
   const searchParams = useSearchParams();
   const isHomework = searchParams.get('from') === 'devoirs';
   const homeworkDate = searchParams.get('date');
+  const { toast } = useToast();
 
   const [level, setLevel] = useState<SkillLevel>('B');
   const [gameState, setGameState] = useState<'generating' | 'playing' | 'validating' | 'feedback' | 'finished'>('generating');
@@ -153,15 +156,16 @@ export function PhraseConstructionExercise() {
             }, 0);
             const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
             
+            let result;
             if (isHomework && homeworkDate) {
-                await saveHomeworkResult({
+                result = await saveHomeworkResult({
                     userId: student.id,
                     date: homeworkDate,
                     skillSlug: 'phrase-construction',
                     score: finalScore,
                 });
             } else {
-                await addScore({
+                result = await addScore({
                     userId: student.id,
                     skill: 'phrase-construction',
                     score: finalScore,
@@ -169,10 +173,19 @@ export function PhraseConstructionExercise() {
                     numberLevelSettings: { level }
                 });
             }
+
+            if (result.success && result.nuggetsEarned && result.nuggetsEarned > 0) {
+              toast({
+                  title: `+${result.nuggetsEarned} pépite${result.nuggetsEarned > 1 ? 's' : ''} !`,
+                  description: "Bravo pour tes efforts !",
+                  className: "bg-amber-100 border-amber-300 text-amber-800",
+                  icon: <Gem className="h-6 w-6 text-amber-500" />,
+              });
+            }
         }
     };
     saveFinalScore();
-  }, [gameState, student, hasBeenSaved, sessionDetails, level, isHomework, homeworkDate]);
+  }, [gameState, student, hasBeenSaved, sessionDetails, level, isHomework, homeworkDate, toast]);
 
   const restartExercise = () => {
     setGameState('generating');
