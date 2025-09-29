@@ -1,7 +1,7 @@
 
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, Unsubscribe, Timestamp, doc, setDoc, getDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, Unsubscribe, Timestamp, doc, setDoc, getDoc, serverTimestamp, writeBatch, updateDoc } from "firebase/firestore";
 import type { Student } from './students';
 import { getChatSettings } from './teacher';
 
@@ -19,6 +19,7 @@ export interface Message {
     text: string;
     createdAt: Timestamp;
     readBy: { [id: string]: boolean };
+    correctedText?: string;
 }
 
 // --- Listener Functions (for real-time updates) ---
@@ -27,9 +28,6 @@ export function listenToConversations(studentId: string, callback: (conversation
     const q = query(
         collection(db, 'conversations'), 
         where('participants', 'array-contains', studentId)
-        // NOTE: orderBy('lastMessage.createdAt', 'desc') was removed.
-        // This query requires a composite index in Firestore. To avoid manual user setup,
-        // we fetch without ordering and sort on the client side.
     );
 
     return onSnapshot(q, (querySnapshot) => {
@@ -154,5 +152,25 @@ export async function markAsRead(conversationId: string, studentId: string): Pro
                 }
             }, { merge: true });
         }
+    }
+}
+
+export async function updateMessageCorrection(conversationId: string, messageId: string, correctedText: string): Promise<{ success: boolean; error?: string }> {
+    if (!conversationId || !messageId) {
+        return { success: false, error: 'Conversation ou ID de message manquant.' };
+    }
+
+    try {
+        const messageRef = doc(db, 'conversations', conversationId, 'messages', messageId);
+        await updateDoc(messageRef, {
+            correctedText: correctedText
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating message correction:", error);
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: 'An unknown error occurred.' };
     }
 }

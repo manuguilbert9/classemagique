@@ -2,17 +2,22 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { sendMessage, markAsRead, listenToMessages, findOrCreateConversation, type Message } from '@/services/chat';
+import { sendMessage, markAsRead, listenToMessages, findOrCreateConversation, type Message, updateMessageCorrection } from '@/services/chat';
 import { type Student } from '@/services/students';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, Users, MessageSquare, User } from 'lucide-react';
+import { Send, Loader2, Users, MessageSquare, User, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
+
 
 interface ChatWindowProps {
     conversationId: string | null;
@@ -31,17 +36,22 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const [otherParticipant, setOtherParticipant] = useState<Student | null>(null);
     const { toast } = useToast();
 
+    // State for correction dialog
+    const [correctionTarget, setCorrectionTarget] = useState<Message | null>(null);
+    const [correctedText, setCorrectedText] = useState('');
+    const [isSavingCorrection, setIsSavingCorrection] = useState(false);
+
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const lastReadConversationId = useRef<string | null>(null);
 
-    useEffect(() => {
+    React.useEffect(() => {
         // Scroll to bottom whenever new messages arrive
         if (scrollAreaRef.current) {
             scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
         }
     }, [messages]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (!conversationId) {
             setMessages([]);
             setOtherParticipant(null);
@@ -97,6 +107,26 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         setSelectedConversationId(newConversationId);
         setIsCreatingNew(false);
     }
+    
+    const openCorrectionDialog = (message: Message) => {
+        setCorrectionTarget(message);
+        setCorrectedText(message.correctedText || message.text);
+    };
+
+    const handleSaveCorrection = async () => {
+        if (!correctionTarget || !conversationId || !correctedText.trim()) return;
+
+        setIsSavingCorrection(true);
+        const result = await updateMessageCorrection(conversationId, correctionTarget.id!, correctedText);
+        if (result.success) {
+            toast({ title: 'Correction enregistrée !' });
+        } else {
+            toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+        }
+        setIsSavingCorrection(false);
+        setCorrectionTarget(null);
+    };
+
 
     if (isCreatingNew) {
         return (
@@ -153,15 +183,30 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                                 </div>
                             )}
                              <div className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
-                                <div className={cn(
-                                    "max-w-xs md:max-w-md p-3 rounded-2xl",
-                                    isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-secondary rounded-bl-none"
-                                )}>
-                                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                                    <p className="text-xs text-right mt-1 opacity-70">
-                                        {format(msg.createdAt.toDate(), 'HH:mm')}
-                                    </p>
-                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <div className={cn(
+                                            "max-w-xs md:max-w-md p-3 rounded-2xl cursor-pointer",
+                                            isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-secondary rounded-bl-none"
+                                        )}>
+                                            <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                                            {msg.correctedText && (
+                                                <div className="border-t border-white/30 mt-2 pt-2">
+                                                    <p className="text-sm font-medium whitespace-pre-wrap text-green-200">{msg.correctedText}</p>
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-right mt-1 opacity-70">
+                                                {format(msg.createdAt.toDate(), 'HH:mm')}
+                                            </p>
+                                        </div>
+                                    </DropdownMenuTrigger>
+                                     <DropdownMenuContent>
+                                        <DropdownMenuItem onClick={() => openCorrectionDialog(msg)}>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            <span>Corriger</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                            </React.Fragment>
                         );
@@ -188,6 +233,38 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                     </Button>
                 </div>
             </div>
+            
+            <Dialog open={!!correctionTarget} onOpenChange={(isOpen) => !isOpen && setCorrectionTarget(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Corriger le message</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div>
+                             <Label>Message original</Label>
+                             <p className="p-3 bg-muted rounded-md text-sm">"{correctionTarget?.text}"</p>
+                        </div>
+                        <div>
+                             <Label htmlFor="corrected-text">Version corrigée</Label>
+                            <Textarea 
+                                id="corrected-text"
+                                value={correctedText} 
+                                onChange={(e) => setCorrectedText(e.target.value)}
+                                rows={3}
+                                className="text-base"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                         <Button variant="ghost" onClick={() => setCorrectionTarget(null)}>Annuler</Button>
+                         <Button onClick={handleSaveCorrection} disabled={isSavingCorrection}>
+                            {isSavingCorrection && <Loader2 className="mr-2 animate-spin"/>}
+                            Enregistrer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 }
