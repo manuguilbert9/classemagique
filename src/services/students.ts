@@ -39,6 +39,8 @@ export interface Student {
     themeColors?: ThemeColors;
     mentalMathPerformance?: StudentPerformance;
     nuggets?: number;
+    isOnline?: boolean;
+    lastSeenAt?: Date;
 }
 
 
@@ -155,6 +157,8 @@ export async function getStudents(): Promise<Student[]> {
                 themeColors: data.themeColors,
                 mentalMathPerformance: data.mentalMathPerformance || {},
                 nuggets: data.nuggets || 0,
+                isOnline: Boolean(data.isOnline),
+                lastSeenAt: typeof data.lastSeenAt?.toDate === 'function' ? data.lastSeenAt.toDate() : undefined,
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -198,6 +202,8 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     themeColors: studentData.themeColors,
                     mentalMathPerformance: studentData.mentalMathPerformance || {},
                     nuggets: studentData.nuggets || 0,
+                    isOnline: Boolean(studentData.isOnline),
+                    lastSeenAt: typeof studentData.lastSeenAt?.toDate === 'function' ? studentData.lastSeenAt.toDate() : undefined,
                 };
             }
         }
