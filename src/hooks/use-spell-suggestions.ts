@@ -1,35 +1,51 @@
 import { useEffect, useRef, useState } from "react";
-import { DICTIONARY } from "@/data/dictionaries/fr-dictionary";
 import { suggestSentenceCompletion } from "@/ai/flows/sentence-completion-flow";
 
 function getLastWord(s: string): string {
   const m = s.match(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/);
-  return m?.[1]?.toLowerCase() || "";
+  return m?.[1] || "";
 }
 
 export function useSpellSuggestions(text: string, lang = "fr") {
   const [wordSuggestions, setWordSuggestions] = useState<string[]>([]);
   const [phraseSuggestions, setPhraseSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const debounceTimeout = useRef<number>();
+  const debounceWord = useRef<number>();
+  const debouncePhrase = useRef<number>();
 
   useEffect(() => {
-    // Instant word suggestions
+    // LanguageTool word suggestions (debounced)
+    if (debounceWord.current) window.clearTimeout(debounceWord.current);
     const lastWord = getLastWord(text);
-    if (lastWord) {
-      const localSuggestions = DICTIONARY.filter(word => word.startsWith(lastWord));
-      localSuggestions.sort((a, b) => a.length - b.length);
-      setWordSuggestions(localSuggestions);
+
+    if (lastWord.length > 0) {
+      debounceWord.current = window.setTimeout(async () => {
+        try {
+          const response = await fetch("/api/spell", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: lastWord, lang }),
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setWordSuggestions(data.suggestions ?? []);
+          } else {
+             setWordSuggestions([]);
+          }
+        } catch (error) {
+           console.error("Error fetching spell suggestions:", error);
+           setWordSuggestions([]);
+        }
+      }, 250); // Debounce to avoid spamming the API
     } else {
-      setWordSuggestions([]);
+        setWordSuggestions([]);
     }
 
     // Debounced phrase suggestions (Smart Compose)
-    if (debounceTimeout.current) window.clearTimeout(debounceTimeout.current);
-
-    if (text.trim().length > 5 && text.endsWith(' ')) { // Trigger on space after a few words
+    if (debouncePhrase.current) window.clearTimeout(debouncePhrase.current);
+    if (text.trim().length > 5 && text.endsWith(' ')) {
       setIsLoading(true);
-      debounceTimeout.current = window.setTimeout(async () => {
+      debouncePhrase.current = window.setTimeout(async () => {
         try {
           const result = await suggestSentenceCompletion({ text });
           setPhraseSuggestions(result.suggestions ?? []);
@@ -39,14 +55,17 @@ export function useSpellSuggestions(text: string, lang = "fr") {
         } finally {
           setIsLoading(false);
         }
-      }, 500); // 500ms debounce
+      }, 500);
     } else {
       setPhraseSuggestions([]);
-      setIsLoading(false);
+      if (!lastWord) { // Only set loading to false if not waiting for word suggestions
+        setIsLoading(false);
+      }
     }
 
     return () => {
-      if (debounceTimeout.current) window.clearTimeout(debounceTimeout.current);
+      if (debounceWord.current) window.clearTimeout(debounceWord.current);
+      if (debouncePhrase.current) window.clearTimeout(debouncePhrase.current);
     };
 
   }, [text, lang]);
