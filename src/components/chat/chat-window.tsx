@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Send, Loader2, Users, MessageSquare, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatWindowProps {
     conversationId: string | null;
@@ -28,6 +29,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const [isLoading, setIsLoading] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [otherParticipant, setOtherParticipant] = useState<Student | null>(null);
+    const { toast } = useToast();
 
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const lastReadConversationId = useRef<string | null>(null);
@@ -75,8 +77,18 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         if (!newMessage.trim() || !conversationId) return;
         
         setIsSending(true);
-        await sendMessage(conversationId, currentStudent.id, newMessage);
-        setNewMessage('');
+        const result = await sendMessage(conversationId, currentStudent.id, newMessage);
+        
+        if (result.success) {
+            setNewMessage('');
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Message non envoyé',
+                description: result.error || 'Une erreur est survenue.',
+            });
+        }
+        
         setIsSending(false);
     };
     

@@ -13,9 +13,17 @@ const SETTINGS_COLLECTION = 'teacher';
 const HOMEWORK_COLLECTION = 'homework';
 const SETTINGS_DOC_ID = 'settings';
 
+export interface ChatSettings {
+    enabled: boolean;
+    days: string[]; // e.g., ['Lundi', 'Mardi', ...]
+    startTime: string; // e.g., "08:00"
+    endTime: string; // e.g., "17:00"
+}
+
 interface TeacherSettings {
     enabledSkills?: Record<string, boolean>;
     currentSchoolYear?: string; // e.g., "2024"
+    chat?: ChatSettings;
 }
 
 // Helper function to get the settings document
@@ -82,6 +90,39 @@ export async function setCurrentSchoolYear(year: string): Promise<{ success: boo
         return { success: false, error: "An unknown error occurred." };
     }
 }
+
+/**
+ * Retrieves the chat settings from the database.
+ * @returns A promise that resolves to the ChatSettings object.
+ */
+export async function getChatSettings(): Promise<ChatSettings> {
+    const settings = await getSettingsDoc();
+    const defaultSettings: ChatSettings = {
+        enabled: true,
+        days: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'],
+        startTime: '08:45',
+        endTime: '16:45',
+    };
+    return settings?.chat || defaultSettings;
+}
+
+/**
+ * Saves the chat settings to the database.
+ * @param chatSettings The chat settings object to save.
+ * @returns A promise indicating success or failure.
+ */
+export async function setChatSettings(chatSettings: ChatSettings): Promise<{ success: boolean; error?: string }> {
+    try {
+        const settingsRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
+        await setDoc(settingsRef, { chat: chatSettings }, { merge: true });
+        return { success: true };
+    } catch (e) {
+        console.error("Error setting chat settings:", e);
+        if (e instanceof Error) return { success: false, error: e.message };
+        return { success: false, error: "An unknown error occurred." };
+    }
+}
+
 
 /**
  * Gets the relevant homework assignment for a student based on the current date and time.

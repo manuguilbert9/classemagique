@@ -1,7 +1,9 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, Unsubscribe, Timestamp, doc, setDoc, getDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import type { Student } from './students';
+import { getChatSettings } from './teacher';
 
 export interface Conversation {
     id: string;
@@ -86,8 +88,31 @@ export async function findOrCreateConversation(currentStudent: Student, otherStu
     }
 }
 
-export async function sendMessage(conversationId: string, senderId: string, text: string): Promise<{ success: boolean }> {
-    if (!text.trim()) return { success: false };
+export async function sendMessage(conversationId: string, senderId: string, text: string): Promise<{ success: boolean, error?: string }> {
+    if (!text.trim()) return { success: false, error: "Le message est vide." };
+
+    const chatSettings = await getChatSettings();
+    if (!chatSettings.enabled) {
+        return { success: false, error: "Le chat est désactivé par l'enseignant." };
+    }
+    
+    const now = new Date();
+    const dayName = now.toLocaleDateString('fr-FR', { weekday: 'long' });
+    const capitalizedDayName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+    
+    if (!chatSettings.days.includes(capitalizedDayName)) {
+        return { success: false, error: "Le chat n'est pas disponible aujourd'hui." };
+    }
+
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const [startH, startM] = chatSettings.startTime.split(':').map(Number);
+    const [endH, endM] = chatSettings.endTime.split(':').map(Number);
+    const startTimeInMinutes = startH * 60 + startM;
+    const endTimeInMinutes = endH * 60 + endM;
+
+    if (currentTime < startTimeInMinutes || currentTime > endTimeInMinutes) {
+        return { success: false, error: `Le chat est uniquement disponible entre ${chatSettings.startTime} et ${chatSettings.endTime}.` };
+    }
 
     const conversationRef = doc(db, 'conversations', conversationId);
     const messagesRef = collection(db, 'conversations', conversationId, 'messages');

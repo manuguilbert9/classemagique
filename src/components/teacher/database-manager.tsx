@@ -1,21 +1,110 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings, Wrench, Sparkles, Trash2 } from 'lucide-react';
+import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings, Wrench, Sparkles, Trash2, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportAllData, importAllData } from '@/services/database';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { getGloballyEnabledSkills, setGloballyEnabledSkills, getCurrentSchoolYear, setCurrentSchoolYear } from '@/services/teacher';
+import { getGloballyEnabledSkills, setGloballyEnabledSkills, getCurrentSchoolYear, setCurrentSchoolYear, getChatSettings, setChatSettings, type ChatSettings } from '@/services/teacher';
 import { skills, allSkillCategories, SkillLevel } from '@/lib/skills';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { getStudents, updateStudent } from '@/services/students';
 import { deleteDummyScores } from '@/services/scores';
+import { Input } from '../ui/input';
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
+
+const DAYS_OF_WEEK = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+function ChatSettingsManager() {
+    const [settings, setSettings] = useState<ChatSettings>({
+        enabled: true,
+        days: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'],
+        startTime: '08:45',
+        endTime: '16:45',
+    });
+    const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        getChatSettings().then(chatSettings => {
+            setSettings(chatSettings);
+            setIsLoading(false);
+        });
+    }, []);
+    
+    const handleSave = async () => {
+        setIsLoading(true);
+        const result = await setChatSettings(settings);
+        if (result.success) {
+            toast({ title: 'Réglages du chat enregistrés' });
+        } else {
+            toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+        }
+        setIsLoading(false);
+    }
+
+    const handleDayToggle = (day: string) => {
+        const newDays = settings.days.includes(day)
+            ? settings.days.filter(d => d !== day)
+            : [...settings.days, day];
+        setSettings(prev => ({ ...prev, days: newDays }));
+    }
+
+    if (isLoading) {
+         return (
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Clock /> Réglages du Chat</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></CardContent>
+            </Card>
+        )
+    }
+    
+    return (
+         <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Clock /> Réglages du Chat</CardTitle>
+                <CardDescription>Définissez quand les élèves peuvent utiliser la messagerie.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="flex items-center space-x-2">
+                    <Switch id="chat-enabled" checked={settings.enabled} onCheckedChange={(checked) => setSettings(prev => ({...prev, enabled: checked}))} />
+                    <Label htmlFor="chat-enabled">Activer le chat pour les élèves</Label>
+                </div>
+                <div className="space-y-2">
+                    <Label>Jours actifs</Label>
+                    <ToggleGroup type="multiple" value={settings.days} onValueChange={(days) => setSettings(prev => ({...prev, days: days}))} className="flex-wrap justify-start gap-1">
+                        {DAYS_OF_WEEK.map(day => (
+                            <ToggleGroupItem key={day} value={day} aria-label={day} variant="outline">{day.substring(0,3)}</ToggleGroupItem>
+                        ))}
+                    </ToggleGroup>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="start-time">Heure de début</Label>
+                        <Input id="start-time" type="time" value={settings.startTime} onChange={e => setSettings(prev => ({...prev, startTime: e.target.value}))} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="end-time">Heure de fin</Label>
+                        <Input id="end-time" type="time" value={settings.endTime} onChange={e => setSettings(prev => ({...prev, endTime: e.target.value}))} />
+                    </div>
+                </div>
+                <div>
+                    <Button onClick={handleSave} disabled={isLoading}>
+                        {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2"/>}
+                        Enregistrer les réglages du chat
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 function GeneralSettingsManager() {
     const [schoolYear, setSchoolYear] = useState<string>('');
@@ -421,6 +510,7 @@ export function DatabaseManager({ onDataRefresh }: { onDataRefresh: () => void }
     return (
         <div className="space-y-8">
             <GeneralSettingsManager />
+            <ChatSettingsManager />
             <ExercisesManager />
             <MaintenanceManager onDataRefresh={onDataRefresh} />
             <Card>
@@ -478,5 +568,3 @@ export function DatabaseManager({ onDataRefresh }: { onDataRefresh: () => void }
         </div>
     );
 }
-
-    
