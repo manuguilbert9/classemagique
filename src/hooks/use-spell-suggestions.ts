@@ -1,62 +1,130 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { STARTER_WORDS } from "@/data/dictionaries/fr-dictionary";
+import { getPrefixSuggestions } from "@/lib/prefix-suggester";
 
 function getLastWord(s: string): string {
   const m = s.match(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/);
   return m?.[1] || "";
 }
 
+const MAX_VISIBLE_SUGGESTIONS = 8;
+const MIN_REMOTE_LENGTH = 3;
+const STARTER_SUGGESTIONS = STARTER_WORDS.slice(0, MAX_VISIBLE_SUGGESTIONS);
+
 export function useSpellSuggestions(text: string, lang = "fr") {
-  const [wordSuggestions, setWordSuggestions] = useState<string[]>([]);
+  const [remoteSuggestions, setRemoteSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const debounceWord = useRef<number>();
+  const cacheRef = useRef<Map<string, string[]>>(new Map());
+  const controllerRef = useRef<AbortController | null>(null);
+
+  const trimmedText = text.trim();
+  const lastWord = useMemo(() => getLastWord(text), [text]);
+  const hasTypedContent = trimmedText.length > 0;
+
+  const localSuggestions = useMemo(() => {
+    if (!hasTypedContent || !lastWord) {
+      return STARTER_SUGGESTIONS;
+    }
+    const suggestions = getPrefixSuggestions(lastWord, MAX_VISIBLE_SUGGESTIONS);
+    if (suggestions.length === 0) {
+      return STARTER_SUGGESTIONS;
+    }
+    return suggestions;
+  }, [hasTypedContent, lastWord]);
 
   useEffect(() => {
     if (debounceWord.current) window.clearTimeout(debounceWord.current);
-    
-    if (text.trim() === '') {
-        // If input is empty, show starter words
-        setWordSuggestions(STARTER_WORDS);
-        setIsLoading(false);
-        return;
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
     }
 
-    const lastWord = getLastWord(text);
+    if (!hasTypedContent || !lastWord || lastWord.length < MIN_REMOTE_LENGTH) {
+      setIsLoading(false);
+      setRemoteSuggestions([]);
+      return () => undefined;
+    }
 
-    if (lastWord.length > 0) {
-      setIsLoading(true);
-      debounceWord.current = window.setTimeout(async () => {
-        try {
-          const response = await fetch("/api/spell", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: lastWord, lang }),
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setWordSuggestions(data.suggestions ?? []);
-          } else {
-             setWordSuggestions([]);
-          }
-        } catch (error) {
-           console.error("Error fetching spell suggestions:", error);
-           setWordSuggestions([]);
-        } finally {
-            setIsLoading(false);
+    const cacheKey = `${lang}:${lastWord.toLowerCase()}`;
+    const cached = cacheRef.current.get(cacheKey);
+    if (cached) {
+      setRemoteSuggestions(cached);
+      setIsLoading(false);
+      return () => undefined;
+    }
+
+    setIsLoading(true);
+    debounceWord.current = window.setTimeout(async () => {
+      try {
+        controllerRef.current = new AbortController();
+        const response = await fetch("/api/spell", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: lastWord, lang }),
+          signal: controllerRef.current.signal,
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const suggestions = Array.isArray(data.suggestions)
+            ? data.suggestions.filter(
+                (suggestion): suggestion is string =>
+                  typeof suggestion === "string" && suggestion.trim().length > 0,
+              )
+            : [];
+          cacheRef.current.set(cacheKey, suggestions);
+          setRemoteSuggestions(suggestions);
+        } else {
+          setRemoteSuggestions([]);
         }
-      }, 250); // Debounce to avoid spamming the API
-    } else {
-        // This case might be reached if the text ends with a space.
-        // We can show the starter words again.
-        setWordSuggestions(STARTER_WORDS);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          console.error("Error fetching spell suggestions:", error);
+        }
+        setRemoteSuggestions([]);
+      } finally {
         setIsLoading(false);
-    }
+        controllerRef.current = null;
+      }
+    }, 120);
 
     return () => {
       if (debounceWord.current) window.clearTimeout(debounceWord.current);
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
     };
+  }, [hasTypedContent, lang, lastWord]);
 
-  }, [text, lang]);
+  const wordSuggestions = useMemo(() => {
+    if (!hasTypedContent) {
+      return STARTER_SUGGESTIONS;
+    }
+
+    const merged: string[] = [];
+    const seen = new Set<string>();
+
+    for (const list of [localSuggestions, remoteSuggestions]) {
+      for (const suggestion of list) {
+        if (!suggestion) continue;
+        const trimmedSuggestion = suggestion.trim();
+        if (!trimmedSuggestion) continue;
+        if (seen.has(trimmedSuggestion)) continue;
+        merged.push(trimmedSuggestion);
+        seen.add(trimmedSuggestion);
+        if (merged.length >= MAX_VISIBLE_SUGGESTIONS) {
+          return merged;
+        }
+      }
+    }
+
+    if (merged.length === 0) {
+      return localSuggestions.slice(0, MAX_VISIBLE_SUGGESTIONS);
+    }
+
+    return merged;
+  }, [hasTypedContent, localSuggestions, remoteSuggestions]);
 
   return { wordSuggestions, isLoading };
 }
