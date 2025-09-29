@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -44,14 +44,14 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const lastReadConversationId = useRef<string | null>(null);
 
-    React.useEffect(() => {
+    useEffect(() => {
         // Scroll to bottom whenever new messages arrive
         if (scrollAreaRef.current) {
             scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
         }
     }, [messages]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!conversationId) {
             setMessages([]);
             setOtherParticipant(null);
@@ -169,7 +169,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
             <header className="p-4 border-b">
                 <h3 className="font-semibold text-lg">{otherStudentName}</h3>
             </header>
-            <ScrollArea className="flex-grow p-4 bg-muted/10" ref={scrollAreaRef}>
+            <ScrollArea className="flex-grow p-4 bg-muted/10" viewportRef={scrollAreaRef}>
                 <div className="space-y-4">
                     {messages.map((msg, index) => {
                         const isCurrentUser = msg.senderId === currentStudent.id;
