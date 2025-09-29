@@ -1,6 +1,13 @@
 
+"use client"
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STARTER_WORDS } from "@/data/dictionaries/fr-dictionary";
+import { COMMON_FRENCH_WORDS } from "@/data/dictionaries/fr-common-words";
+import { CONTEXTUAL_CONTINUATIONS } from "@/data/dictionaries/fr-contextual-continuations";
+import { FRENCH_CORE_VOCABULARY } from "@/data/dictionaries/fr-core-vocabulary";
+import { getPrefixSuggestions, hasPrefixSuggestions } from "@/lib/prefix-suggester";
+
 
 const WORD_PATTERN = /([A-Za-zÀ-ÖØ-öø-ÿ'-]+)/g;
 
@@ -21,16 +28,25 @@ export interface UseSpellSuggestionsOptions {
   debounceMs?: number;
 }
 
+export interface SuggestionBucket {
+    id: string;
+    label: string;
+    description?: string;
+    suggestions: string[];
+}
+
 export interface UseSpellSuggestionsResult {
-  suggestions: string[];
+  wordSuggestions: string[];
+  suggestionBuckets: SuggestionBucket[];
   isLoading: boolean;
+  refresh: () => void;
 }
 
 const DEFAULT_OPTIONS: Required<UseSpellSuggestionsOptions> = {
   lang: "fr",
   maxVisibleSuggestions: 12,
-  minRemoteLength: 3,
-  debounceMs: 250,
+  minRemoteLength: 1,
+  debounceMs: 150,
 };
 
 function resolveOptions(
@@ -57,15 +73,20 @@ export function useSpellSuggestions(
     [langOrOptions, options],
   );
 
-  const [suggestions, setSuggestions] = useState<string[]>(STARTER_WORDS);
+  const [wordSuggestions, setWordSuggestions] = useState<string[]>(STARTER_WORDS);
+  const [suggestionBuckets, setSuggestionBuckets] = useState<SuggestionBucket[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const [refreshCounter, setRefreshCounter] = useState(0);
+
+  const refresh = () => setRefreshCounter((c) => c + 1);
 
   const trimmedText = text.trim();
 
   useEffect(() => {
     if (!trimmedText) {
-      setSuggestions(STARTER_WORDS);
+      setWordSuggestions(STARTER_WORDS);
+      setSuggestionBuckets([]);
       setIsLoading(false);
       if (debounceRef.current) clearTimeout(debounceRef.current);
       return;
@@ -73,7 +94,8 @@ export function useSpellSuggestions(
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (trimmedText.length < resolvedOptions.minRemoteLength) {
-      setSuggestions([]);
+      setWordSuggestions([]);
+      setSuggestionBuckets([]);
       return;
     }
 
@@ -90,7 +112,8 @@ export function useSpellSuggestions(
         });
 
         if (!response.ok) {
-          setSuggestions([]);
+          setWordSuggestions([]);
+          setSuggestionBuckets([]);
           return;
         }
 
@@ -101,10 +124,11 @@ export function useSpellSuggestions(
                 typeof suggestion === "string" && suggestion.trim().length > 0,
             )
           : [];
-        setSuggestions(suggestions);
+        setWordSuggestions(suggestions);
       } catch (error) {
         console.error("Error fetching spell suggestions:", error);
-        setSuggestions([]);
+        setWordSuggestions([]);
+        setSuggestionBuckets([]);
       } finally {
         setIsLoading(false);
       }
@@ -113,7 +137,7 @@ export function useSpellSuggestions(
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [trimmedText, resolvedOptions]);
+  }, [trimmedText, resolvedOptions, refreshCounter]);
 
-  return { suggestions, isLoading };
+  return { wordSuggestions, suggestionBuckets, isLoading, refresh };
 }
