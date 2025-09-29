@@ -12,7 +12,7 @@ export function useSpellSuggestions(text: string, lang = "fr") {
   useEffect(() => {
     const last = getLastToken(text);
     if (t.current) window.clearTimeout(t.current);
-    if (last.length < 3) { setSugg([]); return; }
+    if (last.length < 1) { setSugg([]); return; }
 
     t.current = window.setTimeout(async () => {
       try {
