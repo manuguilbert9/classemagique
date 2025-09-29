@@ -1,3 +1,4 @@
+
 // A list of common French words for predictive text.
 // This list can be expanded or refined over time.
 export const DICTIONARY: string[] = [
@@ -20,5 +21,18 @@ export const DICTIONARY: string[] = [
   "fête", "cadeau", "temps", "heure", "minute", "seconde", "jour", "semaine", "mois", "année",
   "couleur", "rouge", "bleu", "vert", "jaune", "noir", "blanc", "orange", "rose", "violet",
   "marron", "gris", "nombre", "chiffre", "zéro", "deux", "trois", "quatre", "cinq", "six",
-  "sept", "huit", "neuf", "dix"
+  "sept", "huit", "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize",
+  "vingt", "trente", "quarante", "cinquante", "soixante", "cent", "mille", "animal", "voiture",
+  "avion", "train", "vélo", "bateau", "pomme", "banane", "fraise", "orange", "cerise",
+  "gâteau", "chocolat", "bonbon", "lait", "eau", "jus", "pain", "fromage", "viande", "poisson",
+  "légume", "fruit", "soleil", "lune", "étoile", "ciel", "mer", "montagne", "forêt", "rivière",
+  "fleur", "arbre", "herbe", "chemin", "route", "pont", "ville", "village", "magasin",
+  "marché", "parc", "jardin", "chambre", "cuisine", "salon", "salle de bain", "porte",
+  "fenêtre", "lit", "table", "chaise", "télévision", "ordinateur", "téléphone", "musique",
+  "film", "jeu", "sport", "football", "basket", "tennis", "natation", "danse", "chanter",
+  "dessiner", "lire", "écrire", "compter", "apprendre", "penser", "rêver", "aimer", "détester",
+  "aider", "chercher", "trouver", "donner", "recevoir", "acheter", "vendre", "ouvrir",
+  "fermer", "partir", "revenir", "monter", "descendre", "entrer", "sortir", "grand", "petit",
+  "joli", "beau", "laid", "nouveau", "vieux", "jeune", "bon", "mauvais", "gentil", "méchant",
+  "chaud", "froid", "rapide", "lent", "long", "court", "gros", "mince", "heureux", "drôle"
 ];
