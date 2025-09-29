@@ -1,3 +1,4 @@
+
 export const MBP_WORDS: string[] = [
     "AMBULANCE", "ANCRE", "BANDE", "BANC",
     "BAMBOU", "BANDEAU", "BOMBE", "BONBON",

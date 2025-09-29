@@ -17,7 +17,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
-import { getWordSuggestions, initializeDictionary } from '@/lib/word-predictor';
 
 interface ChatWindowProps {
     conversationId: string | null;
@@ -33,7 +32,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSending, setIsSending] = useState(false);
-    const [otherParticipant, setOtherParticipant] = useState<Student | null>(null);
+    
     const { toast } = useToast();
 
     // State for correction dialog
@@ -41,19 +40,10 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const [correctedText, setCorrectedText] = useState('');
     const [isSavingCorrection, setIsSavingCorrection] = useState(false);
     
-    // State for word prediction
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [currentWord, setCurrentWord] = useState('');
-
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const lastReadConversationId = useRef<string | null>(null);
 
     useEffect(() => {
-        initializeDictionary();
-    }, []);
-
-    useEffect(() => {
-        // Scroll to bottom whenever new messages arrive
         if (scrollAreaRef.current) {
             scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
         }
@@ -62,7 +52,6 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     useEffect(() => {
         if (!conversationId) {
             setMessages([]);
-            setOtherParticipant(null);
             return;
         }
         
@@ -70,6 +59,11 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         const unsubscribe = listenToMessages(conversationId, (loadedMessages) => {
             setMessages(loadedMessages);
             setIsLoading(false);
+             setTimeout(() => {
+                if (scrollAreaRef.current) {
+                    scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+                }
+            }, 0);
         });
 
         // Mark as read when opening a conversation
@@ -99,8 +93,6 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         
         if (result.success) {
             setNewMessage('');
-            setSuggestions([]);
-            setCurrentWord('');
         } else {
             toast({
                 variant: 'destructive',
@@ -140,28 +132,8 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const text = e.target.value;
         setNewMessage(text);
-
-        const words = text.split(' ');
-        const lastWord = words[words.length - 1];
-
-        if (lastWord) {
-            setCurrentWord(lastWord);
-            setSuggestions(getWordSuggestions(lastWord));
-        } else {
-            setCurrentWord('');
-            setSuggestions([]);
-        }
     };
     
-    const handleSuggestionClick = (suggestion: string) => {
-        const words = newMessage.split(' ');
-        words[words.length - 1] = suggestion;
-        setNewMessage(words.join(' ') + ' ');
-        setSuggestions([]);
-        setCurrentWord('');
-    };
-
-
     if (isCreatingNew) {
         return (
             <div className="flex flex-col h-full">
@@ -248,23 +220,17 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                 </div>
             </ScrollArea>
              <div className="p-4 border-t space-y-2">
-                 {suggestions.length > 0 && (
-                    <div className="flex gap-2">
-                        {suggestions.map(s => (
-                            <Button key={s} variant="outline" size="sm" onClick={() => handleSuggestionClick(s)}>
-                                {s}
-                            </Button>
-                        ))}
-                    </div>
-                )}
                 <div className="relative">
                     <Input
+                        id="chat-input"
                         value={newMessage}
                         onChange={handleInputChange}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Écris ton message..."
                         className="pr-12 h-11"
                         disabled={isSending}
+                        autoComplete="off"
+                        spellCheck="true"
                     />
                     <Button
                         size="icon"
