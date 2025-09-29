@@ -96,48 +96,51 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
         <div className="fixed bottom-0 right-4 z-50 flex items-end gap-4">
             <Card className="w-[600px] h-[500px] shadow-2xl flex flex-col rounded-t-lg overflow-hidden">
                 <header className="bg-primary text-primary-foreground border-b p-3">
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="grid gap-3 md:grid-cols-[auto,1fr,auto] md:items-center">
                         <div className="flex items-center gap-2">
                             <MessageSquare />
                             <h2 className="text-lg font-semibold">Messagerie</h2>
                         </div>
-                        <button onClick={onClose} className="p-1 rounded-full transition hover:bg-primary/80">
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium sm:text-sm md:justify-center">
+                            <div className="flex items-center gap-2">
+                                <Switch
+                                    id="chat-toggle-syllables"
+                                    checked={colorizeSyllables}
+                                    onCheckedChange={(checked) => setColorizeSyllables(Boolean(checked))}
+                                    aria-label="Coloriser les syllabes dans le fil"
+                                />
+                                <Label htmlFor="chat-toggle-syllables" className="cursor-pointer">
+                                    Coloriser les syllabes
+                                </Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Label htmlFor="chat-message-size" className="whitespace-nowrap">
+                                    Taille du texte
+                                </Label>
+                                <Slider
+                                    id="chat-message-size"
+                                    min={MESSAGE_SCALE_MIN}
+                                    max={MESSAGE_SCALE_MAX}
+                                    step={MESSAGE_SCALE_STEP}
+                                    value={[messageScale]}
+                                    onValueChange={(value) => {
+                                        if (!value.length) return;
+                                        setMessageScale(Number(value[0]));
+                                    }}
+                                    className="w-28 sm:w-32 md:w-40"
+                                    aria-label="Ajuster la taille du texte des messages"
+                                />
+                                <span className="text-[11px] font-semibold tabular-nums sm:text-xs">
+                                    {Math.round(messageScale * 100)}%
+                                </span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="justify-self-start p-1 rounded-full transition hover:bg-primary/80 md:justify-self-end"
+                        >
                             <X className="h-5 w-5" />
                         </button>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium sm:text-sm">
-                        <div className="flex items-center gap-2">
-                            <Switch
-                                id="chat-toggle-syllables"
-                                checked={colorizeSyllables}
-                                onCheckedChange={(checked) => setColorizeSyllables(Boolean(checked))}
-                                aria-label="Coloriser les syllabes dans le fil"
-                            />
-                            <Label htmlFor="chat-toggle-syllables" className="cursor-pointer">
-                                Coloriser les syllabes
-                            </Label>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Label htmlFor="chat-message-size" className="whitespace-nowrap">
-                                Taille du texte
-                            </Label>
-                            <Slider
-                                id="chat-message-size"
-                                min={MESSAGE_SCALE_MIN}
-                                max={MESSAGE_SCALE_MAX}
-                                step={MESSAGE_SCALE_STEP}
-                                value={[messageScale]}
-                                onValueChange={(value) => {
-                                    if (!value.length) return;
-                                    setMessageScale(Number(value[0]));
-                                }}
-                                className="w-28 sm:w-32 md:w-40"
-                                aria-label="Ajuster la taille du texte des messages"
-                            />
-                            <span className="text-[11px] font-semibold tabular-nums sm:text-xs">
-                                {Math.round(messageScale * 100)}%
-                            </span>
-                        </div>
                     </div>
                 </header>
                 <div className="flex flex-grow overflow-hidden">
