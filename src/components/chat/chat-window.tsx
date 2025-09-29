@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
+import { useSpellSuggestions } from '@/hooks/use-spell-suggestions';
 
 interface ChatWindowProps {
     conversationId: string | null;
@@ -33,6 +34,7 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
     const [isSending, setIsSending] = useState(false);
     
     const { toast } = useToast();
+    const suggestions = useSpellSuggestions(newMessage, "fr");
 
     // State for correction dialog
     const [correctionTarget, setCorrectionTarget] = useState<Message | null>(null);
@@ -128,11 +130,10 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
         setCorrectionTarget(null);
     };
     
-    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const text = e.target.value;
-        setNewMessage(text);
-    };
-    
+    const handleApplySuggestion = (suggestion: string) => {
+        setNewMessage(prev => prev.replace(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/, suggestion) + ' ');
+    }
+
     if (isCreatingNew) {
         return (
             <div className="flex flex-col h-full">
@@ -219,11 +220,19 @@ export function ChatWindow({ conversationId, currentStudent, allStudents, isCrea
                 </div>
             </ScrollArea>
              <div className="p-4 border-t space-y-2">
+                 {suggestions.length > 0 && (
+                    <div className="flex gap-2 items-center">
+                        <span className="text-xs text-muted-foreground">Suggestions:</span>
+                        {suggestions.slice(0, 3).map(s => (
+                            <Button key={s} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s)}>{s}</Button>
+                        ))}
+                    </div>
+                )}
                 <div className="relative">
                     <Textarea
                         id="chat-input"
                         value={newMessage}
-                        onChange={handleInputChange}
+                        onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={(e) => {
                            if (e.key === 'Enter' && !e.shiftKey) {
                                e.preventDefault();
