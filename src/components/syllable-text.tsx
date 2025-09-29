@@ -123,13 +123,13 @@ interface SyllableTextProps {
 }
 
 export function SyllableText({ text }: SyllableTextProps) {
-  const elements = text.split(/(\s+|[.,;!?:\(\)])/);
+  const elements = text.split(/(\s+|[.,;!?:\(\)'"])/);
   let colorIndex = 0;
 
   return (
-    <p className="inline">
+    <span className="inline">
       {elements.map((element, i) => {
-        if (element && !/(\s+|[.,;!?:\(\)])/.test(element)) {
+        if (element && !/(\s+|[.,;!?:\(\)'"])/.test(element)) {
           const syllabes = syllabify(element);
           
           return (
@@ -150,6 +150,6 @@ export function SyllableText({ text }: SyllableTextProps) {
           return <React.Fragment key={i}>{element}</React.Fragment>;
         }
       })}
-    </p>
+    </span>
   );
 }

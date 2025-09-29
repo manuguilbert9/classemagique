@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { Textarea } from '@/components/ui/textarea';
 import { generateSpeech } from '@/ai/flows/tts-flow';
+import { SyllableText } from '@/components/syllable-text';
 
 // Base emojis, always present
 const baseEmojis = [
@@ -60,6 +61,9 @@ export default function StoryBoxPage() {
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  
+  // Display state
+  const [showSyllables, setShowSyllables] = useState(false);
 
 
   // Emoji list state
@@ -197,6 +201,9 @@ export default function StoryBoxPage() {
              <Button onClick={openImmersiveReader} variant="secondary">
                 <BookOpen className="mr-2 h-4 w-4" /> Lecteur immersif
              </Button>
+             <Button onClick={() => setShowSyllables(prev => !prev)} variant={showSyllables ? "default" : "secondary"}>
+                <SyllableText text="Syllabes" />
+             </Button>
            </div>
            <Card className="mt-8 shadow-xl">
              <CardHeader className="text-center">
@@ -222,12 +229,16 @@ export default function StoryBoxPage() {
                 )}
              </CardHeader>
              <CardContent className="space-y-6">
-                <p className={cn("whitespace-pre-wrap font-body", getFontSize())}>
-                    {story.story}
-                </p>
+                <div className={cn("whitespace-pre-wrap font-body", getFontSize())}>
+                    {showSyllables ? <SyllableText text={story.story} /> : <p>{story.story}</p>}
+                </div>
                 <div className="border-t pt-4 text-center">
                     <p className="font-semibold text-lg font-headline">Morale de l'histoire</p>
-                    <p className="italic text-muted-foreground mt-2">{story.moral}</p>
+                     {showSyllables ? (
+                        <div className="italic text-muted-foreground mt-2"><SyllableText text={story.moral}/></div>
+                    ) : (
+                        <p className="italic text-muted-foreground mt-2">{story.moral}</p>
+                    )}
                 </div>
              </CardContent>
            </Card>
