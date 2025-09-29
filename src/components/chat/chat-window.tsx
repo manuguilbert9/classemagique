@@ -315,36 +315,39 @@ export function ChatWindow({
         return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
+    const showSuggestionsPanel = hasSuggestions || isLoadingSuggestions || hasTypedInput;
+
     return (
-        <div className="flex flex-col h-full">
-            <header className="p-4 border-b">
-                <div className="flex flex-col">
-                    <h3 className="font-semibold text-lg">{otherStudentInfo.name}</h3>
-                    <span
-                        className={cn(
-                            'mt-1 text-sm font-medium flex items-center gap-2',
-                            isOtherStudentOnline ? 'text-emerald-600' : 'text-muted-foreground'
-                        )}
-                        title={otherStudentPresenceText}
-                    >
+        <div className="flex h-full flex-col md:flex-row">
+            <div className="flex flex-1 flex-col">
+                <header className="border-b p-4">
+                    <div className="flex flex-col">
+                        <h3 className="text-lg font-semibold">{otherStudentInfo.name}</h3>
                         <span
                             className={cn(
-                                'h-2.5 w-2.5 rounded-full',
-                                isOtherStudentOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
+                                'mt-1 flex items-center gap-2 text-sm font-medium',
+                                isOtherStudentOnline ? 'text-emerald-600' : 'text-muted-foreground'
                             )}
-                            aria-hidden="true"
-                        />
-                        {otherStudentPresenceText}
-                    </span>
-                </div>
-            </header>
-            <ScrollArea className="flex-grow p-4 bg-muted/10" viewportRef={scrollAreaRef}>
-                <div className="space-y-4">
-                    {messages.map((msg, index) => {
-                        const isCurrentUser = msg.senderId === currentStudent.id;
-                        const showDate = index === 0 || (new Date(msg.createdAt.toDate()).getDate() !== new Date(messages[index - 1].createdAt.toDate()).getDate());
-                        
-                        return (
+                            title={otherStudentPresenceText}
+                        >
+                            <span
+                                className={cn(
+                                    'h-2.5 w-2.5 rounded-full',
+                                    isOtherStudentOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
+                                )}
+                                aria-hidden="true"
+                            />
+                            {otherStudentPresenceText}
+                        </span>
+                    </div>
+                </header>
+                <ScrollArea className="flex-1 bg-muted/10 p-4" viewportRef={scrollAreaRef}>
+                    <div className="space-y-4">
+                        {messages.map((msg, index) => {
+                            const isCurrentUser = msg.senderId === currentStudent.id;
+                            const showDate = index === 0 || (new Date(msg.createdAt.toDate()).getDate() !== new Date(messages[index - 1].createdAt.toDate()).getDate());
+
+                            return (
                            <React.Fragment key={msg.id}>
                             {showDate && (
                                 <div className="text-center text-xs text-muted-foreground my-4">
@@ -396,10 +399,34 @@ export function ChatWindow({
                            </React.Fragment>
                         );
                     })}
+                    </div>
+                </ScrollArea>
+                <div className="border-t p-4">
+                    <div className="relative rounded-xl border bg-background/90 p-3 shadow-sm">
+                        <Textarea
+                            ref={textareaRef}
+                            id="chat-input"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyDown={handleInputKeyDown}
+                            placeholder="Écris ton message..."
+                            className="min-h-[44px] h-20 resize-none pr-12"
+                            disabled={isSending}
+                            spellCheck
+                        />
+                        <Button
+                            size="icon"
+                            className="absolute bottom-1 right-1 h-9 w-9"
+                            onClick={handleSendMessage}
+                            disabled={isSending || !hasTypedInput}
+                        >
+                            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        </Button>
+                    </div>
                 </div>
-            </ScrollArea>
-            <div className="p-4 border-t space-y-2">
-                {(hasSuggestions || isLoadingSuggestions || hasTypedInput) && (
+            </div>
+            {showSuggestionsPanel && (
+                <aside className="border-t bg-muted/10 p-4 md:w-80 md:border-l md:border-t-0 lg:w-96">
                     <div className="rounded-xl border bg-background/90 p-3 shadow-sm">
                         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             <span className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> Suggestions</span>
@@ -461,30 +488,9 @@ export function ChatWindow({
                             );
                         })}
                     </div>
-                )}
-                <div className="relative rounded-xl border bg-background/90 p-3 shadow-sm">
-                    <Textarea
-                        ref={textareaRef}
-                        id="chat-input"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={handleInputKeyDown}
-                        placeholder="Écris ton message..."
-                        className="pr-12 min-h-[44px] h-20 resize-none"
-                        disabled={isSending}
-                        spellCheck
-                    />
-                    <Button
-                        size="icon"
-                        className="absolute right-1 bottom-1 h-9 w-9"
-                        onClick={handleSendMessage}
-                        disabled={isSending || !hasTypedInput}
-                    >
-                        {isSending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4" />}
-                    </Button>
-                </div>
-            </div>
-
+                </aside>
+            )}
+            
             <Dialog open={!!correctionTarget} onOpenChange={(isOpen) => !isOpen && setCorrectionTarget(null)}>
                 <DialogContent>
                     <DialogHeader>
