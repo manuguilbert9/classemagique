@@ -2,102 +2,112 @@
 export const PHRASES_RAW = `
 Le chat dort.
 Le chien aboie.
-La fille mange.
-Le garçon joue.
-Le soleil brille.
-La lune luit.
-Le bébé pleure.
-L'oiseau chante.
-Maman travaille.
-Papa cuisine.
+Le ballon roule.
+Mia peint.
+Tom court vite.
+Léa lit.
+Nino saute.
+Zoé dessine.
 Le train arrive.
-La voiture roule.
-L'école est finie.
-J'aime les frites.
-Tu as un livre.
-Il fait beau.
-Elle a une robe.
-Nous allons à la plage.
-Vous êtes gentils.
-Ils sont amis.
-Le vélo est rouge.
-La maison est grande.
-Le ballon est rond.
-La fleur sent bon.
-Le poisson nage.
-La pomme est verte.
-Le stylo écrit bien.
-La porte est fermée.
-La fenêtre est ouverte.
-Le lit est confortable.
-La chaise est en bois.
-L'herbe est verte.
-Le ciel est bleu.
-Le nuage est blanc.
-Le lion est féroce.
-Le singe grimpe.
-L'éléphant est gros.
-La souris est petite.
-Le serpent rampe.
-La grenouille saute.
-L'abeille butine.
-Le papillon vole.
-Le bateau flotte.
-L'avion décolle.
-Le camion est jaune.
-Le feu est chaud.
-La glace est froide.
-Le sucre est doux.
-Le citron est acide.
-La nuit est noire.
-Le jour est clair.
-La musique est forte.
-Le silence est total.
-Le film est amusant.
-La fête est finie.
-Le travail est terminé.
-La course commence.
-Le match est passionnant.
-La leçon est facile.
-Le problème est difficile.
-Le secret est bien gardé.
-La surprise est réussie.
-Le voyage est long.
-La montagne est haute.
-La mer est calme.
-La forêt est dense.
-Le désert est aride.
-La ville est bruyante.
-Le village est paisible.
-Le chemin est étroit.
-La route est large.
-Le pont est solide.
-Le château est vieux.
-Le robot obéit.
-La magie opère.
-Le rêve est étrange.
-Le cauchemar est effrayant.
-Le futur est incertain.
-Le passé est révolu.
-Le présent est précieux.
-L'amour est un trésor.
-L'amitié est sacrée.
-La haine est un poison.
-La joie est contagieuse.
-La tristesse est passagère.
-La colère est mauvaise conseillère.
-La peur est paralysante.
-Le courage est admirable.
-La patience est une vertu.
-La sagesse vient avec l'âge.
-La connaissance est un pouvoir.
-L'ignorance est un fléau.
-La liberté est un droit.
-L'égalité est un idéal.
-La fraternité est un devoir.
-La paix est un objectif.
-La guerre est une tragédie.
-La vie est un cadeau.
-La mort est une fin.
-L'espoir fait vivre.
+Papa cuisine.
+Maman danse.
+Lila chante.
+Le robot bouge.
+Lola rêve.
+Sami patine.
+Le vent souffle.
+Noé rit fort.
+Luna écoute.
+Ada code.
+Iris jardine.
+Léo bricole.
+Nora tricote.
+La neige tombe.
+La tarte cuit.
+Le pain grille.
+Sam écoute.
+Rex aboie fort.
+Emma patine.
+Hugo pédale.
+Lou lit encore.
+Le feu crépite.
+Les élèves rangent leurs affaires.
+Le bus scolaire arrive vite.
+Ma sœur prépare un gâteau.
+Nous regardons un dessin animé.
+Ils jouent au basket après.
+Le professeur explique la leçon.
+Les amis échangent des cartes.
+Les joueurs gagnent le tournoi.
+La pluie arrose le jardin.
+Les scouts montent leur tente.
+Les danseurs répètent leur chorégraphie.
+Le chaton découvre le salon.
+Le coach encourage son équipe.
+Les voisins partagent une tarte.
+Les cousins construisent une cabane.
+La classe visite le musée.
+Les musiciens accordent leurs instruments.
+Les cuisiniers goûtent la sauce.
+Les collégiens écrivent un article.
+Les gardiens ferment le portail.
+Les skieurs descendent la pente.
+Les nageurs battent un record.
+Les gamers testent une démo.
+Les lectrices commentent leurs romans.
+Les jardiniers arrosent les tomates.
+Les peintres mélangent les couleurs.
+Les patineurs répètent leurs figures.
+Les campeurs allument un feu.
+Les frères terminent un puzzle.
+Les pirates imaginent une carte.
+Pendant la récréation, nous jouons au ballon prisonnier.
+Les scientifiques en herbe observent la fourmilière.
+Le club de théâtre prépare une nouvelle scène amusante.
+Ma cousine collectionne des coquillages trouvés sur la plage.
+Les jeunes codeurs créent un jeu vidéo original.
+Après le dîner, toute la famille raconte ses meilleures blagues.
+Les explorateurs du collège cartographient le parc voisin.
+Les lecteurs passionnés échangent leurs mangas préférés à la bibliothèque.
+Quand il pleut, les joueurs s'entraînent dans le gymnase couvert.
+Les jardiniers plantent des tomates pour le projet de sciences.
+Avant le match, l'équipe répète une chorégraphie de célébration.
+Le professeur de musique compose une chanson pour la chorale.
+Nos amis organisent une chasse au trésor nocturne dans le jardin.
+La classe de sixième prépare une exposition sur les planètes.
+Mon frère fabrique un robot qui trie les briques de construction.
+Au club d'échecs, les débutants apprennent des tactiques simples.
+Le groupe d'arts plastiques recycle des bouteilles pour créer une sculpture.
+Les reporters du journal scolaire interviewent la principale du collège.
+Chaque samedi matin, nous participons à un atelier de skateboard.
+Pour l'anniversaire de Jade, ses amis décorent toute la salle de jeux.
+Les élèves écologistes installent un hôtel à insectes derrière le préau.
+Pendant la sortie nature, nous dessinons les oiseaux observés aux jumelles.
+Les bénévoles préparent des sacs surprises pour la kermesse annuelle.
+Le coach sportif explique comment mieux étirer les muscles après l'effort.
+Les reporters du club vidéo montent leurs meilleures scènes en équipe.
+Pendant l'atelier robotique, nous programmons un circuit de lumières colorées.
+Les jeunes astronomes observent Saturne avec le télescope prêté par le lycée.
+Lorsque la sonnerie retentit, les élèves rangent rapidement les balles de handball.
+Le comité festif prépare un quiz musical pour la soirée du collège.
+Pour le cours de sciences, nous classons des roches selon leur texture.
+Après l'entraînement, les gardiens analysent les tirs grâce à la tablette du coach.
+Sur la scène ouverte, chacun présente un talent devant ses camarades enthousiastes.
+Les artistes numériques créent une affiche pour promouvoir le marathon de lecture.
+Durant le voyage scolaire, nous remplissons un carnet de bord illustré.
+Les bénévoles du refuge animal attachent des rubans colorés aux paniers d'adoption.
+Chaque lundi, la chorale répète une harmonie inspirée des musiques de films.
+Le laboratoire itinérant propose des expériences sur les réactions volcaniques miniatures.
+Pour gagner des points bonus, les mathématiciens résolvent des énigmes en duo.
+Au centre aéré, les animateurs inventent une aventure inspirée des légendes marines.
+Les apprentis magiciens répètent des tours qu'ils présenteront lors de la kermesse.
+Dans le bus de classe, nous chantons une playlist choisie par les délégués.
+Les vidéastes montent une interview pour raconter le tournoi intercollèges de badminton.
+Entre deux matchs, les supporters décorent les gradins avec des banderoles multicolores.
+Le club nature construit des nichoirs afin d'attirer différentes espèces d'oiseaux.
+Quand la neige tombe, la classe organise une bataille de boules bienveillante.
+Les amis inventent une bande dessinée mettant en scène leur équipe de super-héros.
+Après la projection, nous débattons des personnages les plus courageux du film.
+Les scientifiques juniors comparent la croissance de plantes placées sous différentes lampes.
+Chaque mercredi soir, le groupe de théâtre improvise des scènes comiques sur des thèmes tirés au sort.
 `;
