@@ -2,12 +2,12 @@
 
 'use client';
 
-import { useState, FormEvent, useMemo } from 'react';
+import { useState, FormEvent, useMemo, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, UserPlus, Pencil, Trash2 } from 'lucide-react';
-import { createStudent, type Student, updateStudent, deleteStudent } from '@/services/students';
+import { Loader2, UserPlus, Pencil, Trash2, Camera } from 'lucide-react';
+import { createStudent, type Student, updateStudent, deleteStudent, uploadStudentPhoto } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,8 @@ import { Switch } from '@/components/ui/switch';
 import { skills as availableSkills, type SkillLevel, allSkillCategories } from '@/lib/skills';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { User } from 'lucide-react';
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'A', label: 'A - Maternelle' },
@@ -41,6 +43,8 @@ export function StudentManager({ students }: StudentManagerProps) {
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [editedName, setEditedName] = useState('');
     const [editedCode, setEditedCode] = useState('');
+    const [editedPhotoURL, setEditedPhotoURL] = useState<string | undefined>('');
+    const [isUploading, setIsUploading] = useState(false);
     const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
     const [editedEnabledSkills, setEditedEnabledSkills] = useState<Record<string, boolean>>({});
     const [isUpdating, setIsUpdating] = useState(false);
@@ -82,6 +86,7 @@ export function StudentManager({ students }: StudentManagerProps) {
         setEditingStudent(student);
         setEditedName(student.name);
         setEditedCode(student.code);
+        setEditedPhotoURL(student.photoURL);
         setEditedLevels(student.levels || {});
 
         if (student.enabledSkills) {
@@ -96,6 +101,24 @@ export function StudentManager({ students }: StudentManagerProps) {
     const closeEditModal = () => {
         setEditingStudent(null);
     };
+
+    const handlePhotoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0 || !editingStudent) return;
+
+        const file = e.target.files[0];
+        setIsUploading(true);
+        
+        const result = await uploadStudentPhoto(editingStudent.id, file);
+
+        if (result.success && result.url) {
+            setEditedPhotoURL(result.url);
+            toast({ title: 'Photo téléversée !', description: 'La nouvelle photo est prête à être enregistrée.' });
+        } else {
+            toast({ variant: 'destructive', title: 'Erreur de téléversement', description: result.error });
+        }
+        setIsUploading(false);
+    };
+
     
       const handleUpdateStudent = async () => {
         if (!editingStudent) return;
@@ -109,6 +132,7 @@ export function StudentManager({ students }: StudentManagerProps) {
         const result = await updateStudent(editingStudent.id, {
             name: editedName,
             code: editedCode,
+            photoURL: editedPhotoURL,
             levels: editedLevels,
             enabledSkills: editedEnabledSkills,
         });
@@ -195,6 +219,7 @@ export function StudentManager({ students }: StudentManagerProps) {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
+                                            <TableHead className="w-16"></TableHead>
                                             <TableHead>Prénom</TableHead>
                                             <TableHead>Code Secret</TableHead>
                                             <TableHead>Niveaux Variables</TableHead>
@@ -204,6 +229,12 @@ export function StudentManager({ students }: StudentManagerProps) {
                                     <TableBody>
                                         {students.map(student => (
                                             <TableRow key={student.id}>
+                                                <TableCell>
+                                                    <Avatar>
+                                                        <AvatarImage src={student.photoURL} alt={student.name} />
+                                                        <AvatarFallback><User/></AvatarFallback>
+                                                    </Avatar>
+                                                </TableCell>
                                                 <TableCell className="font-medium">{student.name}</TableCell>
                                                 <TableCell className="font-mono font-bold">{student.code}</TableCell>
                                                 <TableCell>
@@ -275,14 +306,30 @@ export function StudentManager({ students }: StudentManagerProps) {
                     </DialogHeader>
                      <ScrollArea className="h-[calc(80vh-150px)]">
                         <div className="space-y-6 py-4 pr-6">
-                            <div className='space-y-4 grid grid-cols-2 gap-4'>
+                            <div className='grid grid-cols-1 sm:grid-cols-[150px,1fr] gap-6 items-start'>
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-name">Prénom</Label>
-                                    <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
+                                     <Label>Photo de profil</Label>
+                                    <div className="relative group w-32 h-32">
+                                        <Avatar className="w-32 h-32 text-4xl">
+                                            <AvatarImage src={editedPhotoURL} alt={editedName} />
+                                            <AvatarFallback className="text-4xl"><User/></AvatarFallback>
+                                        </Avatar>
+                                        <label htmlFor="photo-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full">
+                                            {isUploading ? <Loader2 className="animate-spin" /> : <Camera/>}
+                                        </label>
+                                         <input id="photo-upload" type="file" accept="image/*" className="sr-only" onChange={handlePhotoUpload} disabled={isUploading}/>
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="edit-code">Code Secret</Label>
-                                    <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
+
+                                <div className='space-y-4'>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-name">Prénom</Label>
+                                        <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-code">Code Secret</Label>
+                                        <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
+                                    </div>
                                 </div>
                             </div>
                             

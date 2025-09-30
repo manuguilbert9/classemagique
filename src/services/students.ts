@@ -2,8 +2,9 @@
 
 'use server';
 
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, runTransaction } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { skills } from '@/lib/skills';
 import { getGloballyEnabledSkills } from './teacher';
 
@@ -31,6 +32,7 @@ export interface Student {
     name: string;
     code: string;
     fcmToken?: string;
+    photoURL?: string;
     groupId?: string; // Add groupId to student model
     levels?: Record<string, SkillLevel>;
     enabledSkills?: Record<string, boolean>;
@@ -149,6 +151,7 @@ export async function getStudents(): Promise<Student[]> {
                 name: data.name,
                 code: data.code,
                 fcmToken: data.fcmToken,
+                photoURL: data.photoURL,
                 groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
@@ -194,6 +197,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     name: studentData.name,
                     code: studentData.code,
                     fcmToken: studentData.fcmToken,
+                    photoURL: studentData.photoURL,
                     groupId: studentData.groupId,
                     levels: studentData.levels || {},
                     enabledSkills: studentData.enabledSkills,
@@ -232,6 +236,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 name: data.name,
                 code: data.code,
                 fcmToken: data.fcmToken,
+                photoURL: data.photoURL,
                 groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
@@ -304,4 +309,32 @@ export async function saveFcmToken(studentId: string, token: string): Promise<{ 
         if (error instanceof Error) return { success: false, error: error.message };
         return { success: false, error: "Une erreur inconnue est survenue." };
     }
+}
+
+
+/**
+ * Uploads a profile photo for a student.
+ * @param studentId The ID of the student.
+ * @param file The image file to upload.
+ * @returns The public URL of the uploaded image.
+ */
+export async function uploadStudentPhoto(studentId: string, file: File): Promise<{ success: boolean; url?: string; error?: string }> {
+  if (!studentId || !file) {
+    return { success: false, error: 'Student ID and file are required.' };
+  }
+
+  const filePath = `student_photos/${studentId}/${Date.now()}_${file.name}`;
+  const storageRef = ref(storage, filePath);
+
+  try {
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return { success: true, url: downloadURL };
+  } catch (error) {
+    console.error("Error uploading student photo:", error);
+    if (error instanceof Error) {
+        return { success: false, error: error.message };
+    }
+    return { success: false, error: 'An unknown error occurred during upload.' };
+  }
 }

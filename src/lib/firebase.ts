@@ -3,6 +3,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
 
 // Your web app's Firebase configuration
@@ -18,6 +19,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 // Initialize Firebase Cloud Messaging and get a reference to the service
 const getFirebaseMessaging = async () => {
@@ -27,4 +29,4 @@ const getFirebaseMessaging = async () => {
     return null;
 }
 
-export { app, db, getFirebaseMessaging };
+export { app, db, storage, getFirebaseMessaging };
