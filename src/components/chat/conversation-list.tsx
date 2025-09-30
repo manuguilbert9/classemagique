@@ -80,7 +80,7 @@ export function ConversationList({
                         >
                             <div className="relative">
                                 <Avatar>
-                                    <AvatarImage src={otherParticipantShowPhoto ? otherParticipantPhotoURL : ''} alt={otherParticipantName} />
+                                    <AvatarImage src={otherParticipantShowPhoto ? otherParticipantPhotoURL : undefined} alt={otherParticipantName} />
                                     <AvatarFallback>{otherParticipantName.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <span

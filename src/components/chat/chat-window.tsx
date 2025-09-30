@@ -381,7 +381,7 @@ export function ChatWindow({
             <div className="flex flex-1 flex-col">
                 <header className="border-b p-4 flex items-center gap-3">
                      <Avatar>
-                        <AvatarImage src={otherStudentInfo.showPhoto ? otherStudentInfo.photoURL : ''} alt={otherStudentInfo.name} />
+                        <AvatarImage src={otherStudentInfo.showPhoto ? otherStudentInfo.photoURL : undefined} alt={otherStudentInfo.name} />
                         <AvatarFallback>{otherStudentInfo.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
