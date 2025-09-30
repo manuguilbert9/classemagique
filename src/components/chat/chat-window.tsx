@@ -20,7 +20,7 @@ import { Label } from '../ui/label';
 import { useSpellSuggestions } from '@/hooks/use-spell-suggestions';
 import { Badge } from '../ui/badge';
 import { SyllableText } from '../syllable-text';
-import { ChatMessageContent } from './chat-message-content';
+import { ChatMessageContent, EXERCISE_URL_REGEX } from './chat-message-content';
 
 interface ChatWindowProps {
     conversationId: string | null;
@@ -300,6 +300,61 @@ export function ChatWindow({
     const suggestionStart = suggestionPage * suggestionsToShow;
     const currentSuggestions = wordSuggestions.slice(suggestionStart, suggestionStart + suggestionsToShow);
 
+    const MessageBubble = ({ msg }: { msg: Message }) => {
+        const isCurrentUser = msg.senderId === currentStudent.id;
+        const containsExerciseLink = EXERCISE_URL_REGEX.test(msg.text);
+
+        const content = (
+            <div className={cn(
+                "max-w-xs md:max-w-md p-3 rounded-2xl",
+                isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-secondary rounded-bl-none",
+                !containsExerciseLink && "cursor-pointer"
+            )}>
+                <div
+                    className="whitespace-pre-wrap break-words"
+                    style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
+                >
+                    <ChatMessageContent text={msg.text} />
+                </div>
+                {msg.correctedText && (
+                    <div className="border-t border-white/30 mt-2 pt-2">
+                        <div
+                            className={cn(
+                                'whitespace-pre-wrap font-medium',
+                                isCurrentUser ? 'text-emerald-100' : 'text-emerald-700'
+                            )}
+                            style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
+                        >
+                            <ChatMessageContent text={msg.correctedText} />
+                        </div>
+                    </div>
+                )}
+                <p
+                    className="text-right mt-1 opacity-70"
+                    style={{ fontSize: `${messageMetaFontSize}px` }}
+                >
+                    {format(msg.createdAt.toDate(), 'HH:mm')}
+                </p>
+            </div>
+        );
+
+        if (containsExerciseLink) {
+            return content; // Just the bubble, no dropdown
+        }
+
+        return (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>{content}</DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => openCorrectionDialog(msg)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Corriger</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        );
+    };
+
     return (
         <div className="flex h-full flex-col md:flex-row">
             <div className="flex flex-1 flex-col">
@@ -338,46 +393,7 @@ export function ChatWindow({
                                 </div>
                             )}
                              <div className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <div className={cn(
-                                            "max-w-xs md:max-w-md p-3 rounded-2xl cursor-pointer",
-                                            isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-secondary rounded-bl-none"
-                                        )}>
-                                            <div
-                                                className="whitespace-pre-wrap break-words"
-                                                style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
-                                            >
-                                                <ChatMessageContent text={msg.text} />
-                                            </div>
-                                            {msg.correctedText && (
-                                                <div className="border-t border-white/30 mt-2 pt-2">
-                                                    <div
-                                                        className={cn(
-                                                            'whitespace-pre-wrap font-medium',
-                                                            isCurrentUser ? 'text-emerald-100' : 'text-emerald-700'
-                                                        )}
-                                                        style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
-                                                    >
-                                                        <ChatMessageContent text={msg.correctedText} />
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <p
-                                                className="text-right mt-1 opacity-70"
-                                                style={{ fontSize: `${messageMetaFontSize}px` }}
-                                            >
-                                                {format(msg.createdAt.toDate(), 'HH:mm')}
-                                            </p>
-                                        </div>
-                                    </DropdownMenuTrigger>
-                                     <DropdownMenuContent>
-                                        <DropdownMenuItem onClick={() => openCorrectionDialog(msg)}>
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            <span>Corriger</span>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                 <MessageBubble msg={msg} />
                             </div>
                            </React.Fragment>
                         );

@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { getSkillBySlug } from '@/lib/skills';
 import { Button } from '@/components/ui/button';
 
+export const EXERCISE_URL_REGEX = new RegExp('(https://studio--classemagique2\\.us-central1\\.hosted\\.app/exercise/([a-zA-Z0-9-]+))', 'g');
+
 interface ChatMessageContentProps {
     text: string;
 }
-
-const EXERCISE_URL_REGEX = new RegExp('(https://studio--classemagique2\\.us-central1\\.hosted\\.app/exercise/([a-zA-Z0-9-]+))', 'g');
 
 export function ChatMessageContent({ text }: ChatMessageContentProps) {
     const parts = text.split(EXERCISE_URL_REGEX);
