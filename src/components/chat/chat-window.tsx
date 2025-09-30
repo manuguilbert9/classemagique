@@ -22,6 +22,60 @@ import { Badge } from '../ui/badge';
 import { SyllableText } from '../syllable-text';
 import { ChatMessageContent, EXERCISE_URL_REGEX } from './chat-message-content';
 
+interface MessageBubbleProps extends React.HTMLAttributes<HTMLDivElement> {
+    msg: Message;
+    isCurrentUser: boolean;
+    messageFontSize: number;
+    messageMetaFontSize: number;
+}
+
+const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(
+    ({ msg, isCurrentUser, messageFontSize, messageMetaFontSize, className, ...props }, ref) => {
+        const containsExerciseLink = EXERCISE_URL_REGEX.test(msg.text);
+
+        return (
+            <div
+                ref={ref}
+                className={cn(
+                    'max-w-xs md:max-w-md p-3 rounded-2xl',
+                    isCurrentUser ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary rounded-bl-none',
+                    !containsExerciseLink && 'cursor-pointer',
+                    className
+                )}
+                {...props}
+            >
+                <div
+                    className="whitespace-pre-wrap break-words"
+                    style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
+                >
+                    <ChatMessageContent text={msg.text} />
+                </div>
+                {msg.correctedText && (
+                    <div className="border-t border-white/30 mt-2 pt-2">
+                        <div
+                            className={cn(
+                                'whitespace-pre-wrap font-medium',
+                                isCurrentUser ? 'text-emerald-100' : 'text-emerald-700'
+                            )}
+                            style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
+                        >
+                            <ChatMessageContent text={msg.correctedText} />
+                        </div>
+                    </div>
+                )}
+                <p
+                    className="text-right mt-1 opacity-70"
+                    style={{ fontSize: `${messageMetaFontSize}px` }}
+                >
+                    {format(msg.createdAt.toDate(), 'HH:mm')}
+                </p>
+            </div>
+        );
+    }
+);
+
+MessageBubble.displayName = 'MessageBubble';
+
 interface ChatWindowProps {
     conversationId: string | null;
     currentStudent: Student;
@@ -50,6 +104,7 @@ export function ChatWindow({
     const [isLoading, setIsLoading] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [suggestionPage, setSuggestionPage] = useState(0);
+    const [activeMessageMenuId, setActiveMessageMenuId] = useState<string | null>(null);
 
     const { toast } = useToast();
     const { wordSuggestions, isLoading: isLoadingSuggestions, refresh: refreshSuggestions } = useSpellSuggestions(newMessage, "fr");
@@ -93,7 +148,7 @@ export function ChatWindow({
             setMessages([]);
             return;
         }
-        
+
         setIsLoading(true);
         const unsubscribe = listenToMessages(conversationId, (loadedMessages) => {
             setMessages(loadedMessages);
@@ -115,6 +170,10 @@ export function ChatWindow({
 
     }, [conversationId, currentStudent.id]);
     
+    useEffect(() => {
+        setActiveMessageMenuId(null);
+    }, [conversationId]);
+
     const otherStudentInfo = useMemo(() => {
         if (!conversationId) {
             return { id: null as string | null, name: 'Nouveau message' };
@@ -170,6 +229,18 @@ export function ChatWindow({
     const openCorrectionDialog = (message: Message) => {
         setCorrectionTarget(message);
         setCorrectedText(message.correctedText || message.text);
+    };
+
+    const handleMessageContextMenu = (event: React.MouseEvent, message: Message) => {
+        if (!message.id) return;
+
+        event.preventDefault();
+        setActiveMessageMenuId(message.id);
+    };
+
+    const handleCorrectionSelect = (message: Message) => {
+        openCorrectionDialog(message);
+        setActiveMessageMenuId(null);
     };
 
     const handleSaveCorrection = async () => {
@@ -300,45 +371,6 @@ export function ChatWindow({
     const suggestionStart = suggestionPage * suggestionsToShow;
     const currentSuggestions = wordSuggestions.slice(suggestionStart, suggestionStart + suggestionsToShow);
 
-    const MessageBubble = ({ msg }: { msg: Message }) => {
-        const isCurrentUser = msg.senderId === currentStudent.id;
-        const containsExerciseLink = EXERCISE_URL_REGEX.test(msg.text);
-
-        return (
-            <div className={cn(
-                "max-w-xs md:max-w-md p-3 rounded-2xl",
-                isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-secondary rounded-bl-none",
-                !containsExerciseLink && "cursor-pointer"
-            )}>
-                <div
-                    className="whitespace-pre-wrap break-words"
-                    style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
-                >
-                    <ChatMessageContent text={msg.text} />
-                </div>
-                {msg.correctedText && (
-                    <div className="border-t border-white/30 mt-2 pt-2">
-                        <div
-                            className={cn(
-                                'whitespace-pre-wrap font-medium',
-                                isCurrentUser ? 'text-emerald-100' : 'text-emerald-700'
-                            )}
-                            style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
-                        >
-                            <ChatMessageContent text={msg.correctedText} />
-                        </div>
-                    </div>
-                )}
-                <p
-                    className="text-right mt-1 opacity-70"
-                    style={{ fontSize: `${messageMetaFontSize}px` }}
-                >
-                    {format(msg.createdAt.toDate(), 'HH:mm')}
-                </p>
-            </div>
-        );
-    };
-
     return (
         <div className="flex h-full flex-col md:flex-row">
             <div className="flex flex-1 flex-col">
@@ -377,22 +409,45 @@ export function ChatWindow({
                                         {format(msg.createdAt.toDate(), 'd MMMM yyyy', { locale: fr })}
                                     </div>
                                 )}
-                                <div className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
-                                     {containsExerciseLink ? (
-                                        <MessageBubble msg={msg} />
-                                     ) : (
-                                        <DropdownMenu>
+                                <div className={cn('flex items-end gap-2', isCurrentUser ? 'justify-end' : 'justify-start')}>
+                                    {containsExerciseLink ? (
+                                        <MessageBubble
+                                            msg={msg}
+                                            isCurrentUser={isCurrentUser}
+                                            messageFontSize={messageFontSize}
+                                            messageMetaFontSize={messageMetaFontSize}
+                                        />
+                                    ) : (
+                                        <DropdownMenu
+                                            open={activeMessageMenuId === msg.id}
+                                            onOpenChange={(open) => {
+                                                if (!open && activeMessageMenuId === msg.id) {
+                                                    setActiveMessageMenuId(null);
+                                                }
+                                            }}
+                                        >
                                             <DropdownMenuTrigger asChild>
-                                                 <MessageBubble msg={msg} />
+                                                <MessageBubble
+                                                    msg={msg}
+                                                    isCurrentUser={isCurrentUser}
+                                                    messageFontSize={messageFontSize}
+                                                    messageMetaFontSize={messageMetaFontSize}
+                                                    onContextMenu={(event) => handleMessageContextMenu(event, msg)}
+                                                />
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onClick={() => openCorrectionDialog(msg)}>
+                                            <DropdownMenuContent align={isCurrentUser ? 'end' : 'start'}>
+                                                <DropdownMenuItem
+                                                    onSelect={(event) => {
+                                                        event.preventDefault();
+                                                        handleCorrectionSelect(msg);
+                                                    }}
+                                                >
                                                     <Pencil className="mr-2 h-4 w-4" />
                                                     <span>Corriger</span>
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                     )}
+                                    )}
                                 </div>
                                </React.Fragment>
                             );
