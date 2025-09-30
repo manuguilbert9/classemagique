@@ -9,6 +9,8 @@ export interface Conversation {
     id: string;
     participants: string[]; // array of student IDs
     participantNames: { [id: string]: string };
+    participantPhotoURLs: { [id: string]: string | undefined };
+    participantShowPhoto: { [id: string]: boolean | undefined };
     lastMessage: Message | null;
 }
 
@@ -79,6 +81,14 @@ export async function findOrCreateConversation(currentStudent: Student, otherStu
             participantNames: {
                 [currentStudent.id]: currentStudent.name,
                 [otherStudent.id]: otherStudent.name,
+            },
+            participantPhotoURLs: {
+                [currentStudent.id]: currentStudent.photoURL,
+                [otherStudent.id]: otherStudent.photoURL,
+            },
+            participantShowPhoto: {
+                [currentStudent.id]: currentStudent.showPhoto,
+                [otherStudent.id]: otherStudent.showPhoto,
             },
             lastMessage: null,
         });

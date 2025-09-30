@@ -1,3 +1,4 @@
+
 'use client';
 
 import { db } from '@/lib/firebase';
@@ -22,6 +23,8 @@ export function listenToStudentsPresence(callback: (students: Student[]) => void
                 name: data.name,
                 code: data.code,
                 fcmToken: data.fcmToken,
+                photoURL: data.photoURL,
+                showPhoto: data.showPhoto,
                 groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,

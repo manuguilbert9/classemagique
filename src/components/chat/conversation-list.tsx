@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -10,12 +11,14 @@ import { fr } from 'date-fns/locale';
 import { Skeleton } from '../ui/skeleton';
 import { User } from 'lucide-react';
 import type { StudentPresenceState } from '@/services/student-presence';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { Student } from '@/services/students';
 
 interface ConversationListProps {
     conversations: Conversation[];
     currentStudentId: string;
-    selectedConversationId: string | null;
     onSelectConversation: (conversationId: string) => void;
+    selectedConversationId: string | null;
     isLoading: boolean;
     presenceByStudentId: Record<string, StudentPresenceState>;
 }
@@ -51,6 +54,9 @@ export function ConversationList({
                 {conversations.map(convo => {
                     const otherParticipantId = convo.participants.find(p => p !== currentStudentId);
                     const otherParticipantName = otherParticipantId ? convo.participantNames[otherParticipantId] : "Inconnu";
+                    const otherParticipantPhotoURL = otherParticipantId ? (convo as any).participantPhotoURLs?.[otherParticipantId] : undefined;
+                    const otherParticipantShowPhoto = otherParticipantId ? (convo as any).participantShowPhoto?.[otherParticipantId] ?? false : false;
+
                     const presence = otherParticipantId ? presenceByStudentId[otherParticipantId] : undefined;
                     const isOnline = presence?.isOnline ?? false;
                     const lastSeenText = !isOnline && presence?.lastSeenAt
@@ -74,9 +80,10 @@ export function ConversationList({
                             )}
                         >
                             <div className="relative">
-                                <div className="h-10 w-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
-                                    <User />
-                                </div>
+                                <Avatar>
+                                    <AvatarImage src={otherParticipantShowPhoto ? otherParticipantPhotoURL : ''} alt={otherParticipantName} />
+                                    <AvatarFallback>{otherParticipantName.charAt(0)}</AvatarFallback>
+                                </Avatar>
                                 <span
                                     className={cn(
                                         'absolute -top-1 -right-1 block h-3 w-3 rounded-full border-2 border-muted/40',

@@ -13,6 +13,7 @@ import { UserContext } from '@/context/user-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { loginStudent } from '@/services/students';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 export default function ModeSelectionPage() {
   const { student, setStudent, isLoading } = useContext(UserContext);
@@ -121,9 +122,17 @@ export default function ModeSelectionPage() {
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background relative">
-      <div className="absolute top-8 text-center space-y-4">
+      <div className="absolute top-8 text-center space-y-4 flex flex-col items-center">
         <Logo />
-        <p className="text-base sm:text-lg text-muted-foreground mt-2">Connecté en tant que <span className="font-bold">{student.name}</span>.</p>
+        <div className="flex items-center gap-2">
+            {student.showPhoto && student.photoURL && (
+                <Avatar>
+                    <AvatarImage src={student.photoURL} alt={student.name} />
+                    <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+            )}
+            <p className="text-base sm:text-lg text-muted-foreground mt-2">Connecté en tant que <span className="font-bold">{student.name}</span>.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full max-w-sm md:max-w-4xl pt-32">

@@ -33,6 +33,7 @@ export interface Student {
     code: string;
     fcmToken?: string;
     photoURL?: string;
+    showPhoto?: boolean; // Added this field
     groupId?: string; // Add groupId to student model
     levels?: Record<string, SkillLevel>;
     enabledSkills?: Record<string, boolean>;
@@ -72,6 +73,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         schedule: [],
         mentalMathPerformance: {},
         nuggets: 0,
+        showPhoto: true, // Default to true for new students
     });
 
     return {
@@ -84,6 +86,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         schedule: [],
         mentalMathPerformance: {},
         nuggets: 0,
+        showPhoto: true,
     };
 }
 
@@ -152,6 +155,7 @@ export async function getStudents(): Promise<Student[]> {
                 code: data.code,
                 fcmToken: data.fcmToken,
                 photoURL: data.photoURL,
+                showPhoto: data.showPhoto,
                 groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
@@ -198,6 +202,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     code: studentData.code,
                     fcmToken: studentData.fcmToken,
                     photoURL: studentData.photoURL,
+                    showPhoto: studentData.showPhoto,
                     groupId: studentData.groupId,
                     levels: studentData.levels || {},
                     enabledSkills: studentData.enabledSkills,
@@ -237,6 +242,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 code: data.code,
                 fcmToken: data.fcmToken,
                 photoURL: data.photoURL,
+                showPhoto: data.showPhoto,
                 groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,

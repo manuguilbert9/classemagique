@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -21,6 +22,7 @@ import { useSpellSuggestions } from '@/hooks/use-spell-suggestions';
 import { Badge } from '../ui/badge';
 import { SyllableText } from '../syllable-text';
 import { ChatMessageContent, EXERCISE_URL_REGEX } from './chat-message-content';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 interface MessageBubbleProps extends React.HTMLAttributes<HTMLDivElement> {
     msg: Message;
@@ -108,7 +110,7 @@ export function ChatWindow({
 
     const { toast } = useToast();
     const { wordSuggestions, isLoading: isLoadingSuggestions, refresh: refreshSuggestions } = useSpellSuggestions(newMessage, "fr");
-
+    
     // State for correction dialog
     const [correctionTarget, setCorrectionTarget] = useState<Message | null>(null);
     const [correctedText, setCorrectedText] = useState('');
@@ -185,6 +187,8 @@ export function ChatWindow({
         return {
             id: otherId,
             name: otherStudent?.name || 'Discussion',
+            photoURL: otherStudent?.photoURL,
+            showPhoto: otherStudent?.showPhoto,
         };
     }, [conversationId, allStudents, currentStudent.id]);
 
@@ -314,9 +318,10 @@ export function ChatWindow({
                                     className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-accent/50"
                                 >
                                     <div className="relative">
-                                        <div className="h-10 w-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
-                                            <User />
-                                        </div>
+                                        <Avatar>
+                                            <AvatarImage src={student.showPhoto ? student.photoURL : ''} alt={student.name} />
+                                            <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
                                         <span
                                             className={cn(
                                                 'absolute -top-1 -right-1 block h-3 w-3 rounded-full border-2 border-muted/40',
@@ -374,7 +379,11 @@ export function ChatWindow({
     return (
         <div className="flex h-full flex-col md:flex-row">
             <div className="flex flex-1 flex-col">
-                <header className="border-b p-4">
+                <header className="border-b p-4 flex items-center gap-3">
+                     <Avatar>
+                        <AvatarImage src={otherStudentInfo.showPhoto ? otherStudentInfo.photoURL : ''} alt={otherStudentInfo.name} />
+                        <AvatarFallback>{otherStudentInfo.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
                     <div className="flex flex-col">
                         <h3 className="text-lg font-semibold">{otherStudentInfo.name}</h3>
                         <span

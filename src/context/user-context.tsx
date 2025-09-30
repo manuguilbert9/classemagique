@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
@@ -40,6 +41,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 id: doc.id,
                 name: data.name,
                 code: data.code,
+                photoURL: data.photoURL,
+                showPhoto: data.showPhoto,
                 groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,

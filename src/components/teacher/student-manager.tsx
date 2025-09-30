@@ -44,6 +44,7 @@ export function StudentManager({ students }: StudentManagerProps) {
     const [editedName, setEditedName] = useState('');
     const [editedCode, setEditedCode] = useState('');
     const [editedPhotoURL, setEditedPhotoURL] = useState<string | undefined>('');
+    const [editedShowPhoto, setEditedShowPhoto] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
     const [editedEnabledSkills, setEditedEnabledSkills] = useState<Record<string, boolean>>({});
@@ -87,6 +88,7 @@ export function StudentManager({ students }: StudentManagerProps) {
         setEditedName(student.name);
         setEditedCode(student.code);
         setEditedPhotoURL(student.photoURL);
+        setEditedShowPhoto(student.showPhoto ?? true);
         setEditedLevels(student.levels || {});
 
         if (student.enabledSkills) {
@@ -133,6 +135,7 @@ export function StudentManager({ students }: StudentManagerProps) {
             name: editedName,
             code: editedCode,
             photoURL: editedPhotoURL,
+            showPhoto: editedShowPhoto,
             levels: editedLevels,
             enabledSkills: editedEnabledSkills,
         });
@@ -329,6 +332,10 @@ export function StudentManager({ students }: StudentManagerProps) {
                                     <div className="space-y-2">
                                         <Label htmlFor="edit-code">Code Secret</Label>
                                         <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
+                                    </div>
+                                    <div className="flex items-center space-x-2 pt-2">
+                                        <Switch id="show-photo-switch" checked={editedShowPhoto} onCheckedChange={setEditedShowPhoto}/>
+                                        <Label htmlFor="show-photo-switch">Afficher la photo de profil côté élève</Label>
                                     </div>
                                 </div>
                             </div>
