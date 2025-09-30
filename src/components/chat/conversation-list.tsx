@@ -53,8 +53,8 @@ export function ConversationList({
                 {conversations.map(convo => {
                     const otherParticipantId = convo.participants.find(p => p !== currentStudentId);
                     const otherParticipantName = otherParticipantId ? convo.participantNames[otherParticipantId] : "Inconnu";
-                    const otherParticipantPhotoURL = otherParticipantId ? (convo as any).participantPhotoURLs?.[otherParticipantId] : undefined;
-                    const otherParticipantShowPhoto = otherParticipantId ? (convo as any).participantShowPhoto?.[otherParticipantId] ?? false : false;
+                    const otherParticipantPhotoURL = otherParticipantId ? convo.participantPhotoURLs?.[otherParticipantId] : undefined;
+                    const otherParticipantShowPhoto = otherParticipantId ? convo.participantShowPhoto?.[otherParticipantId] ?? false : false;
 
                     const presence = otherParticipantId ? presenceByStudentId[otherParticipantId] : undefined;
                     const isOnline = presence?.isOnline ?? false;

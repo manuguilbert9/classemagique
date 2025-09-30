@@ -9,8 +9,8 @@ export interface Conversation {
     id: string;
     participants: string[]; // array of student IDs
     participantNames: { [id: string]: string };
-    participantPhotoURLs?: { [id: string]: string | undefined };
-    participantShowPhoto?: { [id: string]: boolean | undefined };
+    participantPhotoURLs: { [id: string]: string | undefined };
+    participantShowPhoto: { [id: string]: boolean | undefined };
     lastMessage: Message | null;
 }
 
@@ -43,40 +43,35 @@ export function listenToConversations(studentId: string, callback: (conversation
         const conversations: Conversation[] = [];
 
         for (const docSnap of querySnapshot.docs) {
-            let convoData = docSnap.data() as Conversation;
+            let convoData = docSnap.data() as Partial<Conversation>;
 
-            // --- DEBUT DE LA CORRECTION ---
-            // Vérifier si les informations de photo sont manquantes et les ajouter si nécessaire
             let needsUpdate = false;
             if (!convoData.participantPhotoURLs || !convoData.participantShowPhoto) {
                 convoData.participantPhotoURLs = convoData.participantPhotoURLs || {};
                 convoData.participantShowPhoto = convoData.participantShowPhoto || {};
-                
-                for (const participantId of convoData.participants) {
-                    if (convoData.participantPhotoURLs[participantId] === undefined || convoData.participantShowPhoto[participantId] === undefined) {
-                        const student = studentMap.get(participantId);
-                        if (student) {
-                            needsUpdate = true;
-                            convoData.participantPhotoURLs[participantId] = student.photoURL || '';
-                            convoData.participantShowPhoto[participantId] = student.showPhoto ?? true;
-                        }
+                needsUpdate = true;
+            }
+            
+            for (const participantId of convoData.participants || []) {
+                if (convoData.participantPhotoURLs![participantId] === undefined || convoData.participantShowPhoto![participantId] === undefined) {
+                    const student = studentMap.get(participantId);
+                    if (student) {
+                        needsUpdate = true;
+                        convoData.participantPhotoURLs![participantId] = student.photoURL || '';
+                        convoData.participantShowPhoto![participantId] = student.showPhoto ?? true;
                     }
                 }
             }
 
-            // Si une mise à jour est nécessaire, l'effectuer en arrière-plan.
-            // Cela n'empêche pas l'affichage immédiat des données corrigées.
             if (needsUpdate) {
                 const conversationRef = doc(db, 'conversations', docSnap.id);
-                // Utiliser setDoc avec merge pour ne pas écraser d'autres champs
                 await setDoc(conversationRef, {
                     participantPhotoURLs: convoData.participantPhotoURLs,
                     participantShowPhoto: convoData.participantShowPhoto
                 }, { merge: true }).catch(err => console.error("Failed to update conversation with photo info:", err));
             }
-            // --- FIN DE LA CORRECTION ---
 
-            conversations.push({ id: docSnap.id, ...convoData });
+            conversations.push({ id: docSnap.id, ...convoData } as Conversation);
         };
         
         // Sort conversations by last message timestamp, descending.
@@ -115,6 +110,27 @@ export async function findOrCreateConversation(currentStudent: Student, otherStu
     const docSnap = await getDoc(conversationRef);
 
     if (docSnap.exists()) {
+        // Even if it exists, let's ensure photo info is up-to-date
+        const convoData = docSnap.data();
+        const updates: Partial<Conversation> = {};
+        let needsUpdate = false;
+        if (!convoData.participantPhotoURLs || convoData.participantPhotoURLs[currentStudent.id] !== (currentStudent.photoURL || '') || convoData.participantPhotoURLs[otherStudent.id] !== (otherStudent.photoURL || '')) {
+            updates.participantPhotoURLs = {
+                [currentStudent.id]: currentStudent.photoURL || '',
+                [otherStudent.id]: otherStudent.photoURL || '',
+            };
+            needsUpdate = true;
+        }
+        if (!convoData.participantShowPhoto || convoData.participantShowPhoto[currentStudent.id] !== currentStudent.showPhoto || convoData.participantShowPhoto[otherStudent.id] !== otherStudent.showPhoto) {
+             updates.participantShowPhoto = {
+                [currentStudent.id]: currentStudent.showPhoto,
+                [otherStudent.id]: otherStudent.showPhoto,
+            };
+            needsUpdate = true;
+        }
+        if (needsUpdate) {
+            await setDoc(conversationRef, updates, { merge: true });
+        }
         return docSnap.id;
     } else {
         await setDoc(conversationRef, {
@@ -128,8 +144,8 @@ export async function findOrCreateConversation(currentStudent: Student, otherStu
                 [otherStudent.id]: otherStudent.photoURL || '',
             },
             participantShowPhoto: {
-                [currentStudent.id]: currentStudent.showPhoto,
-                [otherStudent.id]: otherStudent.showPhoto,
+                [currentStudent.id]: currentStudent.showPhoto ?? true,
+                [otherStudent.id]: otherStudent.showPhoto ?? true,
             },
             lastMessage: null,
         });
