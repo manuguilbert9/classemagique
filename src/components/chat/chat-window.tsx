@@ -20,6 +20,8 @@ import { Label } from '../ui/label';
 import { useSpellSuggestions } from '@/hooks/use-spell-suggestions';
 import { Badge } from '../ui/badge';
 import { SyllableText } from '../syllable-text';
+import { ChatMessageContent } from './chat-message-content';
+
 interface ChatWindowProps {
     conversationId: string | null;
     currentStudent: Student;
@@ -147,6 +149,7 @@ export function ChatWindow({
 
         if (result.success) {
             setNewMessage('');
+            textareaRef.current?.focus();
         } else {
             toast({
                 variant: 'destructive',
@@ -345,7 +348,7 @@ export function ChatWindow({
                                                 className="whitespace-pre-wrap break-words"
                                                 style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
                                             >
-                                                {colorizeSyllables ? <SyllableText text={msg.text} /> : msg.text}
+                                                <ChatMessageContent text={msg.text} />
                                             </div>
                                             {msg.correctedText && (
                                                 <div className="border-t border-white/30 mt-2 pt-2">
@@ -356,7 +359,7 @@ export function ChatWindow({
                                                         )}
                                                         style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
                                                     >
-                                                        {colorizeSyllables ? <SyllableText text={msg.correctedText} /> : msg.correctedText}
+                                                        <ChatMessageContent text={msg.correctedText} />
                                                     </div>
                                                 </div>
                                             )}
