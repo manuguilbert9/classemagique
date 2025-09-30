@@ -66,13 +66,14 @@ export function ChatWindow({
 
     const suggestionSignature = useMemo(() => wordSuggestions.join('|'), [wordSuggestions]);
     
+    const trimmedMessageLength = useMemo(() => newMessage.trim().length, [newMessage]);
+    
     const hasSuggestions = useMemo(
         () => wordSuggestions.length > 0,
         [wordSuggestions]
     );
-    const trimmedMessageLength = useMemo(() => newMessage.trim().length, [newMessage]);
-    
-    const suggestionsToShow = 3;
+
+    const suggestionsToShow = 12;
     const canRefreshSuggestions = wordSuggestions.length > suggestionsToShow;
 
     useEffect(() => {
@@ -292,7 +293,7 @@ export function ChatWindow({
         return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
-    const showSuggestionsPanel = hasSuggestions || isLoadingSuggestions || trimmedMessageLength > 0;
+    const showSuggestionsPanel = hasSuggestions || isLoadingSuggestions || trimmedMessageLength === 0;
     const suggestionStart = suggestionPage * suggestionsToShow;
     const currentSuggestions = wordSuggestions.slice(suggestionStart, suggestionStart + suggestionsToShow);
 
@@ -426,7 +427,7 @@ export function ChatWindow({
                             </div>
                         )}
                         {!isLoadingSuggestions && wordSuggestions.length === 0 && trimmedMessageLength > 0 && (
-                            <p className="text-xs text-muted-foreground text-center p-4">Aucune suggestion pour "{trimmedText.split(' ').pop()}"</p>
+                            <p className="text-xs text-muted-foreground text-center p-4">Aucune suggestion pour "{newMessage.trim().split(' ').pop()}"</p>
                         )}
                     </div>
                 </aside>
