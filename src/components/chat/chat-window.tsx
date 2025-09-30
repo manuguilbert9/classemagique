@@ -11,7 +11,7 @@ import { sendMessage, markAsRead, listenToMessages, findOrCreateConversation, ty
 import { type Student } from '@/services/students';
 import type { StudentPresenceState } from '@/services/student-presence';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, Users, MessageSquare, User, Pencil, Sparkles, RefreshCw } from 'lucide-react';
+import { Send, Loader2, Users, MessageSquare, Pencil, RefreshCw } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -19,7 +19,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 import { useSpellSuggestions } from '@/hooks/use-spell-suggestions';
-import { Badge } from '../ui/badge';
 import { SyllableText } from '../syllable-text';
 import { ChatMessageContent, EXERCISE_URL_REGEX } from './chat-message-content';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';

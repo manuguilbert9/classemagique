@@ -9,7 +9,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '../ui/skeleton';
-import { User } from 'lucide-react';
 import type { StudentPresenceState } from '@/services/student-presence';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Student } from '@/services/students';
