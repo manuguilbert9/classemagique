@@ -28,10 +28,11 @@ interface MessageBubbleProps extends React.HTMLAttributes<HTMLDivElement> {
     isCurrentUser: boolean;
     messageFontSize: number;
     messageMetaFontSize: number;
+    colorizeSyllables: boolean;
 }
 
 const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(
-    ({ msg, isCurrentUser, messageFontSize, messageMetaFontSize, className, ...props }, ref) => {
+    ({ msg, isCurrentUser, messageFontSize, messageMetaFontSize, colorizeSyllables, className, ...props }, ref) => {
         const containsExerciseLink = EXERCISE_URL_REGEX.test(msg.text);
 
         return (
@@ -49,7 +50,7 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(
                     className="whitespace-pre-wrap break-words"
                     style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
                 >
-                    <ChatMessageContent text={msg.text} />
+                    <ChatMessageContent text={msg.text} colorizeSyllables={colorizeSyllables} />
                 </div>
                 {msg.correctedText && (
                     <div className="border-t border-white/30 mt-2 pt-2">
@@ -60,7 +61,7 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(
                             )}
                             style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
                         >
-                            <ChatMessageContent text={msg.correctedText} />
+                            <ChatMessageContent text={msg.correctedText} colorizeSyllables={colorizeSyllables} />
                         </div>
                     </div>
                 )}
@@ -424,6 +425,7 @@ export function ChatWindow({
                                             isCurrentUser={isCurrentUser}
                                             messageFontSize={messageFontSize}
                                             messageMetaFontSize={messageMetaFontSize}
+                                            colorizeSyllables={colorizeSyllables}
                                         />
                                     ) : (
                                         <DropdownMenu
@@ -440,6 +442,7 @@ export function ChatWindow({
                                                     isCurrentUser={isCurrentUser}
                                                     messageFontSize={messageFontSize}
                                                     messageMetaFontSize={messageMetaFontSize}
+                                                    colorizeSyllables={colorizeSyllables}
                                                     onContextMenu={(event) => handleMessageContextMenu(event, msg)}
                                                 />
                                             </DropdownMenuTrigger>

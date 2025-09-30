@@ -5,14 +5,16 @@ import * as React from 'react';
 import Link from 'next/link';
 import { getSkillBySlug } from '@/lib/skills';
 import { Button } from '@/components/ui/button';
+import { SyllableText } from '../syllable-text';
 
 export const EXERCISE_URL_REGEX = new RegExp('(https://studio--classemagique2\\.us-central1\\.hosted\\.app/exercise/([a-zA-Z0-9-]+))', 'g');
 
 interface ChatMessageContentProps {
     text: string;
+    colorizeSyllables: boolean;
 }
 
-export function ChatMessageContent({ text }: ChatMessageContentProps) {
+export function ChatMessageContent({ text, colorizeSyllables }: ChatMessageContentProps) {
     const parts = text.split(EXERCISE_URL_REGEX);
 
     return (
@@ -37,6 +39,9 @@ export function ChatMessageContent({ text }: ChatMessageContentProps) {
                 }
                 // Check if the part is not the skill slug from the capture group
                 else if (index % 3 === 0) {
+                     if (colorizeSyllables) {
+                        return <SyllableText key={index} text={part} />;
+                    }
                     return <span key={index}>{part}</span>;
                 }
                 
