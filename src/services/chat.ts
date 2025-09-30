@@ -9,8 +9,8 @@ export interface Conversation {
     id: string;
     participants: string[]; // array of student IDs
     participantNames: { [id: string]: string };
-    participantPhotoURLs: { [id: string]: string | undefined };
-    participantShowPhoto: { [id: string]: boolean | undefined };
+    participantPhotoURLs?: { [id: string]: string | undefined };
+    participantShowPhoto?: { [id: string]: boolean | undefined };
     lastMessage: Message | null;
 }
 
@@ -32,11 +32,52 @@ export function listenToConversations(studentId: string, callback: (conversation
         where('participants', 'array-contains', studentId)
     );
 
-    return onSnapshot(q, (querySnapshot) => {
+    const studentsPromise = getDocs(collection(db, 'students')).then(snapshot => {
+        const studentMap = new Map<string, Student>();
+        snapshot.forEach(doc => studentMap.set(doc.id, { id: doc.id, ...doc.data() } as Student));
+        return studentMap;
+    });
+
+    return onSnapshot(q, async (querySnapshot) => {
+        const studentMap = await studentsPromise;
         const conversations: Conversation[] = [];
-        querySnapshot.forEach((doc) => {
-            conversations.push({ id: doc.id, ...doc.data() } as Conversation);
-        });
+
+        for (const docSnap of querySnapshot.docs) {
+            let convoData = docSnap.data() as Conversation;
+
+            // --- DEBUT DE LA CORRECTION ---
+            // Vérifier si les informations de photo sont manquantes et les ajouter si nécessaire
+            let needsUpdate = false;
+            if (!convoData.participantPhotoURLs || !convoData.participantShowPhoto) {
+                convoData.participantPhotoURLs = convoData.participantPhotoURLs || {};
+                convoData.participantShowPhoto = convoData.participantShowPhoto || {};
+                
+                for (const participantId of convoData.participants) {
+                    if (convoData.participantPhotoURLs[participantId] === undefined || convoData.participantShowPhoto[participantId] === undefined) {
+                        const student = studentMap.get(participantId);
+                        if (student) {
+                            needsUpdate = true;
+                            convoData.participantPhotoURLs[participantId] = student.photoURL || '';
+                            convoData.participantShowPhoto[participantId] = student.showPhoto ?? true;
+                        }
+                    }
+                }
+            }
+
+            // Si une mise à jour est nécessaire, l'effectuer en arrière-plan.
+            // Cela n'empêche pas l'affichage immédiat des données corrigées.
+            if (needsUpdate) {
+                const conversationRef = doc(db, 'conversations', docSnap.id);
+                // Utiliser setDoc avec merge pour ne pas écraser d'autres champs
+                await setDoc(conversationRef, {
+                    participantPhotoURLs: convoData.participantPhotoURLs,
+                    participantShowPhoto: convoData.participantShowPhoto
+                }, { merge: true }).catch(err => console.error("Failed to update conversation with photo info:", err));
+            }
+            // --- FIN DE LA CORRECTION ---
+
+            conversations.push({ id: docSnap.id, ...convoData });
+        };
         
         // Sort conversations by last message timestamp, descending.
         conversations.sort((a, b) => {
