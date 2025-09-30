@@ -5,81 +5,81 @@
  */
 export const SPELLING_LISTS_RAW = `
 D1 – Les consonnes muettes en fin de mot
-trot, biscuit, amoureux, fruit, vieux, robot, gigot, bras, époux, cadenas, jaloux, port, mort, souris, renard, tapis, canard, sport, enfant, trois, grand, bois, chaud, éléphant
+trot, robot, gigot, port, mort, sport, enfant, éléphant, biscuit, fruit, bras, cadenas, souris, tapis, trois, bois, amoureux, vieux, époux, jaloux, renard, grand, chaud
 
-D2 – Le son [ã] et variations (an/en/em/…)
-maman, chanter, temps, jambe, ensemble, emmener, ampoule, ambiance, client, vent, quand, an, danser, entre, avant, banc, grand, dent, gant, tante, camp, chambre, rampe, lampe
+D2 – m devant m, b, p
+temps, septembre, décembre, trembler, emmener, embrasser, ensemble, encore, ensuite, parent, vendredi, pompier, combien, tomber, éponge, jambe, chambre, dimanche, simple, important, grimper, invitation
 
-D3 – Le son [ɛ̃] et variations (in/im/ain/ein/…)
-matin, impossible, pain, peinture, copain, important, simple, main, train, plein, chemin, fin, jardin, sapin, magasin, dessin, timbre, peinture, faim, demain, grain, frein
+D3 – L’astuce de la maison hantée
+pourtant, devant, restaurant, cependant, maintenant, flamant, diamant, aimant, éléphant, immigrant, vent, cent, souvent, vraiment, comment, rapidement, monument, document, jument, continent
 
-D4 – Le son [ɔ̃] et variations (on/om)
-bonbon, pont, bombe, pompier, oncle, long, rond, non, son, ton, mon, nom, prénom, maison, front, fond, conte, compte, mouton, bouton, salon, pantalon, marron
+D4 – Choisir entre « gn » et « ni »
+gagner, soigner, baigner, ligne, vigne, campagne, cygne, peigne, brugnon, mignon, grognon, champignon, saignée, araignée, jardinier, meunier, dernier, prunier, bananier, opinion
 
-D5 – Le son [o] et variations (o/au/eau)
-moto, auto, bateau, beau, pot, mot, aussi, autre, faute, jaune, tableau, cadeau, gâteau, marteau, chapeau, seau, taureau, agneau, veau, eau, oiseau, faux, gauche
+D5 – L’astuce des déesses
+toujours, temps, longtemps, tout le temps, puis, depuis, alors, une fois, parfois, quelquefois, autrefois, vers, ailleurs, auprès, dedans, dehors, dessous, dessus, très, mais, jamais, sans, à travers, à l’envers
 
-D6 – Le son [k] et variations (c/qu/k)
-coq, question, kiosque, quand, qui, que, quoi, col, cou, avec, sac, parc, classe, école, quatre, cinq, casquette, képi, kangourou, kimono, chèque, orchestre, chorale
+D6 – Le « e » muet
+pluie, vie, vue, tortue, idée, épée, joie, proie, roue, joue, craie, plaie, foire, histoire, fleur, couleur, beauté, vérité, amitié, moitié, livre, coffre, flamme, homme
 
-D7 – Le son [s] et variations (s/ss/c/ç/t)
-sel, classe, citron, garçon, addition, son, sur, sous, dans, passer, glisser, poisson, tasse, boisson, balançoire, façade, leçon, science, piscine, patience, récréation, attention
+D7 – Les différentes écritures du son « é »
+étoile, échelle, école, écureuil, chéri, téléphone, récréation, cheminée, journée, idée, année, canapé, rusé, isolé, policier, jardinier, châtaignier, cacher, jouer, chanter
 
-D8 – Le son [g] et variations (g/gu)
-gant, guitare, guide, langue, bague, vague, gaz, gorille, garage, figure, guêpe, guerre, guirlande, magasin, guichet, déguisement, fatigue, algue, mangue, guépard
+D8 – L’écriture du son « é » à la fin des noms
+fée, araignée, soirée, liberté, santé, karaté, pâté, marché, boucher, pâtissier, chevalier, framboisier, peuplier, saladier, calendrier, oreiller, voilier, épervier, sanglier, goûter, janvier, février
 
-D9 – Le son [ʒ] et variations (g/ge)
-girafe, pigeon, gymnase, genou, gens, orange, rouge, sage, image, page, cage, rage, large, manger, bouger, changer, nager, plonger, gilet, tige, magie, logique
+D9 – Orthographier le son « eu »
+cheval, grenier, repas, peluche, regarder, feu, bleu, un peu, pneu, lieu, creux, vieux, curieux, gazeux, coureuse, affreuse, furieuse, docteur, chanteur, lecteur
 
-D10 – Le son [ɛ] et variations (è/ê/ei/ai/et)
-mère, fête, reine, maison, secret, père, frère, tête, fenêtre, neige, seize, treize, balai, lait, mais, jamais, robinet, jouet, bonnet, chalet, forêt, arrêt
+D10 – Les combinaisons récurrentes (1)
+maison, raisin, plaisir, française, anglaise, fraise, treize, seize, police, cicatrice, épice, dentifrice, factrice, indice, exercice, mince, prince, grincer, pincer, coincer
 
-D11 – Le son [e] et variations (é/er/ez/et)
-été, parler, nez, et, vélo, fée, café, téléphone, rocher, panier, vous chantez, chez, cahier, pied, clé, boulanger, boucher, épicier, fermier, escalier
+D11 – Les combinaisons récurrentes (2)
+canard, retard, renard, léopard, boulevard, milliard, placard, billard, clochard, montagnard, gare, mare, guitare, pousser, éclabousser, glousser, trousse, glisser, visser, plisser
 
-D12 – Les sons « ou » et « oi »
-loup, voir, jour, soir, nous, trois, vous, roi, fourmi, voiture, bouche, noir, genou, pourquoi, couloir, mouchoir, roue, poule, boule, rouge, douze, vouloir, pouvoir
+D12 – Le son /an/
+entourer, enfant, entendre, vendredi, serpent, parent, prendre, vendre, enfant, enchanteur, pendant, vendange, embrasser, ampoule, champignon, antilope, pantalon, éléphant, restaurant, sang, fantôme, manche, cantine, gant, orange, mélange
 
-D13 – Les sons « eu » et « œu »
-deux, pneu, cœur, œuf, fleur, neuf, jeu, feu, bleu, cheveux, jeune, seul, beurre, heure, sœur, facteur, docteur, aspirateur, couleur, chanteur, danseur, voyageur
+D13 – Le son /o/
+océan, otarie, crocodile, brocoli, photographe, pomme, botte, haricot, escargot, grelot, idiot, cachot, aussi, autour, autant, auprès, auparavant, aussitôt, aujourd’hui, autrefois, jaune, pauvre, chameau, oiseau, vaisseau
 
-D14 – Le son [j] et variations (ill/y/i)
-fille, papillon, yeux, yaourt, lion, famille, gorille, grille, billet, cheville, paille, feuille, grenouille, réveil, soleil, travail, merveille, abeille, oreille, bouteille
+D14 – Les consonnes doubles (1)
+offrir, officier, affiche, affoler, efficace, effort, touffe, joufflu, étouffer, truffe, buffle, siffler, chiffre, difficile, comme, comment, commencer, commode, pomme, somme, lionne, tonne, carotte, grotte
 
-D15 – Le son [ɲ] (gn)
-montagne, vigne, champignon, cygne, signature, magnifique, peigne, chignon, oignon, soigner, gagner, grogner, grignoter, mignon, campagne, araignée, poignée, baignoire
+D15 – L’usage du « h »
+hérisson, hiver, hache, herbe, hôpital, histoire, phrase, phare, pharmacie, théâtre, sympathie, cathédrale, écho, chorale, archéologie, chahuter, véhicule, cahier, dehors, Sahara
 
-D16 – Le son [wa] et variations (oi/oy)
-trois, oiseau, nettoyer, joie, moi, toi, soi, roi, loi, fois, bois, noix, poire, soir, voir, devoir, pouvoir, vouloir, croire, boire, miroir, trottoir, mouchoir, couloir
+D16 – Les accents
+poupée, qualité, épée, épaule, échelle, célèbre, élève, rivière, sorcière, planète, frère, procès, excès, succès, fête, forêt, fenêtre, tête, couette, verre, renne, poubelle
 
-D17 – Les valeurs de la lettre H (muet ou aspiré)
-huit, haricot, hibou, héros, haut, homme, heure, histoire, habiter, hiver, hélicoptère, hôpital, hôtel, herbe, hasard, hérisson, hangar, habit, humain, humble
+D17 – Le son /è/
+escalier, estomac, esprit, essorer, essuyer, mercredi, serpent, spectacle, rectangle, ciel, caramel, air, aigle, aiguille, monnaie, craie, plaie, français, anglais, poulet, secret, violet
 
-D18 – Le pluriel des noms en -s et -x
-chaises, tables, amis, cadeaux, cheveux, jeux, un cheval / des chevaux, un journal / des journaux, un animal / des animaux, un canal / des canaux, un bocal / des bocaux, un travail / des travaux
+D18 – Le son /in/
+invité, interdit, intelligent, intérieur, installer, impossible, imprimer, important, poussin, lutin, lapin, voisin, chien, bien, combien, pain, bain, demain, peinture, éteindre
 
-D19 – Le féminin des noms et des adjectifs
-grand/grande, petit/petite, joli/jolie, content/contente, ami/amie, marchand/marchande, chanteur/chanteuse, danseur/danseuse, acteur/actrice, directeur/directrice, heureux/heureuse
+D19 – Les consonnes doubles (2)
+guerre, tonnerre, verre, terre, princesse, maitresse, fesse, politesse, poubelle, hirondelle, pelle, gazelle, lunette, recette, chaussette, assiette, renne, gardienne
 
-D20 – L’accord dans le groupe nominal
-un grand garçon, une grande fille, des grands garçons, des grandes filles, le beau château, les beaux châteaux, un nouveau livre, une nouvelle robe, de nouveaux livres, de nouvelles robes
+D20 – Le son /g/
+glace, glue, grimace, grenouille, garçon, galet, gâteau, galette, cigale, gorille, gouter, gomme, légume, figure, virgule, guitare, guirlande, guêpe, guépard, bague
 
-D21 – L’accord du verbe avec le sujet
-le chat miaule, les chats miaulent, je chante, nous chantons, tu danses, vous dansez, il/elle joue, ils/elles jouent, l'oiseau vole, les oiseaux volent, la voiture roule, les voitures roulent
+D21 – Le son /j/
+genou, gentil, neige, singe, luge, village, visage, jaune, jouet, jardin, jeudi, girafe, gilet, bougie, magie, pigeon, vengeance, gymnastique, plonger, manger
 
-D22 – Le verbe être au présent et à l'imparfait
-je suis, tu es, il est, nous sommes, vous êtes, ils sont, j'étais, tu étais, il était, nous étions, vous étiez, ils étaient, un garçon, une fille, le maître, la maîtresse
+D22 – Le son /k/
+clé, carte, soustraction, colle, cuisine, crabe, tic, lac, bec, roc, quatre, quarante, quoi, quand, pourquoi, est-ce que, quille, requin, question, magique, logique, musique, moustique, masque, chaque, lorsque, presque, parce que
 
-D23 – Le verbe avoir au présent et à l'imparfait
-j'ai, tu as, il a, nous avons, vous avez, ils ont, j'avais, tu avais, il avait, nous avions, vous aviez, ils avaient, un livre, une trousse, des crayons, des amis
+D23 – Écrire les –ail, -eil, -euil, -ouil
+portail, travail, éventail, paille, bataille, poulailler, réveil, appareil, conseil, bouteille, corbeille, oreiller, fenouil, grenouille, citrouille, brouillard, écureuil, fauteuil, feuille, feuillage
 
-D24 – Les verbes du 1er groupe au présent et à l'imparfait
-je chante, tu chantes, il chante, nous chantons, vous chantez, ils chantent, je chantais, tu chantais, il chantait, nous chantions, vous chantiez, ils chantaient, parler, danser, jouer, regarder
+D24 – Écrire les -oy, -uy, -ay
+fille, grille, famille, aiguille, papillon, coquillage, juillet, ailleurs, crayon, payer, essayer, balayer, voyage, envoyer, royal, joyeux, appuyer, ennuyer, bruyant, yaourt
 
-D25 – Les mots invariables
-ici, là, maintenant, demain, hier, aujourd'hui, toujours, jamais, souvent, parfois, beaucoup, peu, assez, trop, très, bien, mal, comment, pourquoi, quand, où, avec, sans, dans, sur, sous, devant, derrière, entre
+D25 – Le son /z/
+zoo, zut, zéro, zèbre, onze, douze, treize, quatorze, quinze, seize, maison, saison, bisou, fusée, visite, visage, cuisine, oiseau, invisible, église, entreprise, fraise, vase, rose
 
-D26 – Les homophones (a/à, et/est, on/ont, son/sont)
-il a un vélo / il va à l'école, un chat et un chien / il est grand, on va jouer / ils ont faim, son cartable / ils sont contents, la mer / la mère / le maire, ce / se, ces / ses, c'est / s'est
+D26 – Le son /s/
+chanson, inverser, danser, triste, souris, sucre, spécial, statue, citron, cinéma, racine, cerise, décembre, cygne, potion, attention, impatient, péripétie, essentiel, saucisse, balançoire, message, massage, aussitôt
 `
 ;
