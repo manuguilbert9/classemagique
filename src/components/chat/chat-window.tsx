@@ -47,10 +47,10 @@ export function ChatWindow({
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSending, setIsSending] = useState(false);
-    const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+    const [suggestionPage, setSuggestionPage] = useState(0);
 
     const { toast } = useToast();
-    const { wordSuggestions, suggestionBuckets, isLoading: isLoadingSuggestions, refresh: refreshSuggestions } = useSpellSuggestions(newMessage, "fr");
+    const { wordSuggestions, isLoading: isLoadingSuggestions, refresh: refreshSuggestions } = useSpellSuggestions(newMessage, "fr");
 
     // State for correction dialog
     const [correctionTarget, setCorrectionTarget] = useState<Message | null>(null);
@@ -65,20 +65,18 @@ export function ChatWindow({
     const messageMetaFontSize = useMemo(() => Number((11 * messageScale).toFixed(2)), [messageScale]);
 
     const suggestionSignature = useMemo(() => wordSuggestions.join('|'), [wordSuggestions]);
-    const primarySuggestionSet = useMemo(() => new Set(wordSuggestions.map((value) => value.toLowerCase())), [wordSuggestions]);
-    const trimmedMessageLength = useMemo(() => newMessage.trim().length, [newMessage]);
+    
     const hasSuggestions = useMemo(
-        () => wordSuggestions.length > 0 || suggestionBuckets.some((bucket) => bucket.suggestions.length > 0),
-        [wordSuggestions, suggestionBuckets]
+        () => wordSuggestions.length > 0,
+        [wordSuggestions]
     );
-    const hasTypedInput = useMemo(() => trimmedMessageLength > 0, [trimmedMessageLength]);
-    const canRefreshSuggestions = useMemo(
-        () => trimmedMessageLength >= 3,
-        [trimmedMessageLength]
-    );
+    const trimmedMessageLength = useMemo(() => newMessage.trim().length, [newMessage]);
+    
+    const suggestionsToShow = 3;
+    const canRefreshSuggestions = wordSuggestions.length > suggestionsToShow;
 
     useEffect(() => {
-        setActiveSuggestionIndex(0);
+        setSuggestionPage(0);
     }, [suggestionSignature]);
 
     useEffect(() => {
@@ -189,54 +187,33 @@ export function ChatWindow({
         if (!normalizedSuggestion) return;
 
         setNewMessage((prev) => {
-            if (!prev.trim()) {
-                return `${normalizedSuggestion} `;
+            const base = prev.trimEnd();
+            const lastSpaceIndex = base.lastIndexOf(' ');
+            
+            if (lastSpaceIndex === -1) {
+                 // Remplacer le seul mot
+                 return `${normalizedSuggestion} `;
             }
-
-            const trailingWhitespace = /\s+$/.test(prev);
-            if (!trailingWhitespace) {
-                const wordMatch = prev.match(/([A-Za-zÀ-ÖØ-öø-ÿ'-]+)$/);
-                if (wordMatch) {
-                    return `${prev.slice(0, prev.length - wordMatch[1].length)}${normalizedSuggestion} `;
-                }
-            }
-
-            const base = trailingWhitespace ? prev : `${prev}${prev.endsWith(' ') ? '' : ' '}`;
-            return `${base}${normalizedSuggestion} `;
+            
+            // Remplacer le dernier mot
+            return `${base.substring(0, lastSpaceIndex + 1)}${normalizedSuggestion} `;
         });
         textareaRef.current?.focus();
     }, []);
 
-    const handleApplySuggestionAtIndex = useCallback((index: number) => {
-        const suggestion = wordSuggestions[index];
-        if (!suggestion) return;
-        handleApplySuggestion(suggestion);
-    }, [handleApplySuggestion, wordSuggestions]);
 
     const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (wordSuggestions.length) {
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                setActiveSuggestionIndex((prev) => (prev + 1) % wordSuggestions.length);
-                return;
-            }
-            if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                setActiveSuggestionIndex((prev) => (prev - 1 + wordSuggestions.length) % wordSuggestions.length);
-                return;
-            }
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                handleApplySuggestionAtIndex(activeSuggestionIndex);
-                return;
-            }
-        }
-
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
         }
-    }, [wordSuggestions.length, handleApplySuggestionAtIndex, activeSuggestionIndex, handleSendMessage]);
+    }, [handleSendMessage]);
+
+    const handleRefreshSuggestions = () => {
+        const totalSuggestions = wordSuggestions.length;
+        if (totalSuggestions <= suggestionsToShow) return;
+        setSuggestionPage(prev => (prev + 1) % Math.ceil(totalSuggestions / suggestionsToShow));
+    }
     
 
     if (isCreatingNew) {
@@ -315,7 +292,9 @@ export function ChatWindow({
         return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
-    const showSuggestionsPanel = hasSuggestions || isLoadingSuggestions || hasTypedInput;
+    const showSuggestionsPanel = hasSuggestions || isLoadingSuggestions || trimmedMessageLength > 0;
+    const suggestionStart = suggestionPage * suggestionsToShow;
+    const currentSuggestions = wordSuggestions.slice(suggestionStart, suggestionStart + suggestionsToShow);
 
     return (
         <div className="flex h-full flex-col md:flex-row">
@@ -418,7 +397,7 @@ export function ChatWindow({
                             size="icon"
                             className="absolute bottom-1 right-1 h-9 w-9"
                             onClick={handleSendMessage}
-                            disabled={isSending || !hasTypedInput}
+                            disabled={isSending || trimmedMessageLength === 0}
                         >
                             {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                         </Button>
@@ -426,67 +405,29 @@ export function ChatWindow({
                 </div>
             </div>
             {showSuggestionsPanel && (
-                <aside className="border-t bg-muted/10 p-4 md:w-80 md:border-l md:border-t-0 lg:w-96">
+                <aside className="border-t bg-muted/10 p-4 md:w-[400px] md:border-l md:border-t-0">
                     <div className="rounded-xl border bg-background/90 p-3 shadow-sm">
-                        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            <span className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> Suggestions</span>
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                onClick={refreshSuggestions}
-                                disabled={isLoadingSuggestions || !canRefreshSuggestions}
-                                title="Rafraîchir les suggestions"
-                            >
-                                {isLoadingSuggestions ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                            </Button>
-                        </div>
-                        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                            {wordSuggestions.length ? (
-                                wordSuggestions.map((suggestion, index) => (
-                                    <Button
-                                        key={`${suggestion}-${index}`}
-                                        size="sm"
-                                        variant={activeSuggestionIndex === index ? 'secondary' : 'outline'}
-                                        onMouseDown={() => handleApplySuggestion(suggestion)}
-                                        onMouseEnter={() => setActiveSuggestionIndex(index)}
-                                        className="shrink-0"
-                                    >
-                                        {suggestion}
-                                        {activeSuggestionIndex === index && <span className="ml-2 text-[10px] text-muted-foreground">↹</span>}
+                        
+                        {isLoadingSuggestions ? (
+                             <div className="flex justify-center items-center h-24">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                             </div>
+                        ) : (
+                            <div className="grid grid-cols-3 gap-2">
+                                {currentSuggestions.map((s, i) => (
+                                    <Button key={s+i} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s)}>{s}</Button>
+                                ))}
+                                {canRefreshSuggestions && (
+                                     <Button size="sm" variant="ghost" onClick={handleRefreshSuggestions} className="col-span-3">
+                                        <RefreshCw className="mr-2 h-4 w-4"/>
+                                        Autres suggestions
                                     </Button>
-                                ))
-                            ) : (
-                                <p className="text-xs text-muted-foreground">Commence à taper pour voir des idées !</p>
-                            )}
-                        </div>
-                        {suggestionBuckets.map((bucket) => {
-                            const filtered = bucket.suggestions.filter((value) => !primarySuggestionSet.has(value.toLowerCase()));
-                            if (!filtered.length) return null;
-
-                            return (
-                                <div key={bucket.id} className="mt-3 space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="secondary" className="text-[11px] font-medium uppercase tracking-wide">
-                                            {bucket.label}
-                                        </Badge>
-                                        {bucket.description && <span className="text-[11px] text-muted-foreground">{bucket.description}</span>}
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {filtered.map((suggestion) => (
-                                            <Button
-                                                key={`${bucket.id}-${suggestion}`}
-                                                size="sm"
-                                                variant="outline"
-                                                onMouseDown={() => handleApplySuggestion(suggestion)}
-                                            >
-                                                {suggestion}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                )}
+                            </div>
+                        )}
+                        {!isLoadingSuggestions && wordSuggestions.length === 0 && trimmedMessageLength > 0 && (
+                            <p className="text-xs text-muted-foreground text-center p-4">Aucune suggestion pour "{trimmedText.split(' ').pop()}"</p>
+                        )}
                     </div>
                 </aside>
             )}
