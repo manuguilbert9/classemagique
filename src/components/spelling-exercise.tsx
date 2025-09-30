@@ -45,39 +45,25 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
   const [wordDisplayTime, setWordDisplayTime] = useState(6000); // Default 6 seconds
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
   
-  const [debugLog, setDebugLog] = useState<string[]>([]);
-
   const inputRef = useRef<HTMLInputElement>(null);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const logDebug = useCallback((message: string) => {
-    setDebugLog(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
-  }, []);
-
   useEffect(() => {
     async function loadLists() {
-        logDebug("Chargement des listes de dictée...");
         setIsLoading(true);
         try {
-            const lists = await getSpellingLists(logDebug);
+            const lists = await getSpellingLists();
             setAvailableLists(lists);
-            logDebug(`${lists.length} listes trouvées.`);
         } catch (error) {
-            if (error instanceof Error) {
-                logDebug(`ERREUR lors du chargement des listes: ${error.message}`);
-            } else {
-                logDebug(`ERREUR inconnue lors du chargement des listes.`);
-            }
+            console.error(error);
         } finally {
             setIsLoading(false);
-            logDebug("Fin du chargement des listes.");
         }
     }
     loadLists();
-  }, [logDebug]);
+  }, []);
 
   const startExercise = (listData: SpellingList, session: 'lundi' | 'jeudi' | 'all') => {
-      logDebug(`Démarrage de l'exercice avec la liste ${listData.id}, session ${session}`);
       setList(listData);
       let sessionWords: string[] = [];
 
@@ -88,7 +74,6 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
           sessionWords = session === 'lundi' ? listData.words.slice(0, half) : listData.words.slice(half);
       }
       
-      logDebug(`${sessionWords.length} mots à réciter pour cette session.`);
       setWords([...sessionWords].sort(() => Math.random() - 0.5));
       setCurrentWordIndex(0);
       setInputValue('');
@@ -101,70 +86,58 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
 
   useEffect(() => {
     if (exerciseId && availableLists.length > 0) {
-      logDebug(`ID d'exercice détecté: ${exerciseId}`);
       const listId = exerciseId.split('-')[0];
       const session = exerciseId.split('-')[1] as 'lundi' | 'jeudi';
-      logDebug(`Recherche de la liste ID: ${listId}, session: ${session}`);
       const foundList = availableLists.find(l => l.id === listId);
 
       if (foundList && session) {
-        logDebug(`Liste trouvée: "${foundList.title}". Démarrage...`);
         startExercise(foundList, session);
       } else {
-        logDebug(`ERREUR: Impossible de trouver la liste correspondante à l'ID ${exerciseId}`);
         setIsLoading(false);
       }
-    } else if (exerciseId) {
-        logDebug(`ID d'exercice détecté (${exerciseId}), mais les listes ne sont pas encore chargées. En attente...`);
-    } else {
-        logDebug("Aucun ID d'exercice, passage en mode de sélection manuelle.");
+    } else if (exerciseId && availableLists.length === 0 && !isLoading) {
+        // Handle case where lists are loaded but no match is found
+        setIsLoading(false);
+    } else if (!exerciseId) {
         setIsLoading(false);
     }
-  }, [exerciseId, availableLists, logDebug]);
+  }, [exerciseId, availableLists, isLoading]);
 
   const showWord = useCallback(() => {
-    logDebug(`Affichage du mot: ${words[currentWordIndex]}`);
     setFeedback('showing');
     setInputValue('');
     if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
     showTimeoutRef.current = setTimeout(() => {
-      logDebug("Fin de l'affichage, passage à la saisie.");
       setFeedback('idle');
       setTimeout(() => inputRef.current?.focus(), 100);
     }, wordDisplayTime);
-  }, [wordDisplayTime, words, currentWordIndex, logDebug]);
+  }, [wordDisplayTime]);
 
   useEffect(() => {
     if (words.length > 0 && !isFinished && currentWordIndex < words.length) {
-      logDebug(`Préparation de l'affichage pour l'index de mot: ${currentWordIndex}`);
       showWord();
     }
     return () => {
       if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
     }
-  }, [words, currentWordIndex, isFinished, showWord, logDebug]);
+  }, [words, currentWordIndex, isFinished, showWord]);
 
   const handleNextWord = useCallback(() => {
     if (currentWordIndex < words.length - 1) {
-      logDebug("Passage au mot suivant.");
       setCurrentWordIndex(prev => prev + 1);
     } else {
-      logDebug("Fin de l'exercice.");
       setIsFinished(true);
     }
-  }, [currentWordIndex, words.length, logDebug]);
+  }, [currentWordIndex, words.length]);
   
   const handleSubmit = () => {
     if (feedback !== 'idle' || !words[currentWordIndex]) return;
     
-    logDebug(`Validation de la réponse. Attendu: "${words[currentWordIndex]}", Saisi: "${inputValue}"`);
     const currentWord = words[currentWordIndex];
     if (inputValue.trim().toLowerCase() === currentWord.toLowerCase()) {
-      logDebug("Réponse CORRECTE.");
       setFeedback('correct');
       setTimeout(handleNextWord, 1500);
     } else {
-      logDebug("Réponse INCORRECTE.");
       setFeedback('incorrect');
       if (!errors.includes(currentWord)) {
           setErrors(prev => [...prev, currentWord]);
@@ -175,10 +148,8 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
   useEffect(() => {
     async function saveResult() {
       if (isFinished && student && !hasBeenSaved && words.length > 0) {
-        logDebug("Sauvegarde du résultat...");
         setHasBeenSaved(true);
         const score = ((words.length - errors.length) / words.length) * 100;
-        logDebug(`Score calculé: ${score.toFixed(2)}%`);
         
         const details: ScoreDetail[] = words.map(word => ({
             question: "Écrire le mot",
@@ -205,19 +176,15 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
                   details: details
               });
           }
-          logDebug("Résultat sauvegardé avec succès.");
         } catch (error) {
-          if (error instanceof Error) {
-             logDebug(`ERREUR de sauvegarde: ${error.message}`);
-          }
+            console.error(error);
         }
       }
     }
     saveResult();
-  }, [isFinished, student, words, errors, exerciseId, hasBeenSaved, isHomework, homeworkDate, logDebug]);
+  }, [isFinished, student, words, errors, exerciseId, hasBeenSaved, isHomework, homeworkDate]);
 
   const handleTryAgain = () => {
-    logDebug("Tentative de réessayer le mot.");
     showWord();
   };
 
@@ -229,23 +196,9 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     }
   };
   
-  const renderDebugArea = () => (
-      <Card className="mt-4">
-          <CardHeader>
-              <CardTitle className="text-sm">Zone de Débogage</CardTitle>
-          </CardHeader>
-          <CardContent>
-              <pre className="bg-gray-800 text-green-400 p-4 rounded-md text-xs h-48 overflow-y-auto font-mono">
-                  {debugLog.join('\n')}
-              </pre>
-          </CardContent>
-      </Card>
-  );
-  
   if (isLoading && !list) {
     return <div className="w-full max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-16 w-16 animate-spin" /></div>
-        {renderDebugArea()}
     </div>;
   }
   
@@ -269,7 +222,6 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
                     </Card>
                 ))
             )}
-            {renderDebugArea()}
         </div>
      );
   }
@@ -307,7 +259,6 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
                     Retourner à la liste
                 </Button>
             </Card>
-            {renderDebugArea()}
         </main>
     )
   }
@@ -389,7 +340,6 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
           )}
         </Card>
       </div>
-      {renderDebugArea()}
       <style jsx>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
