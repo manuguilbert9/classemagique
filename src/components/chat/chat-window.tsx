@@ -304,7 +304,7 @@ export function ChatWindow({
         const isCurrentUser = msg.senderId === currentStudent.id;
         const containsExerciseLink = EXERCISE_URL_REGEX.test(msg.text);
 
-        const content = (
+        return (
             <div className={cn(
                 "max-w-xs md:max-w-md p-3 rounded-2xl",
                 isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-secondary rounded-bl-none",
@@ -337,22 +337,6 @@ export function ChatWindow({
                 </p>
             </div>
         );
-
-        if (containsExerciseLink) {
-            return content; // Just the bubble, no dropdown
-        }
-
-        return (
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>{content}</DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => openCorrectionDialog(msg)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>Corriger</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        );
     };
 
     return (
@@ -384,20 +368,35 @@ export function ChatWindow({
                         {messages.map((msg, index) => {
                             const isCurrentUser = msg.senderId === currentStudent.id;
                             const showDate = index === 0 || (new Date(msg.createdAt.toDate()).getDate() !== new Date(messages[index - 1].createdAt.toDate()).getDate());
+                            const containsExerciseLink = EXERCISE_URL_REGEX.test(msg.text);
 
                             return (
-                           <React.Fragment key={msg.id}>
-                            {showDate && (
-                                <div className="text-center text-xs text-muted-foreground my-4">
-                                    {format(msg.createdAt.toDate(), 'd MMMM yyyy', { locale: fr })}
+                               <React.Fragment key={msg.id}>
+                                {showDate && (
+                                    <div className="text-center text-xs text-muted-foreground my-4">
+                                        {format(msg.createdAt.toDate(), 'd MMMM yyyy', { locale: fr })}
+                                    </div>
+                                )}
+                                <div className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
+                                     {containsExerciseLink ? (
+                                        <MessageBubble msg={msg} />
+                                     ) : (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                 <MessageBubble msg={msg} />
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onClick={() => openCorrectionDialog(msg)}>
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    <span>Corriger</span>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                     )}
                                 </div>
-                            )}
-                             <div className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
-                                 <MessageBubble msg={msg} />
-                            </div>
-                           </React.Fragment>
-                        );
-                    })}
+                               </React.Fragment>
+                            );
+                        })}
                     </div>
                 </ScrollArea>
                 <div className="border-t p-4">
