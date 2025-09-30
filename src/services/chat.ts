@@ -83,8 +83,8 @@ export async function findOrCreateConversation(currentStudent: Student, otherStu
                 [otherStudent.id]: otherStudent.name,
             },
             participantPhotoURLs: {
-                [currentStudent.id]: currentStudent.photoURL,
-                [otherStudent.id]: otherStudent.photoURL,
+                [currentStudent.id]: currentStudent.photoURL || '',
+                [otherStudent.id]: otherStudent.photoURL || '',
             },
             participantShowPhoto: {
                 [currentStudent.id]: currentStudent.showPhoto,
