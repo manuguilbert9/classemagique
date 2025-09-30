@@ -2,27 +2,20 @@
 
 import { type ReactElement } from 'react';
 import {
-  BookOpenText,
-  Calculator,
   Clock,
-  FilePenLine,
   PiggyBank,
   Ear,
   SquarePen,
   Spline,
-  Waves,
   ListOrdered,
   CalendarDays,
   Rocket,
   Mic,
-  Smile,
   BookCopy,
   Keyboard,
   Plus,
   Type,
   ArrowRight,
-  Target,
-  ALargeSmall,
   PenLine,
   Blocks,
   Route,
@@ -30,9 +23,7 @@ import {
   BrainCircuit,
   Wand,
   Table,
-  CircuitBoard,
   HelpCircle,
-  CaseUpper,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -115,6 +106,172 @@ const DecodageIcon = () => (
 );
 
 
+const SoundBlendIcon = ({ label }: { label: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    viewBox="0 0 64 64"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path
+      d="M18 14h28a10 10 0 0 1 10 10v12a10 10 0 0 1-10 10H30l-8 10v-10h-4a10 10 0 0 1-10-10V24a10 10 0 0 1 10-10Z"
+      fill="currentColor"
+      opacity="0.12"
+    />
+    <path d="M18 14h28a10 10 0 0 1 10 10v12a10 10 0 0 1-10 10H30l-8 10v-10h-4a10 10 0 0 1-10-10V24a10 10 0 0 1 10-10Z" />
+    <text
+      x="32"
+      y="36"
+      textAnchor="middle"
+      fontFamily="inherit"
+      fontSize="20"
+      fontWeight="700"
+      fill="currentColor"
+    >
+      {label}
+    </text>
+    <path d="M44 22c3 2 4.8 4.8 4.8 8s-1.8 6-4.8 8" />
+    <path d="M39.5 26c2 1.6 3 3.4 3 6s-1 4.4-3 6" />
+  </svg>
+);
+
+const SyllabeAttaqueIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    viewBox="0 0 64 64"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="10" y="12" width="44" height="40" rx="8" fill="currentColor" opacity="0.12" />
+    <rect x="10" y="12" width="44" height="40" rx="8" />
+    <path d="M18 24h28" />
+    <path d="M22 30.5 27 25l6 6" />
+    <circle cx="44" cy="28" r="3" />
+    <rect x="18" y="34" width="28" height="10" rx="4" fill="currentColor" opacity="0.12" />
+    <rect x="18" y="34" width="28" height="10" rx="4" />
+    <text
+      x="32"
+      y="41.5"
+      textAnchor="middle"
+      fontFamily="inherit"
+      fontSize="14"
+      fontWeight="700"
+      fill="currentColor"
+    >
+      PA
+    </text>
+    <path d="M12 40h-2" />
+    <path d="M14 36 10 40l4 4" />
+  </svg>
+);
+
+const RegleMBPIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    viewBox="0 0 64 64"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="8" y="14" width="48" height="36" rx="8" fill="currentColor" opacity="0.12" />
+    <rect x="8" y="14" width="48" height="36" rx="8" />
+    <line x1="32" y1="18" x2="32" y2="50" />
+    <line x1="20" y1="18" x2="20" y2="50" />
+    <line x1="44" y1="18" x2="44" y2="50" />
+    <text x="14" y="40" textAnchor="middle" fontFamily="inherit" fontSize="16" fontWeight="700" fill="currentColor">
+      M
+    </text>
+    <text x="32" y="40" textAnchor="middle" fontFamily="inherit" fontSize="16" fontWeight="700" fill="currentColor">
+      B
+    </text>
+    <text x="50" y="40" textAnchor="middle" fontFamily="inherit" fontSize="16" fontWeight="700" fill="currentColor">
+      P
+    </text>
+    <path d="M18 22h28" />
+    <path d="M18 46h28" />
+  </svg>
+);
+
+const LireNombresIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    viewBox="0 0 64 64"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="12" y="14" width="40" height="30" rx="6" fill="currentColor" opacity="0.12" />
+    <rect x="12" y="14" width="40" height="30" rx="6" />
+    <text
+      x="32"
+      y="33"
+      textAnchor="middle"
+      fontFamily="'Fira Mono', 'Courier New', monospace"
+      fontSize="18"
+      fontWeight="700"
+      fill="currentColor"
+    >
+      42
+    </text>
+    <path d="M10 30c-4 0-6 3.5-6 6s2 6 6 6" />
+    <path d="M6 32.5v7" />
+    <path d="M50 22 56 18v28l-6-4" />
+  </svg>
+);
+
+const LireMotsIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    viewBox="0 0 64 64"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path
+      d="M12 20c0-4.4 3.6-8 8-8h8c4.4 0 8 3.6 8 8v24c0-4.4-3.6-8-8-8h-8c-4.4 0-8 3.6-8 8Z"
+      fill="currentColor"
+      opacity="0.12"
+    />
+    <path
+      d="M52 20c0-4.4-3.6-8-8-8h-8c-4.4 0-8 3.6-8 8v24c0-4.4 3.6-8 8-8h8c4.4 0 8 3.6 8 8Z"
+      fill="currentColor"
+      opacity="0.12"
+    />
+    <path d="M12 20c0-4.4 3.6-8 8-8h8c4.4 0 8 3.6 8 8v32c0-4.4-3.6-8-8-8h-8c-4.4 0-8 3.6-8 8Z" />
+    <path d="M52 20c0-4.4-3.6-8-8-8h-8c-4.4 0-8 3.6-8 8v32c0-4.4 3.6-8 8-8h8c4.4 0 8 3.6 8 8Z" />
+    <line x1="20" y1="24" x2="32" y2="24" />
+    <line x1="20" y1="30" x2="32" y2="30" />
+    <line x1="20" y1="36" x2="30" y2="36" />
+    <line x1="34" y1="24" x2="46" y2="24" />
+    <line x1="34" y1="30" x2="46" y2="30" />
+    <line x1="34" y1="36" x2="44" y2="36" />
+    <path d="M26 44c1.8 2.8 4.6 4 6 4s4.2-1.2 6-4" />
+  </svg>
+);
+
+
 export const skills: Skill[] = [
   {
     name: 'Décodage',
@@ -136,7 +293,7 @@ export const skills: Skill[] = [
     name: 'Syllabe d\'attaque',
     slug: 'syllabe-attaque',
     description: "Clique sur l'image dont le nom commence par la syllabe affichée.",
-    icon: <Waves />,
+    icon: <SyllabeAttaqueIcon />,
     category: 'Phonologie',
     isFixedLevel: 'A',
   },
@@ -167,7 +324,7 @@ export const skills: Skill[] = [
     name: 'Le son [an]',
     slug: 'son-an',
     description: "Choisis la bonne écriture (an, en, am, em) pour compléter les mots.",
-    icon: <ALargeSmall />,
+    icon: <SoundBlendIcon label="AN" />,
     category: 'Orthographe',
     isFixedLevel: 'B',
   },
@@ -175,7 +332,7 @@ export const skills: Skill[] = [
     name: 'Le son [in]',
     slug: 'son-in',
     description: "Choisis la bonne écriture (in, im, ain, ein) pour compléter les mots.",
-    icon: <ALargeSmall />,
+    icon: <SoundBlendIcon label="IN" />,
     category: 'Orthographe',
     isFixedLevel: 'B',
   },
@@ -183,7 +340,7 @@ export const skills: Skill[] = [
     name: 'La règle M,B,P',
     slug: 'regle-mbp',
     description: "Complète les mots avec 'n' ou 'm' en appliquant la règle du M, B, P.",
-    icon: <CaseUpper />,
+    icon: <RegleMBPIcon />,
     category: 'Orthographe',
     isFixedLevel: 'B',
   },
@@ -199,7 +356,7 @@ export const skills: Skill[] = [
     name: 'Lire des mots',
     slug: 'simple-word-reading',
     description: 'Lire des mots simples à voix haute pour s\'entraîner.',
-    icon: <Smile />,
+    icon: <LireMotsIcon />,
     category: 'Lecture / compréhension',
     isFixedLevel: 'B',
   },
@@ -269,7 +426,7 @@ export const skills: Skill[] = [
     name: 'Lire les nombres',
     slug: 'lire-les-nombres',
     description: "Associer un nombre écrit en chiffres à son énoncé oral.",
-    icon: <BookOpenText />,
+    icon: <LireNombresIcon />,
     category: 'Nombres et calcul',
     allowedLevels: ['A', 'B', 'C', 'D'],
   },
