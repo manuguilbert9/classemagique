@@ -328,6 +328,10 @@ export function GearRacerGame({
         car.frontWheelAngle += (targetFrontWheelAngle - car.frontWheelAngle) * FRONT_WHEEL_TURN_RATE * delta;
         car.frontWheelAngle = clamp(car.frontWheelAngle, -FRONT_WHEEL_MAX_ANGLE, FRONT_WHEEL_MAX_ANGLE);
 
+        // Rotation directe vers la cible pour un meilleur alignement
+        const directTurnStrength = 0.15 * clamp(distance / 100, 0.3, 1);
+        car.heading += headingDiff * directTurnStrength * delta;
+
         const accelMagnitude = ACCELERATION * clamp(distance / 120, 0, 1.8);
         car.vx += Math.cos(car.heading) * accelMagnitude * delta;
         car.vy += Math.sin(car.heading) * accelMagnitude * delta;
