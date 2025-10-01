@@ -114,29 +114,27 @@ const SoundBlendIcon = ({ label }: { label: string }) => (
     viewBox="0 0 64 64"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2.4"
+    strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
     <path
-      d="M18 14h28a10 10 0 0 1 10 10v12a10 10 0 0 1-10 10H30l-8 10v-10h-4a10 10 0 0 1-10-10V24a10 10 0 0 1 10-10Z"
+      d="M18 16h28a10 10 0 0 1 10 10v10a10 10 0 0 1-10 10H30l-10 8v-8h-2a10 10 0 0 1-10-10V26a10 10 0 0 1 10-10Z"
       fill="currentColor"
       opacity="0.12"
     />
-    <path d="M18 14h28a10 10 0 0 1 10 10v12a10 10 0 0 1-10 10H30l-8 10v-10h-4a10 10 0 0 1-10-10V24a10 10 0 0 1 10-10Z" />
+    <path d="M18 16h28a10 10 0 0 1 10 10v10a10 10 0 0 1-10 10H30l-10 8v-8h-2a10 10 0 0 1-10-10V26a10 10 0 0 1 10-10Z" />
     <text
       x="32"
-      y="36"
+      y="35"
       textAnchor="middle"
       fontFamily="inherit"
       fontSize="20"
-      fontWeight="700"
+      fontWeight="600"
       fill="currentColor"
     >
       {label}
     </text>
-    <path d="M44 22c3 2 4.8 4.8 4.8 8s-1.8 6-4.8 8" />
-    <path d="M39.5 26c2 1.6 3 3.4 3 6s-1 4.4-3 6" />
   </svg>
 );
 
@@ -164,8 +162,8 @@ const SyllabeAttaqueIcon = () => (
       y="41.5"
       textAnchor="middle"
       fontFamily="inherit"
-      fontSize="14"
-      fontWeight="700"
+      fontSize="13"
+      fontWeight="600"
       fill="currentColor"
     >
       PA
@@ -182,27 +180,19 @@ const RegleMBPIcon = () => (
     height="1em"
     viewBox="0 0 64 64"
     fill="none"
-    stroke="currentColor"
-    strokeWidth="2.4"
-    strokeLinecap="round"
-    strokeLinejoin="round"
   >
-    <rect x="8" y="14" width="48" height="36" rx="8" fill="currentColor" opacity="0.12" />
-    <rect x="8" y="14" width="48" height="36" rx="8" />
-    <line x1="32" y1="18" x2="32" y2="50" />
-    <line x1="20" y1="18" x2="20" y2="50" />
-    <line x1="44" y1="18" x2="44" y2="50" />
-    <text x="14" y="40" textAnchor="middle" fontFamily="inherit" fontSize="16" fontWeight="700" fill="currentColor">
-      M
+    <text
+      x="32"
+      y="36"
+      textAnchor="middle"
+      fontFamily="inherit"
+      fontSize="20"
+      fontWeight="600"
+      letterSpacing="4"
+      fill="currentColor"
+    >
+      M B P
     </text>
-    <text x="32" y="40" textAnchor="middle" fontFamily="inherit" fontSize="16" fontWeight="700" fill="currentColor">
-      B
-    </text>
-    <text x="50" y="40" textAnchor="middle" fontFamily="inherit" fontSize="16" fontWeight="700" fill="currentColor">
-      P
-    </text>
-    <path d="M18 22h28" />
-    <path d="M18 46h28" />
   </svg>
 );
 
@@ -218,22 +208,22 @@ const LireNombresIcon = () => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <rect x="12" y="14" width="40" height="30" rx="6" fill="currentColor" opacity="0.12" />
-    <rect x="12" y="14" width="40" height="30" rx="6" />
+    <rect x="14" y="16" width="36" height="24" rx="6" fill="currentColor" opacity="0.12" />
+    <rect x="14" y="16" width="36" height="24" rx="6" />
     <text
       x="32"
-      y="33"
+      y="32"
       textAnchor="middle"
       fontFamily="'Fira Mono', 'Courier New', monospace"
       fontSize="18"
-      fontWeight="700"
+      fontWeight="600"
       fill="currentColor"
     >
       42
     </text>
-    <path d="M10 30c-4 0-6 3.5-6 6s2 6 6 6" />
-    <path d="M6 32.5v7" />
-    <path d="M50 22 56 18v28l-6-4" />
+    <path d="M18 44h28" strokeLinecap="round" />
+    <path d="M22 44v6" />
+    <path d="M46 44v6" />
   </svg>
 );
 
@@ -249,25 +239,31 @@ const LireMotsIcon = () => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path
-      d="M12 20c0-4.4 3.6-8 8-8h8c4.4 0 8 3.6 8 8v24c0-4.4-3.6-8-8-8h-8c-4.4 0-8 3.6-8 8Z"
-      fill="currentColor"
-      opacity="0.12"
-    />
-    <path
-      d="M52 20c0-4.4-3.6-8-8-8h-8c-4.4 0-8 3.6-8 8v24c0-4.4 3.6-8 8-8h8c4.4 0 8 3.6 8 8Z"
-      fill="currentColor"
-      opacity="0.12"
-    />
-    <path d="M12 20c0-4.4 3.6-8 8-8h8c4.4 0 8 3.6 8 8v32c0-4.4-3.6-8-8-8h-8c-4.4 0-8 3.6-8 8Z" />
-    <path d="M52 20c0-4.4-3.6-8-8-8h-8c-4.4 0-8 3.6-8 8v32c0-4.4 3.6-8 8-8h8c4.4 0 8 3.6 8 8Z" />
-    <line x1="20" y1="24" x2="32" y2="24" />
-    <line x1="20" y1="30" x2="32" y2="30" />
-    <line x1="20" y1="36" x2="30" y2="36" />
-    <line x1="34" y1="24" x2="46" y2="24" />
-    <line x1="34" y1="30" x2="46" y2="30" />
-    <line x1="34" y1="36" x2="44" y2="36" />
-    <path d="M26 44c1.8 2.8 4.6 4 6 4s4.2-1.2 6-4" />
+    <g strokeWidth="2">
+      <path
+        d="M32 16C28 13 24 12 20 12h-2c-4.4 0-8 3.6-8 8v24c2.6-2.4 5.8-3.6 9.2-3.6H24c2.8 0 5.4.6 8 1.8Z"
+        fill="currentColor"
+        opacity="0.12"
+      />
+      <path
+        d="M32 16C28 13 24 12 20 12h-2c-4.4 0-8 3.6-8 8v24c2.6-2.4 5.8-3.6 9.2-3.6H24c2.8 0 5.4.6 8 1.8Z"
+      />
+      <g transform="scale(-1 1) translate(-64 0)">
+        <path
+          d="M32 16C28 13 24 12 20 12h-2c-4.4 0-8 3.6-8 8v24c2.6-2.4 5.8-3.6 9.2-3.6H24c2.8 0 5.4.6 8 1.8Z"
+          fill="currentColor"
+          opacity="0.12"
+        />
+        <path
+          d="M32 16C28 13 24 12 20 12h-2c-4.4 0-8 3.6-8 8v24c2.6-2.4 5.8-3.6 9.2-3.6H24c2.8 0 5.4.6 8 1.8Z"
+        />
+      </g>
+    </g>
+    <line x1="32" y1="18" x2="32" y2="48" />
+    <path d="M18 24h10" />
+    <path d="M18 30h10" />
+    <path d="M36 24h10" />
+    <path d="M36 30h10" />
   </svg>
 );
 
