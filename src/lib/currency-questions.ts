@@ -164,9 +164,17 @@ const generateLevelB = (): Question => {
             const options = new Set<string>();
             options.add(formatCurrency(total));
 
-            while(options.size < 4) {
-                const variation = roundToCent((Math.random() - 0.5) * 3);
-                const distractor = roundToCent(Math.max(0.10, total + variation));
+            // Générer des distracteurs plausibles basés sur des erreurs de calcul courantes
+            const errors = [1, -1, 2, -2, 3, -3];
+            for(const error of errors.sort(() => Math.random() - 0.5)) {
+                if(options.size >= 4) break;
+                const distractor = roundToCent(Math.max(1, total + error));
+                // Arrondir au même type de centimes que le total (0 ou 50 centimes uniquement pour niveau B)
+                const hasCents = total % 1 !== 0;
+                if(!hasCents && distractor % 1 !== 0) {
+                    // Si le total est entier, garder les distracteurs entiers
+                    continue;
+                }
                 options.add(formatCurrency(distractor));
             }
 
@@ -223,10 +231,16 @@ const generateLevelC = (): Question => {
             const options = new Set<string>();
             options.add(formatCurrency(total));
 
-            while(options.size < 4) {
-                const variation = roundToCent((Math.random() - 0.5) * 5);
-                const distractorValue = roundToCent(Math.max(0.10, total + variation));
-                options.add(formatCurrency(distractorValue));
+            // Générer des distracteurs plausibles basés sur des erreurs de calcul courantes
+            const errors = [1, -1, 2, -2, 5, -5, 10, -10];
+            for(const error of errors.sort(() => Math.random() - 0.5)) {
+                if(options.size >= 4) break;
+                const distractor = roundToCent(Math.max(1, total + error));
+                const hasCents = total % 1 !== 0;
+                if(!hasCents && distractor % 1 !== 0) {
+                    continue;
+                }
+                options.add(formatCurrency(distractor));
             }
 
             return {
@@ -247,9 +261,11 @@ const generateLevelC = (): Question => {
             const options = new Set<string>();
             options.add(formatCurrency(price));
 
-            while(options.size < 4) {
-                const variation = roundToCent((Math.random() - 0.5) * 6);
-                const distractor = roundToCent(Math.max(0.50, price + variation));
+            // Générer des distracteurs plausibles
+            const errors = [0.50, -0.50, 1, -1, 2, -2, 5, -5];
+            for(const error of errors.sort(() => Math.random() - 0.5)) {
+                if(options.size >= 4) break;
+                const distractor = roundToCent(Math.max(0.50, price + error));
                 options.add(formatCurrency(distractor));
             }
 
@@ -299,9 +315,15 @@ const generateLevelC = (): Question => {
             const options = new Set<string>();
             options.add(formatCurrency(total));
 
-            while(options.size < 4) {
-                const variation = roundToCent((Math.random() - 0.5) * 5);
-                const distractor = roundToCent(Math.max(1, total + variation));
+            // Générer des distracteurs plausibles
+            const errors = [0.50, -0.50, 1, -1, 2, -2, 5, -5];
+            for(const error of errors.sort(() => Math.random() - 0.5)) {
+                if(options.size >= 4) break;
+                const distractor = roundToCent(Math.max(1, total + error));
+                const hasCents = total % 1 !== 0;
+                if(!hasCents && distractor % 1 !== 0) {
+                    continue;
+                }
                 options.add(formatCurrency(distractor));
             }
 
@@ -336,9 +358,11 @@ const generateLevelD = (): Question => {
             const options = new Set<string>();
             options.add(formatCurrency(change));
 
-            while(options.size < 4) {
-                const variation = roundToCent((Math.random() - 0.5) * 4);
-                const distractor = roundToCent(Math.max(0.05, change + variation));
+            // Générer des distracteurs plausibles (erreurs courantes : oublier des centimes, se tromper dans la soustraction)
+            const errors = [0.05, -0.05, 0.25, -0.25, 0.50, -0.50, 1, -1, 5, -5];
+            for(const error of errors.sort(() => Math.random() - 0.5)) {
+                if(options.size >= 4) break;
+                const distractor = roundToCent(Math.max(0.05, change + error));
                 options.add(formatCurrency(distractor));
             }
 
