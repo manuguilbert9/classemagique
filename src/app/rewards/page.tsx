@@ -7,14 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserContext } from '@/context/user-context';
 import { Logo } from '@/components/logo';
-import { Home, Gem, Gamepad2, ArrowLeft, Shield, Disc3 } from 'lucide-react';
+import { Home, Gem, Gamepad2, ArrowLeft, Shield, Disc3, Car } from 'lucide-react';
 import { SnakeGame } from '@/components/snake-game';
 import { spendNuggets } from '@/services/students';
 import { useToast } from '@/hooks/use-toast';
 import { AirDefenseGame } from '@/components/air-defense-game';
 import { BocciaGame } from '@/components/boccia-game';
+import { GearRacerGame } from '@/components/gear-racer-game';
 
-type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia';
+type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer';
 
 const GAME_COST = 2;
 
@@ -23,7 +24,7 @@ export default function RewardsPage() {
   const [gameState, setGameState] = useState<GameState>('selection');
   const { toast } = useToast();
 
-  const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia') => {
+  const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia' | 'gear_racer') => {
     if (!student || (student.nuggets || 0) < GAME_COST) {
       toast({
         variant: 'destructive',
@@ -42,6 +43,8 @@ export default function RewardsPage() {
         setGameState('playing_air_defense');
       } else if (game === 'boccia') {
         setGameState('playing_boccia');
+      } else if (game === 'gear_racer') {
+        setGameState('playing_gear_racer');
       }
     } else {
       toast({
@@ -96,6 +99,17 @@ export default function RewardsPage() {
     return (
         <BocciaGame
             onExit={handleExitGame}
+        />
+    );
+  }
+
+  if (gameState === 'playing_gear_racer') {
+    return (
+        <GearRacerGame
+            onExit={handleExitGame}
+            onReplay={() => handlePlay('gear_racer')}
+            canReplay={(student?.nuggets || 0) >= GAME_COST}
+            gameCost={GAME_COST}
         />
     );
   }
@@ -159,6 +173,21 @@ export default function RewardsPage() {
           </CardContent>
           <CardContent>
              <Button onClick={() => handlePlay('boccia')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
+              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
+            </Button>
+            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
+          </CardContent>
+        </Card>
+        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
+          <CardHeader>
+            <CardTitle className="font-headline text-3xl">Rallye des Rouages</CardTitle>
+            <CardDescription className="text-lg">Glisse et attrape les pièces dorées !</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Car className="h-32 w-32 mx-auto text-primary" />
+          </CardContent>
+          <CardContent>
+             <Button onClick={() => handlePlay('gear_racer')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
               Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
             {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
