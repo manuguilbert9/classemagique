@@ -400,6 +400,14 @@ export const skills: Skill[] = [
     category: 'Grammaire',
     allowedLevels: ['B', 'C', 'D'],
   },
+  {
+    name: 'Le chemin des accords',
+    slug: 'chemin-des-accords',
+    description: "Trace le bon chemin pour composer une phrase correctement accordée.",
+    icon: <Route />,
+    category: 'Grammaire',
+    allowedLevels: ['B', 'C'],
+  },
     {
     name: 'Parcours Codé',
     slug: 'coded-path',

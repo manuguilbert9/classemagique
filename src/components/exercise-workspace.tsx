@@ -84,10 +84,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   // State for keyboard-count
   const [userKeyboardInput, setUserKeyboardInput] = useState('');
 
+  // State for accord-path
+  const [selectedAccordPath, setSelectedAccordPath] = useState<number[]>([]);
+
 
   useEffect(() => {
     async function loadNonConfigurableQuestions() {
-        if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count'].includes(skill.slug)) {
+        if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count', 'chemin-des-accords'].includes(skill.slug)) {
             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
             setQuestions(generatedQuestions);
             setIsReadyToStart(true);
@@ -107,6 +110,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 startCurrencyExercise({ difficulty });
             }
             // If no level, the settings component will be shown
+        } else if (skill.slug === 'chemin-des-accords') {
+            if (student && student.levels) {
+                const level = student.levels[skill.slug] || 'B';
+                startNumberLevelExercise({ level });
+            } else if (!isUserLoading) {
+                startNumberLevelExercise({ level: 'B' });
+            }
         }
     }
     if (!isUserLoading) {
@@ -145,7 +155,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   const startNumberLevelExercise = async (settings: NumberLevelSettings) => {
     setNumberLevelSettings(settings);
-    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { numberLevel: settings });
+    const accordProgressionIndex = skill.slug === 'chemin-des-accords' && student ? (student.accordProgressionIndex || 0) : undefined;
+    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { numberLevel: settings }, accordProgressionIndex);
     setQuestions(generatedQuestions);
     setIsReadyToStart(true);
   }
@@ -176,6 +187,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setSelectedIndices([]);
     setSelectedCountIndices([]);
     setUserKeyboardInput('');
+    setSelectedAccordPath([]);
     setFeedback(null);
   }
 
@@ -306,11 +318,41 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   }
   
   const handleToggleSelectItem = (index: number) => {
-    setSelectedIndices(prev => 
-        prev.includes(index) 
+    setSelectedIndices(prev =>
+        prev.includes(index)
             ? prev.filter(i => i !== index)
             : [...prev, index]
     );
+  };
+
+  const handleAccordWordClick = (columnIndex: number, rowIndex: number) => {
+    if (feedback) return;
+
+    setSelectedAccordPath(prev => {
+      const newPath = [...prev];
+      newPath[columnIndex] = rowIndex;
+      return newPath;
+    });
+  };
+
+  const handleAccordSubmit = () => {
+    if (!exerciseData || feedback || !exerciseData.accordCorrectPath) return;
+
+    // Vérifier que tous les mots ont été sélectionnés
+    if (selectedAccordPath.length !== exerciseData.accordCorrectPath.length) {
+      return;
+    }
+
+    // Vérifier si le chemin est correct
+    const isCorrect = selectedAccordPath.every((rowIndex, colIndex) =>
+      rowIndex === exerciseData.accordCorrectPath![colIndex]
+    );
+
+    if (isCorrect) {
+      processCorrectAnswer();
+    } else {
+      processIncorrectAnswer();
+    }
   };
   
   useEffect(() => {
@@ -339,10 +381,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         if (skill.slug === 'denombrement' && countSettings) {
             scoreData.countSettings = countSettings;
         }
-        if ((skill.slug === 'lire-les-nombres' || skill.slug === 'mental-calculation' || skill.slug === 'keyboard-count') && numberLevelSettings) {
+        if ((skill.slug === 'lire-les-nombres' || skill.slug === 'mental-calculation' || skill.slug === 'keyboard-count' || skill.slug === 'chemin-des-accords') && numberLevelSettings) {
             scoreData.numberLevelSettings = numberLevelSettings;
         }
-        
+
         let result;
         if (isHomework && homeworkDate) {
           result = await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: skill.slug, score: newScoreValue });
@@ -357,6 +399,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 className: "bg-amber-100 border-amber-300 text-amber-800",
                 icon: <Gem className="h-6 w-6 text-amber-500" />,
             });
+        }
+
+        // Update accord progression if this is the accord exercise
+        if (skill.slug === 'chemin-des-accords') {
+          const { updateAccordProgression } = await import('@/services/students');
+          await updateAccordProgression(student.id, NUM_QUESTIONS);
         }
         
         try {
@@ -755,7 +803,7 @@ const renderWrittenToAudioQCM = () => (
         <p className="font-numbers text-8xl font-bold">{exerciseData.textToSpeak}</p>
         <div className="grid grid-cols-2 gap-4 w-full max-w-md">
             {exerciseData.optionsWithAudio?.map(opt => (
-                <Button 
+                <Button
                     key={opt.text}
                     variant="outline"
                     className="h-20"
@@ -769,6 +817,95 @@ const renderWrittenToAudioQCM = () => (
         </div>
     </div>
 );
+
+const renderAccordPath = () => {
+  if (!exerciseData.accordRows || exerciseData.accordRows.length !== 2) return null;
+
+  const [row1, row2] = exerciseData.accordRows;
+  const numColumns = row1.length;
+
+  return (
+    <div className="flex flex-col items-center justify-center w-full space-y-6">
+      {/* Le tableau */}
+      <div className="w-full max-w-4xl overflow-x-auto">
+        <div className="inline-grid gap-0 border-2 border-gray-300 rounded-lg overflow-hidden" style={{ gridTemplateColumns: `repeat(${numColumns}, 1fr)` }}>
+          {/* Ligne 1 */}
+          {row1.map((word, colIndex) => {
+            const isSelected = selectedAccordPath[colIndex] === 0;
+            const isCorrectWord = feedback && exerciseData.accordCorrectPath![colIndex] === 0;
+            const isIncorrectSelection = feedback === 'incorrect' && isSelected && !isCorrectWord;
+
+            return (
+              <button
+                key={`row1-${colIndex}`}
+                onClick={() => handleAccordWordClick(colIndex, 0)}
+                disabled={!!feedback}
+                className={cn(
+                  "p-4 text-lg font-semibold border border-gray-300 transition-all relative min-w-[80px]",
+                  "hover:bg-blue-50 active:scale-95",
+                  isSelected && !feedback && "bg-blue-200 ring-2 ring-blue-500",
+                  feedback === 'correct' && isSelected && "bg-green-200 ring-2 ring-green-500",
+                  isIncorrectSelection && "bg-red-200 ring-2 ring-red-500 animate-shake",
+                  feedback && isCorrectWord && !isSelected && "bg-green-100"
+                )}
+              >
+                {word}
+                {feedback === 'correct' && isSelected && (
+                  <Check className="absolute top-1 right-1 h-4 w-4 text-green-600" />
+                )}
+                {isIncorrectSelection && (
+                  <X className="absolute top-1 right-1 h-4 w-4 text-red-600" />
+                )}
+              </button>
+            );
+          })}
+
+          {/* Ligne 2 */}
+          {row2.map((word, colIndex) => {
+            const isSelected = selectedAccordPath[colIndex] === 1;
+            const isCorrectWord = feedback && exerciseData.accordCorrectPath![colIndex] === 1;
+            const isIncorrectSelection = feedback === 'incorrect' && isSelected && !isCorrectWord;
+
+            return (
+              <button
+                key={`row2-${colIndex}`}
+                onClick={() => handleAccordWordClick(colIndex, 1)}
+                disabled={!!feedback}
+                className={cn(
+                  "p-4 text-lg font-semibold border border-gray-300 transition-all relative min-w-[80px]",
+                  "hover:bg-blue-50 active:scale-95",
+                  isSelected && !feedback && "bg-blue-200 ring-2 ring-blue-500",
+                  feedback === 'correct' && isSelected && "bg-green-200 ring-2 ring-green-500",
+                  isIncorrectSelection && "bg-red-200 ring-2 ring-red-500 animate-shake",
+                  feedback && isCorrectWord && !isSelected && "bg-green-100"
+                )}
+              >
+                {word}
+                {feedback === 'correct' && isSelected && (
+                  <Check className="absolute top-1 right-1 h-4 w-4 text-green-600" />
+                )}
+                {isIncorrectSelection && (
+                  <X className="absolute top-1 right-1 h-4 w-4 text-red-600" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bouton de validation */}
+      <Button
+        size="lg"
+        className="w-full max-w-md bg-accent text-accent-foreground hover:bg-accent/90"
+        onClick={handleAccordSubmit}
+        disabled={!!feedback || selectedAccordPath.length !== numColumns}
+      >
+        <Check className="mr-2" />
+        Valider
+      </Button>
+    </div>
+  );
+};
 
 
 
@@ -821,6 +958,7 @@ const renderWrittenToAudioQCM = () => (
           {exerciseData.type === 'count' && renderCount()}
           {exerciseData.type === 'keyboard-count' && renderKeyboardCount()}
           {exerciseData.type === 'written-to-audio-qcm' && renderWrittenToAudioQCM()}
+          {exerciseData.type === 'accord-path' && renderAccordPath()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (

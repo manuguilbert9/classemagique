@@ -19,7 +19,7 @@ import { generateAdaptiveMentalMathQuestion } from './adaptive-mental-math';
 export interface Question {
   id: number;
   level: SkillLevel;
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple' | 'drag-and-drop-recognition' | 'qcm-image' | 'mystery-number';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple' | 'drag-and-drop-recognition' | 'qcm-image' | 'mystery-number' | 'accord-path';
   question: string;
   // For adaptive mental math
   competencyId?: string;
@@ -66,6 +66,10 @@ export interface Question {
   correctValue?: number;
   boxLabel?: string;
   currencySettings?: CurrencySettings;
+  // For accord-path
+  accordRows?: string[][]; // 2 rows of words
+  accordCorrectPath?: number[]; // indices of correct words in each column
+  accordPhraseIndex?: number; // which phrase in the 300-phrase list
 }
 
 export interface CalculationSettings {
@@ -114,7 +118,8 @@ export interface AllSettings {
 export async function generateQuestions(
   skill: string,
   count: number,
-  settings?: AllSettings
+  settings?: AllSettings,
+  accordProgressionIndex?: number
 ): Promise<Question[]> {
   const questionPromises: Promise<Question>[] = [];
   
@@ -185,6 +190,13 @@ export async function generateQuestions(
   if (skill === 'mystery-number') {
       // This exercise manages its own state, so we just need a placeholder
       return Promise.resolve([{ id: 1, level: 'B', type: 'mystery-number', question: '' }]);
+  }
+
+  if (skill === 'chemin-des-accords' && settings?.numberLevel) {
+      const { generateAccordQuestions } = await import('./accord-questions');
+      const level = settings.numberLevel.level === 'A' || settings.numberLevel.level === 'B' ? 'B' : 'C';
+      const progressionIndex = accordProgressionIndex || 0;
+      return generateAccordQuestions(count, level, progressionIndex);
   }
 
   // Fallback

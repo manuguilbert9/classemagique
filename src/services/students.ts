@@ -44,6 +44,7 @@ export interface Student {
     nuggets?: number;
     isOnline?: boolean;
     lastSeenAt?: Date;
+    accordProgressionIndex?: number; // Progression dans les 300 phrases du chemin des accords
 }
 
 
@@ -74,6 +75,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         mentalMathPerformance: {},
         nuggets: 0,
         showPhoto: true, // Default to true for new students
+        accordProgressionIndex: 0,
     });
 
     return {
@@ -87,6 +89,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         mentalMathPerformance: {},
         nuggets: 0,
         showPhoto: true,
+        accordProgressionIndex: 0,
     };
 }
 
@@ -166,6 +169,7 @@ export async function getStudents(): Promise<Student[]> {
                 nuggets: data.nuggets || 0,
                 isOnline: Boolean(data.isOnline),
                 lastSeenAt: typeof data.lastSeenAt?.toDate === 'function' ? data.lastSeenAt.toDate() : undefined,
+                accordProgressionIndex: data.accordProgressionIndex || 0,
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -213,6 +217,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     nuggets: studentData.nuggets || 0,
                     isOnline: Boolean(studentData.isOnline),
                     lastSeenAt: typeof studentData.lastSeenAt?.toDate === 'function' ? studentData.lastSeenAt.toDate() : undefined,
+                    accordProgressionIndex: studentData.accordProgressionIndex || 0,
                 };
             }
         }
@@ -251,6 +256,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 themeColors: data.themeColors,
                 mentalMathPerformance: data.mentalMathPerformance || {},
                 nuggets: data.nuggets || 0,
+                accordProgressionIndex: data.accordProgressionIndex || 0,
             };
         }
         return null;
@@ -342,5 +348,38 @@ export async function uploadStudentPhoto(studentId: string, file: File): Promise
         return { success: false, error: error.message };
     }
     return { success: false, error: 'An unknown error occurred during upload.' };
+  }
+}
+
+/**
+ * Updates the progression index for the "chemin des accords" exercise.
+ * This should be called after a student completes a set of accord questions.
+ * @param studentId The ID of the student.
+ * @param questionsCompleted The number of questions completed.
+ * @returns A promise indicating success or failure.
+ */
+export async function updateAccordProgression(studentId: string, questionsCompleted: number): Promise<{ success: boolean; error?: string }> {
+  if (!studentId) return { success: false, error: "ID de l'élève requis." };
+  if (questionsCompleted <= 0) return { success: false, error: "Le nombre de questions doit être positif." };
+
+  try {
+    const studentRef = doc(db, "students", studentId);
+    const studentDoc = await getDoc(studentRef);
+
+    if (!studentDoc.exists()) {
+      return { success: false, error: "L'élève n'existe pas." };
+    }
+
+    const currentIndex = studentDoc.data().accordProgressionIndex || 0;
+    const newIndex = currentIndex + questionsCompleted;
+
+    await updateDoc(studentRef, { accordProgressionIndex: newIndex });
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating accord progression:", error);
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Une erreur inconnue est survenue." };
   }
 }
