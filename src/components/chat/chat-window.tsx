@@ -126,11 +126,15 @@ export function ChatWindow({
         [wordSuggestions, trimmedMessageLength]
     );
 
+    // Scroll automatique vers le bas quand les messages changent
     useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-        }
-    }, [messages]);
+        // Utiliser requestAnimationFrame pour s'assurer que le DOM est mis à jour
+        requestAnimationFrame(() => {
+            if (scrollAreaRef.current) {
+                scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+            }
+        });
+    }, [messages, messages.length]);
 
     useEffect(() => {
         if (!conversationId) {
@@ -142,11 +146,15 @@ export function ChatWindow({
         const unsubscribe = listenToMessages(conversationId, (loadedMessages) => {
             setMessages(loadedMessages);
             setIsLoading(false);
-             setTimeout(() => {
-                if (scrollAreaRef.current) {
-                    scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-                }
-            }, 0);
+
+            // Scroll vers le bas lors du chargement initial ou changement de conversation
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (scrollAreaRef.current) {
+                        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+                    }
+                });
+            });
         });
 
         // Mark as read when opening a conversation
@@ -154,7 +162,7 @@ export function ChatWindow({
             markAsRead(conversationId, currentStudent.id);
             lastReadConversationId.current = conversationId;
         }
-        
+
         return () => unsubscribe();
 
     }, [conversationId, currentStudent.id]);

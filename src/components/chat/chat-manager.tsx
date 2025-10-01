@@ -30,6 +30,22 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
 
     const { conversations, isLoading: isLoadingConversations } = useContext(ChatContext);
 
+    // Bloquer le scroll de la page parent quand la messagerie est ouverte
+    useEffect(() => {
+        const originalOverflow = document.body.style.overflow;
+        const originalPosition = document.body.style.position;
+
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+            document.body.style.position = originalPosition;
+            document.body.style.width = '';
+        };
+    }, []);
+
     useEffect(() => {
         const unsubscribe = listenToStudentsPresence((students) => {
             const otherStudents = students.filter((s) => s.id !== student.id);
