@@ -6,15 +6,11 @@ import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 
 const GAME_DURATION = 60; // seconds
-const MAX_SPEED = 9;
-const ACCELERATION = 0.6;
-const DRAG = 0.95;
-const LATERAL_DRAG = 0.78;
-const TURN_RESPONSIVENESS = 0.12;
-const HEADING_ALIGNMENT_STRENGTH = 0.28;
-const MIN_ALIGNMENT_SPEED = 0.35;
-const FRONT_WHEEL_TURN_RATE = 0.22;
-const FRONT_WHEEL_MAX_ANGLE = Math.PI / 3;
+const MAX_SPEED = 8;
+const ACCELERATION = 0.5;
+const DECELERATION = 0.88;
+const ROTATION_SPEED = 0.18;
+const MIN_DISTANCE_TO_MOVE = 5;
 const CAR_LENGTH = 56;
 const CAR_BODY_WIDTH = 36;
 const CAR_BODY_LENGTH = 64;
@@ -31,11 +27,9 @@ interface RacerState {
   car: {
     x: number;
     y: number;
-    vx: number;
-    vy: number;
+    speed: number;
     heading: number;
-    visualHeading: number;
-    frontWheelAngle: number;
+    targetHeading: number;
   };
   target: {
     x: number;
@@ -56,11 +50,9 @@ const createInitialState = (width: number, height: number): RacerState => {
     car: {
       x: centerX,
       y: centerY,
-      vx: 0,
-      vy: 0,
+      speed: 0,
       heading: 0,
-      visualHeading: 0,
-      frontWheelAngle: 0,
+      targetHeading: 0,
     },
     target: {
       x: centerX,
@@ -318,105 +310,59 @@ export function GearRacerGame({
         const car = state.car;
         const target = state.target;
 
+        // Calcul de la direction vers la cible
         const toTargetX = target.x - car.x;
         const toTargetY = target.y - car.y;
         const distance = Math.hypot(toTargetX, toTargetY);
-        const desiredDirection = Math.atan2(toTargetY, toTargetX);
-        const headingDiff = angleDifference(desiredDirection, car.heading);
-        const targetFrontWheelAngle = clamp(headingDiff, -FRONT_WHEEL_MAX_ANGLE, FRONT_WHEEL_MAX_ANGLE);
 
-        car.frontWheelAngle += (targetFrontWheelAngle - car.frontWheelAngle) * FRONT_WHEEL_TURN_RATE * delta;
-        car.frontWheelAngle = clamp(car.frontWheelAngle, -FRONT_WHEEL_MAX_ANGLE, FRONT_WHEEL_MAX_ANGLE);
+        if (distance > MIN_DISTANCE_TO_MOVE) {
+          // Direction souhaitée
+          car.targetHeading = Math.atan2(toTargetY, toTargetX);
 
-        // Rotation directe vers la cible pour un meilleur alignement
-        const directTurnStrength = 0.15 * clamp(distance / 100, 0.3, 1);
-        car.heading += headingDiff * directTurnStrength * delta;
+          // Rotation fluide vers la direction cible
+          const headingDiff = angleDifference(car.targetHeading, car.heading);
+          car.heading += headingDiff * ROTATION_SPEED * delta;
 
-        const accelMagnitude = ACCELERATION * clamp(distance / 120, 0, 1.8);
-        car.vx += Math.cos(car.heading) * accelMagnitude * delta;
-        car.vy += Math.sin(car.heading) * accelMagnitude * delta;
+          // Accélération basée sur la distance (plus on est loin, plus on accélère)
+          const targetSpeed = Math.min(distance * 0.08, MAX_SPEED);
+          const speedDiff = targetSpeed - car.speed;
 
-        const forwardX = Math.cos(car.heading);
-        const forwardY = Math.sin(car.heading);
-        const rightX = -forwardY;
-        const rightY = forwardX;
+          if (speedDiff > 0) {
+            car.speed += ACCELERATION * delta;
+          } else {
+            car.speed *= DECELERATION;
+          }
 
-        let forwardSpeed = car.vx * forwardX + car.vy * forwardY;
-        let lateralSpeed = car.vx * rightX + car.vy * rightY;
-
-        forwardSpeed *= DRAG;
-        lateralSpeed *= LATERAL_DRAG;
-
-        let combinedSpeed = Math.hypot(forwardSpeed, lateralSpeed);
-        if (combinedSpeed > MAX_SPEED) {
-          const scale = MAX_SPEED / combinedSpeed;
-          forwardSpeed *= scale;
-          lateralSpeed *= scale;
-          combinedSpeed = MAX_SPEED;
+          // Limiter la vitesse max
+          car.speed = clamp(car.speed, 0, MAX_SPEED);
+        } else {
+          // Freinage quand on est proche de la cible
+          car.speed *= 0.9;
         }
 
-        car.vx = forwardSpeed * forwardX + lateralSpeed * rightX;
-        car.vy = forwardSpeed * forwardY + lateralSpeed * rightY;
-
-        const headingChange = (forwardSpeed / CAR_LENGTH) * Math.tan(car.frontWheelAngle);
-        car.heading += headingChange * delta;
-
-        const slipHeading = Math.atan2(car.vy, car.vx);
-        if (Number.isFinite(slipHeading) && combinedSpeed > MIN_ALIGNMENT_SPEED) {
-          const alignmentStrength =
-            HEADING_ALIGNMENT_STRENGTH * clamp(combinedSpeed / MAX_SPEED, 0.2, 1);
-          const forwardAlignmentBoost =
-            forwardSpeed > 0
-              ? clamp(
-                  forwardSpeed / (Math.abs(lateralSpeed) + 0.12),
-                  1,
-                  3,
-                )
-              : 1;
-          car.heading +=
-            angleDifference(slipHeading, car.heading) *
-            alignmentStrength *
-            forwardAlignmentBoost *
-            delta;
-        }
-
-        // La voiture fait toujours face à sa direction de mouvement
-        let visualHeading = car.heading;
-        if (Number.isFinite(slipHeading) && combinedSpeed > MIN_ALIGNMENT_SPEED) {
-          // Orientation basée principalement sur la direction du mouvement
-          visualHeading = slipHeading;
-        }
-
-        car.visualHeading = ((visualHeading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-
+        // Normaliser l'angle heading
         car.heading = ((car.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 
-        car.x += car.vx * delta;
-        car.y += car.vy * delta;
+        // Déplacement basé sur le heading et la vitesse
+        car.x += Math.cos(car.heading) * car.speed * delta;
+        car.y += Math.sin(car.heading) * car.speed * delta;
 
-        if (combinedSpeed < 0.05) {
-          car.frontWheelAngle *= 0.85;
-        }
-
+        // Collisions avec les bords
         if (car.x < EDGE_PADDING) {
           car.x = EDGE_PADDING;
-          car.vx *= -0.4;
-          car.frontWheelAngle *= 0.6;
+          car.speed *= 0.5;
         }
         if (car.x > width - EDGE_PADDING) {
           car.x = width - EDGE_PADDING;
-          car.vx *= -0.4;
-          car.frontWheelAngle *= 0.6;
+          car.speed *= 0.5;
         }
         if (car.y < EDGE_PADDING) {
           car.y = EDGE_PADDING;
-          car.vy *= -0.4;
-          car.frontWheelAngle *= 0.6;
+          car.speed *= 0.5;
         }
         if (car.y > height - EDGE_PADDING) {
           car.y = height - EDGE_PADDING;
-          car.vy *= -0.4;
-          car.frontWheelAngle *= 0.6;
+          car.speed *= 0.5;
         }
 
         const gear = state.gear;
@@ -426,8 +372,8 @@ export function GearRacerGame({
           spawnNewGear();
         }
 
-        const sinHeading = Math.sin(car.visualHeading);
-        const cosHeading = Math.cos(car.visualHeading);
+        const sinHeading = Math.sin(car.heading);
+        const cosHeading = Math.cos(car.heading);
         const towPointX = car.x - TOW_HOOK_OFFSET_Y * sinHeading;
         const towPointY = car.y + TOW_HOOK_OFFSET_Y * cosHeading;
 
@@ -458,20 +404,13 @@ export function GearRacerGame({
       const car = state.car;
       ctx.save();
       ctx.translate(car.x, car.y);
-      ctx.rotate(car.visualHeading);
-
-      const driftAngle = Math.atan2(car.vy, car.vx);
-      const driftOffset = clamp(
-        angleDifference(driftAngle, car.visualHeading),
-        -Math.PI / 4,
-        Math.PI / 4,
-      );
+      ctx.rotate(car.heading);
 
       const halfBodyWidth = CAR_BODY_WIDTH / 2;
       const halfBodyLength = CAR_BODY_LENGTH / 2;
 
+      // Ombre de la voiture
       ctx.save();
-      ctx.rotate(driftOffset * 0.5);
       ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
       ctx.beginPath();
       ctx.ellipse(0, 10, halfBodyWidth + 6, halfBodyLength - 6, 0, 0, Math.PI * 2);
@@ -497,8 +436,9 @@ export function GearRacerGame({
         ctx.restore();
       };
 
-      drawWheel(-WHEEL_OFFSET_X, FRONT_WHEEL_Y, car.frontWheelAngle);
-      drawWheel(WHEEL_OFFSET_X, FRONT_WHEEL_Y, car.frontWheelAngle);
+      // Roues droites (pas de steering wheel animation)
+      drawWheel(-WHEEL_OFFSET_X, FRONT_WHEEL_Y, 0);
+      drawWheel(WHEEL_OFFSET_X, FRONT_WHEEL_Y, 0);
       drawWheel(-WHEEL_OFFSET_X, REAR_WHEEL_Y, 0);
       drawWheel(WHEEL_OFFSET_X, REAR_WHEEL_Y, 0);
 
