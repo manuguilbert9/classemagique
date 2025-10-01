@@ -364,9 +364,8 @@ export function ChatWindow({
     const displayedSuggestions = wordSuggestions.slice(0, 8);
 
     return (
-        <div className="flex h-full flex-col">
-            <div className="flex flex-1 flex-col">
-                <header className="border-b p-4 flex items-center gap-3">
+        <div className="flex h-full flex-col min-h-0">
+            <header className="border-b p-4 flex items-center gap-3 flex-shrink-0">
                      <Avatar>
                         <AvatarImage src={otherStudentInfo.showPhoto ? otherStudentInfo.photoURL : undefined} alt={otherStudentInfo.name} />
                         <AvatarFallback>{otherStudentInfo.name.charAt(0)}</AvatarFallback>
@@ -391,7 +390,7 @@ export function ChatWindow({
                         </span>
                     </div>
                 </header>
-                <ScrollArea className="flex-1 bg-muted/10 p-4" viewportRef={scrollAreaRef}>
+                <ScrollArea className="flex-1 bg-muted/10 p-4 min-h-0" viewportRef={scrollAreaRef}>
                     <div className="space-y-4">
                         {messages.map((msg, index) => {
                             const isCurrentUser = msg.senderId === currentStudent.id;
@@ -452,7 +451,7 @@ export function ChatWindow({
                         })}
                     </div>
                 </ScrollArea>
-                <div className="border-t p-4">
+                <div className="border-t p-4 flex-shrink-0">
                     <div className="space-y-3">
                         {/* Suggestions de mots au-dessus du champ de saisie */}
                         {hasSuggestions && !isLoadingSuggestions && (
@@ -506,7 +505,6 @@ export function ChatWindow({
                         </div>
                     </div>
                 </div>
-            </div>
             
             <Dialog open={!!correctionTarget} onOpenChange={(isOpen) => !isOpen && setCorrectionTarget(null)}>
                 <DialogContent>

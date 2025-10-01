@@ -109,8 +109,8 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col bg-background">
-            <Card className="flex h-full flex-col rounded-none border-0 shadow-none overflow-hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-background overflow-hidden">
+            <Card className="flex h-full flex-col rounded-none border-0 shadow-none">
                 <header className="bg-primary text-primary-foreground border-b p-4 sm:p-3">
                     <div className="grid gap-3 md:grid-cols-[auto,1fr,auto] md:items-center">
                         <div className="flex items-center gap-2">
@@ -159,23 +159,25 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
                         </button>
                     </div>
                 </header>
-                <div className="flex flex-grow flex-col overflow-hidden md:flex-row">
-                    <div className="flex flex-col bg-muted/30 border-b md:w-1/3 md:max-w-sm md:border-b-0 md:border-r md:flex-none">
-                        <header className="p-3 border-b sm:p-2">
+                <div className="flex flex-1 flex-col overflow-hidden md:flex-row min-h-0">
+                    <div className="flex flex-col bg-muted/30 border-b md:w-1/3 md:max-w-sm md:border-b-0 md:border-r md:flex-none min-h-0">
+                        <header className="p-3 border-b sm:p-2 flex-shrink-0">
                             <Button onClick={handleStartNewConversation} className="w-full">
                                 <Users className="mr-2 h-4 w-4"/> Nouvelle discussion
                             </Button>
                         </header>
-                        <ConversationList
-                            conversations={conversations}
-                            currentStudentId={student.id}
-                            onSelectConversation={handleSelectConversation}
-                            selectedConversationId={selectedConversationId}
-                            isLoading={isLoadingConversations}
-                            presenceByStudentId={presenceByStudentId}
-                        />
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                            <ConversationList
+                                conversations={conversations}
+                                currentStudentId={student.id}
+                                onSelectConversation={handleSelectConversation}
+                                selectedConversationId={selectedConversationId}
+                                isLoading={isLoadingConversations}
+                                presenceByStudentId={presenceByStudentId}
+                            />
+                        </div>
                     </div>
-                    <div className="flex flex-1 flex-col overflow-hidden">
+                    <div className="flex flex-1 flex-col overflow-hidden min-h-0">
                         <ChatWindow
                            currentStudent={student}
                            allStudents={allStudents}

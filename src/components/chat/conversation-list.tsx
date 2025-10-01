@@ -48,7 +48,7 @@ export function ConversationList({
     }
 
     return (
-        <ScrollArea className="flex-grow">
+        <ScrollArea className="h-full">
             <div className="p-2 space-y-1">
                 {conversations.map(convo => {
                     const otherParticipantId = convo.participants.find(p => p !== currentStudentId);
