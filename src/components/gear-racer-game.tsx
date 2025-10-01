@@ -34,6 +34,7 @@ interface RacerState {
     vx: number;
     vy: number;
     heading: number;
+    visualHeading: number;
     frontWheelAngle: number;
   };
   target: {
@@ -58,6 +59,7 @@ const createInitialState = (width: number, height: number): RacerState => {
       vx: 0,
       vy: 0,
       heading: 0,
+      visualHeading: 0,
       frontWheelAngle: 0,
     },
     target: {
@@ -108,6 +110,11 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 
 const angleDifference = (a: number, b: number) => {
   return ((a - b + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+};
+
+const blendAngles = (from: number, to: number, weight: number) => {
+  const clampedWeight = clamp(weight, 0, 1);
+  return from + angleDifference(to, from) * clampedWeight;
 };
 
 const createAsphaltPattern = () => {
@@ -358,6 +365,18 @@ export function GearRacerGame({
           car.heading += angleDifference(slipHeading, car.heading) * alignmentStrength * delta;
         }
 
+        let visualHeading = car.heading;
+        if (Number.isFinite(slipHeading) && combinedSpeed > MIN_ALIGNMENT_SPEED) {
+          const straightMotion =
+            Math.abs(forwardSpeed) / (Math.abs(forwardSpeed) + Math.abs(lateralSpeed) + 1e-6);
+          const steeringStability =
+            1 - clamp(Math.abs(car.frontWheelAngle) / (FRONT_WHEEL_MAX_ANGLE * 0.55), 0, 1);
+          const visualBlend = straightMotion * steeringStability;
+          visualHeading = blendAngles(car.heading, slipHeading, visualBlend);
+        }
+
+        car.visualHeading = ((visualHeading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+
         car.heading = ((car.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 
         car.x += car.vx * delta;
@@ -395,8 +414,8 @@ export function GearRacerGame({
           spawnNewGear();
         }
 
-        const sinHeading = Math.sin(car.heading);
-        const cosHeading = Math.cos(car.heading);
+        const sinHeading = Math.sin(car.visualHeading);
+        const cosHeading = Math.cos(car.visualHeading);
         const towPointX = car.x - TOW_HOOK_OFFSET_Y * sinHeading;
         const towPointY = car.y + TOW_HOOK_OFFSET_Y * cosHeading;
 
@@ -427,10 +446,14 @@ export function GearRacerGame({
       const car = state.car;
       ctx.save();
       ctx.translate(car.x, car.y);
-      ctx.rotate(car.heading);
+      ctx.rotate(car.visualHeading);
 
       const driftAngle = Math.atan2(car.vy, car.vx);
-      const driftOffset = clamp(angleDifference(driftAngle, car.heading), -Math.PI / 4, Math.PI / 4);
+      const driftOffset = clamp(
+        angleDifference(driftAngle, car.visualHeading),
+        -Math.PI / 4,
+        Math.PI / 4,
+      );
 
       const halfBodyWidth = CAR_BODY_WIDTH / 2;
       const halfBodyLength = CAR_BODY_LENGTH / 2;
