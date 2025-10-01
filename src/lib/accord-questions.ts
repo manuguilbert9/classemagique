@@ -25,12 +25,30 @@ export async function generateAccordQuestions(
     const phraseIndex = (startIndex + i) % phrasesForLevel.length;
     const phrase = phrasesForLevel[phraseIndex];
 
-    // Créer les deux lignes du tableau
-    const row1 = phrase.correctRow;
-    const row2 = phrase.incorrectRow;
+    // Mélanger les mots entre les deux lignes
+    // Pour chaque position, on place aléatoirement le mot correct en haut ou en bas
+    const numWords = phrase.correctRow.length;
+    const row1: string[] = [];
+    const row2: string[] = [];
+    const correctPath: number[] = [];
 
-    // Calculer le chemin correct (toujours la ligne 0 = ligne du haut)
-    const correctPath = row1.map(() => 0);
+    for (let wordIndex = 0; wordIndex < numWords; wordIndex++) {
+      const correctWord = phrase.correctRow[wordIndex];
+      const incorrectWord = phrase.incorrectRow[wordIndex];
+
+      // Placer aléatoirement le mot correct sur la ligne 0 ou 1
+      const correctOnTopRow = Math.random() < 0.5;
+
+      if (correctOnTopRow) {
+        row1.push(correctWord);
+        row2.push(incorrectWord);
+        correctPath.push(0); // Le bon mot est en haut
+      } else {
+        row1.push(incorrectWord);
+        row2.push(correctWord);
+        correctPath.push(1); // Le bon mot est en bas
+      }
+    }
 
     // Créer la question
     const questionType = Math.random() < 0.5 ? 'Colorie' : 'Trace';
