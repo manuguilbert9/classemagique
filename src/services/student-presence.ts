@@ -75,10 +75,10 @@ export function setupPresenceHeartbeat(studentId: string): () => void {
     // Marquer comme en ligne immédiatement
     updateStudentPresence(studentId, true);
 
-    // Envoyer un heartbeat toutes les 30 secondes
+    // Envoyer un heartbeat toutes les 10 minutes
     const heartbeatInterval = setInterval(() => {
         updateStudentPresence(studentId, true);
-    }, 30000);
+    }, 600000);
 
     // Marquer comme hors ligne quand la page se ferme
     const handleBeforeUnload = () => {
