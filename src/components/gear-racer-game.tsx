@@ -8,8 +8,12 @@ import { Button } from './ui/button';
 const GAME_DURATION = 60; // seconds
 const MAX_SPEED = 9;
 const ACCELERATION = 0.6;
-const DRAG = 0.94;
+const DRAG = 0.95;
+const LATERAL_DRAG = 0.78;
 const TURN_RESPONSIVENESS = 0.12;
+const FRONT_WHEEL_TURN_RATE = 0.22;
+const FRONT_WHEEL_MAX_ANGLE = Math.PI / 3;
+const CAR_LENGTH = 56;
 const EDGE_PADDING = 48;
 const GEAR_RADIUS = 26;
 
@@ -20,6 +24,7 @@ interface RacerState {
     vx: number;
     vy: number;
     heading: number;
+    frontWheelAngle: number;
   };
   target: {
     x: number;
@@ -43,6 +48,7 @@ const createInitialState = (width: number, height: number): RacerState => {
       vx: 0,
       vy: 0,
       heading: 0,
+      frontWheelAngle: 0,
     },
     target: {
       x: centerX,
@@ -90,6 +96,37 @@ const drawGear = (ctx: CanvasRenderingContext2D, x: number, y: number, radius: n
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
+const angleDifference = (a: number, b: number) => {
+  return ((a - b + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+};
+
+const createAsphaltPattern = () => {
+  const patternCanvas = document.createElement('canvas');
+  patternCanvas.width = 140;
+  patternCanvas.height = 140;
+  const pctx = patternCanvas.getContext('2d');
+  if (!pctx) return null;
+
+  pctx.fillStyle = '#2b2f37';
+  pctx.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
+
+  for (let i = 0; i < 160; i++) {
+    const size = Math.random() * 3 + 1;
+    pctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(17,24,39,0.08)';
+    pctx.fillRect(Math.random() * patternCanvas.width, Math.random() * patternCanvas.height, size, size);
+  }
+
+  for (let i = 0; i < 40; i++) {
+    const radius = Math.random() * 1.6 + 0.6;
+    pctx.beginPath();
+    pctx.fillStyle = 'rgba(107,114,128,0.18)';
+    pctx.arc(Math.random() * patternCanvas.width, Math.random() * patternCanvas.height, radius, 0, Math.PI * 2);
+    pctx.fill();
+  }
+
+  return patternCanvas;
+};
+
 export function GearRacerGame({
   onExit,
   onReplay,
@@ -105,6 +142,8 @@ export function GearRacerGame({
   const animationFrameRef = useRef<number>();
   const stateRef = useRef<RacerState | null>(null);
   const isGameOverRef = useRef(false);
+  const asphaltPatternRef = useRef<CanvasPattern | null>(null);
+  const asphaltCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
@@ -196,6 +235,13 @@ export function GearRacerGame({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    if (!asphaltCanvasRef.current) {
+      asphaltCanvasRef.current = createAsphaltPattern();
+    }
+    if (asphaltCanvasRef.current && !asphaltPatternRef.current) {
+      asphaltPatternRef.current = ctx.createPattern(asphaltCanvasRef.current, 'repeat');
+    }
+
     let lastTimestamp = performance.now();
 
     const render = (timestamp: number) => {
@@ -211,36 +257,46 @@ export function GearRacerGame({
       const { width, height } = dimensions;
       ctx.clearRect(0, 0, width, height);
 
-      ctx.save();
       const gradient = ctx.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, '#0f172a');
-      gradient.addColorStop(1, '#1e293b');
+      gradient.addColorStop(0, '#020617');
+      gradient.addColorStop(1, '#0f172a');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
 
-      ctx.fillStyle = '#111827';
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 10;
-      ctx.beginPath();
-      ctx.roundRect(24, 24, width - 48, height - 48, 40);
-      ctx.fill();
-      ctx.stroke();
+      const trackPadding = 36;
+      const trackX = trackPadding;
+      const trackY = trackPadding;
+      const trackWidth = width - trackPadding * 2;
+      const trackHeight = height - trackPadding * 2;
+      const trackRadius = 44;
 
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
-      const gridSize = 80;
-      for (let x = 40; x < width; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 32);
-        ctx.lineTo(x, height - 32);
-        ctx.stroke();
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(trackX, trackY, trackWidth, trackHeight, trackRadius);
+      if (asphaltPatternRef.current) {
+        ctx.fillStyle = asphaltPatternRef.current;
+      } else {
+        ctx.fillStyle = '#374151';
       }
-      for (let y = 40; y < height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(32, y);
-        ctx.lineTo(width - 32, y);
-        ctx.stroke();
-      }
+      ctx.fill();
+
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+      ctx.fillRect(trackX, trackY, trackWidth, trackHeight);
+      ctx.globalAlpha = 1;
+
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(trackX, trackY, trackWidth, trackHeight, trackRadius);
+      ctx.lineWidth = 26;
+      ctx.strokeStyle = '#f8fafc';
+      ctx.stroke();
+      ctx.setLineDash([34, 24]);
+      ctx.strokeStyle = '#ef4444';
+      ctx.stroke();
+      ctx.restore();
 
       if (!isGameOverRef.current) {
         const car = state.car;
@@ -249,44 +305,75 @@ export function GearRacerGame({
         const toTargetX = target.x - car.x;
         const toTargetY = target.y - car.y;
         const distance = Math.hypot(toTargetX, toTargetY);
-        const desiredAngle = Math.atan2(toTargetY, toTargetX);
+        const desiredDirection = Math.atan2(toTargetY, toTargetX);
+        const wheelDirection = car.heading + car.frontWheelAngle;
+
+        const steeringDiff = angleDifference(desiredDirection, wheelDirection);
+        car.frontWheelAngle += clamp(steeringDiff, -FRONT_WHEEL_TURN_RATE, FRONT_WHEEL_TURN_RATE) * delta;
+        car.frontWheelAngle = clamp(car.frontWheelAngle, -FRONT_WHEEL_MAX_ANGLE, FRONT_WHEEL_MAX_ANGLE);
 
         const accelMagnitude = ACCELERATION * clamp(distance / 120, 0, 1.8);
-        car.vx += Math.cos(desiredAngle) * accelMagnitude * delta;
-        car.vy += Math.sin(desiredAngle) * accelMagnitude * delta;
+        car.vx += Math.cos(wheelDirection) * accelMagnitude * delta;
+        car.vy += Math.sin(wheelDirection) * accelMagnitude * delta;
 
-        car.vx *= DRAG;
-        car.vy *= DRAG;
+        const forwardX = Math.cos(car.heading);
+        const forwardY = Math.sin(car.heading);
+        const rightX = -forwardY;
+        const rightY = forwardX;
 
-        const speed = Math.hypot(car.vx, car.vy);
-        if (speed > MAX_SPEED) {
-          const scale = MAX_SPEED / speed;
-          car.vx *= scale;
-          car.vy *= scale;
+        let forwardSpeed = car.vx * forwardX + car.vy * forwardY;
+        let lateralSpeed = car.vx * rightX + car.vy * rightY;
+
+        forwardSpeed *= DRAG;
+        lateralSpeed *= LATERAL_DRAG;
+
+        let combinedSpeed = Math.hypot(forwardSpeed, lateralSpeed);
+        if (combinedSpeed > MAX_SPEED) {
+          const scale = MAX_SPEED / combinedSpeed;
+          forwardSpeed *= scale;
+          lateralSpeed *= scale;
+          combinedSpeed = MAX_SPEED;
         }
+
+        car.vx = forwardSpeed * forwardX + lateralSpeed * rightX;
+        car.vy = forwardSpeed * forwardY + lateralSpeed * rightY;
+
+        const headingChange = (forwardSpeed / CAR_LENGTH) * Math.tan(car.frontWheelAngle);
+        car.heading += headingChange * delta;
+
+        const slipHeading = Math.atan2(car.vy, car.vx);
+        if (Number.isFinite(slipHeading)) {
+          car.heading += angleDifference(slipHeading, car.heading) * TURN_RESPONSIVENESS * 0.08 * delta;
+        }
+
+        car.heading = ((car.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 
         car.x += car.vx * delta;
         car.y += car.vy * delta;
 
-        const velocityAngle = Math.atan2(car.vy, car.vx) || car.heading;
-        const angleDiff = ((velocityAngle - car.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-        car.heading += angleDiff * TURN_RESPONSIVENESS * delta;
+        if (combinedSpeed < 0.05) {
+          car.frontWheelAngle *= 0.85;
+        }
 
         if (car.x < EDGE_PADDING) {
           car.x = EDGE_PADDING;
           car.vx *= -0.4;
+          car.frontWheelAngle *= 0.6;
         }
         if (car.x > width - EDGE_PADDING) {
           car.x = width - EDGE_PADDING;
           car.vx *= -0.4;
+          car.frontWheelAngle *= 0.6;
         }
         if (car.y < EDGE_PADDING) {
           car.y = EDGE_PADDING;
           car.vy *= -0.4;
+          car.frontWheelAngle *= 0.6;
         }
         if (car.y > height - EDGE_PADDING) {
           car.y = height - EDGE_PADDING;
           car.vy *= -0.4;
+          car.frontWheelAngle *= 0.6;
         }
 
         const gear = state.gear;
@@ -297,8 +384,8 @@ export function GearRacerGame({
         }
 
         ctx.save();
-        ctx.globalAlpha = 0.25;
-        ctx.strokeStyle = '#22d3ee';
+        ctx.globalAlpha = 0.32;
+        ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 2;
         ctx.setLineDash([6, 10]);
         ctx.beginPath();
@@ -326,48 +413,115 @@ export function GearRacerGame({
       ctx.rotate(car.heading);
 
       const driftAngle = Math.atan2(car.vy, car.vx);
-      const driftOffset = clamp(((driftAngle - car.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI, -Math.PI / 4, Math.PI / 4);
+      const driftOffset = clamp(angleDifference(driftAngle, car.heading), -Math.PI / 4, Math.PI / 4);
+
+      const bodyWidth = 36;
+      const bodyLength = 64;
+      const halfBodyWidth = bodyWidth / 2;
+      const halfBodyLength = bodyLength / 2;
+      const wheelWidth = 10;
+      const wheelHeight = 22;
+      const wheelOffsetX = halfBodyWidth - 4;
+      const frontWheelY = -halfBodyLength + 10;
+      const rearWheelY = halfBodyLength - 10;
 
       ctx.save();
-      ctx.rotate(driftOffset * 0.6);
-      ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+      ctx.rotate(driftOffset * 0.5);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
       ctx.beginPath();
-      ctx.ellipse(-10, 18, 6, 18, 0, 0, Math.PI * 2);
-      ctx.ellipse(10, 18, 6, 18, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 10, halfBodyWidth + 6, halfBodyLength - 6, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
+      const drawWheel = (x: number, y: number, angle: number) => {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.roundRect(-wheelWidth / 2, -wheelHeight / 2, wheelWidth, wheelHeight, 3);
+        ctx.fill();
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.roundRect(-wheelWidth / 2 + 1.5, -wheelHeight / 2 + 3, wheelWidth - 3, wheelHeight - 6, 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-1.5, -wheelHeight / 2 + 3, 3, wheelHeight - 6);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      };
+
+      drawWheel(-wheelOffsetX, frontWheelY, car.frontWheelAngle);
+      drawWheel(wheelOffsetX, frontWheelY, car.frontWheelAngle);
+      drawWheel(-wheelOffsetX, rearWheelY, 0);
+      drawWheel(wheelOffsetX, rearWheelY, 0);
+
       ctx.fillStyle = '#1d4ed8';
-      ctx.strokeStyle = '#93c5fd';
-      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(0, -28);
-      ctx.lineTo(16, 24);
-      ctx.quadraticCurveTo(0, 32, -16, 24);
-      ctx.closePath();
+      ctx.roundRect(-halfBodyWidth, -halfBodyLength, bodyWidth, bodyLength, 12);
       ctx.fill();
+
+      ctx.strokeStyle = '#60a5fa';
+      ctx.lineWidth = 2;
       ctx.stroke();
 
-      ctx.fillStyle = '#60a5fa';
+      ctx.fillStyle = '#2563eb';
       ctx.beginPath();
-      ctx.moveTo(0, -24);
-      ctx.lineTo(12, 16);
-      ctx.quadraticCurveTo(0, 24, -12, 16);
-      ctx.closePath();
+      ctx.roundRect(-halfBodyWidth + 4, -halfBodyLength + 8, bodyWidth - 8, bodyLength - 16, 10);
+      ctx.fill();
+
+      ctx.fillStyle = '#93c5fd';
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.roundRect(-halfBodyWidth + 6, -halfBodyLength + 6, bodyWidth - 12, bodyLength * 0.45, 10);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = '#1e40af';
+      ctx.beginPath();
+      ctx.roundRect(-halfBodyWidth + 5, -6, bodyWidth - 10, 12, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#3b82f6';
+      ctx.beginPath();
+      ctx.roundRect(-6, -halfBodyLength + 10, 12, bodyLength - 20, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(-halfBodyWidth + 6, -halfBodyLength + 2, bodyWidth - 12, 8, 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath();
+      ctx.ellipse(-halfBodyWidth + 7, -halfBodyLength + 8, 3, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(halfBodyWidth - 7, -halfBodyLength + 8, 3, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#facc15';
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.ellipse(-halfBodyWidth + 7, -halfBodyLength + 8, 6, 8, 0, 0, Math.PI * 2);
+      ctx.ellipse(halfBodyWidth - 7, -halfBodyLength + 8, 6, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = '#f87171';
+      ctx.beginPath();
+      ctx.roundRect(-halfBodyWidth + 6, halfBodyLength - 12, bodyWidth - 12, 6, 3);
       ctx.fill();
 
       ctx.fillStyle = '#0ea5e9';
       ctx.beginPath();
-      ctx.ellipse(-12, 12, 4, 10, 0, 0, Math.PI * 2);
-      ctx.ellipse(12, 12, 4, 10, 0, 0, Math.PI * 2);
+      ctx.roundRect(-halfBodyWidth + 10, -halfBodyLength + 18, bodyWidth - 20, 10, 4);
       ctx.fill();
 
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
-      ctx.arc(0, -10, 6, 0, Math.PI * 2);
+      ctx.roundRect(-halfBodyWidth + 8, halfBodyLength - 22, bodyWidth - 16, 6, 3);
       ctx.fill();
 
-      ctx.restore();
       ctx.restore();
 
       animationFrameRef.current = requestAnimationFrame(render);
