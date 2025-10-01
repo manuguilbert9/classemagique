@@ -40,7 +40,7 @@ const generateLevelA = (): Question => {
             const textToSpeak = `Clique sur ${correctItem.type === 'pièce' ? 'la pièce de' : 'le billet de'} ${numberToWords(correctItem.value)}`;
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'A',
                 type: 'image-qcm',
                 question: questionText,
@@ -63,7 +63,7 @@ const generateLevelA = (): Question => {
             optionsItems.push(correctItem);
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'A',
                 type: 'image-qcm',
                 question: `Clique sur la pièce de ${correctItem.name}.`,
@@ -86,7 +86,7 @@ const generateLevelA = (): Question => {
             optionsItems.push(correctItem);
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'A',
                 type: 'image-qcm',
                 question: `Clique sur le billet de ${correctItem.name}.`,
@@ -112,7 +112,7 @@ const generateLevelA = (): Question => {
                 .slice(0, 4);
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'A',
                 type: 'qcm',
                 question: `Combien y a-t-il de ${item.type === 'pièce' ? 'pièces' : 'billets'} de ${item.name} ?`,
@@ -140,7 +140,7 @@ const generateLevelB = (): Question => {
             const targetAmount = euros + cents / 100;
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'B',
                 type: 'compose-sum',
                 question: `Compose exactement ${formatCurrency(targetAmount)} avec les pièces et billets.`,
@@ -171,7 +171,7 @@ const generateLevelB = (): Question => {
             }
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'B',
                 type: 'qcm',
                 question: `Calcule le total de ces ${numItems === 2 ? 'deux' : 'trois'} pièces ou billets.`,
@@ -188,7 +188,7 @@ const generateLevelB = (): Question => {
             const targetAmount = roundToCent(euros + cents / 100);
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'B',
                 type: 'compose-sum',
                 question: `Compose exactement ${formatCurrency(targetAmount)} avec les pièces et billets.`,
@@ -230,7 +230,7 @@ const generateLevelC = (): Question => {
             }
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'C',
                 type: 'qcm',
                 question: `Calcule le total de toutes ces pièces et billets.`,
@@ -257,7 +257,7 @@ const generateLevelC = (): Question => {
             const item = items[randomInt(0, items.length - 1)];
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'C',
                 type: 'qcm',
                 question: `Tu veux acheter un ${item} qui coûte ${formatCurrency(price)}. Combien vas-tu payer ?`,
@@ -273,7 +273,7 @@ const generateLevelC = (): Question => {
             const targetAmount = roundToCent(euros + cents / 100);
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'C',
                 type: 'compose-sum',
                 question: `Compose exactement ${formatCurrency(targetAmount)} avec les pièces et billets.`,
@@ -306,7 +306,7 @@ const generateLevelC = (): Question => {
             }
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'C',
                 type: 'qcm',
                 question: `Calcule : ${priceList} = ?`,
@@ -343,7 +343,7 @@ const generateLevelD = (): Question => {
             }
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'D',
                 type: 'qcm',
                 question: `Un objet coûte ${formatCurrency(cost)}. Tu paies avec un billet de ${formatCurrency(payment)}. Combien te rend-on ?`,
@@ -361,7 +361,7 @@ const generateLevelD = (): Question => {
             const change = roundToCent(payment - cost);
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'D',
                 type: 'compose-sum',
                 question: `Un article coûte ${formatCurrency(cost)}. Le client paie avec un billet de ${formatCurrency(payment)}. Compose la monnaie à lui rendre.`,
@@ -378,7 +378,7 @@ const generateLevelD = (): Question => {
             const targetAmount = roundToCent(euros + cents / 100);
 
             return {
-                id: Date.now(),
+                id: `${Date.now()}-${Math.random()}`,
                 level: 'D',
                 type: 'compose-sum',
                 question: `Compose exactement ${formatCurrency(targetAmount)} avec les pièces et billets.`,
