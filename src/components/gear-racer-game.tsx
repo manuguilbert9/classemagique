@@ -404,7 +404,8 @@ export function GearRacerGame({
       const car = state.car;
       ctx.save();
       ctx.translate(car.x, car.y);
-      ctx.rotate(car.heading);
+      // Ajout de π/2 pour que les phares pointent dans la direction du heading
+      ctx.rotate(car.heading + Math.PI / 2);
 
       const halfBodyWidth = CAR_BODY_WIDTH / 2;
       const halfBodyLength = CAR_BODY_LENGTH / 2;
