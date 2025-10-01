@@ -348,38 +348,51 @@ export function StudentManager({ students }: StudentManagerProps) {
                                    return (
                                      <div key={category} className="space-y-2">
                                          <h4 className="font-medium text-sm text-muted-foreground">{category}</h4>
-                                         <div className="space-y-2 rounded-lg bg-secondary/30 p-3">
-                                             {skillsInCategory.map(skill => (
-                                                 <div key={skill.slug} className="flex items-center justify-between p-1.5 bg-card rounded-md shadow-sm gap-2">
-                                                     <Label htmlFor={`skill-switch-${skill.slug}`} className="text-sm font-medium pl-2 flex-grow">
-                                                         {skill.name}
-                                                     </Label>
-                                                      {!skill.isFixedLevel && (
-                                                        <Select 
-                                                            value={editedLevels[skill.slug]} 
-                                                            onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
-                                                            disabled={!editedEnabledSkills[skill.slug]}
-                                                        >
-                                                            <SelectTrigger className="w-24 h-8 text-xs">
-                                                                <SelectValue placeholder="Niv." />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {(skill.allowedLevels || ['A', 'B', 'C', 'D']).map(level => (
-                                                                    <SelectItem key={level} value={level}>{level}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                     )}
-                                                     {skill.isFixedLevel && (
-                                                         <Badge variant="outline" className="w-24 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
-                                                     )}
-                                                     <Switch
-                                                         id={`skill-switch-${skill.slug}`}
-                                                         checked={editedEnabledSkills[skill.slug] ?? false}
-                                                         onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
-                                                     />
-                                                 </div>
-                                             ))}
+                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 rounded-lg bg-secondary/30 p-3">
+                                             {skillsInCategory.map(skill => {
+                                                 const isEnabled = editedEnabledSkills[skill.slug] ?? false;
+                                                 const currentLevel = editedLevels[skill.slug];
+
+                                                 return (
+                                                     <div key={skill.slug} className="flex flex-col gap-1.5 p-2 bg-card rounded-md shadow-sm">
+                                                         <Label className="text-xs font-medium leading-tight line-clamp-2" title={skill.name}>
+                                                             {skill.name}
+                                                         </Label>
+                                                         {!skill.isFixedLevel ? (
+                                                             <Select
+                                                                 value={isEnabled ? (currentLevel || 'B') : 'off'}
+                                                                 onValueChange={(value) => {
+                                                                     if (value === 'off') {
+                                                                         handleEnabledSkillChange(skill.slug, false);
+                                                                     } else {
+                                                                         handleEnabledSkillChange(skill.slug, true);
+                                                                         handleLevelChange(skill.slug, value as SkillLevel);
+                                                                     }
+                                                                 }}
+                                                             >
+                                                                 <SelectTrigger className="w-full h-8 text-xs">
+                                                                     <SelectValue placeholder="Désactivé" />
+                                                                 </SelectTrigger>
+                                                                 <SelectContent>
+                                                                     <SelectItem value="off" className="text-muted-foreground">Désactivé</SelectItem>
+                                                                     {(skill.allowedLevels || ['A', 'B', 'C', 'D']).map(level => (
+                                                                         <SelectItem key={level} value={level}>Niveau {level}</SelectItem>
+                                                                     ))}
+                                                                 </SelectContent>
+                                                             </Select>
+                                                         ) : (
+                                                             <div className="flex items-center gap-2">
+                                                                 <Badge variant="outline" className="flex-1 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
+                                                                 <Switch
+                                                                     checked={isEnabled}
+                                                                     onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
+                                                                     className="scale-75"
+                                                                 />
+                                                             </div>
+                                                         )}
+                                                     </div>
+                                                 );
+                                             })}
                                          </div>
                                      </div>
                                    )
