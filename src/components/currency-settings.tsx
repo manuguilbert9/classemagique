@@ -17,10 +17,10 @@ interface CurrencySettingsProps {
 }
 
 const difficultyDesc = [
-  "Niveau A : Reconnaissance des pièces et billets",
-  "Niveau B : Faire une somme exacte",
-  "Niveau C : Calculer une somme totale",
-  "Niveau D : Rendre la monnaie",
+  "Niveau A : Reconnaissance, comparaison et comptage des pièces et billets",
+  "Niveau B : Sommes simples, additions et comparaisons de montants",
+  "Niveau C : Calculs complexes, achats multiples et gestion de budget",
+  "Niveau D : Rendre la monnaie, partage équitable et optimisation",
 ];
 
 export function CurrencySettings({ onStart }: CurrencySettingsProps) {
