@@ -362,16 +362,29 @@ export function GearRacerGame({
         if (Number.isFinite(slipHeading) && combinedSpeed > MIN_ALIGNMENT_SPEED) {
           const alignmentStrength =
             HEADING_ALIGNMENT_STRENGTH * clamp(combinedSpeed / MAX_SPEED, 0.2, 1);
-          car.heading += angleDifference(slipHeading, car.heading) * alignmentStrength * delta;
+          const forwardAlignmentBoost =
+            forwardSpeed > 0
+              ? clamp(
+                  forwardSpeed / (Math.abs(lateralSpeed) + 0.12),
+                  1,
+                  3,
+                )
+              : 1;
+          car.heading +=
+            angleDifference(slipHeading, car.heading) *
+            alignmentStrength *
+            forwardAlignmentBoost *
+            delta;
         }
 
         let visualHeading = car.heading;
         if (Number.isFinite(slipHeading) && combinedSpeed > MIN_ALIGNMENT_SPEED) {
-          const straightMotion =
-            Math.abs(forwardSpeed) / (Math.abs(forwardSpeed) + Math.abs(lateralSpeed) + 1e-6);
+          const driftInfluence =
+            Math.abs(lateralSpeed) /
+            (Math.abs(forwardSpeed) + Math.abs(lateralSpeed) + 1e-6);
           const steeringStability =
             1 - clamp(Math.abs(car.frontWheelAngle) / (FRONT_WHEEL_MAX_ANGLE * 0.55), 0, 1);
-          const visualBlend = straightMotion * steeringStability;
+          const visualBlend = driftInfluence * steeringStability;
           visualHeading = blendAngles(car.heading, slipHeading, visualBlend);
         }
 
