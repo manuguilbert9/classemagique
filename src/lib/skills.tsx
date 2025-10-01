@@ -150,26 +150,24 @@ const SyllabeAttaqueIcon = () => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <rect x="10" y="12" width="44" height="40" rx="8" fill="currentColor" opacity="0.12" />
-    <rect x="10" y="12" width="44" height="40" rx="8" />
-    <path d="M18 24h28" />
-    <path d="M22 30.5 27 25l6 6" />
-    <circle cx="44" cy="28" r="3" />
-    <rect x="18" y="34" width="28" height="10" rx="4" fill="currentColor" opacity="0.12" />
-    <rect x="18" y="34" width="28" height="10" rx="4" />
-    <text
-      x="32"
-      y="41.5"
-      textAnchor="middle"
-      fontFamily="inherit"
-      fontSize="13"
-      fontWeight="600"
+    <path
+      d="M12 32c4-10 12-18 20-18s16 8 20 18c-4 10-12 18-20 18S16 42 12 32Z"
       fill="currentColor"
-    >
-      PA
-    </text>
-    <path d="M12 40h-2" />
-    <path d="M14 36 10 40l4 4" />
+      opacity="0.12"
+    />
+    <path d="M12 32c4-10 12-18 20-18s16 8 20 18" />
+    <path d="M12 32c4 10 12 18 20 18s16-8 20-18" />
+    <path
+      d="M18 33.5c3.2-4.6 8.8-7.5 14-7.5s10.8 2.9 14 7.5"
+      fill="none"
+    />
+    <path d="M18 34.5c3.2 4.6 8.8 7.5 14 7.5s10.8-2.9 14-7.5" />
+    <path
+      d="M20 34c3-2.4 7-4.2 12-4.2s9 1.8 12 4.2c-3 2.4-7 4.2-12 4.2s-9-1.8-12-4.2Z"
+      fill="currentColor"
+      opacity="0.24"
+      stroke="none"
+    />
   </svg>
 );
 
