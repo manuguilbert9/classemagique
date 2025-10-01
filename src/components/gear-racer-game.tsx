@@ -314,15 +314,15 @@ export function GearRacerGame({
         const toTargetY = target.y - car.y;
         const distance = Math.hypot(toTargetX, toTargetY);
         const desiredDirection = Math.atan2(toTargetY, toTargetX);
-        const wheelDirection = car.heading + car.frontWheelAngle;
+        const headingDiff = angleDifference(desiredDirection, car.heading);
+        const targetFrontWheelAngle = clamp(headingDiff, -FRONT_WHEEL_MAX_ANGLE, FRONT_WHEEL_MAX_ANGLE);
 
-        const steeringDiff = angleDifference(desiredDirection, wheelDirection);
-        car.frontWheelAngle += clamp(steeringDiff, -FRONT_WHEEL_TURN_RATE, FRONT_WHEEL_TURN_RATE) * delta;
+        car.frontWheelAngle += (targetFrontWheelAngle - car.frontWheelAngle) * FRONT_WHEEL_TURN_RATE * delta;
         car.frontWheelAngle = clamp(car.frontWheelAngle, -FRONT_WHEEL_MAX_ANGLE, FRONT_WHEEL_MAX_ANGLE);
 
         const accelMagnitude = ACCELERATION * clamp(distance / 120, 0, 1.8);
-        car.vx += Math.cos(wheelDirection) * accelMagnitude * delta;
-        car.vy += Math.sin(wheelDirection) * accelMagnitude * delta;
+        car.vx += Math.cos(car.heading) * accelMagnitude * delta;
+        car.vy += Math.sin(car.heading) * accelMagnitude * delta;
 
         const forwardX = Math.cos(car.heading);
         const forwardY = Math.sin(car.heading);
