@@ -242,7 +242,6 @@ export function GearRacerGame({
   }, [handlePointerUpdate]);
 
   const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (event.buttons === 0 && event.pointerType !== 'touch') return;
     handlePointerUpdate(event.clientX, event.clientY);
   }, [handlePointerUpdate]);
 
