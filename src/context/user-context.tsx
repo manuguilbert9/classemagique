@@ -38,7 +38,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const unsub = onSnapshot(doc(db, "students", storedId), (doc) => {
         if (doc.exists()) {
              const data = doc.data();
-             setStudentState({
+             const newStudent = {
                 id: doc.id,
                 name: data.name,
                 code: data.code,
@@ -52,7 +52,24 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 themeColors: data.themeColors,
                 mentalMathPerformance: data.mentalMathPerformance || {},
                 nuggets: data.nuggets || 0,
-            });
+            };
+
+             // Only update state if important fields have changed (ignore isOnline/lastSeenAt)
+             setStudentState(prev => {
+                if (!prev) return newStudent;
+
+                // Compare important fields only
+                const hasChanged =
+                    prev.name !== newStudent.name ||
+                    prev.photoURL !== newStudent.photoURL ||
+                    prev.showPhoto !== newStudent.showPhoto ||
+                    prev.nuggets !== newStudent.nuggets ||
+                    JSON.stringify(prev.levels) !== JSON.stringify(newStudent.levels) ||
+                    JSON.stringify(prev.enabledSkills) !== JSON.stringify(newStudent.enabledSkills) ||
+                    JSON.stringify(prev.themeColors) !== JSON.stringify(newStudent.themeColors);
+
+                return hasChanged ? newStudent : prev;
+             });
         } else {
             // Handle case where student is deleted from another client
             setStudentState(null);
