@@ -14,6 +14,14 @@ const TURN_RESPONSIVENESS = 0.12;
 const FRONT_WHEEL_TURN_RATE = 0.22;
 const FRONT_WHEEL_MAX_ANGLE = Math.PI / 3;
 const CAR_LENGTH = 56;
+const CAR_BODY_WIDTH = 36;
+const CAR_BODY_LENGTH = 64;
+const WHEEL_WIDTH = 12;
+const WHEEL_HEIGHT = 22;
+const WHEEL_OFFSET_X = CAR_BODY_WIDTH / 2 - 1;
+const FRONT_WHEEL_Y = -CAR_BODY_LENGTH / 2 + 10;
+const REAR_WHEEL_Y = CAR_BODY_LENGTH / 2 - 10;
+const TOW_HOOK_OFFSET_Y = -CAR_BODY_LENGTH / 2 + 6;
 const EDGE_PADDING = 48;
 const GEAR_RADIUS = 26;
 
@@ -383,13 +391,18 @@ export function GearRacerGame({
           spawnNewGear();
         }
 
+        const sinHeading = Math.sin(car.heading);
+        const cosHeading = Math.cos(car.heading);
+        const towPointX = car.x - TOW_HOOK_OFFSET_Y * sinHeading;
+        const towPointY = car.y + TOW_HOOK_OFFSET_Y * cosHeading;
+
         ctx.save();
         ctx.globalAlpha = 0.32;
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 2;
         ctx.setLineDash([6, 10]);
         ctx.beginPath();
-        ctx.moveTo(car.x, car.y);
+        ctx.moveTo(towPointX, towPointY);
         ctx.lineTo(target.x, target.y);
         ctx.stroke();
         ctx.restore();
@@ -415,15 +428,8 @@ export function GearRacerGame({
       const driftAngle = Math.atan2(car.vy, car.vx);
       const driftOffset = clamp(angleDifference(driftAngle, car.heading), -Math.PI / 4, Math.PI / 4);
 
-      const bodyWidth = 36;
-      const bodyLength = 64;
-      const halfBodyWidth = bodyWidth / 2;
-      const halfBodyLength = bodyLength / 2;
-      const wheelWidth = 10;
-      const wheelHeight = 22;
-      const wheelOffsetX = halfBodyWidth - 4;
-      const frontWheelY = -halfBodyLength + 10;
-      const rearWheelY = halfBodyLength - 10;
+      const halfBodyWidth = CAR_BODY_WIDTH / 2;
+      const halfBodyLength = CAR_BODY_LENGTH / 2;
 
       ctx.save();
       ctx.rotate(driftOffset * 0.5);
@@ -439,27 +445,27 @@ export function GearRacerGame({
         ctx.rotate(angle);
         ctx.fillStyle = '#0f172a';
         ctx.beginPath();
-        ctx.roundRect(-wheelWidth / 2, -wheelHeight / 2, wheelWidth, wheelHeight, 3);
+        ctx.roundRect(-WHEEL_WIDTH / 2, -WHEEL_HEIGHT / 2, WHEEL_WIDTH, WHEEL_HEIGHT, 3);
         ctx.fill();
         ctx.fillStyle = '#1f2937';
         ctx.beginPath();
-        ctx.roundRect(-wheelWidth / 2 + 1.5, -wheelHeight / 2 + 3, wheelWidth - 3, wheelHeight - 6, 2);
+        ctx.roundRect(-WHEEL_WIDTH / 2 + 1.5, -WHEEL_HEIGHT / 2 + 3, WHEEL_WIDTH - 3, WHEEL_HEIGHT - 6, 2);
         ctx.fill();
         ctx.globalAlpha = 0.25;
         ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(-1.5, -wheelHeight / 2 + 3, 3, wheelHeight - 6);
+        ctx.fillRect(-1.5, -WHEEL_HEIGHT / 2 + 3, 3, WHEEL_HEIGHT - 6);
         ctx.globalAlpha = 1;
         ctx.restore();
       };
 
-      drawWheel(-wheelOffsetX, frontWheelY, car.frontWheelAngle);
-      drawWheel(wheelOffsetX, frontWheelY, car.frontWheelAngle);
-      drawWheel(-wheelOffsetX, rearWheelY, 0);
-      drawWheel(wheelOffsetX, rearWheelY, 0);
+      drawWheel(-WHEEL_OFFSET_X, FRONT_WHEEL_Y, car.frontWheelAngle);
+      drawWheel(WHEEL_OFFSET_X, FRONT_WHEEL_Y, car.frontWheelAngle);
+      drawWheel(-WHEEL_OFFSET_X, REAR_WHEEL_Y, 0);
+      drawWheel(WHEEL_OFFSET_X, REAR_WHEEL_Y, 0);
 
       ctx.fillStyle = '#1d4ed8';
       ctx.beginPath();
-      ctx.roundRect(-halfBodyWidth, -halfBodyLength, bodyWidth, bodyLength, 12);
+      ctx.roundRect(-halfBodyWidth, -halfBodyLength, CAR_BODY_WIDTH, CAR_BODY_LENGTH, 12);
       ctx.fill();
 
       ctx.strokeStyle = '#60a5fa';
@@ -468,29 +474,29 @@ export function GearRacerGame({
 
       ctx.fillStyle = '#2563eb';
       ctx.beginPath();
-      ctx.roundRect(-halfBodyWidth + 4, -halfBodyLength + 8, bodyWidth - 8, bodyLength - 16, 10);
+      ctx.roundRect(-halfBodyWidth + 4, -halfBodyLength + 8, CAR_BODY_WIDTH - 8, CAR_BODY_LENGTH - 16, 10);
       ctx.fill();
 
       ctx.fillStyle = '#93c5fd';
       ctx.globalAlpha = 0.9;
       ctx.beginPath();
-      ctx.roundRect(-halfBodyWidth + 6, -halfBodyLength + 6, bodyWidth - 12, bodyLength * 0.45, 10);
+      ctx.roundRect(-halfBodyWidth + 6, -halfBodyLength + 6, CAR_BODY_WIDTH - 12, CAR_BODY_LENGTH * 0.45, 10);
       ctx.fill();
       ctx.globalAlpha = 1;
 
       ctx.fillStyle = '#1e40af';
       ctx.beginPath();
-      ctx.roundRect(-halfBodyWidth + 5, -6, bodyWidth - 10, 12, 6);
+      ctx.roundRect(-halfBodyWidth + 5, -6, CAR_BODY_WIDTH - 10, 12, 6);
       ctx.fill();
 
       ctx.fillStyle = '#3b82f6';
       ctx.beginPath();
-      ctx.roundRect(-6, -halfBodyLength + 10, 12, bodyLength - 20, 6);
+      ctx.roundRect(-6, -halfBodyLength + 10, 12, CAR_BODY_LENGTH - 20, 6);
       ctx.fill();
 
       ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.roundRect(-halfBodyWidth + 6, -halfBodyLength + 2, bodyWidth - 12, 8, 4);
+      ctx.roundRect(-halfBodyWidth + 6, -halfBodyLength + 2, CAR_BODY_WIDTH - 12, 8, 4);
       ctx.fill();
 
       ctx.fillStyle = '#fde68a';
@@ -509,17 +515,17 @@ export function GearRacerGame({
 
       ctx.fillStyle = '#f87171';
       ctx.beginPath();
-      ctx.roundRect(-halfBodyWidth + 6, halfBodyLength - 12, bodyWidth - 12, 6, 3);
+      ctx.roundRect(-halfBodyWidth + 6, halfBodyLength - 12, CAR_BODY_WIDTH - 12, 6, 3);
       ctx.fill();
 
       ctx.fillStyle = '#0ea5e9';
       ctx.beginPath();
-      ctx.roundRect(-halfBodyWidth + 10, -halfBodyLength + 18, bodyWidth - 20, 10, 4);
+      ctx.roundRect(-halfBodyWidth + 10, -halfBodyLength + 18, CAR_BODY_WIDTH - 20, 10, 4);
       ctx.fill();
 
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
-      ctx.roundRect(-halfBodyWidth + 8, halfBodyLength - 22, bodyWidth - 16, 6, 3);
+      ctx.roundRect(-halfBodyWidth + 8, halfBodyLength - 22, CAR_BODY_WIDTH - 16, 6, 3);
       ctx.fill();
 
       ctx.restore();
