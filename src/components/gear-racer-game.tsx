@@ -11,6 +11,8 @@ const ACCELERATION = 0.6;
 const DRAG = 0.95;
 const LATERAL_DRAG = 0.78;
 const TURN_RESPONSIVENESS = 0.12;
+const HEADING_ALIGNMENT_STRENGTH = 0.28;
+const MIN_ALIGNMENT_SPEED = 0.35;
 const FRONT_WHEEL_TURN_RATE = 0.22;
 const FRONT_WHEEL_MAX_ANGLE = Math.PI / 3;
 const CAR_LENGTH = 56;
@@ -350,8 +352,10 @@ export function GearRacerGame({
         car.heading += headingChange * delta;
 
         const slipHeading = Math.atan2(car.vy, car.vx);
-        if (Number.isFinite(slipHeading)) {
-          car.heading += angleDifference(slipHeading, car.heading) * TURN_RESPONSIVENESS * 0.08 * delta;
+        if (Number.isFinite(slipHeading) && combinedSpeed > MIN_ALIGNMENT_SPEED) {
+          const alignmentStrength =
+            HEADING_ALIGNMENT_STRENGTH * clamp(combinedSpeed / MAX_SPEED, 0.2, 1);
+          car.heading += angleDifference(slipHeading, car.heading) * alignmentStrength * delta;
         }
 
         car.heading = ((car.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
