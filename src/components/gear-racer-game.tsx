@@ -380,15 +380,11 @@ export function GearRacerGame({
             delta;
         }
 
+        // La voiture fait toujours face à sa direction de mouvement
         let visualHeading = car.heading;
         if (Number.isFinite(slipHeading) && combinedSpeed > MIN_ALIGNMENT_SPEED) {
-          const driftInfluence =
-            Math.abs(lateralSpeed) /
-            (Math.abs(forwardSpeed) + Math.abs(lateralSpeed) + 1e-6);
-          const steeringStability =
-            1 - clamp(Math.abs(car.frontWheelAngle) / (FRONT_WHEEL_MAX_ANGLE * 0.55), 0, 1);
-          const visualBlend = driftInfluence * steeringStability;
-          visualHeading = blendAngles(car.heading, slipHeading, visualBlend);
+          // Orientation basée principalement sur la direction du mouvement
+          visualHeading = slipHeading;
         }
 
         car.visualHeading = ((visualHeading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
