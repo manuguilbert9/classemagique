@@ -20,11 +20,11 @@ export default {
         'gradient-highlight': 'linear-gradient(to right, hsl(var(--primary)), hsl(270, 90%, 65%))',
       },
       fontFamily: {
-        body: ['Andika', 'sans-serif'],
-        headline: ['MonoF', 'sans-serif'],
-        exercise: ['Scolar-Paper', 'cursive'],
+        body: ['var(--font-andika)', 'sans-serif'],
+        headline: ['var(--font-monof)', 'sans-serif'],
+        exercise: ['var(--font-scolar-paper)', 'cursive'],
         code: ['monospace'],
-        numbers: ['Andika', 'sans-serif'],
+        numbers: ['var(--font-andika)', 'sans-serif'],
       },
       colors: {
         yellow: {

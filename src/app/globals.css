@@ -1,25 +1,3 @@
-
-@font-face {
-  font-family: 'Andika';
-  src: url('/fonts/andika.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Scolar-Paper';
-  src: url('/fonts/scolarpaper.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'MonoF';
-  src: url('/fonts/monof55.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -99,6 +77,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Andika', sans-serif;
+    font-family: var(--font-andika), sans-serif;
   }
 }
