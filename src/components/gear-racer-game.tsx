@@ -34,6 +34,7 @@ interface RacerState {
     vx: number;
     vy: number;
     heading: number;
+    visualHeading: number;
     frontWheelAngle: number;
   };
   target: {
@@ -58,6 +59,7 @@ const createInitialState = (width: number, height: number): RacerState => {
       vx: 0,
       vy: 0,
       heading: 0,
+      visualHeading: 0,
       frontWheelAngle: 0,
     },
     target: {
@@ -109,6 +111,27 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 const angleDifference = (a: number, b: number) => {
   return ((a - b + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 };
+
+const blendAngles = (from: number, to: number, weight: number) => {
+  const clampedWeight = clamp(weight, 0, 1);
+  return from + angleDifference(to, from) * clampedWeight;
+};
+
+const getForwardVector = (heading: number) => {
+  return {
+    x: Math.sin(heading),
+    y: -Math.cos(heading),
+  };
+};
+
+const getRightVector = (heading: number) => {
+  return {
+    x: Math.cos(heading),
+    y: Math.sin(heading),
+  };
+};
+
+const headingFromVector = (x: number, y: number) => Math.atan2(x, -y);
 
 const createAsphaltPattern = () => {
   const patternCanvas = document.createElement('canvas');
@@ -315,7 +338,7 @@ export function GearRacerGame({
         const toTargetX = target.x - car.x;
         const toTargetY = target.y - car.y;
         const distance = Math.hypot(toTargetX, toTargetY);
-        const desiredDirection = Math.atan2(toTargetY, toTargetX);
+        const desiredDirection = headingFromVector(toTargetX, toTargetY);
         const headingDiff = angleDifference(desiredDirection, car.heading);
         const targetFrontWheelAngle = clamp(headingDiff, -FRONT_WHEEL_MAX_ANGLE, FRONT_WHEEL_MAX_ANGLE);
 
@@ -323,16 +346,14 @@ export function GearRacerGame({
         car.frontWheelAngle = clamp(car.frontWheelAngle, -FRONT_WHEEL_MAX_ANGLE, FRONT_WHEEL_MAX_ANGLE);
 
         const accelMagnitude = ACCELERATION * clamp(distance / 120, 0, 1.8);
-        car.vx += Math.cos(car.heading) * accelMagnitude * delta;
-        car.vy += Math.sin(car.heading) * accelMagnitude * delta;
+        const forwardVector = getForwardVector(car.heading);
+        car.vx += forwardVector.x * accelMagnitude * delta;
+        car.vy += forwardVector.y * accelMagnitude * delta;
 
-        const forwardX = Math.cos(car.heading);
-        const forwardY = Math.sin(car.heading);
-        const rightX = -forwardY;
-        const rightY = forwardX;
+        const rightVector = getRightVector(car.heading);
 
-        let forwardSpeed = car.vx * forwardX + car.vy * forwardY;
-        let lateralSpeed = car.vx * rightX + car.vy * rightY;
+        let forwardSpeed = car.vx * forwardVector.x + car.vy * forwardVector.y;
+        let lateralSpeed = car.vx * rightVector.x + car.vy * rightVector.y;
 
         forwardSpeed *= DRAG;
         lateralSpeed *= LATERAL_DRAG;
@@ -345,18 +366,30 @@ export function GearRacerGame({
           combinedSpeed = MAX_SPEED;
         }
 
-        car.vx = forwardSpeed * forwardX + lateralSpeed * rightX;
-        car.vy = forwardSpeed * forwardY + lateralSpeed * rightY;
+        car.vx = forwardSpeed * forwardVector.x + lateralSpeed * rightVector.x;
+        car.vy = forwardSpeed * forwardVector.y + lateralSpeed * rightVector.y;
 
         const headingChange = (forwardSpeed / CAR_LENGTH) * Math.tan(car.frontWheelAngle);
         car.heading += headingChange * delta;
 
-        const slipHeading = Math.atan2(car.vy, car.vx);
+        const slipHeading = headingFromVector(car.vx, car.vy);
         if (Number.isFinite(slipHeading) && combinedSpeed > MIN_ALIGNMENT_SPEED) {
           const alignmentStrength =
             HEADING_ALIGNMENT_STRENGTH * clamp(combinedSpeed / MAX_SPEED, 0.2, 1);
           car.heading += angleDifference(slipHeading, car.heading) * alignmentStrength * delta;
         }
+
+        let visualHeading = car.heading;
+        if (Number.isFinite(slipHeading) && combinedSpeed > MIN_ALIGNMENT_SPEED) {
+          const straightMotion =
+            Math.abs(forwardSpeed) / (Math.abs(forwardSpeed) + Math.abs(lateralSpeed) + 1e-6);
+          const steeringStability =
+            1 - clamp(Math.abs(car.frontWheelAngle) / (FRONT_WHEEL_MAX_ANGLE * 0.55), 0, 1);
+          const visualBlend = straightMotion * steeringStability;
+          visualHeading = blendAngles(car.heading, slipHeading, visualBlend);
+        }
+
+        car.visualHeading = ((visualHeading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 
         car.heading = ((car.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 
@@ -395,8 +428,8 @@ export function GearRacerGame({
           spawnNewGear();
         }
 
-        const sinHeading = Math.sin(car.heading);
-        const cosHeading = Math.cos(car.heading);
+        const sinHeading = Math.sin(car.visualHeading);
+        const cosHeading = Math.cos(car.visualHeading);
         const towPointX = car.x - TOW_HOOK_OFFSET_Y * sinHeading;
         const towPointY = car.y + TOW_HOOK_OFFSET_Y * cosHeading;
 
@@ -427,10 +460,14 @@ export function GearRacerGame({
       const car = state.car;
       ctx.save();
       ctx.translate(car.x, car.y);
-      ctx.rotate(car.heading);
+      ctx.rotate(car.visualHeading);
 
-      const driftAngle = Math.atan2(car.vy, car.vx);
-      const driftOffset = clamp(angleDifference(driftAngle, car.heading), -Math.PI / 4, Math.PI / 4);
+      const driftAngle = headingFromVector(car.vx, car.vy);
+      const driftOffset = clamp(
+        angleDifference(driftAngle, car.visualHeading),
+        -Math.PI / 4,
+        Math.PI / 4,
+      );
 
       const halfBodyWidth = CAR_BODY_WIDTH / 2;
       const halfBodyLength = CAR_BODY_LENGTH / 2;
