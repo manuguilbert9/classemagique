@@ -40,7 +40,7 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(
                 ref={ref}
                 className={cn(
                     'max-w-xs md:max-w-md p-3 rounded-2xl',
-                    isCurrentUser ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary rounded-bl-none',
+                    isCurrentUser ? 'bg-blue-100 text-blue-950 rounded-br-none' : 'bg-secondary rounded-bl-none',
                     !containsExerciseLink && 'cursor-pointer',
                     className
                 )}
@@ -53,12 +53,9 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(
                     <ChatMessageContent text={msg.text} colorizeSyllables={colorizeSyllables} />
                 </div>
                 {msg.correctedText && (
-                    <div className="border-t border-white/30 mt-2 pt-2">
+                    <div className="border-t border-blue-300 mt-2 pt-2">
                         <div
-                            className={cn(
-                                'whitespace-pre-wrap font-medium',
-                                isCurrentUser ? 'text-emerald-100' : 'text-emerald-700'
-                            )}
+                            className="whitespace-pre-wrap font-medium text-emerald-700"
                             style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
                         >
                             <ChatMessageContent text={msg.correctedText} colorizeSyllables={colorizeSyllables} />
@@ -105,7 +102,6 @@ export function ChatWindow({
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSending, setIsSending] = useState(false);
-    const [suggestionPage, setSuggestionPage] = useState(0);
     const [activeMessageMenuId, setActiveMessageMenuId] = useState<string | null>(null);
 
     const { toast } = useToast();
@@ -123,21 +119,12 @@ export function ChatWindow({
     const messageFontSize = useMemo(() => Number((14 * messageScale).toFixed(2)), [messageScale]);
     const messageMetaFontSize = useMemo(() => Number((11 * messageScale).toFixed(2)), [messageScale]);
 
-    const suggestionSignature = useMemo(() => wordSuggestions.join('|'), [wordSuggestions]);
-    
     const trimmedMessageLength = useMemo(() => newMessage.trim().length, [newMessage]);
-    
+
     const hasSuggestions = useMemo(
-        () => wordSuggestions.length > 0,
-        [wordSuggestions]
+        () => wordSuggestions.length > 0 && trimmedMessageLength > 0,
+        [wordSuggestions, trimmedMessageLength]
     );
-
-    const suggestionsToShow = 12;
-    const canRefreshSuggestions = wordSuggestions.length > suggestionsToShow;
-
-    useEffect(() => {
-        setSuggestionPage(0);
-    }, [suggestionSignature]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -288,12 +275,6 @@ export function ChatWindow({
         }
     }, [handleSendMessage]);
 
-    const handleRefreshSuggestions = () => {
-        const totalSuggestions = wordSuggestions.length;
-        if (totalSuggestions <= suggestionsToShow) return;
-        setSuggestionPage(prev => (prev + 1) % Math.ceil(totalSuggestions / suggestionsToShow));
-    }
-    
 
     if (isCreatingNew) {
         return (
@@ -372,12 +353,10 @@ export function ChatWindow({
         return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
-    const showSuggestionsPanel = hasSuggestions || isLoadingSuggestions || trimmedMessageLength === 0;
-    const suggestionStart = suggestionPage * suggestionsToShow;
-    const currentSuggestions = wordSuggestions.slice(suggestionStart, suggestionStart + suggestionsToShow);
+    const displayedSuggestions = wordSuggestions.slice(0, 8);
 
     return (
-        <div className="flex h-full flex-col md:flex-row">
+        <div className="flex h-full flex-col">
             <div className="flex flex-1 flex-col">
                 <header className="border-b p-4 flex items-center gap-3">
                      <Avatar>
@@ -466,56 +445,60 @@ export function ChatWindow({
                     </div>
                 </ScrollArea>
                 <div className="border-t p-4">
-                    <div className="relative rounded-xl border bg-background/90 p-3 shadow-sm">
-                        <Textarea
-                            ref={textareaRef}
-                            id="chat-input"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={handleInputKeyDown}
-                            placeholder="Écris ton message..."
-                            className="min-h-[44px] h-20 resize-none pr-12"
-                            disabled={isSending}
-                            spellCheck
-                        />
-                        <Button
-                            size="icon"
-                            className="absolute bottom-1 right-1 h-9 w-9"
-                            onClick={handleSendMessage}
-                            disabled={isSending || trimmedMessageLength === 0}
-                        >
-                            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        </Button>
-                    </div>
-                </div>
-            </div>
-            {showSuggestionsPanel && (
-                <aside className="border-t bg-muted/10 p-4 md:w-[400px] md:border-l md:border-t-0">
-                    <div className="rounded-xl border bg-background/90 p-3 shadow-sm">
-                        
-                        {isLoadingSuggestions ? (
-                             <div className="flex justify-center items-center h-24">
-                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                             </div>
-                        ) : (
-                            <div className="grid grid-cols-3 gap-2">
-                                {currentSuggestions.map((s, i) => (
-                                    <Button key={s+i} size="sm" variant="outline" onMouseDown={() => handleApplySuggestion(s)}>{s}</Button>
+                    <div className="space-y-3">
+                        {/* Suggestions de mots au-dessus du champ de saisie */}
+                        {hasSuggestions && !isLoadingSuggestions && (
+                            <div className="flex flex-wrap gap-1.5 px-1">
+                                <span className="text-xs text-muted-foreground self-center mr-1">Suggestions :</span>
+                                {displayedSuggestions.map((suggestion, i) => (
+                                    <Button
+                                        key={`${suggestion}-${i}`}
+                                        size="sm"
+                                        variant="secondary"
+                                        className="h-7 px-3 text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+                                        onMouseDown={() => handleApplySuggestion(suggestion)}
+                                    >
+                                        {suggestion}
+                                    </Button>
                                 ))}
-                                {canRefreshSuggestions && (
-                                     <Button size="sm" variant="ghost" onClick={handleRefreshSuggestions} className="col-span-3">
-                                        <RefreshCw className="mr-2 h-4 w-4"/>
-                                        Autres suggestions
+                                {wordSuggestions.length > 8 && (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 px-2 text-xs"
+                                        onClick={refreshSuggestions}
+                                    >
+                                        <RefreshCw className="h-3 w-3" />
                                     </Button>
                                 )}
                             </div>
                         )}
-                        {!isLoadingSuggestions && wordSuggestions.length === 0 && trimmedMessageLength > 0 && (
-                            <p className="text-xs text-muted-foreground text-center p-4">Aucune suggestion pour "{newMessage.trim().split(' ').pop()}"</p>
-                        )}
+
+                        {/* Zone de saisie */}
+                        <div className="relative rounded-xl border bg-background/90 p-3 shadow-sm">
+                            <Textarea
+                                ref={textareaRef}
+                                id="chat-input"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyDown={handleInputKeyDown}
+                                placeholder="Écris ton message..."
+                                className="min-h-[44px] h-20 resize-none pr-12"
+                                disabled={isSending}
+                                spellCheck
+                            />
+                            <Button
+                                size="icon"
+                                className="absolute bottom-1 right-1 h-9 w-9"
+                                onClick={handleSendMessage}
+                                disabled={isSending || trimmedMessageLength === 0}
+                            >
+                                {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                            </Button>
+                        </div>
                     </div>
-                </aside>
-            )}
+                </div>
+            </div>
             
             <Dialog open={!!correctionTarget} onOpenChange={(isOpen) => !isOpen && setCorrectionTarget(null)}>
                 <DialogContent>
