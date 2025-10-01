@@ -155,7 +155,7 @@ const generateLevelB = (): Question => {
             const itemsToShow: typeof euroPiecesAndBillets = [];
 
             for (let i = 0; i < numItems; i++) {
-                const item = euroPiecesAndBillets[randomInt(0, 7)]; // Limiter aux petites valeurs
+                const item = euroPiecesAndBillets[randomInt(0, euroPiecesAndBillets.length - 1)];
                 itemsToShow.push(item);
                 total += item.value;
             }
