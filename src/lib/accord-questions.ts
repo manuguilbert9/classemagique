@@ -59,7 +59,7 @@ export async function generateAccordQuestions(
  * Obtient l'index de progression suivant pour un étudiant
  * Cela permet de ne jamais redonner les mêmes phrases
  */
-export function getNextProgressionIndex(currentIndex: number, numQuestionsCompleted: number, level: 'B' | 'C'): number {
+export async function getNextProgressionIndex(currentIndex: number, numQuestionsCompleted: number, level: 'B' | 'C'): Promise<number> {
   const phrasesForLevel = accordPhrases.filter(p => p.level === level);
   return (currentIndex + numQuestionsCompleted) % phrasesForLevel.length;
 }
