@@ -2,7 +2,7 @@
 'use client';
 
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, type Unsubscribe, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, type Unsubscribe, Timestamp, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import type { Student } from './students';
 
 export type StudentPresenceState = {
@@ -50,4 +50,48 @@ export function createPresenceMap(students: Student[]): Record<string, StudentPr
         };
         return acc;
     }, {});
+}
+
+/**
+ * Met à jour le statut de présence d'un étudiant (en ligne/hors ligne)
+ */
+export async function updateStudentPresence(studentId: string, isOnline: boolean): Promise<void> {
+    try {
+        const studentRef = doc(db, 'students', studentId);
+        await updateDoc(studentRef, {
+            isOnline,
+            lastSeenAt: serverTimestamp(),
+        });
+    } catch (error) {
+        console.error('Error updating student presence:', error);
+    }
+}
+
+/**
+ * Configure le système de heartbeat pour maintenir le statut en ligne
+ * Retourne une fonction de nettoyage pour arrêter le heartbeat
+ */
+export function setupPresenceHeartbeat(studentId: string): () => void {
+    // Marquer comme en ligne immédiatement
+    updateStudentPresence(studentId, true);
+
+    // Envoyer un heartbeat toutes les 30 secondes
+    const heartbeatInterval = setInterval(() => {
+        updateStudentPresence(studentId, true);
+    }, 30000);
+
+    // Marquer comme hors ligne quand la page se ferme
+    const handleBeforeUnload = () => {
+        // Utiliser sendBeacon pour envoyer la requête même si la page se ferme
+        updateStudentPresence(studentId, false);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Fonction de nettoyage
+    return () => {
+        clearInterval(heartbeatInterval);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        updateStudentPresence(studentId, false);
+    };
 }

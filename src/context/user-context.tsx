@@ -7,6 +7,7 @@ import type { Student } from '@/services/students';
 import { getStudentById } from '@/services/students';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { setupPresenceHeartbeat } from '@/services/student-presence';
 
 
 interface UserContextType {
@@ -66,8 +67,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsub(); // Cleanup listener on unmount
-    
+
   }, []);
+
+  // Gérer la présence en ligne/hors ligne
+  useEffect(() => {
+    if (!student?.id) return;
+
+    const cleanupPresence = setupPresenceHeartbeat(student.id);
+
+    return () => {
+      cleanupPresence();
+    };
+  }, [student?.id]);
 
   const setStudent = (studentData: Student | null) => {
     try {
