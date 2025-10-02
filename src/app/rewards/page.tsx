@@ -175,7 +175,15 @@ export default function RewardsPage() {
             <CardDescription className="text-lg">Affiche ta photo en classe !</CardDescription>
           </CardHeader>
           <CardContent>
-            <Camera className="h-32 w-32 mx-auto text-primary" />
+            {student.showPhoto && student.photoURL ? (
+              <img
+                src={student.photoURL}
+                alt={student.name}
+                className="h-32 w-32 mx-auto rounded-full object-cover border-4 border-primary"
+              />
+            ) : (
+              <Camera className="h-32 w-32 mx-auto text-primary" />
+            )}
           </CardContent>
           <CardContent>
             {student.showPhoto ? (
