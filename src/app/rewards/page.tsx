@@ -18,7 +18,7 @@ import { GearRacerGame } from '@/components/gear-racer-game';
 type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer';
 
 const GAME_COST = 2;
-const PHOTO_UNLOCK_COST = 5;
+const PHOTO_UNLOCK_COST = 80;
 
 export default function RewardsPage() {
   const { student, refreshStudent } = useContext(UserContext);
