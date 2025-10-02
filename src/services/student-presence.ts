@@ -13,13 +13,33 @@ export type StudentPresenceState = {
 export function listenToStudentsPresence(callback: (students: Student[]) => void): Unsubscribe {
     const studentsRef = collection(db, 'students');
 
-    return onSnapshot(studentsRef, (snapshot) => {
-        const students: Student[] = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            const lastSeenAt = data.lastSeenAt instanceof Timestamp ? data.lastSeenAt.toDate() : undefined;
+    return onSnapshot(studentsRef, async (snapshot) => {
+        // Récupérer les données de présence pour chaque étudiant
+        const studentsPromises = snapshot.docs.map(async (studentDoc) => {
+            const data = studentDoc.data();
+
+            // Récupérer le statut de présence depuis la sous-collection
+            let isOnline = false;
+            let lastSeenAt: Date | undefined = undefined;
+
+            try {
+                const presenceDoc = await import('firebase/firestore').then(({ getDoc }) =>
+                    getDoc(doc(db, 'students', studentDoc.id, 'presence', 'status'))
+                );
+
+                if (presenceDoc.exists()) {
+                    const presenceData = presenceDoc.data();
+                    isOnline = Boolean(presenceData.isOnline);
+                    lastSeenAt = presenceData.lastSeenAt instanceof Timestamp
+                        ? presenceData.lastSeenAt.toDate()
+                        : undefined;
+                }
+            } catch (error) {
+                console.error('Error fetching presence for student:', studentDoc.id, error);
+            }
 
             return {
-                id: doc.id,
+                id: studentDoc.id,
                 name: data.name,
                 code: data.code,
                 fcmToken: data.fcmToken,
@@ -33,11 +53,12 @@ export function listenToStudentsPresence(callback: (students: Student[]) => void
                 themeColors: data.themeColors,
                 mentalMathPerformance: data.mentalMathPerformance || {},
                 nuggets: data.nuggets || 0,
-                isOnline: Boolean(data.isOnline),
+                isOnline,
                 lastSeenAt,
             };
         });
 
+        const students = await Promise.all(studentsPromises);
         callback(students);
     });
 }
@@ -54,16 +75,30 @@ export function createPresenceMap(students: Student[]): Record<string, StudentPr
 
 /**
  * Met à jour le statut de présence d'un étudiant (en ligne/hors ligne)
+ * Utilise une sous-collection 'presence' pour éviter de déclencher le snapshot principal
  */
 export async function updateStudentPresence(studentId: string, isOnline: boolean): Promise<void> {
     try {
-        const studentRef = doc(db, 'students', studentId);
-        await updateDoc(studentRef, {
+        const presenceRef = doc(db, 'students', studentId, 'presence', 'status');
+        await updateDoc(presenceRef, {
             isOnline,
             lastSeenAt: serverTimestamp(),
         });
     } catch (error) {
-        console.error('Error updating student presence:', error);
+        // Si le document n'existe pas, le créer
+        if ((error as any).code === 'not-found') {
+            try {
+                const { setDoc } = await import('firebase/firestore');
+                await setDoc(presenceRef, {
+                    isOnline,
+                    lastSeenAt: serverTimestamp(),
+                });
+            } catch (setError) {
+                console.error('Error creating student presence:', setError);
+            }
+        } else {
+            console.error('Error updating student presence:', error);
+        }
     }
 }
 
