@@ -70,6 +70,7 @@ export interface Question {
   accordRows?: string[][]; // 2 rows of words
   accordCorrectPath?: number[]; // indices of correct words in each column
   accordPhraseIndex?: number; // which phrase in the 300-phrase list
+  accordFirstWordRow?: number; // index (0 or 1) of the row containing the first correct word
 }
 
 export interface CalculationSettings {

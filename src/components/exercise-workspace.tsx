@@ -335,20 +335,27 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     });
   };
 
-  const handleAccordSubmit = () => {
-    if (!exerciseData || feedback || !exerciseData.accordCorrectPath) return;
+  const handleAccordSubmit = async () => {
+    if (!exerciseData || feedback || !exerciseData.accordRows) return;
 
     // Vérifier que tous les mots ont été sélectionnés
-    if (selectedAccordPath.length !== exerciseData.accordCorrectPath.length) {
+    if (selectedAccordPath.length !== exerciseData.accordRows[0].length) {
       return;
     }
 
-    // Vérifier si le chemin est correct
-    const isCorrect = selectedAccordPath.every((rowIndex, colIndex) =>
-      rowIndex === exerciseData.accordCorrectPath![colIndex]
-    );
+    // Construire la phrase à partir du chemin sélectionné
+    const constructedSentence = selectedAccordPath
+      .map((rowIndex, colIndex) => exerciseData.accordRows![rowIndex][colIndex])
+      .join(' ');
 
-    if (isCorrect) {
+    // Valider avec l'IA
+    const { validateAccordSentence } = await import('@/ai/flows/accord-validation-flow');
+    const result = await validateAccordSentence({
+      userSentence: constructedSentence,
+      level: exerciseData.level as 'B' | 'C',
+    });
+
+    if (result.isCorrect) {
       processCorrectAnswer();
     } else {
       processIncorrectAnswer();
@@ -823,6 +830,7 @@ const renderAccordPath = () => {
 
   const [row1, row2] = exerciseData.accordRows;
   const numColumns = row1.length;
+  const firstWordRow = exerciseData.accordFirstWordRow ?? 0;
 
   return (
     <div className="flex flex-col items-center justify-center w-full space-y-6">
@@ -834,6 +842,7 @@ const renderAccordPath = () => {
             const isSelected = selectedAccordPath[colIndex] === 0;
             const isCorrectWord = feedback && exerciseData.accordCorrectPath![colIndex] === 0;
             const isIncorrectSelection = feedback === 'incorrect' && isSelected && !isCorrectWord;
+            const isFirstWord = colIndex === 0 && firstWordRow === 0;
 
             return (
               <button
@@ -846,10 +855,14 @@ const renderAccordPath = () => {
                   isSelected && !feedback && "bg-blue-200 ring-2 ring-blue-500",
                   feedback === 'correct' && isSelected && "bg-green-200 ring-2 ring-green-500",
                   isIncorrectSelection && "bg-red-200 ring-2 ring-red-500 animate-shake",
-                  feedback && isCorrectWord && !isSelected && "bg-green-100"
+                  feedback && isCorrectWord && !isSelected && "bg-green-100",
+                  isFirstWord && !feedback && "ring-2 ring-amber-400"
                 )}
               >
                 {word}
+                {isFirstWord && !feedback && (
+                  <div className="absolute -top-2 -right-2 bg-amber-400 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">1</div>
+                )}
                 {feedback === 'correct' && isSelected && (
                   <Check className="absolute top-1 right-1 h-4 w-4 text-green-600" />
                 )}
@@ -865,6 +878,7 @@ const renderAccordPath = () => {
             const isSelected = selectedAccordPath[colIndex] === 1;
             const isCorrectWord = feedback && exerciseData.accordCorrectPath![colIndex] === 1;
             const isIncorrectSelection = feedback === 'incorrect' && isSelected && !isCorrectWord;
+            const isFirstWord = colIndex === 0 && firstWordRow === 1;
 
             return (
               <button
@@ -877,10 +891,14 @@ const renderAccordPath = () => {
                   isSelected && !feedback && "bg-blue-200 ring-2 ring-blue-500",
                   feedback === 'correct' && isSelected && "bg-green-200 ring-2 ring-green-500",
                   isIncorrectSelection && "bg-red-200 ring-2 ring-red-500 animate-shake",
-                  feedback && isCorrectWord && !isSelected && "bg-green-100"
+                  feedback && isCorrectWord && !isSelected && "bg-green-100",
+                  isFirstWord && !feedback && "ring-2 ring-amber-400"
                 )}
               >
                 {word}
+                {isFirstWord && !feedback && (
+                  <div className="absolute -top-2 -right-2 bg-amber-400 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">1</div>
+                )}
                 {feedback === 'correct' && isSelected && (
                   <Check className="absolute top-1 right-1 h-4 w-4 text-green-600" />
                 )}

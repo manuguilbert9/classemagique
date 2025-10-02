@@ -30,6 +30,9 @@ export async function generateAccordQuestions(
     const row2 = phrase.row2;
     const correctPath = phrase.correctPath;
 
+    // Le premier mot correct est sur la ligne indiquée par correctPath[0]
+    const firstWordRow = correctPath[0];
+
     // Créer la question
     const questionType = Math.random() < 0.5 ? 'Colorie' : 'Trace';
     const instruction = questionType === 'Colorie'
@@ -44,6 +47,7 @@ export async function generateAccordQuestions(
       accordRows: [row1, row2],
       accordCorrectPath: correctPath,
       accordPhraseIndex: phrase.id,
+      accordFirstWordRow: firstWordRow,
     });
 
     // Petit délai pour garantir des IDs uniques
