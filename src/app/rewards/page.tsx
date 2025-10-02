@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserContext } from '@/context/user-context';
 import { Logo } from '@/components/logo';
-import { Home, Gem, Gamepad2, ArrowLeft, Shield, Disc3, Car } from 'lucide-react';
+import { Home, Gem, Gamepad2, ArrowLeft, Shield, Disc3, Car, Camera } from 'lucide-react';
 import { SnakeGame } from '@/components/snake-game';
-import { spendNuggets } from '@/services/students';
+import { spendNuggets, unlockProfilePhoto } from '@/services/students';
 import { useToast } from '@/hooks/use-toast';
 import { AirDefenseGame } from '@/components/air-defense-game';
 import { BocciaGame } from '@/components/boccia-game';
@@ -18,6 +18,7 @@ import { GearRacerGame } from '@/components/gear-racer-game';
 type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer';
 
 const GAME_COST = 2;
+const PHOTO_UNLOCK_COST = 5;
 
 export default function RewardsPage() {
   const { student, refreshStudent } = useContext(UserContext);
@@ -56,7 +57,42 @@ export default function RewardsPage() {
   };
 
   const handleExitGame = () => {
-    setGameState('selection'); 
+    setGameState('selection');
+  };
+
+  const handleUnlockPhoto = async () => {
+    if (!student || (student.nuggets || 0) < PHOTO_UNLOCK_COST) {
+      toast({
+        variant: 'destructive',
+        title: 'Pépites insuffisantes',
+        description: `Tu n'as pas assez de pépites pour débloquer ta photo (coût: ${PHOTO_UNLOCK_COST}).`,
+      });
+      return;
+    }
+
+    if (student.showPhoto) {
+      toast({
+        title: 'Déjà débloqué',
+        description: 'Ta photo de profil est déjà activée !',
+      });
+      return;
+    }
+
+    const result = await unlockProfilePhoto(student.id, PHOTO_UNLOCK_COST);
+    if (result.success) {
+      refreshStudent();
+      toast({
+        title: '🎉 Photo débloquée !',
+        description: 'Ta photo de profil est maintenant visible !',
+        className: 'bg-green-100 border-green-300 text-green-800',
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: result.error || "Impossible de débloquer la photo.",
+      });
+    }
   };
   
   if (!student) {
@@ -133,6 +169,30 @@ export default function RewardsPage() {
       </header>
 
       <div className="flex justify-center gap-8 flex-wrap">
+        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
+          <CardHeader>
+            <CardTitle className="font-headline text-3xl">Ma Photo de Profil</CardTitle>
+            <CardDescription className="text-lg">Affiche ta photo en classe !</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Camera className="h-32 w-32 mx-auto text-primary" />
+          </CardContent>
+          <CardContent>
+            {student.showPhoto ? (
+              <div className="text-center">
+                <p className="text-green-600 font-bold text-lg mb-2">✓ Déjà activée !</p>
+                <p className="text-sm text-muted-foreground">Ta photo est visible en classe</p>
+              </div>
+            ) : (
+              <>
+                <Button onClick={handleUnlockPhoto} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < PHOTO_UNLOCK_COST}>
+                  Débloquer pour {PHOTO_UNLOCK_COST} <Gem className="ml-2 h-5 w-5" />
+                </Button>
+                {(student.nuggets || 0) < PHOTO_UNLOCK_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
+              </>
+            )}
+          </CardContent>
+        </Card>
         <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
           <CardHeader>
             <CardTitle className="font-headline text-3xl">Snake</CardTitle>

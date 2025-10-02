@@ -74,7 +74,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         schedule: [],
         mentalMathPerformance: {},
         nuggets: 0,
-        showPhoto: true, // Default to true for new students
+        showPhoto: false, // Default to false - students can unlock with nuggets
         accordProgressionIndex: 0,
     });
 
@@ -88,7 +88,7 @@ export async function createStudent(name: string, code: string): Promise<Student
         schedule: [],
         mentalMathPerformance: {},
         nuggets: 0,
-        showPhoto: true,
+        showPhoto: false,
         accordProgressionIndex: 0,
     };
 }
@@ -377,6 +377,45 @@ export async function updateAccordProgression(studentId: string, questionsComple
     return { success: true };
   } catch (error) {
     console.error("Error updating accord progression:", error);
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Une erreur inconnue est survenue." };
+  }
+}
+
+/**
+ * Unlocks the profile photo display for a student by spending nuggets.
+ * @param studentId The ID of the student.
+ * @param cost The number of nuggets to spend.
+ * @returns A promise indicating success or failure.
+ */
+export async function unlockProfilePhoto(studentId: string, cost: number): Promise<{ success: boolean; error?: string }> {
+  if (!studentId) return { success: false, error: "ID de l'élève requis." };
+
+  const studentRef = doc(db, "students", studentId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const studentDoc = await transaction.get(studentRef);
+      if (!studentDoc.exists()) {
+        throw new Error("L'élève n'existe pas.");
+      }
+
+      const currentNuggets = studentDoc.data().nuggets || 0;
+      if (currentNuggets < cost) {
+        throw new Error("Pépites insuffisantes.");
+      }
+
+      const newNuggets = currentNuggets - cost;
+      transaction.update(studentRef, {
+        nuggets: newNuggets,
+        showPhoto: true
+      });
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Error unlocking profile photo:", error);
     if (error instanceof Error) {
       return { success: false, error: error.message };
     }
