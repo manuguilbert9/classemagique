@@ -69,8 +69,8 @@ export function PhraseConstructionExercise() {
     setUserSentence('');
     setValidationResult(null);
     try {
-      // Ensure the level is valid for the AI flow
-      const flowLevel = (level === 'A') ? 'B' : level;
+      // Ensure the level is valid for the AI flow (A, A+, A++ -> B)
+      const flowLevel: 'B' | 'C' | 'D' = (level === 'A' || level === 'A+' || level === 'A++') ? 'B' : level as 'B' | 'C' | 'D';
       const result = await generatePhraseWords({ level: flowLevel });
       setWordsToUse(shuffleArray(result.words));
       setGameState('playing');
