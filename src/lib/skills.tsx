@@ -89,7 +89,7 @@ export interface Skill {
   allowedLevels?: SkillLevel[];
 }
 
-export type SkillLevel = 'A' | 'B' | 'C' | 'D';
+export type SkillLevel = 'A' | 'A+' | 'A++' | 'B' | 'C' | 'D';
 
 const DecodageIcon = () => (
   <svg

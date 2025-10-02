@@ -480,19 +480,22 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       if (skill.slug === 'lire-les-nombres') return (
           <Card className="w-full max-w-2xl mx-auto shadow-2xl">
             <CardHeader>
-              <CardTitle className="font-headline text-3xl text-center">Règle ton exercice</CardTitle>
+              <CardTitle className="font-headline text-3xl text-center">Choisis ton niveau</CardTitle>
+              <CardDescription className="text-center text-lg">Sélectionne un niveau de difficulté pour commencer</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
-               <Label htmlFor="level-select" className="text-lg">Niveau de difficulté</Label>
+               <Label htmlFor="level-select" className="text-lg font-semibold">Niveau de difficulté</Label>
                <Select onValueChange={(level) => startNumberLevelExercise({level: level as SkillLevel})}>
-                  <SelectTrigger id="level-select" className="w-64">
+                  <SelectTrigger id="level-select" className="w-80 text-base">
                     <SelectValue placeholder="Choisir un niveau..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="A">Niveau A (1-30)</SelectItem>
-                    <SelectItem value="B">Niveau B (11-1000)</SelectItem>
-                    <SelectItem value="C">Niveau C (69-100 000)</SelectItem>
-                    <SelectItem value="D">Niveau D (1001-1 000 000)</SelectItem>
+                    <SelectItem value="A">Niveau A (1 à 10)</SelectItem>
+                    <SelectItem value="A+">Niveau A+ (10 à 20)</SelectItem>
+                    <SelectItem value="A++">Niveau A++ (10 à 30)</SelectItem>
+                    <SelectItem value="B">Niveau B (11 à 1 000)</SelectItem>
+                    <SelectItem value="C">Niveau C (69 à 100 000)</SelectItem>
+                    <SelectItem value="D">Niveau D (1 001 à 1 000 000)</SelectItem>
                   </SelectContent>
                 </Select>
             </CardContent>

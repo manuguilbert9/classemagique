@@ -10,7 +10,9 @@ export async function generateLireLesNombresQuestion(settings: NumberLevelSettin
     let min, max: number;
 
     switch(settings.level) {
-        case 'A': min = 1; max = 30; break;
+        case 'A': min = 1; max = 10; break;
+        case 'A+': min = 10; max = 20; break;
+        case 'A++': min = 10; max = 30; break;
         case 'B': min = 11; max = 1000; break;
         case 'C': min = 69; max = 100000; break;
         case 'D': min = 1001; max = 1000000; break;
