@@ -78,8 +78,9 @@ export function createPresenceMap(students: Student[]): Record<string, StudentPr
  * Utilise une sous-collection 'presence' pour éviter de déclencher le snapshot principal
  */
 export async function updateStudentPresence(studentId: string, isOnline: boolean): Promise<void> {
+    const presenceRef = doc(db, 'students', studentId, 'presence', 'status');
+
     try {
-        const presenceRef = doc(db, 'students', studentId, 'presence', 'status');
         await updateDoc(presenceRef, {
             isOnline,
             lastSeenAt: serverTimestamp(),
