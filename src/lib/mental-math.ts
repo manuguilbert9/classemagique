@@ -190,6 +190,8 @@ const generateLevelD = (): Question => {
 export function generateMentalMathQuestions(level: SkillLevel, count: number): Question[] {
     const generators = {
         'A': generateLevelA,
+        'A+': generateLevelA,
+        'A++': generateLevelA,
         'B': generateLevelB,
         'C': generateLevelC,
         'D': generateLevelD,
