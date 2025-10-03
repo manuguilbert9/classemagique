@@ -228,6 +228,8 @@ const generateLevelD = async (): Promise<CalendarQuestion> => {
 export async function generateCalendarQuestions(level: SkillLevel, count: number): Promise<Question[]> {
     const generators = {
         'A': generateLevelA,
+        'A+': generateLevelA,
+        'A++': generateLevelA,
         'B': generateLevelB,
         'C': generateLevelC,
         'D': generateLevelD,
