@@ -86,6 +86,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   // State for accord-path
   const [selectedAccordPath, setSelectedAccordPath] = useState<number[]>([]);
+  const [accordAiFeedback, setAccordAiFeedback] = useState<string>('');
 
 
   useEffect(() => {
@@ -188,6 +189,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setSelectedCountIndices([]);
     setUserKeyboardInput('');
     setSelectedAccordPath([]);
+    setAccordAiFeedback('');
     setFeedback(null);
   }
 
@@ -354,6 +356,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       userSentence: constructedSentence,
       level: exerciseData.level as 'B' | 'C',
     });
+
+    // Stocker le feedback de l'IA
+    setAccordAiFeedback(result.feedback);
 
     if (result.isCorrect) {
       processCorrectAnswer();
@@ -983,10 +988,14 @@ const renderAccordPath = () => {
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (
-            <div className="text-2xl font-bold text-green-600 animate-pulse">{motivationalMessage}</div>
+            <div className="text-2xl font-bold text-green-600 animate-pulse">
+              {exerciseData.type === 'accord-path' && accordAiFeedback ? accordAiFeedback : motivationalMessage}
+            </div>
           )}
            {feedback === 'incorrect' && (
-            <div className="text-2xl font-bold text-red-600 animate-shake">Oups ! Essaye encore.</div>
+            <div className="text-2xl font-bold text-red-600 animate-shake">
+              {exerciseData.type === 'accord-path' && accordAiFeedback ? accordAiFeedback : "Oups ! Essaye encore."}
+            </div>
           )}
         </CardFooter>
         <style jsx>{`
