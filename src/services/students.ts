@@ -13,7 +13,7 @@ export type StudentPerformance = Record<string, {
 }>;
 
 
-export type SkillLevel = 'A' | 'B' | 'C' | 'D';
+export type SkillLevel = 'A' | 'A+' | 'A++' | 'B' | 'C' | 'D';
 
 export interface ScheduleStep {
     id: string;
