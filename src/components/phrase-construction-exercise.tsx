@@ -90,7 +90,7 @@ export function PhraseConstructionExercise() {
     setGameState('validating');
 
     try {
-      const flowLevel = (level === 'A') ? 'B' : level;
+      const flowLevel: 'B' | 'C' | 'D' = (level === 'A' || level === 'A+' || level === 'A++') ? 'B' : level as 'B' | 'C' | 'D';
       const result = await validateConstructedPhrase({
         providedWords: wordsToUse,
         userSentence: userSentence,
