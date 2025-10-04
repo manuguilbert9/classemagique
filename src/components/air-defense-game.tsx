@@ -14,7 +14,7 @@ const GAME_HEIGHT = 600;
 const TURRET_Y = GAME_HEIGHT - 30;
 const MAX_LANDED = 5;
 const WAVE_DURATION = 60000; // 60 seconds in ms
-const BOSS_MAX_HEALTH = 15;
+const BOSS_MAX_HEALTH = 8;
 const PLAYER_MAX_LIVES = 3;
 const COMBO_RESET_TIME = 3000; // 3 seconds in ms
 const MAX_SCORE_MULTIPLIER = 5;
@@ -34,18 +34,20 @@ type GameObject = {
   health?: number;
 };
 
-export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
+export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost, onBossDefeated }: {
     onExit: () => void;
     onReplay: () => void;
     canReplay: boolean;
     gameCost: number;
+    onBossDefeated?: () => void;
 }) {
-  const [gameState, setGameState] = React.useState<'playing' | 'gameOver' | 'waveTransition' | 'bossFight'>('waveTransition');
+  const [gameState, setGameState] = React.useState<'playing' | 'gameOver' | 'waveTransition' | 'bossFight' | 'victory'>('waveTransition');
   const [gameObjects, setGameObjects] = React.useState<GameObject[]>([]);
   const [turretAngle, setTurretAngle] = React.useState(0);
   const [score, setScore] = React.useState(0);
   const [wave, setWave] = React.useState(1);
   const [landedCount, setLandedCount] = React.useState(0);
+  const [bossDefeatedCallbackCalled, setBossDefeatedCallbackCalled] = React.useState(false);
   const [lastShotTime, setLastShotTime] = React.useState(0);
   const [reticlePosition, setReticlePosition] = React.useState<{ x: number; y: number } | null>(null);
   const reticleRef = React.useRef<{ x: number; y: number } | null>(null);
@@ -294,11 +296,14 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
             currentSaucers = gameObjects.filter(obj => obj.type === 'saucer' && obj.x > 0 && obj.x < GAME_WIDTH);
             if (currentSaucers.length > 0) {
                 const randomHeli = currentSaucers[Math.floor(Math.random() * currentSaucers.length)];
+                // Vagues 3 et 4 : parachutistes plus rapides
+                const baseSpeed = wave >= 3 ? 0.6 : 0.4;
+                const speedIncrement = wave >= 3 ? 0.08 : 0.05;
                 setGameObjects(prev => [...prev, {
                     id: getUniqueId(),
                     x: randomHeli.x,
                     y: randomHeli.y + 20,
-                    vy: 0.4 + wave * 0.05,
+                    vy: baseSpeed + wave * speedIncrement,
                     type: 'alien'
                 }]);
                 setParachutistsToSpawn(p => p - 1);
@@ -422,7 +427,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
                         destroyedTargetIds.add(target.id);
                         if(gameState === 'bossFight') {
                              registerSuccessfulHit(100);
-                             setGameState('gameOver'); // You win!
+                             setGameState('victory'); // You win!
                         } else {
                             registerSuccessfulHit(25);
                         }
@@ -480,6 +485,15 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
        }
     }
   }, [landedCount, playerLives, toast]);
+
+  // Victory Check - Call the boss defeated callback
+  React.useEffect(() => {
+    if (gameState === 'victory' && !bossDefeatedCallbackCalled && onBossDefeated) {
+      setBossDefeatedCallbackCalled(true);
+      onBossDefeated();
+      toast({ title: "🎉 Victoire !", description: "Tu as vaincu le boss ! +10 pépites !" });
+    }
+  }, [gameState, bossDefeatedCallbackCalled, onBossDefeated, toast]);
   
   return (
     <main className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
@@ -564,6 +578,21 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost }: {
                 </div>
             )}
 
+
+            {/* Victory Screen */}
+            {gameState === 'victory' && (
+                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-20">
+                    <h2 className="text-6xl font-bold text-yellow-400 animate-pulse">🎉 VICTOIRE ! 🎉</h2>
+                    <p className="text-3xl mt-4 text-emerald-400">Boss vaincu !</p>
+                    <p className="text-2xl mt-2">Score final : {score}</p>
+                    <p className="text-xl mt-4 text-amber-300">+10 pépites gagnées !</p>
+                    <div className="flex gap-4 mt-8">
+                        <Button onClick={onExit} size="lg">
+                            <ArrowLeft className="mr-2" /> Retour aux récompenses
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* Game Over Screen */}
             {gameState === 'gameOver' && (

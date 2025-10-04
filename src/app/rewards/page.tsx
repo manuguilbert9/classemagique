@@ -9,7 +9,7 @@ import { UserContext } from '@/context/user-context';
 import { Logo } from '@/components/logo';
 import { Home, Gem, Gamepad2, ArrowLeft, Shield, Disc3, Car, Camera } from 'lucide-react';
 import { SnakeGame } from '@/components/snake-game';
-import { spendNuggets, unlockProfilePhoto } from '@/services/students';
+import { spendNuggets, addNuggets, unlockProfilePhoto } from '@/services/students';
 import { useToast } from '@/hooks/use-toast';
 import { AirDefenseGame } from '@/components/air-defense-game';
 import { BocciaGame } from '@/components/boccia-game';
@@ -58,6 +58,15 @@ export default function RewardsPage() {
 
   const handleExitGame = () => {
     setGameState('selection');
+  };
+
+  const handleBossDefeated = async () => {
+    if (!student) return;
+
+    const result = await addNuggets(student.id, 10);
+    if (result.success) {
+      refreshStudent();
+    }
   };
 
   const handleUnlockPhoto = async () => {
@@ -127,6 +136,7 @@ export default function RewardsPage() {
             onReplay={() => handlePlay('air_defense')}
             canReplay={(student?.nuggets || 0) >= GAME_COST}
             gameCost={GAME_COST}
+            onBossDefeated={handleBossDefeated}
         />
     );
   }

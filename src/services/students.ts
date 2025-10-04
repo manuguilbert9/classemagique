@@ -305,6 +305,39 @@ export async function spendNuggets(studentId: string, amount: number): Promise<{
 }
 
 /**
+ * Adds nuggets to a student's balance.
+ * @param studentId The ID of the student.
+ * @param amount The number of nuggets to add.
+ * @returns A promise indicating success or failure.
+ */
+export async function addNuggets(studentId: string, amount: number): Promise<{ success: boolean; error?: string }> {
+    if (!studentId) return { success: false, error: "ID de l'élève requis." };
+    if (amount <= 0) return { success: false, error: "Le montant doit être positif." };
+
+    const studentRef = doc(db, "students", studentId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const studentDoc = await transaction.get(studentRef);
+            if (!studentDoc.exists()) {
+                throw new Error("L'élève n'existe pas.");
+            }
+
+            const currentNuggets = studentDoc.data().nuggets || 0;
+            const newNuggets = currentNuggets + amount;
+            transaction.update(studentRef, { nuggets: newNuggets });
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error adding nuggets:", error);
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: "Une erreur inconnue est survenue." };
+    }
+}
+
+/**
  * Saves the FCM token for a student to enable push notifications.
  * @param studentId The ID of the student.
  * @param token The FCM registration token.
