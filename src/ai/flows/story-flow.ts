@@ -66,9 +66,11 @@ Ne mentionne pas les emojis ou la description directement dans le texte, utilise
 
 4.  **Structure** : L'histoire doit avoir un début, un développement et une fin claire.
 
-5.  **Morale** : À la fin de l'histoire, rédige une morale claire et simple en rapport avec les événements du récit. Ne la mélange pas avec l'histoire, mais présente-la séparément.
+5.  **Prénoms des personnages** : IMPORTANT - Varie les prénoms des personnages principaux. Ne pas toujours utiliser "Léo". Utilise une grande variété de prénoms français modernes et classiques : Emma, Lucas, Chloé, Nathan, Inès, Hugo, Manon, Arthur, Zoé, Louis, Camille, Gabriel, Léa, Tom, Sarah, Maxime, etc. Change de prénom à chaque histoire.
 
-6.  **Titre** : Donne un titre court et accrocheur à l'histoire.
+6.  **Morale** : À la fin de l'histoire, rédige une morale claire et simple en rapport avec les événements du récit. Ne la mélange pas avec l'histoire, mais présente-la séparément.
+
+7.  **Titre** : Donne un titre court et accrocheur à l'histoire.
 
 Réponds uniquement avec la structure de sortie demandée (titre, histoire, morale). N'ajoute aucun commentaire ou texte supplémentaire.`,
   // Register the maps with Handlebars so the prompt can look them up

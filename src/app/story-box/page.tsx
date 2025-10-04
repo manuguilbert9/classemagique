@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { Textarea } from '@/components/ui/textarea';
 import { generateSpeech } from '@/ai/flows/tts-flow';
+import { generateImage, type ImageInput } from '@/ai/flows/image-flow';
 import { SyllableText } from '@/components/syllable-text';
 
 // Halloween-specific emojis (October 1 - November 3)
@@ -81,7 +82,11 @@ export default function StoryBoxPage() {
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  
+
+  // Image State (Halloween only)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
   // Display state
   const [showSyllables, setShowSyllables] = useState(false);
 
@@ -158,14 +163,36 @@ export default function StoryBoxPage() {
       if (!story || isGeneratingAudio) return;
       setIsGeneratingAudio(true);
       setAudioDataUri(null);
+      setError(null);
       try {
           const result = await generateSpeech(`${story.title}. ${story.story}. ${story.moral}`);
           setAudioDataUri(result.audioDataUri);
-      } catch (e) {
+      } catch (e: any) {
           console.error("Audio generation failed:", e);
-          setError("Impossible de générer l'audio pour cette histoire.");
+          const errorMessage = e?.message || "Erreur inconnue";
+          setError(`Impossible de générer l'audio : ${errorMessage}`);
       } finally {
           setIsGeneratingAudio(false);
+      }
+  };
+
+  const handleGenerateImage = async () => {
+      if (!story || isGeneratingImage || !isHalloweenPeriod()) return;
+      setIsGeneratingImage(true);
+      setImageUrl(null);
+      try {
+          const imageInput: ImageInput = {
+              storyTitle: story.title,
+              storyContent: story.story,
+              tone,
+          };
+          const result = await generateImage(imageInput);
+          setImageUrl(result.imageUrl);
+      } catch (e) {
+          console.error("Image generation failed:", e);
+          setError("Impossible de générer l'illustration pour cette histoire.");
+      } finally {
+          setIsGeneratingImage(false);
       }
   };
 
@@ -214,6 +241,7 @@ export default function StoryBoxPage() {
       setStory(null);
       setError(null);
       setAudioDataUri(null);
+      setImageUrl(null);
   }
 
   if (story) {
@@ -242,15 +270,26 @@ export default function StoryBoxPage() {
                     )}
                   </div>
                 <CardTitle className="font-headline text-4xl">{story.title}</CardTitle>
-                <div className="flex justify-center mt-4">
+                <div className="flex justify-center gap-3 mt-4 flex-wrap">
                   <Button onClick={handleGenerateAudio} disabled={isGeneratingAudio}>
                       {isGeneratingAudio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                       {isGeneratingAudio ? 'Génération en cours...' : 'Écouter l\'histoire'}
                   </Button>
+                  {isHalloweenPeriod() && (
+                    <Button onClick={handleGenerateImage} disabled={isGeneratingImage} variant="secondary">
+                        {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+                        {isGeneratingImage ? 'Création...' : 'Voir l\'illustration'}
+                    </Button>
+                  )}
                 </div>
                  {audioDataUri && (
                     <div className="flex justify-center pt-4">
                         <audio ref={audioRef} src={audioDataUri} controls />
+                    </div>
+                )}
+                {imageUrl && (
+                    <div className="flex justify-center pt-4">
+                        <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg max-w-full h-auto" />
                     </div>
                 )}
              </CardHeader>
