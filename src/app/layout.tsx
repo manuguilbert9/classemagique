@@ -1,11 +1,7 @@
-
-'use client';
-
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
-import { UserProvider } from '@/context/user-context';
-import { ChatProvider } from '@/context/chat-context';
+import { ClientProviders } from '@/components/client-providers';
 import localFont from 'next/font/local';
+import type { Metadata } from 'next';
 
 // Chargement des polices personnalisées
 const andika = localFont({
@@ -26,25 +22,23 @@ const scolarPaper = localFont({
   display: 'swap',
 });
 
+export const metadata: Metadata = {
+  title: 'Classe Magique',
+  description: 'Des exercices amusants et engageants pour développer vos compétences !',
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <UserProvider>
-      <ChatProvider>
-        <html lang="fr" className={`${andika.variable} ${monof.variable} ${scolarPaper.variable}`}>
-          <head>
-            <title>Classe Magique</title>
-            <meta name="description" content="Des exercices amusants et engageants pour développer vos compétences !" />
-          </head>
-          <body className="font-body antialiased">
-            {children}
-            <Toaster />
-          </body>
-        </html>
-      </ChatProvider>
-    </UserProvider>
+    <html lang="fr" className={`${andika.variable} ${monof.variable} ${scolarPaper.variable}`}>
+      <body className="font-body antialiased">
+        <ClientProviders>
+          {children}
+        </ClientProviders>
+      </body>
+    </html>
   );
 }
