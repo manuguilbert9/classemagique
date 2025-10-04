@@ -385,39 +385,6 @@ export async function uploadStudentPhoto(studentId: string, file: File): Promise
 }
 
 /**
- * Updates the progression index for the "chemin des accords" exercise.
- * This should be called after a student completes a set of accord questions.
- * @param studentId The ID of the student.
- * @param questionsCompleted The number of questions completed.
- * @returns A promise indicating success or failure.
- */
-export async function updateAccordProgression(studentId: string, questionsCompleted: number): Promise<{ success: boolean; error?: string }> {
-  if (!studentId) return { success: false, error: "ID de l'élève requis." };
-  if (questionsCompleted <= 0) return { success: false, error: "Le nombre de questions doit être positif." };
-
-  try {
-    const studentRef = doc(db, "students", studentId);
-    const studentDoc = await getDoc(studentRef);
-
-    if (!studentDoc.exists()) {
-      return { success: false, error: "L'élève n'existe pas." };
-    }
-
-    const currentIndex = studentDoc.data().accordProgressionIndex || 0;
-    const newIndex = currentIndex + questionsCompleted;
-
-    await updateDoc(studentRef, { accordProgressionIndex: newIndex });
-    return { success: true };
-  } catch (error) {
-    console.error("Error updating accord progression:", error);
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: "Une erreur inconnue est survenue." };
-  }
-}
-
-/**
  * Unlocks the profile photo display for a student by spending nuggets.
  * @param studentId The ID of the student.
  * @param cost The number of nuggets to spend.
