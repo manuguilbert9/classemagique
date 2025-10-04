@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A flow to generate images using Imagen 3.
+ * @fileOverview A flow to generate images using Gemini with image generation.
  *
  * - generateImage - A function that generates an image from a text prompt.
  * - ImageInput - The input type for the generateImage function.
@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { imagen3 } from '@genkit-ai/googleai';
+import { googleAI } from '@genkit-ai/googleai';
 
 const ImageInputSchema = z.object({
   storyTitle: z.string().describe('The title of the story'),
@@ -41,22 +41,29 @@ const imageFlow = ai.defineFlow(
     const styleInstruction = styleMap[input.tone];
 
     // Extract key elements from the story for the prompt
-    const imagePrompt = `Illustration pour une histoire intitulée "${input.storyTitle}".
+    const imagePrompt = `Crée une illustration de haute qualité pour cette histoire.
 
-Style visuel: ${styleInstruction}
+Titre: "${input.storyTitle}"
 
-Scène à illustrer: Une scène représentative de cette histoire - ${input.storyContent.substring(0, 500)}
+Histoire: ${input.storyContent.substring(0, 500)}
 
-Qualité: Haute qualité, composition artistique, adapté pour de la littérature jeunesse/ado. Pas de texte dans l'image.`;
+Style artistique: ${styleInstruction}
+
+Instructions:
+- Format portrait (3:4)
+- Composition artistique professionnelle
+- Adapté pour illustration de littérature jeunesse/ado
+- Pas de texte dans l'image
+- Haute qualité visuelle`;
 
     const { media } = await ai.generate({
-      model: imagen3,
+      model: googleAI.model('gemini-2.0-flash-exp'),
       config: {
-        numberOfImages: 1,
-        aspectRatio: '3:4', // Portrait format, good for book illustrations
-      },
-      output: {
-        format: 'media',
+        responseModalities: ['IMAGE'],
+        imageConfig: {
+          numberOfImages: 1,
+          aspectRatio: '3:4',
+        },
       },
       prompt: imagePrompt,
     });
