@@ -107,6 +107,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 startCurrencyExercise({ difficulty });
             }
             // If no level, the settings component will be shown
+        }
     }
     if (!isUserLoading) {
         loadNonConfigurableQuestions();
