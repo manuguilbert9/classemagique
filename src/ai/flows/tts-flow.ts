@@ -56,12 +56,12 @@ const ttsFlow = ai.defineFlow(
   },
   async (text) => {
     const { media } = await ai.generate({
-      model: googleAI.model('googleai/gemini-pro-tts'),
+      model: googleAI.model('gemini-2.0-flash-exp'),
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Algenib' },
+            prebuiltVoiceConfig: { voiceName: 'Aoede' },
           },
         },
       },
@@ -70,12 +70,12 @@ const ttsFlow = ai.defineFlow(
     if (!media) {
       throw new Error('No audio media returned from the model.');
     }
-    
+
     const audioBuffer = Buffer.from(
       media.url.substring(media.url.indexOf(',') + 1),
       'base64'
     );
-    
+
     const wavBase64 = await toWav(audioBuffer);
 
     return {
