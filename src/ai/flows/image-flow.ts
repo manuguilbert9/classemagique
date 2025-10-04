@@ -57,13 +57,9 @@ Instructions:
 - Haute qualité visuelle`;
 
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.0-flash-exp'),
+      model: googleAI.model('gemini-2.5-flash-exp'),
       config: {
         responseModalities: ['IMAGE'],
-        imageConfig: {
-          numberOfImages: 1,
-          aspectRatio: '3:4',
-        },
       },
       prompt: imagePrompt,
     });
