@@ -15,7 +15,7 @@ const StoryInputSchema = z.object({
   emojis: z.array(z.string()).optional().describe('An array of emojis to inspire the story. Up to 6.'),
   description: z.string().optional().describe('A vocal description of the story to generate.'),
   length: z.enum(['extra-courte', 'courte', 'moyenne', 'longue']).describe('The desired length of the story.'),
-  tone: z.enum(['aventure', 'comique', 'effrayante']).describe('The tone of the story.'),
+  tone: z.enum(['aventure', 'comique', 'effrayante', 'terrifiante', 'cauchemardesque']).describe('The tone of the story.'),
 });
 export type StoryInput = z.infer<typeof StoryInputSchema>;
 
@@ -37,7 +37,9 @@ const lengthInstructionMap = {
 const toneInstructionMap = {
     aventure: 'un ton d\'aventure, avec du suspense et de l\'action.',
     comique: 'un ton comique et humoristique, avec des situations amusantes et des personnages rigolos.',
-    effrayante: 'un ton effrayant mais pas sordide. L\'histoire doit pouvoir être lue par un enfant de 12 ans, en se concentrant sur le suspense et l\'atmosphère plutôt que sur la violence ou le gore.',
+    effrayante: 'un ton effrayant mais adapté aux enfants de 12 ans (PEGI 12). Concentre-toi sur le suspense et l\'atmosphère inquiétante. INTERDICTIONS : pas de violence graphique, pas de gore, pas de mort explicite, pas de torture. Privilégie les bruits étranges, les ombres mystérieuses, et les situations angoissantes mais sans danger réel.',
+    terrifiante: 'un ton terrífiant mais strictement adapté aux 12 ans et plus (PEGI 12). Crée une atmosphère très angoissante avec des menaces implicites. INTERDICTIONS ABSOLUES : pas de violence explicite, pas de sang/gore, pas de scènes de mort détaillées, pas de contenu traumatisant. Utilise la suggestion, le non-dit, les bruits inquiétants, les présences invisibles, et les mystères troublants.',
+    cauchemardesque: 'un ton cauchemardesque mais STRICTEMENT limité au PEGI 12. Atmosphère d\'un mauvais rêve très inquiétant. INTERDICTIONS FORMELLES : aucune violence graphique, aucun gore, aucune description de blessures, aucune mort détaillée, aucun contenu psychologiquement traumatisant. Crée l\'horreur par l\'étrange, le surréaliste, les situations absurdes et déstabilisantes, les atmosphères oppressantes, mais sans jamais montrer de violence réelle. Tout doit rester au niveau de la suggestion et du frisson, jamais du choc ou du dégoût.',
 }
 
 const prompt = ai.definePrompt({

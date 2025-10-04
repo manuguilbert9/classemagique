@@ -15,14 +15,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { generateSpeech } from '@/ai/flows/tts-flow';
 import { SyllableText } from '@/components/syllable-text';
 
-// Base emojis, always present
+// Halloween-specific emojis (October 1 - November 3)
+const halloweenEmojis = [
+  '🎃', '👻', '🦇', '🕷️', '🕸️', '💀', '🧛', '🧟',
+  '🧙', '🔮', '⚰️', '🪦', '🌕', '🌙', '⭐', '🕯️',
+  '🏚️', '🌲', '🦉', '🐈‍⬛', '🧪', '📿', '🗝️', '🚪',
+  '🪄', '📖', '⚡', '🌫️', '🍂', '🍁', '🎭', '👁️',
+  'sorcière', 'fantôme', 'vampire', 'loup-garou', 'zombie', 'squelette',
+  'maison hantée', 'cimetière', 'manoir abandonné', 'forêt mystérieuse', 'grotte sombre',
+  'potion magique', 'sort maléfique', 'grimoire maudit', 'portail des ombres', 'miroir hanté'
+];
+
+// Base emojis, always present (normal period)
 const baseEmojis = [
   '👑', '🏰', '🐉', '🦄', '🏴‍☠️', '🚀', '👽', '🤖',
   'détective', '🌲', '🦊', '🦉', '🔑', '🗺️', '💎', '🕰️',
   '🎩', '🧪', '✨', '🍪', '🎈', '⚽', '🎨', '🎤'
 ];
 
-// Pool of extra emojis for random selection
+// Pool of extra emojis for random selection (normal period)
 const extraEmojiPool = [
   '🧛', '🧟', '👻', '🧜‍♀️', '🧞', 'fées', '🌊', '🌋', '🏜️', '🏝️',
   '🧭', '🏆', '🎁', '🍭', '🍕', '🍰', '🎸', '🎻', '🎭', '🎪',
@@ -33,6 +44,15 @@ const extraEmojiPool = [
   'bague magique', 'épée légendaire', 'tapis volant', 'grimoire ancien', 'portail mystérieux'
 ];
 
+// Function to check if we're in Halloween period (October 1 - November 3)
+const isHalloweenPeriod = (): boolean => {
+  const now = new Date();
+  const month = now.getMonth(); // 0-indexed: 9 = October, 10 = November
+  const day = now.getDate();
+
+  return (month === 9) || (month === 10 && day <= 3);
+};
+
 // Function to get a unique random subset of emojis
 const getRandomEmojis = (pool: string[], count: number): string[] => {
   const shuffled = [...pool].sort(() => 0.5 - Math.random());
@@ -41,7 +61,7 @@ const getRandomEmojis = (pool: string[], count: number): string[] => {
 
 type CreationMode = 'emoji' | 'vocal';
 type StoryLength = 'extra-courte' | 'courte' | 'moyenne' | 'longue';
-type StoryTone = 'aventure' | 'comique' | 'effrayante';
+type StoryTone = 'aventure' | 'comique' | 'effrayante' | 'terrifiante' | 'cauchemardesque';
 
 export default function StoryBoxPage() {
   const [creationMode, setCreationMode] = useState<CreationMode | null>(null);
@@ -50,7 +70,7 @@ export default function StoryBoxPage() {
   const [selectedEmojis, setSelectedEmojis] = useState<string[]>([]);
   const [vocalDescription, setVocalDescription] = useState('');
   const [length, setLength] = useState<StoryLength>('courte');
-  const [tone, setTone] = useState<StoryTone>('aventure');
+  const [tone, setTone] = useState<StoryTone>(isHalloweenPeriod() ? 'effrayante' : 'aventure');
   
   // Story state
   const [isLoading, setIsLoading] = useState(false);
@@ -79,8 +99,14 @@ export default function StoryBoxPage() {
 
   useEffect(() => {
     // Generate the emoji list on component mount for the emoji mode
-    const randomEmojis = getRandomEmojis(extraEmojiPool, 24);
-    setAvailableEmojis([...baseEmojis, ...randomEmojis]);
+    if (isHalloweenPeriod()) {
+      // During Halloween, use only Halloween emojis
+      setAvailableEmojis(halloweenEmojis);
+    } else {
+      // Normal period: use base + random extras
+      const randomEmojis = getRandomEmojis(extraEmojiPool, 24);
+      setAvailableEmojis([...baseEmojis, ...randomEmojis]);
+    }
   }, []);
 
   const handleEmojiClick = (emoji: string) => {
@@ -357,26 +383,49 @@ export default function StoryBoxPage() {
                  {/* Tone Selection */}
                 <div className="space-y-3">
                     <Label className="text-lg font-semibold">3. Choisis le ton de l'histoire :</Label>
-                     <RadioGroup value={tone} onValueChange={(v) => setTone(v as StoryTone)} className="grid grid-cols-3 gap-4">
-                        <div>
-                            <RadioGroupItem value="aventure" id="aventure" className="sr-only" />
-                            <Label htmlFor="aventure" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'aventure' && 'border-primary')}>
-                                <Swords className="h-8 w-8 mb-2"/> Aventure
-                            </Label>
-                        </div>
-                         <div>
-                            <RadioGroupItem value="comique" id="comique" className="sr-only" />
-                            <Label htmlFor="comique" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'comique' && 'border-primary')}>
-                               <Drama className="h-8 w-8 mb-2"/> Comique
-                            </Label>
-                        </div>
-                         <div>
-                            <RadioGroupItem value="effrayante" id="effrayante" className="sr-only" />
-                            <Label htmlFor="effrayante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'effrayante' && 'border-primary')}>
-                                <Ghost className="h-8 w-8 mb-2"/> Effrayante
-                            </Label>
-                        </div>
-                     </RadioGroup>
+                     {isHalloweenPeriod() ? (
+                       <RadioGroup value={tone} onValueChange={(v) => setTone(v as StoryTone)} className="grid grid-cols-3 gap-4">
+                          <div>
+                              <RadioGroupItem value="effrayante" id="effrayante" className="sr-only" />
+                              <Label htmlFor="effrayante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'effrayante' && 'border-primary')}>
+                                  <Ghost className="h-8 w-8 mb-2"/> Effrayante
+                              </Label>
+                          </div>
+                          <div>
+                              <RadioGroupItem value="terrifiante" id="terrifiante" className="sr-only" />
+                              <Label htmlFor="terrifiante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'terrifiante' && 'border-primary')}>
+                                  <Ghost className="h-8 w-8 mb-2"/> Terrifiante
+                              </Label>
+                          </div>
+                          <div>
+                              <RadioGroupItem value="cauchemardesque" id="cauchemardesque" className="sr-only" />
+                              <Label htmlFor="cauchemardesque" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'cauchemardesque' && 'border-primary')}>
+                                  <Ghost className="h-8 w-8 mb-2"/> Cauchemardesque
+                              </Label>
+                          </div>
+                       </RadioGroup>
+                     ) : (
+                       <RadioGroup value={tone} onValueChange={(v) => setTone(v as StoryTone)} className="grid grid-cols-3 gap-4">
+                          <div>
+                              <RadioGroupItem value="aventure" id="aventure" className="sr-only" />
+                              <Label htmlFor="aventure" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'aventure' && 'border-primary')}>
+                                  <Swords className="h-8 w-8 mb-2"/> Aventure
+                              </Label>
+                          </div>
+                           <div>
+                              <RadioGroupItem value="comique" id="comique" className="sr-only" />
+                              <Label htmlFor="comique" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'comique' && 'border-primary')}>
+                                 <Drama className="h-8 w-8 mb-2"/> Comique
+                              </Label>
+                          </div>
+                           <div>
+                              <RadioGroupItem value="effrayante" id="effrayante" className="sr-only" />
+                              <Label htmlFor="effrayante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'effrayante' && 'border-primary')}>
+                                  <Ghost className="h-8 w-8 mb-2"/> Effrayante
+                              </Label>
+                          </div>
+                       </RadioGroup>
+                     )}
                 </div>
                 
                 {/* Action Button */}
