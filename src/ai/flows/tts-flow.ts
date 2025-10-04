@@ -56,12 +56,12 @@ const ttsFlow = ai.defineFlow(
   },
   async (text) => {
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-exp'),
+      model: googleAI.model('gemini-2.5-flash-tts'),
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Aoede' },
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
           },
         },
       },
