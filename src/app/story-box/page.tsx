@@ -270,6 +270,7 @@ export default function StoryBoxPage() {
                     )}
                   </div>
                 <CardTitle className="font-headline text-4xl">{story.title}</CardTitle>
+                {/* TTS et Image generation désactivés - Gemini 2.5 Flash ne supporte que le texte pour l'instant
                 <div className="flex justify-center gap-3 mt-4 flex-wrap">
                   <Button onClick={handleGenerateAudio} disabled={isGeneratingAudio}>
                       {isGeneratingAudio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
@@ -282,6 +283,7 @@ export default function StoryBoxPage() {
                     </Button>
                   )}
                 </div>
+                */}
                  {audioDataUri && (
                     <div className="flex justify-center pt-4">
                         <audio ref={audioRef} src={audioDataUri} controls />
