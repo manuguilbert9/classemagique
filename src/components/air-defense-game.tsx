@@ -111,7 +111,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost, onBossDe
         setTimeout(() => {
             setGameObjects([]);
             setGameState('bossFight');
-            setNextBombTime(Date.now() + 3000);
+            setNextBombTime(Date.now() + 6000);
         }, 2000);
         return;
     }
@@ -339,7 +339,7 @@ export function AirDefenseGame({ onExit, onReplay, canReplay, gameCost, onBossDe
                       type: 'bomb',
                       angle: angleToPlayer
                   }]);
-                  setNextBombTime(now + 2000 / (1 + (BOSS_MAX_HEALTH - bossHealth) * 0.1)); // Bombs get faster as boss health drops
+                  setNextBombTime(now + 4000 / (1 + (BOSS_MAX_HEALTH - bossHealth) * 0.1)); // Bombs get faster as boss health drops (2x moins fréquent)
               }
           }
       }
