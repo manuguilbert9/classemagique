@@ -9,6 +9,7 @@ export interface Assignment {
   francais: string | null;
   maths: string | null;
   orthographe?: string | null;
+  notes?: string | null; // Consignes libres (ex: "Prévoir une tenue de sport", "Faire signer le cahier")
 }
 
 export interface Homework {

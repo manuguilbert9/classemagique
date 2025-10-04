@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { type Group } from '@/services/groups';
@@ -52,14 +53,18 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
     }
   }, [selectedDate, allHomework]);
 
-  const handleAssignmentChange = (groupId: string, type: 'francais' | 'maths' | 'orthographe', skillSlug: string) => {
+  const handleAssignmentChange = (groupId: string, type: 'francais' | 'maths' | 'orthographe' | 'notes', value: string) => {
     setAssignments(prev => ({
       ...prev,
       [groupId]: {
-        ...(prev[groupId] || { francais: null, maths: null, orthographe: null }),
-        [type]: skillSlug === 'none' ? null : skillSlug,
+        ...(prev[groupId] || { francais: null, maths: null, orthographe: null, notes: null }),
+        [type]: value === '' || value === 'none' ? null : value,
       },
     }));
+  };
+
+  const handleNotesChange = (groupId: string, value: string) => {
+    handleAssignmentChange(groupId, 'notes', value);
   };
 
   const handleSave = async () => {
@@ -196,6 +201,15 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                </div>
+                                <div className="space-y-2 sm:col-span-2">
+                                  <Label>Notes / Consignes</Label>
+                                  <Textarea
+                                    placeholder="Ex: Prévoir une tenue de sport, Faire signer le cahier..."
+                                    value={groupAssignment.notes || ''}
+                                    onChange={(e) => handleNotesChange(group.id, e.target.value)}
+                                    className="resize-none h-20"
+                                  />
                                 </div>
                             </div>
                             {groupStudents.length > 0 && (

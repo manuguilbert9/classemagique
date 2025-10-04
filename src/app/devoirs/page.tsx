@@ -3,10 +3,11 @@
 
 import { useState, useEffect, useContext, Fragment } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, ArrowRight, BookOpen, BrainCircuit, Loader2, CheckCircle } from 'lucide-react';
+import { Home, ArrowRight, BookOpen, BrainCircuit, Loader2, CheckCircle, Info } from 'lucide-react';
 import { getSkillBySlug } from '@/lib/skills';
 import { UserContext } from '@/context/user-context';
 import { getHomeworkForGroup, getHomeworkResultsForUser, type Assignment, type HomeworkResult } from '@/services/homework';
@@ -36,7 +37,15 @@ function HomeworkCard({ date, assignment, completedHomework }: { date: string, a
           Pour le {format(new Date(date.replace(/-/g, '/')), 'EEEE d MMMM', { locale: fr })}
         </CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CardContent className="space-y-4">
+        {assignment.notes && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Notes</AlertTitle>
+            <AlertDescription>{assignment.notes}</AlertDescription>
+          </Alert>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {spellingId ? (
            <Link href={`/spelling/${spellingId}?from=devoirs&date=${date}`} className="group">
              <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">
@@ -85,6 +94,7 @@ function HomeworkCard({ date, assignment, completedHomework }: { date: string, a
         ) : (
           <Card className="p-4 flex items-center justify-center text-muted-foreground text-sm">Pas d'exercice de mathématiques.</Card>
         )}
+        </div>
       </CardContent>
     </Card>
   );
