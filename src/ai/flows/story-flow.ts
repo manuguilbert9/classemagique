@@ -42,11 +42,11 @@ const toneInstructionMap = {
     cauchemardesque: 'un ton cauchemardesque dans l\'esprit de Coraline (Neil Gaiman) ou des films de Tim Burton (Noces Funèbres, Frankenweenie, L\'Étrange Noël de Mr Jack). Crée une atmosphère gothique, macabre et surréaliste avec des éléments visuellement dérangeants mais poétiques. AUTORISÉ : personnages morts mais présentés de façon fantastique (squelettes qui parlent, fantômes attachants, créatures cousues), univers parallèles inquiétants, transformations corporelles étranges, ambiances sombres et mélancoliques, esthétique du grotesque poétique. INTERDIT : violence graphique réaliste, gore sanguin, torture, souffrance explicite. L\'horreur doit être esthétique, onirique et fascinante plutôt que dégoûtante. Pense "beau mais étrange", "mort mais charmant", "effrayant mais captivant".',
 }
 
-const prompt = ai.definePrompt({
-  name: 'storyPrompt',
+const promptForKids = ai.definePrompt({
+  name: 'storyPromptForKids',
   input: { schema: StoryInputSchema },
   output: { schema: StoryOutputSchema },
-  prompt: `{{#if (eq tone 'cauchemardesque')}}Tu es un conteur pour ados, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un public jeune (pas de détails sordides).{{else}}Tu es un conteur pour enfants, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un jeune public (environ 8-12 ans).{{/if}}
+  prompt: `Tu es un conteur pour enfants, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un jeune public (environ 8-12 ans).
 
 Ta mission est de rédiger une histoire originale en français.
 
@@ -73,7 +73,43 @@ Ne mentionne pas les emojis ou la description directement dans le texte, utilise
 7.  **Titre** : Donne un titre court et accrocheur à l'histoire.
 
 Réponds uniquement avec la structure de sortie demandée (titre, histoire, morale). N'ajoute aucun commentaire ou texte supplémentaire.`,
-  // Register the maps with Handlebars so the prompt can look them up
+  context: {
+    lengthInstructionMap,
+    toneInstructionMap,
+  }
+});
+
+const promptForTeens = ai.definePrompt({
+  name: 'storyPromptForTeens',
+  input: { schema: StoryInputSchema },
+  output: { schema: StoryOutputSchema },
+  prompt: `Tu es un conteur pour ados, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un public jeune (pas de détails sordides).
+
+Ta mission est de rédiger une histoire originale en français.
+
+Voici les instructions à suivre :
+
+1.  **Inspiration** : Inspire-toi des thèmes, personnages ou objets décrits ci-dessous.
+{{#if description}}
+    **Idée de l'enfant :** {{{description}}}
+{{else}}
+    **Emojis choisis :** {{#each emojis}}{{this}} {{/each}}
+{{/if}}
+Ne mentionne pas les emojis ou la description directement dans le texte, utilise-les comme source d'inspiration.
+
+2.  **Longueur** : L'histoire doit être de longueur "{{length}}", c'est-à-dire {{lookup ../lengthInstructionMap length}}.
+
+3.  **Ton** : L'histoire doit adopter {{lookup ../toneInstructionMap tone}}.
+
+4.  **Structure** : L'histoire doit avoir un début, un développement et une fin claire.
+
+5.  **Prénoms des personnages** : IMPORTANT - Varie les prénoms des personnages principaux. Ne pas toujours utiliser "Léo". Utilise une grande variété de prénoms français modernes et classiques : Emma, Lucas, Chloé, Nathan, Inès, Hugo, Manon, Arthur, Zoé, Louis, Camille, Gabriel, Léa, Tom, Sarah, Maxime, etc. Change de prénom à chaque histoire.
+
+6.  **Morale** : À la fin de l'histoire, rédige une morale claire et simple en rapport avec les événements du récit. Ne la mélange pas avec l'histoire, mais présente-la séparément.
+
+7.  **Titre** : Donne un titre court et accrocheur à l'histoire.
+
+Réponds uniquement avec la structure de sortie demandée (titre, histoire, morale). N'ajoute aucun commentaire ou texte supplémentaire.`,
   context: {
     lengthInstructionMap,
     toneInstructionMap,
@@ -88,7 +124,9 @@ const storyFlow = ai.defineFlow(
     outputSchema: StoryOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
+    // Use teen prompt for cauchemardesque, kids prompt for others
+    const selectedPrompt = input.tone === 'cauchemardesque' ? promptForTeens : promptForKids;
+    const { output } = await selectedPrompt(input);
     return output!;
   }
 );
