@@ -270,16 +270,16 @@
   animation: flameFlicker 2s ease-in-out infinite;
 }
 
-/* Curseur Halloween */
+/* Curseur Halloween - avec PNG redimensionné */
 .halloween-mode,
 .halloween-mode *,
 .halloween-mode input,
 .halloween-mode textarea {
-  cursor: url('/halloween/cursor-spider.cur'), url('/halloween/cursor-spider.png'), auto !important;
+  cursor: url('/halloween/cursor-spider.png') 16 16, auto !important;
 }
 
 .halloween-mode button,
 .halloween-mode a,
 .halloween-mode label {
-  cursor: url('/halloween/cursor-spider-pointer.cur'), url('/halloween/cursor-spider-pointer.png'), pointer !important;
+  cursor: url('/halloween/cursor-spider-pointer.png') 16 16, pointer !important;
 }
