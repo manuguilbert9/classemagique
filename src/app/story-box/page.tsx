@@ -329,9 +329,6 @@ export default function StoryBoxPage() {
           <CardHeader className="text-center">
             {isHalloweenPeriod() ? (
               <div className="halloween-header">
-                <div className="lock-decoration">
-                  <img src="/halloween/lock.png" alt="" className="lock-img" />
-                </div>
                 <CardTitle className="font-headline text-4xl halloween-title">La Boîte Maudite</CardTitle>
                 <CardDescription className="text-lg halloween-subtitle">
                   Ose ouvrir cette boîte ancienne et libère les histoires interdites...
