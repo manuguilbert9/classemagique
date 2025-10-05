@@ -272,10 +272,10 @@
 
 /* Curseur Halloween */
 .halloween-mode {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ctext y='20' font-size='20'%3E🕯️%3C/text%3E%3C/svg%3E"), auto;
+  cursor: url('/halloween/cursor-hand.cur'), auto;
 }
 
 .halloween-mode button,
 .halloween-mode a {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ctext y='20' font-size='20'%3E👻%3C/text%3E%3C/svg%3E"), pointer;
+  cursor: url('/halloween/cursor-hand.cur'), pointer;
 }
