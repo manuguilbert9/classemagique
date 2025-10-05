@@ -440,7 +440,8 @@ export default function StoryBoxPage() {
                           </div>
                           <div>
                               <RadioGroupItem value="cauchemardesque" id="cauchemardesque" className="sr-only" />
-                              <Label htmlFor="cauchemardesque" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'cauchemardesque' && 'border-primary')}>
+                              <Label htmlFor="cauchemardesque" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer relative", tone === 'cauchemardesque' && 'border-primary')}>
+                                  <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded">10+</div>
                                   <Ghost className="h-8 w-8 mb-2"/> Cauchemardesque
                               </Label>
                           </div>
