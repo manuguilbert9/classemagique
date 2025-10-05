@@ -271,11 +271,12 @@
 }
 
 /* Curseur Halloween */
-.halloween-mode {
-  cursor: url('/halloween/cursor-hand.cur'), auto;
-}
-
+.halloween-mode,
+.halloween-mode *,
 .halloween-mode button,
-.halloween-mode a {
-  cursor: url('/halloween/cursor-hand.cur'), pointer;
+.halloween-mode a,
+.halloween-mode input,
+.halloween-mode textarea,
+.halloween-mode label {
+  cursor: url('/halloween/cursor-hand.cur'), auto !important;
 }
