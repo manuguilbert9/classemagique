@@ -273,10 +273,13 @@
 /* Curseur Halloween */
 .halloween-mode,
 .halloween-mode *,
+.halloween-mode input,
+.halloween-mode textarea {
+  cursor: url('/halloween/cursor-ghost.ani'), url('/halloween/cursor-ghost-pointer.cur'), auto !important;
+}
+
 .halloween-mode button,
 .halloween-mode a,
-.halloween-mode input,
-.halloween-mode textarea,
 .halloween-mode label {
-  cursor: url('/halloween/cursor-hand.cur'), auto !important;
+  cursor: url('/halloween/cursor-ghost-pointer.cur'), pointer !important;
 }
