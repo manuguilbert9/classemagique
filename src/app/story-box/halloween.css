@@ -278,5 +278,5 @@
 .halloween-mode button,
 .halloween-mode a,
 .halloween-mode label {
-  cursor: url('/halloween/cursor-spider-pointer.png') 8 8, auto !important;
+  cursor: url('/halloween/cursor-spider-small.png') 12 12, auto !important;
 }
