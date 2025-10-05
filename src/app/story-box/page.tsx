@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { generateSpeech } from '@/ai/flows/tts-flow';
 import { generateImage, type ImageInput } from '@/ai/flows/image-flow';
 import { SyllableText } from '@/components/syllable-text';
+import './halloween.css';
 
 // Halloween-specific emojis (October 1 - November 3)
 const halloweenEmojis = [
@@ -314,23 +315,39 @@ export default function StoryBoxPage() {
     );
   }
 
+  const halloweenClass = isHalloweenPeriod() ? 'halloween-mode' : '';
+
   return (
-    <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
+    <main className={`flex min-h-screen w-full flex-col items-center p-4 sm:p-8 ${isHalloweenPeriod() ? 'bg-[#1a0f0a]' : 'bg-background'} ${halloweenClass}`}>
       <div className="w-full max-w-3xl">
-         <Button asChild variant="outline">
+         <Button asChild variant="outline" className={isHalloweenPeriod() ? 'halloween-button' : ''}>
             <Link href="/">
              <ArrowLeft className="mr-2 h-4 w-4" /> Retour à l'accueil
             </Link>
          </Button>
-        <Card className="mt-8 shadow-xl">
+        <Card className={`mt-8 shadow-xl ${isHalloweenPeriod() ? 'halloween-card' : ''}`}>
           <CardHeader className="text-center">
-            <div className="mx-auto bg-primary/20 text-primary p-3 rounded-full w-fit mb-4">
-                <Wand2 className="h-8 w-8"/>
-            </div>
-            <CardTitle className="font-headline text-4xl">La Boîte à Histoires</CardTitle>
-            <CardDescription className="text-lg">
-              Choisis tes ingrédients et crée une histoire unique !
-            </CardDescription>
+            {isHalloweenPeriod() ? (
+              <div className="halloween-header">
+                <div className="lock-decoration">
+                  <img src="/halloween/lock.png" alt="" className="lock-img" />
+                </div>
+                <CardTitle className="font-headline text-4xl halloween-title">La Boîte Maudite</CardTitle>
+                <CardDescription className="text-lg halloween-subtitle">
+                  Ose ouvrir cette boîte ancienne et libère les histoires interdites...
+                </CardDescription>
+              </div>
+            ) : (
+              <>
+                <div className="mx-auto bg-primary/20 text-primary p-3 rounded-full w-fit mb-4">
+                    <Wand2 className="h-8 w-8"/>
+                </div>
+                <CardTitle className="font-headline text-4xl">La Boîte à Histoires</CardTitle>
+                <CardDescription className="text-lg">
+                  Choisis tes ingrédients et crée une histoire unique !
+                </CardDescription>
+              </>
+            )}
           </CardHeader>
           <CardContent className="space-y-8">
             {!creationMode ? (
