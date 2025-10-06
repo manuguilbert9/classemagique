@@ -19,6 +19,7 @@ import { GhostHuntGame } from '@/components/ghost-hunt-game';
 type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer' | 'playing_ghost_hunt';
 
 const GAME_COST = 2;
+const GHOST_HUNT_COST = 4;
 const PHOTO_UNLOCK_COST = 80;
 
 export default function RewardsPage() {
@@ -27,16 +28,18 @@ export default function RewardsPage() {
   const { toast } = useToast();
 
   const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia' | 'gear_racer' | 'ghost_hunt') => {
-    if (!student || (student.nuggets || 0) < GAME_COST) {
+    const cost = game === 'ghost_hunt' ? GHOST_HUNT_COST : GAME_COST;
+
+    if (!student || (student.nuggets || 0) < cost) {
       toast({
         variant: 'destructive',
         title: 'Pépites insuffisantes',
-        description: `Tu n'as pas assez de pépites pour jouer (coût: ${GAME_COST}).`,
+        description: `Tu n'as pas assez de pépites pour jouer (coût: ${cost}).`,
       });
       return;
     }
 
-    const result = await spendNuggets(student.id, GAME_COST);
+    const result = await spendNuggets(student.id, cost);
     if (result.success) {
       refreshStudent();
       if (game === 'snake') {
@@ -168,8 +171,8 @@ export default function RewardsPage() {
         <GhostHuntGame
             onExit={handleExitGame}
             onReplay={() => handlePlay('ghost_hunt')}
-            canReplay={(student?.nuggets || 0) >= GAME_COST}
-            gameCost={GAME_COST}
+            canReplay={(student?.nuggets || 0) >= GHOST_HUNT_COST}
+            gameCost={GHOST_HUNT_COST}
         />
     );
   }
@@ -288,16 +291,16 @@ export default function RewardsPage() {
         <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
           <CardHeader>
             <CardTitle className="font-headline text-3xl">Chasse aux Fantômes</CardTitle>
-            <CardDescription className="text-lg">Attrape les fantômes avec ta lampe !</CardDescription>
+            <CardDescription className="text-lg">Attrape les fantômes ! N&apos;éclaire pas les dormeurs !</CardDescription>
           </CardHeader>
           <CardContent>
             <Zap className="h-32 w-32 mx-auto text-primary" />
           </CardContent>
           <CardContent>
-             <Button onClick={() => handlePlay('ghost_hunt')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
-              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
+             <Button onClick={() => handlePlay('ghost_hunt')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GHOST_HUNT_COST}>
+              Jouer pour {GHOST_HUNT_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
-            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
+            {(student.nuggets || 0) < GHOST_HUNT_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
           </CardContent>
         </Card>
       </div>

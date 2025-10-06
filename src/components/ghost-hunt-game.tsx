@@ -18,10 +18,11 @@ type Entity = {
   vy: number;
   emoji: string;
   isGhost: boolean;
+  isAwake?: boolean;
 };
 
 const GHOST_EMOJIS = ['👻', '👻', '👻'];
-const DECOY_EMOJIS = ['⚪', '⚫', '🔵', '🟡', '🟢', '🔴', '🟣', '🟠'];
+const SLEEPING_EMOJIS = ['😴', '😪', '💤'];
 
 const getRandomPosition = () => ({
   x: Math.random() * 80 + 10, // 10-90% to keep entities inside
@@ -52,8 +53,10 @@ export function GhostHuntGame({
   const [isPaused, setIsPaused] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const [mistakes, setMistakes] = useState(0);
+  const lightExposureRef = useRef<Map<number, number>>(new Map());
 
   const initializeGame = useCallback(() => {
+    lightExposureRef.current.clear();
     const newEntities: Entity[] = [];
     let id = 0;
 
@@ -70,7 +73,7 @@ export function GhostHuntGame({
       });
     }
 
-    // Create decoys
+    // Create sleeping people
     for (let i = 0; i < DECOY_COUNT; i++) {
       const pos = getRandomPosition();
       const vel = getRandomVelocity();
@@ -78,8 +81,9 @@ export function GhostHuntGame({
         id: id++,
         ...pos,
         ...vel,
-        emoji: DECOY_EMOJIS[Math.floor(Math.random() * DECOY_EMOJIS.length)],
+        emoji: SLEEPING_EMOJIS[Math.floor(Math.random() * SLEEPING_EMOJIS.length)],
         isGhost: false,
+        isAwake: false,
       });
     }
 
@@ -128,13 +132,33 @@ export function GhostHuntGame({
           },
         ];
       });
-    } else {
-      // Wrong click - clicked a decoy
+    } else if (!entity.isAwake) {
+      // Clicked a sleeping person - wake them up!
       setMistakes(prev => prev + 1);
+      setScore(prev => Math.max(0, prev - 4)); // Lose 4 points, minimum 0
+      setEntities(prev =>
+        prev.map(e =>
+          e.id === entity.id ? { ...e, emoji: '😡', isAwake: true } : e
+        )
+      );
+      // After 2 seconds, put them back to sleep
+      setTimeout(() => {
+        setEntities(prev =>
+          prev.map(e =>
+            e.id === entity.id
+              ? {
+                  ...e,
+                  emoji: SLEEPING_EMOJIS[Math.floor(Math.random() * SLEEPING_EMOJIS.length)],
+                  isAwake: false,
+                }
+              : e
+          )
+        );
+      }, 2000);
     }
   };
 
-  // Move entities
+  // Move entities and check light exposure
   useEffect(() => {
     if (isGameOver || isPaused) return;
 
@@ -153,13 +177,61 @@ export function GhostHuntGame({
           x = Math.max(5, Math.min(95, x));
           y = Math.max(5, Math.min(95, y));
 
+          // Check if sleeping person is in light
+          if (!entity.isGhost && !entity.isAwake) {
+            const dx = x - mousePos.x;
+            const dy = y - mousePos.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < 15) {
+              // In light - increase exposure
+              const currentExposure = lightExposureRef.current.get(entity.id) || 0;
+              const newExposure = currentExposure + 50; // +50ms per tick
+              lightExposureRef.current.set(entity.id, newExposure);
+
+              // Wake up after 1.5 seconds of exposure
+              if (newExposure >= 1500) {
+                lightExposureRef.current.delete(entity.id);
+                setMistakes(prev => prev + 1);
+                setScore(prev => Math.max(0, prev - 4));
+
+                // Wake them up
+                setTimeout(() => {
+                  setEntities(current =>
+                    current.map(e =>
+                      e.id === entity.id ? { ...e, emoji: '😡', isAwake: true } : e
+                    )
+                  );
+
+                  // Put back to sleep after 2 seconds
+                  setTimeout(() => {
+                    setEntities(current =>
+                      current.map(e =>
+                        e.id === entity.id
+                          ? {
+                              ...e,
+                              emoji: SLEEPING_EMOJIS[Math.floor(Math.random() * SLEEPING_EMOJIS.length)],
+                              isAwake: false,
+                            }
+                          : e
+                      )
+                    );
+                  }, 2000);
+                }, 0);
+              }
+            } else {
+              // Not in light - reset exposure
+              lightExposureRef.current.delete(entity.id);
+            }
+          }
+
           return { ...entity, x, y, vx, vy };
         })
       );
     }, 50);
 
     return () => clearInterval(interval);
-  }, [isGameOver, isPaused]);
+  }, [isGameOver, isPaused, mousePos]);
 
   // Timer countdown
   useEffect(() => {
@@ -223,7 +295,7 @@ export function GhostHuntGame({
               Chasse aux Fantômes
             </CardTitle>
             <p className="text-slate-300 mt-2">
-              Attrape les fantômes 👻 avec ta lampe torche ! Évite les autres emojis !
+              Attrape les fantômes 👻 avec ta lampe torche ! N'éclaire pas les dormeurs 😴 ou ils se réveilleront furieux 😡 ! (-4 points)
             </p>
           </CardHeader>
           <CardContent className="p-0">
