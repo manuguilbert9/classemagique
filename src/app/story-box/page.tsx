@@ -64,6 +64,8 @@ const getRandomEmojis = (pool: string[], count: number): string[] => {
 type CreationMode = 'emoji' | 'vocal';
 type StoryLength = 'extra-courte' | 'courte' | 'moyenne' | 'longue';
 type StoryTone = 'aventure' | 'comique' | 'effrayante' | 'terrifiante' | 'cauchemardesque';
+type AudioState = { [key: number]: { isLoading: boolean; dataUri: string | null } };
+
 
 export default function StoryBoxPage() {
   const [creationMode, setCreationMode] = useState<CreationMode | null>(null);
@@ -80,9 +82,10 @@ export default function StoryBoxPage() {
   const [error, setError] = useState<string | null>(null);
 
   // TTS State
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-  const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
+  const [audioState, setAudioState] = useState<AudioState>({});
+  const [currentlyPlayingIndex, setCurrentlyPlayingIndex] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+
 
   // Image State (Halloween only)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -140,7 +143,8 @@ export default function StoryBoxPage() {
     setError(null);
     setIsLoading(true);
     setStory(null);
-    setAudioDataUri(null);
+    setAudioState({});
+    setCurrentlyPlayingIndex(null);
 
     const input: StoryInput = {
       emojis: creationMode === 'emoji' ? selectedEmojis : undefined,
@@ -160,21 +164,19 @@ export default function StoryBoxPage() {
     }
   };
   
-  const handleGenerateAudio = async () => {
-      if (!story || isGeneratingAudio) return;
-      setIsGeneratingAudio(true);
-      setAudioDataUri(null);
-      setError(null);
-      try {
-          const result = await generateSpeech(`${story.title}. ${story.story}. ${story.moral}`);
-          setAudioDataUri(result.audioDataUri);
-      } catch (e: any) {
-          console.error("Audio generation failed:", e);
-          const errorMessage = e?.message || "Erreur inconnue";
-          setError(`Impossible de générer l'audio : ${errorMessage}`);
-      } finally {
-          setIsGeneratingAudio(false);
-      }
+  const handleGenerateAudio = async (text: string, index: number) => {
+    if (!text) return;
+    setAudioState(prev => ({ ...prev, [index]: { isLoading: true, dataUri: null } }));
+    setCurrentlyPlayingIndex(index);
+    setError(null);
+    try {
+      const result = await generateSpeech(text);
+      setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioDataUri } }));
+    } catch (e: any) {
+      console.error("Audio generation failed:", e);
+      setError(`Impossible de générer l'audio : ${e.message || "Erreur inconnue"}`);
+      setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: null } }));
+    }
   };
 
   const handleGenerateImage = async () => {
@@ -198,10 +200,11 @@ export default function StoryBoxPage() {
   };
 
   useEffect(() => {
-    if (audioDataUri && audioRef.current) {
-      audioRef.current.play();
+    if (currentlyPlayingIndex !== null && audioState[currentlyPlayingIndex]?.dataUri) {
+        audioRef.current?.play().catch(e => console.error("Audio play failed:", e));
     }
-  }, [audioDataUri]);
+}, [audioState, currentlyPlayingIndex]);
+
 
   const getFontSize = () => {
     switch (length) {
@@ -241,11 +244,14 @@ export default function StoryBoxPage() {
       setVocalDescription('');
       setStory(null);
       setError(null);
-      setAudioDataUri(null);
+      setAudioState({});
+      setCurrentlyPlayingIndex(null);
       setImageUrl(null);
   }
 
   if (story) {
+    const paragraphs = story.story.split('\n').filter(p => p.trim() !== '');
+
     return (
       <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
         <div className="w-full max-w-3xl">
@@ -272,9 +278,9 @@ export default function StoryBoxPage() {
                   </div>
                 <CardTitle className="font-headline text-4xl">{story.title}</CardTitle>
                 <div className="flex justify-center gap-3 mt-4 flex-wrap">
-                  <Button onClick={handleGenerateAudio} disabled={isGeneratingAudio}>
-                      {isGeneratingAudio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
-                      {isGeneratingAudio ? 'Génération en cours...' : 'Écouter l\'histoire'}
+                  <Button onClick={() => handleGenerateAudio(story.title, -1)} disabled={audioState[-1]?.isLoading}>
+                      {audioState[-1]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                      Écouter le titre
                   </Button>
                   {isHalloweenPeriod() && (
                     <Button onClick={handleGenerateImage} disabled={isGeneratingImage} variant="secondary">
@@ -283,9 +289,9 @@ export default function StoryBoxPage() {
                     </Button>
                   )}
                 </div>
-                 {audioDataUri && (
+                 {currentlyPlayingIndex !== null && audioState[currentlyPlayingIndex]?.dataUri && (
                     <div className="flex justify-center pt-4">
-                        <audio ref={audioRef} src={audioDataUri} controls />
+                        <audio ref={audioRef} src={audioState[currentlyPlayingIndex]!.dataUri!} controls autoPlay/>
                     </div>
                 )}
                 {imageUrl && (
@@ -295,9 +301,17 @@ export default function StoryBoxPage() {
                 )}
              </CardHeader>
              <CardContent className="space-y-6">
-                <div className={cn("whitespace-pre-wrap font-body", getFontSize())}>
-                    {showSyllables ? <SyllableText text={story.story} /> : <p>{story.story}</p>}
-                </div>
+                 {paragraphs.map((paragraph, index) => (
+                    <div key={index} className="space-y-2">
+                         <div className={cn("whitespace-pre-wrap font-body", getFontSize())}>
+                            {showSyllables ? <SyllableText text={paragraph} /> : <p>{paragraph}</p>}
+                        </div>
+                        <Button onClick={() => handleGenerateAudio(paragraph, index)} size="sm" variant="outline" disabled={audioState[index]?.isLoading}>
+                             {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                             Écouter
+                        </Button>
+                    </div>
+                 ))}
                 <div className="border-t pt-4 text-center">
                     <p className="font-semibold text-lg font-headline">Morale de l'histoire</p>
                      {showSyllables ? (
@@ -305,6 +319,10 @@ export default function StoryBoxPage() {
                     ) : (
                         <p className="italic text-muted-foreground mt-2">{story.moral}</p>
                     )}
+                     <Button onClick={() => handleGenerateAudio(story.moral, -2)} size="sm" variant="outline" disabled={audioState[-2]?.isLoading} className="mt-2">
+                             {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                             Écouter la morale
+                        </Button>
                 </div>
              </CardContent>
            </Card>
