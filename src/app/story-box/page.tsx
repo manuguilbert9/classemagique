@@ -221,9 +221,15 @@ export default function StoryBoxPage() {
         setImageUrl(result.imageUrl);
         
         // Update the existing story record with the new image URL
-        if (currentStoryId) {
-            await saveStory(student, story, storyInput!, result.imageUrl);
+        // The saveStory function handles creating or updating
+        await saveStory(student, story, storyInput!, result.imageUrl);
+        // If a new story was created and now has an ID, update it
+        if (!currentStoryId) {
+            const saved = await getSavedStories(); // This is a bit inefficient, could be improved
+            const newStory = saved.find(s => s.title === story.title && s.authorId === student.id);
+            if (newStory) setCurrentStoryId(newStory.id);
         }
+
     } catch (e) {
         console.error("Image generation failed:", e);
         setError("Impossible de générer l'illustration pour cette histoire.");
@@ -457,7 +463,7 @@ export default function StoryBoxPage() {
                             <DialogTrigger asChild>
                                 <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover cursor-pointer hover:opacity-90 transition-opacity" />
                             </DialogTrigger>
-                            <DialogContent className="max-w-4xl h-auto p-0">
+                             <DialogContent className="max-w-[90vw] max-h-[90vh] w-auto h-auto p-4">
                                 <DialogHeader>
                                     <DialogTitleComponent className="sr-only">{story.title}</DialogTitleComponent>
                                 </DialogHeader>
