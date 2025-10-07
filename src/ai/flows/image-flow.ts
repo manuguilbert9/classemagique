@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { googleAI } from '@genkit-ai/googleai';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const ImageInputSchema = z.object({
   storyTitle: z.string().describe('The title of the story'),
@@ -21,7 +21,7 @@ export type ImageInput = z.infer<typeof ImageInputSchema>;
 const ImageOutputSchema = z.object({
   imageUrl: z.string().describe('The generated image as a data URI'),
 });
-export type ImageOutput = z.infer<typeof ImageOutputSchema>;
+export type ImageOutput = z-infer<typeof ImageOutputSchema>;
 
 const styleMap = {
   aventure: 'style illustration de livre pour enfants, coloré et dynamique, aventureux',
@@ -41,26 +41,10 @@ const imageFlow = ai.defineFlow(
     const styleInstruction = styleMap[input.tone];
 
     // Extract key elements from the story for the prompt
-    const imagePrompt = `Crée une illustration de haute qualité pour cette histoire.
-
-Titre: "${input.storyTitle}"
-
-Histoire: ${input.storyContent.substring(0, 500)}
-
-Style artistique: ${styleInstruction}
-
-Instructions:
-- Format portrait (3:4)
-- Composition artistique professionnelle
-- Adapté pour illustration de littérature jeunesse/ado
-- Pas de texte dans l'image
-- Haute qualité visuelle`;
+    const imagePrompt = `Illustration de haute qualité pour une histoire. Titre: "${input.storyTitle}". Style: ${styleInstruction}. Sujet: ${input.storyContent.substring(0, 200)}. Format portrait (3:4), composition artistique, pas de texte.`;
 
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash'),
-      config: {
-        responseModalities: ['IMAGE'],
-      },
+      model: googleAI.model('imagen-4.0-fast-generate-001'),
       prompt: imagePrompt,
     });
 
