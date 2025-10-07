@@ -1,8 +1,9 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, orderBy, Timestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, Timestamp, deleteDoc, doc, updateDoc, setDoc, WriteBatch, writeBatch } from 'firebase/firestore';
 import type { StoryOutput, StoryInput } from '@/ai/flows/story-flow';
 import type { Student } from './students';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -24,85 +25,88 @@ export interface SavedStory {
 
 /**
  * Saves or updates a generated story in the database.
+ * If an existing story ID is provided, it updates it. Otherwise, it creates a new one.
  */
-export async function saveStory(author: Student, storyData: StoryOutput, storyInput: StoryInput, imageUrl: string | null): Promise<{ success: boolean; error?: string }> {
-  if (!author) {
-    return { success: false, error: "Author is required." };
-  }
-  try {
-    const dataToSave = {
-      authorId: author.id,
-      authorName: author.name,
-      authorPhotoURL: author.photoURL || null,
-      authorShowPhoto: author.showPhoto ?? false,
-      title: storyData.title,
-      content: storyData,
-      imageUrl: imageUrl || null,
-      emojis: storyInput.emojis || [],
-      description: storyInput.description || '',
-      createdAt: Timestamp.now()
-    };
-    
-    // Check if a story by this author with this title already exists today to avoid duplicates from regeneration
-    const q = query(
-        collection(db, 'saved_stories'), 
-        where('authorId', '==', author.id),
-        where('title', '==', storyData.title),
-        orderBy('createdAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-
-    let existingStoryId: string | null = null;
-    if (!querySnapshot.empty) {
-        const latestDoc = querySnapshot.docs[0];
-        const latestDate = (latestDoc.data().createdAt as Timestamp).toDate();
-        const today = new Date();
-        // Check if the latest story is from today
-        if (latestDate.getDate() === today.getDate() &&
-            latestDate.getMonth() === today.getMonth() &&
-            latestDate.getFullYear() === today.getFullYear()) {
-            existingStoryId = latestDoc.id;
-        }
+export async function saveStory(
+    author: Student, 
+    storyData: StoryOutput, 
+    storyInput: StoryInput, 
+    imageUrl: string | null
+): Promise<{ success: boolean; id: string; error?: string }> {
+    if (!author) {
+        return { success: false, id: '', error: "Author is required." };
     }
 
-    if (existingStoryId) {
-      // Update the existing story (e.g., to add the image URL)
-      const docRef = doc(db, 'saved_stories', existingStoryId);
-      updateDoc(docRef, { imageUrl: imageUrl || null })
-        .catch(error => {
-            errorEmitter.emit(
-                'permission-error',
-                new FirestorePermissionError({
-                    path: `saved_stories/${existingStoryId}`,
+    try {
+        const storiesCollection = collection(db, 'saved_stories');
+        
+        // Query to find if a story with the same title by the same author already exists
+        const q = query(
+            storiesCollection,
+            where('authorId', '==', author.id),
+            where('title', '==', storyData.title)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            // Story exists, update it
+            const existingDoc = querySnapshot.docs[0];
+            const storyId = existingDoc.id;
+            const docRef = doc(db, 'saved_stories', storyId);
+
+            await updateDoc(docRef, {
+                // Update fields that might change, like the image or content
+                content: storyData,
+                imageUrl: imageUrl,
+                emojis: storyInput.emojis || [],
+                description: storyInput.description || '',
+                // Keep original author info and creation date
+            }).catch(error => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: `saved_stories/${storyId}`,
                     operation: 'update',
-                    requestResourceData: { imageUrl: imageUrl || null },
-                })
-            );
-        });
-    } else {
-      // Add a new story
-      addDoc(collection(db, 'saved_stories'), dataToSave)
-        .catch(error => {
-            errorEmitter.emit(
-                'permission-error',
-                new FirestorePermissionError({
+                    requestResourceData: { imageUrl },
+                }));
+                throw error; // Propagate error
+            });
+
+            return { success: true, id: storyId };
+
+        } else {
+            // Story doesn't exist, create a new one
+            const dataToSave = {
+                authorId: author.id,
+                authorName: author.name,
+                authorPhotoURL: author.photoURL || null,
+                authorShowPhoto: author.showPhoto ?? false,
+                title: storyData.title,
+                content: storyData,
+                imageUrl: imageUrl || null,
+                emojis: storyInput.emojis || [],
+                description: storyInput.description || '',
+                createdAt: Timestamp.now()
+            };
+
+            const docRef = await addDoc(storiesCollection, dataToSave).catch(error => {
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: 'saved_stories',
                     operation: 'create',
                     requestResourceData: dataToSave,
-                })
-            );
-        });
-    }
+                }));
+                throw error; // Propagate error
+            });
 
-    return { success: true };
-  } catch (error) {
-    console.error("Error saving story to Firestore:", error);
-    if (error instanceof Error) {
-        return { success: false, error: error.message };
+            return { success: true, id: docRef.id };
+        }
+    } catch (error) {
+        console.error("Error saving story to Firestore:", error);
+        if (error instanceof Error) {
+            return { success: false, id: '', error: error.message };
+        }
+        return { success: false, id: '', error: 'An unknown error occurred.' };
     }
-    return { success: false, error: 'An unknown error occurred.' };
-  }
 }
+
 
 /**
  * Retrieves all saved stories from the database, sorted by creation date.
@@ -143,7 +147,7 @@ export async function deleteStory(storyId: string): Promise<{ success: boolean; 
     }
     try {
         const docRef = doc(db, 'saved_stories', storyId);
-        deleteDoc(docRef)
+        await deleteDoc(docRef)
             .catch(error => {
                 errorEmitter.emit(
                     'permission-error',

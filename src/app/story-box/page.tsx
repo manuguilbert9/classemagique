@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart } from 'lucide-react';
@@ -87,6 +88,7 @@ export default function StoryBoxPage() {
   // Story state
   const [isLoading, setIsLoading] = useState(false);
   const [story, setStory] = useState<StoryOutput | null>(null);
+  const [currentStoryId, setCurrentStoryId] = useState<string | null>(null); // To track the current story for updates
   const [storyInput, setStoryInput] = useState<StoryInput | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,6 +153,7 @@ export default function StoryBoxPage() {
     setStory(null);
     setAudioState({});
     setImageUrl(null);
+    setCurrentStoryId(null);
 
     const input: StoryInput = {
       emojis: creationMode === 'emoji' ? selectedEmojis : undefined,
@@ -167,7 +170,10 @@ export default function StoryBoxPage() {
       
       // Auto-save medium and long stories
       if (student && (length === 'moyenne' || length === 'longue')) {
-        await saveStory(student, result, input, null); // No image initially
+        const saveResult = await saveStory(student, result, input, null); // No image initially
+        if (saveResult.success) {
+          setCurrentStoryId(saveResult.id); // Keep track of the new story's ID
+        }
       }
     } catch(e) {
       console.error(e);
@@ -200,30 +206,30 @@ export default function StoryBoxPage() {
   };
 
   const handleGenerateImage = async () => {
-    if (!story) return;
+    if (!story || !student) return;
+
     setIsGeneratingImage(true);
     setError(null);
     try {
-      const imageInput: ImageInput = {
-        storyTitle: story.title,
-        storyContent: story.story,
-        tone,
-      };
-      const result = await generateImage(imageInput);
-      setImageUrl(result.imageUrl);
-      
-      // If the story was auto-saved, update it with the image URL
-      if (student && (length === 'moyenne' || length === 'longue')) {
-        await saveStory(student, story, storyInput!, result.imageUrl);
-      }
-      
+        const imageInput: ImageInput = {
+            storyTitle: story.title,
+            storyContent: story.story,
+            tone,
+        };
+        const result = await generateImage(imageInput);
+        setImageUrl(result.imageUrl);
+        
+        // Update the existing story record with the new image URL
+        if (currentStoryId) {
+            await saveStory(student, story, storyInput!, result.imageUrl);
+        }
     } catch (e) {
-      console.error("Image generation failed:", e);
-      setError("Impossible de générer l'illustration pour cette histoire.");
+        console.error("Image generation failed:", e);
+        setError("Impossible de générer l'illustration pour cette histoire.");
     } finally {
-      setIsGeneratingImage(false);
+        setIsGeneratingImage(false);
     }
-  };
+};
 
   useEffect(() => {
     Object.keys(audioState).forEach(key => {
@@ -276,6 +282,7 @@ export default function StoryBoxPage() {
     setAudioState({});
     audioRefs.current = {};
     setImageUrl(null);
+    setCurrentStoryId(null);
     setStoryInput(null);
     setViewState('menu');
   };
@@ -296,6 +303,7 @@ export default function StoryBoxPage() {
   const handleReadStory = (savedStory: SavedStory) => {
     setStory(savedStory.content);
     setImageUrl(savedStory.imageUrl || null);
+    setCurrentStoryId(savedStory.id);
     setStoryInput({
         emojis: savedStory.emojis,
         description: savedStory.description,
@@ -424,39 +432,37 @@ export default function StoryBoxPage() {
 
           {/* Illustration Sidebar (Right) */}
           <div className="lg:sticky lg:top-8 self-start order-3">
-             {isHalloweenPeriod() && (
-                <Card>
-                    <CardHeader>
-                       <CardTitle className="flex items-center gap-2 font-headline">
-                         <ImageIcon />
-                         Illustration
-                       </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {!imageUrl && (
-                          <Button onClick={handleGenerateImage} disabled={isGeneratingImage} className="w-full">
-                            {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                            Générer l'illustration
-                          </Button>
-                        )}
-                        {isGeneratingImage && !imageUrl && (
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline">
+                        <ImageIcon />
+                        Illustration
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {(!imageUrl || isHalloweenPeriod()) && (
+                      <Button onClick={handleGenerateImage} disabled={isGeneratingImage} className="w-full">
+                        {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                        {imageUrl ? 'Régénérer' : 'Générer l\'illustration'}
+                      </Button>
+                    )}
+                    {isGeneratingImage && !imageUrl && (
+                        <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
+                            <Loader2 className="h-10 w-10 text-muted-foreground animate-spin"/>
+                        </div>
+                    )}
+                    {imageUrl ? (
+                        <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover" />
+                    ) : (
+                        !isGeneratingImage && (
                             <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
-                                <Loader2 className="h-10 w-10 text-muted-foreground animate-spin"/>
+                                <ImageIcon className="h-16 w-16 text-muted-foreground" />
                             </div>
-                        )}
-                        {imageUrl ? (
-                            <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover" />
-                        ) : (
-                            !isGeneratingImage && (
-                                <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
-                                    <ImageIcon className="h-16 w-16 text-muted-foreground" />
-                                </div>
-                            )
-                        )}
-                         {error && <p className="text-destructive text-sm">{error}</p>}
-                    </CardContent>
-                </Card>
-            )}
+                        )
+                    )}
+                        {error && <p className="text-destructive text-sm">{error}</p>}
+                </CardContent>
+            </Card>
           </div>
         </div>
       </main>
@@ -500,9 +506,9 @@ export default function StoryBoxPage() {
                             <CardContent className="flex-grow">
                                 <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
                             </CardContent>
-                            <CardFooter>
-                                {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
-                            </CardFooter>
+                             <CardFooter>
+                                 {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
+                             </CardFooter>
                         </Card>
                     ))}
                 </div>
