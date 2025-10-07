@@ -27,7 +27,7 @@ export type ImageOutput = z.infer<typeof ImageOutputSchema>;
 const styleMap = {
   aventure: 'style illustration de livre pour enfants, coloré et dynamique, aventureux',
   comique: 'style cartoon humoristique, couleurs vives, expression comique',
-  effrayante: 'style Halloween artistique, atmosphère mystérieuse mais pas choquante, adapté littérature jeunesse',
+  effrayante: 'style conte de fées légèrement inquiétant, ambiance mystérieuse mais pas choquante, adapté littérature jeunesse',
   terrifiante: 'style gothique sombre, ambiance inquiétante mais stylisée, illustration de roman pour adolescents',
   cauchemardesque: 'style Tim Burton et Coraline, gothique poétique, macabre esthétique, grotesque charmant, illustration de littérature ado fantastique sombre',
 };
@@ -42,7 +42,14 @@ const imageFlow = ai.defineFlow(
     const styleInstruction = styleMap[input.tone];
 
     // Extract key elements from the story for the prompt
-    const imagePrompt = `Illustration de haute qualité pour une histoire. Titre: "${input.storyTitle}". Style: ${styleInstruction}. Sujet: ${input.storyContent.substring(0, 200)}. Format portrait (3:4), composition artistique, pas de texte.`;
+    const imagePrompt = `Illustration de haute qualité pour une histoire. 
+Sujet : ${input.storyContent.substring(0, 200)}.
+INSTRUCTIONS STRICTES :
+1.  **Style Artistique** : Le style doit être mystérieux et atmosphérique, inspiré par l'ambiance des illustrations de Chris Van Allsburg (comme dans "Les Mystères de Harris Burdick"), mais en couleurs riches et évocatrices. Utilise un éclairage dramatique, des ombres marquées et des angles de vue inhabituels pour créer une scène énigmatique.
+2.  **Contenu** : L'illustration ne doit contenir **AUCUN PERSONNAGE**, aucune personne, ni aucune créature. L'image doit se concentrer uniquement sur un lieu, un objet ou une scène qui laisse place à l'imagination.
+3.  **Format** : Format portrait (3:4).
+4.  **Texte** : Pas de texte, de lettres ou de chiffres dans l'image.
+5.  **Ton** : Applique ce ton général : ${styleInstruction}.`;
 
     const { media } = await ai.generate({
       model: googleAI.model('imagen-4.0-fast-generate-001'),
