@@ -84,8 +84,7 @@ export default function StoryBoxPage() {
 
   // TTS State
   const [audioState, setAudioState] = useState<AudioState>({});
-  const [currentlyPlayingIndex, setCurrentlyPlayingIndex] = useState<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({});
 
 
   // Image State (Halloween only)
@@ -145,7 +144,6 @@ export default function StoryBoxPage() {
     setIsLoading(true);
     setStory(null);
     setAudioState({});
-    setCurrentlyPlayingIndex(null);
 
     const input: StoryInput = {
       emojis: creationMode === 'emoji' ? selectedEmojis : undefined,
@@ -167,8 +165,15 @@ export default function StoryBoxPage() {
   
   const handleGenerateAudio = async (text: string, index: number) => {
     if (!text) return;
+    
+    const existingAudio = audioState[index];
+    if (existingAudio?.dataUri) {
+      audioRefs.current[index]?.play();
+      return;
+    }
+    if (existingAudio?.isLoading) return;
+
     setAudioState(prev => ({ ...prev, [index]: { isLoading: true, dataUri: null } }));
-    setCurrentlyPlayingIndex(index);
     setError(null);
     try {
       const result = await generateSpeech(text);
@@ -201,10 +206,19 @@ export default function StoryBoxPage() {
   };
 
   useEffect(() => {
-    if (currentlyPlayingIndex !== null && audioState[currentlyPlayingIndex]?.dataUri) {
-        audioRef.current?.play().catch(e => console.error("Audio play failed:", e));
-    }
-}, [audioState, currentlyPlayingIndex]);
+    // This effect ensures the audio plays automatically once it's loaded
+    Object.keys(audioState).forEach(key => {
+        const index = parseInt(key, 10);
+        const state = audioState[index];
+        if (state && state.dataUri && audioRefs.current[index]) {
+            // Check if audio is new by seeing if src is different
+            if (audioRefs.current[index]!.src !== state.dataUri) {
+                audioRefs.current[index]!.src = state.dataUri;
+                audioRefs.current[index]!.play().catch(e => console.error("Audio play failed:", e));
+            }
+        }
+    });
+  }, [audioState]);
 
 
   const getFontSize = () => {
@@ -246,7 +260,7 @@ export default function StoryBoxPage() {
       setStory(null);
       setError(null);
       setAudioState({});
-      setCurrentlyPlayingIndex(null);
+      audioRefs.current = {};
       setImageUrl(null);
   }
 
@@ -328,9 +342,9 @@ export default function StoryBoxPage() {
                     </Button>
                     )}
                 </div>
-                {currentlyPlayingIndex !== null && audioState[currentlyPlayingIndex]?.dataUri && (
+                 {audioState[-1]?.dataUri && (
                     <div className="flex justify-center pt-4">
-                        <audio ref={audioRef} src={audioState[currentlyPlayingIndex]!.dataUri!} controls autoPlay/>
+                        <audio controls ref={el => audioRefs.current[-1] = el} src={audioState[-1].dataUri!} />
                     </div>
                 )}
                 {imageUrl && (
@@ -341,14 +355,19 @@ export default function StoryBoxPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                 {paragraphs.map((paragraph, index) => (
-                    <div key={index} className="space-y-2">
+                    <div key={index} className="space-y-3 border-b pb-4 last:border-b-0">
                         <div className={cn("whitespace-pre-wrap font-body", getFontSize())}>
                             {showSyllables ? <SyllableText text={paragraph} /> : <p>{paragraph}</p>}
                         </div>
-                        <Button onClick={() => handleGenerateAudio(paragraph, index)} size="sm" variant="outline" disabled={audioState[index]?.isLoading}>
-                            {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
-                            Écouter
-                        </Button>
+                        <div className="flex flex-col items-start gap-2">
+                            <Button onClick={() => handleGenerateAudio(paragraph, index)} size="sm" variant="outline" disabled={audioState[index]?.isLoading}>
+                                {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                                Écouter
+                            </Button>
+                            {audioState[index]?.dataUri && (
+                                <audio controls ref={el => audioRefs.current[index] = el} src={audioState[index].dataUri!} className="h-8" />
+                            )}
+                        </div>
                     </div>
                 ))}
                 <div className="border-t pt-4 text-center">
@@ -358,10 +377,15 @@ export default function StoryBoxPage() {
                     ) : (
                         <p className="italic text-muted-foreground mt-2">{story.moral}</p>
                     )}
-                    <Button onClick={() => handleGenerateAudio(story.moral, -2)} size="sm" variant="outline" disabled={audioState[-2]?.isLoading} className="mt-2">
-                            {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
-                            Écouter la morale
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                        <Button onClick={() => handleGenerateAudio(story.moral, -2)} size="sm" variant="outline" disabled={audioState[-2]?.isLoading}>
+                                {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                                Écouter la morale
                         </Button>
+                        {audioState[-2]?.dataUri && (
+                             <audio controls ref={el => audioRefs.current[-2] = el} src={audioState[-2].dataUri!} className="h-8" />
+                        )}
+                    </div>
                 </div>
                 </CardContent>
             </Card>
