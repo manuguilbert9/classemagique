@@ -283,10 +283,10 @@ export default function StoryBoxPage() {
             </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           
           {/* Character Sidebar */}
-          <div className="md:col-span-1">
+          <div className="lg:col-span-1 lg:sticky lg:top-8 self-start">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-headline"><Users />Personnages</CardTitle>
@@ -321,7 +321,7 @@ export default function StoryBoxPage() {
           </div>
 
           {/* Story Content */}
-          <div className="md:col-span-3">
+          <div className="lg:col-span-3">
             <Card className="shadow-xl">
                 <CardHeader className="text-center">
                     <div className="mb-4 flex justify-center items-center gap-2 text-3xl">
@@ -338,21 +338,10 @@ export default function StoryBoxPage() {
                         {audioState[-1]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                         Écouter le titre
                     </Button>
-                    {isHalloweenPeriod() && (
-                    <Button onClick={handleGenerateImage} disabled={isGeneratingImage} variant="secondary">
-                        {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
-                        {isGeneratingImage ? 'Création...' : (imageUrl ? 'Régénérer l\'illustration' : 'Créer l\'illustration')}
-                    </Button>
-                    )}
                 </div>
                  {audioState[-1]?.dataUri && (
                     <div className="flex justify-center pt-4">
                         <audio controls ref={el => audioRefs.current[-1] = el} src={audioState[-1].dataUri!} />
-                    </div>
-                )}
-                {imageUrl && (
-                    <div className="flex justify-center pt-4">
-                        <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg max-w-full h-auto" />
                     </div>
                 )}
                 </CardHeader>
@@ -392,6 +381,34 @@ export default function StoryBoxPage() {
                 </div>
                 </CardContent>
             </Card>
+          </div>
+
+          {/* Illustration Sidebar */}
+          <div className="lg:col-span-1 lg:sticky lg:top-8 self-start">
+             {isHalloweenPeriod() && (
+                <Card>
+                    <CardHeader>
+                       <CardTitle className="flex items-center gap-2 font-headline">
+                         <ImageIcon />
+                         Illustration
+                       </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Button onClick={handleGenerateImage} disabled={isGeneratingImage} className="w-full">
+                           {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                           {isGeneratingImage ? 'Création...' : (imageUrl ? 'Régénérer' : 'Créer')}
+                        </Button>
+                        {imageUrl ? (
+                            <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover" />
+                        ) : (
+                             <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
+                                <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                             </div>
+                        )}
+                         {error && <p className="text-destructive text-sm">{error}</p>}
+                    </CardContent>
+                </Card>
+            )}
           </div>
         </div>
       </main>
