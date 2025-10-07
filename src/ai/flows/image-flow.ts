@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to generate images using Gemini with image generation.
@@ -21,7 +22,7 @@ export type ImageInput = z.infer<typeof ImageInputSchema>;
 const ImageOutputSchema = z.object({
   imageUrl: z.string().describe('The generated image as a data URI'),
 });
-export type ImageOutput = z-infer<typeof ImageOutputSchema>;
+export type ImageOutput = z.infer<typeof ImageOutputSchema>;
 
 const styleMap = {
   aventure: 'style illustration de livre pour enfants, coloré et dynamique, aventureux',
