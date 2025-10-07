@@ -52,8 +52,11 @@ INSTRUCTIONS STRICTES :
 5.  **Ton** : Applique ce ton général : ${styleInstruction}.`;
 
     const { media } = await ai.generate({
-      model: googleAI.model('imagen-4.0-fast-generate-001'),
+      model: googleAI.model('gemini-2.5-flash-image-preview'),
       prompt: imagePrompt,
+      config: {
+        responseModalities: ['IMAGE'],
+      },
     });
 
     if (!media) {
