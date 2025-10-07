@@ -98,7 +98,7 @@ export default function StoryBoxPage() {
   const [audioState, setAudioState] = useState<AudioState>({});
   const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({});
 
-  // Image State (Halloween only)
+  // Image State
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -167,7 +167,7 @@ export default function StoryBoxPage() {
       
       // Auto-save medium and long stories
       if (student && (length === 'moyenne' || length === 'longue')) {
-        await saveStory(student, result, input);
+        await saveStory(student, result, input, null); // No image initially
       }
     } catch(e) {
       console.error(e);
@@ -211,6 +211,12 @@ export default function StoryBoxPage() {
       };
       const result = await generateImage(imageInput);
       setImageUrl(result.imageUrl);
+      
+      // If the story was auto-saved, update it with the image URL
+      if (student && (length === 'moyenne' || length === 'longue')) {
+        await saveStory(student, story, storyInput!, result.imageUrl);
+      }
+      
     } catch (e) {
       console.error("Image generation failed:", e);
       setError("Impossible de générer l'illustration pour cette histoire.");
@@ -289,6 +295,7 @@ export default function StoryBoxPage() {
 
   const handleReadStory = (savedStory: SavedStory) => {
     setStory(savedStory.content);
+    setImageUrl(savedStory.imageUrl || null);
     setStoryInput({
         emojis: savedStory.emojis,
         description: savedStory.description,
@@ -303,7 +310,7 @@ export default function StoryBoxPage() {
     return (
       <main className="flex min-h-screen w-full flex-col p-4 sm:p-8 bg-background">
         <div className="flex gap-2 mb-8">
-            <Button onClick={() => setViewState(previous => previous === 'reading' ? 'menu' : 'reading')} variant="outline">
+            <Button onClick={() => setViewState('menu')} variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Retour
             </Button>
             <Button onClick={openImmersiveReader} variant="secondary">
@@ -426,16 +433,25 @@ export default function StoryBoxPage() {
                        </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Button onClick={handleGenerateImage} disabled={isGeneratingImage} className="w-full">
-                           {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                           {isGeneratingImage ? 'Création...' : (imageUrl ? 'Régénérer' : 'Créer')}
-                        </Button>
+                        {!imageUrl && (
+                          <Button onClick={handleGenerateImage} disabled={isGeneratingImage} className="w-full">
+                            {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                            Générer l'illustration
+                          </Button>
+                        )}
+                        {isGeneratingImage && !imageUrl && (
+                            <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
+                                <Loader2 className="h-10 w-10 text-muted-foreground animate-spin"/>
+                            </div>
+                        )}
                         {imageUrl ? (
                             <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover" />
                         ) : (
-                             <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
-                                <ImageIcon className="h-16 w-16 text-muted-foreground" />
-                             </div>
+                            !isGeneratingImage && (
+                                <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
+                                    <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                                </div>
+                            )
                         )}
                          {error && <p className="text-destructive text-sm">{error}</p>}
                     </CardContent>
@@ -465,6 +481,9 @@ export default function StoryBoxPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {savedStories.map(s => (
                         <Card key={s.id} className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow" onClick={() => handleReadStory(s)}>
+                             {s.imageUrl && (
+                                <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
+                            )}
                             <CardHeader>
                                 <CardTitle>{s.title}</CardTitle>
                                 <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">

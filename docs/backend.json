@@ -79,6 +79,11 @@
             },
             "required": ["title", "story", "moral", "characters"]
         },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the generated illustration for the story.",
+          "format": "uri"
+        },
         "emojis": {
             "type": "array",
             "items": { "type": "string" },

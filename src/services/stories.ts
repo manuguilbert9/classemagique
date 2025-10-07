@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, orderBy, Timestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, Timestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import type { StoryOutput, StoryInput } from '@/ai/flows/story-flow';
 import type { Student } from './students';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -16,15 +16,16 @@ export interface SavedStory {
   authorShowPhoto?: boolean;
   title: string;
   content: StoryOutput;
+  imageUrl?: string;
   emojis?: string[];
   description?: string;
   createdAt: string; // ISO string
 }
 
 /**
- * Saves a generated story to the database.
+ * Saves or updates a generated story in the database.
  */
-export async function saveStory(author: Student, storyData: StoryOutput, storyInput: StoryInput): Promise<{ success: boolean; error?: string }> {
+export async function saveStory(author: Student, storyData: StoryOutput, storyInput: StoryInput, imageUrl: string | null): Promise<{ success: boolean; error?: string }> {
   if (!author) {
     return { success: false, error: "Author is required." };
   }
@@ -36,12 +37,51 @@ export async function saveStory(author: Student, storyData: StoryOutput, storyIn
       authorShowPhoto: author.showPhoto ?? false,
       title: storyData.title,
       content: storyData,
+      imageUrl: imageUrl || null,
       emojis: storyInput.emojis || [],
       description: storyInput.description || '',
       createdAt: Timestamp.now()
     };
     
-    addDoc(collection(db, 'saved_stories'), dataToSave)
+    // Check if a story by this author with this title already exists today to avoid duplicates from regeneration
+    const q = query(
+        collection(db, 'saved_stories'), 
+        where('authorId', '==', author.id),
+        where('title', '==', storyData.title),
+        orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+
+    let existingStoryId: string | null = null;
+    if (!querySnapshot.empty) {
+        const latestDoc = querySnapshot.docs[0];
+        const latestDate = (latestDoc.data().createdAt as Timestamp).toDate();
+        const today = new Date();
+        // Check if the latest story is from today
+        if (latestDate.getDate() === today.getDate() &&
+            latestDate.getMonth() === today.getMonth() &&
+            latestDate.getFullYear() === today.getFullYear()) {
+            existingStoryId = latestDoc.id;
+        }
+    }
+
+    if (existingStoryId) {
+      // Update the existing story (e.g., to add the image URL)
+      const docRef = doc(db, 'saved_stories', existingStoryId);
+      updateDoc(docRef, { imageUrl: imageUrl || null })
+        .catch(error => {
+            errorEmitter.emit(
+                'permission-error',
+                new FirestorePermissionError({
+                    path: `saved_stories/${existingStoryId}`,
+                    operation: 'update',
+                    requestResourceData: { imageUrl: imageUrl || null },
+                })
+            );
+        });
+    } else {
+      // Add a new story
+      addDoc(collection(db, 'saved_stories'), dataToSave)
         .catch(error => {
             errorEmitter.emit(
                 'permission-error',
@@ -52,6 +92,7 @@ export async function saveStory(author: Student, storyData: StoryOutput, storyIn
                 })
             );
         });
+    }
 
     return { success: true };
   } catch (error) {
