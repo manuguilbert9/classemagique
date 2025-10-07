@@ -491,42 +491,45 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     return <Card className="w-full shadow-2xl p-8 text-center">Chargement des questions...</Card>;
   }
 
-  const renderCount = () => (
-    <>
-      <div className="flex flex-wrap items-center justify-center gap-2 text-5xl">
-        {Array.from({ length: exerciseData.countNumber! }).map((_, index) => (
-          <button 
-            key={index}
-            onClick={() => handleToggleCountItem(index)}
-            className={cn(
-              "transition-all rounded-full p-1",
-              selectedCountIndices.includes(index) && "ring-2 ring-green-500 opacity-50"
-            )}
-            aria-label={`Objet ${index + 1}`}
-          >
-            {exerciseData.countEmoji}
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 w-full max-w-lg pt-6">
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-          <Button
-            key={num}
-            variant="outline"
-            onClick={() => handleQcmAnswer(String(num))}
-            className={cn(
-              "text-3xl h-20 p-4 justify-center font-numbers",
-              feedback === 'correct' && String(num) === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
-              feedback === 'incorrect' && 'bg-red-500/80 text-white border-red-600 animate-shake'
-            )}
-            disabled={!!feedback}
-          >
-            {num}
-          </Button>
-        ))}
-      </div>
-    </>
-  );
+  const renderCount = () => {
+    const maxNumber = exerciseData.countSettings?.maxNumber || 10;
+    return (
+      <>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-5xl">
+          {Array.from({ length: exerciseData.countNumber! }).map((_, index) => (
+            <button
+              key={index}
+              onClick={() => handleToggleCountItem(index)}
+              className={cn(
+                "transition-all rounded-full p-1",
+                selectedCountIndices.includes(index) && "ring-2 ring-green-500 opacity-50"
+              )}
+              aria-label={`Objet ${index + 1}`}
+            >
+              {exerciseData.countEmoji}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 w-full max-w-lg pt-6">
+          {Array.from({ length: maxNumber }, (_, i) => i + 1).map((num) => (
+            <Button
+              key={num}
+              variant="outline"
+              onClick={() => handleQcmAnswer(String(num))}
+              className={cn(
+                "text-3xl h-20 p-4 justify-center font-numbers",
+                feedback === 'correct' && String(num) === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+                feedback === 'incorrect' && 'bg-red-500/80 text-white border-red-600 animate-shake'
+              )}
+              disabled={!!feedback}
+            >
+              {num}
+            </Button>
+          ))}
+        </div>
+      </>
+    );
+  };
 
   const renderKeyboardCount = () => (
      <div className="flex flex-col items-center justify-center space-y-6">
