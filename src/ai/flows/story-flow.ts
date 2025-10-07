@@ -19,10 +19,17 @@ const StoryInputSchema = z.object({
 });
 export type StoryInput = z.infer<typeof StoryInputSchema>;
 
+const CharacterSchema = z.object({
+    name: z.string().describe("Le nom du personnage."),
+    physicalDescription: z.string().describe("Une brève description physique du personnage (2-3 adjectifs)."),
+    psychologicalDescription: z.string().describe("Une brève description psychologique du personnage (2-3 adjectifs)."),
+});
+
 const StoryOutputSchema = z.object({
   title: z.string().describe('A creative and fitting title for the story.'),
   story: z.string().describe('The generated story text.'),
   moral: z.string().describe('A short, clear moral for the story.'),
+  characters: z.array(CharacterSchema).describe("La liste de tous les personnages principaux de l'histoire, dans leur ordre d'apparition."),
 });
 export type StoryOutput = z.infer<typeof StoryOutputSchema>;
 
@@ -66,13 +73,16 @@ Ne mentionne pas les emojis ou la description directement dans le texte, utilise
 
 4.  **Structure** : L'histoire doit avoir un début, un développement et une fin claire.
 
-5.  **Prénoms des personnages** : IMPORTANT - Varie les prénoms des personnages principaux. Ne pas toujours utiliser "Léo". Utilise une grande variété de prénoms français modernes et classiques : Emma, Lucas, Chloé, Nathan, Inès, Hugo, Manon, Arthur, Zoé, Louis, Camille, Gabriel, Léa, Tom, Sarah, Maxime, etc. Change de prénom à chaque histoire.
+5.  **Personnages** :
+    -   IMPORTANT : Varie les prénoms des personnages principaux. Ne pas toujours utiliser "Léo". Utilise une grande variété de prénoms français modernes et classiques : Emma, Lucas, Chloé, Nathan, Inès, Hugo, Manon, Arthur, Zoé, Louis, Camille, Gabriel, Léa, Tom, Sarah, Maxime, etc. Change de prénom à chaque histoire.
+    -   À la fin de ton processus, identifie **tous** les personnages de l'histoire. Pour chacun, fournis une très brève description physique et psychologique (2-3 adjectifs chacun).
+    -   Liste ces personnages dans le champ 'characters' dans leur ordre d'apparition.
 
 6.  **Morale** : À la fin de l'histoire, rédige une morale claire et simple en rapport avec les événements du récit. Ne la mélange pas avec l'histoire, mais présente-la séparément.
 
 7.  **Titre** : Donne un titre court et accrocheur à l'histoire.
 
-Réponds uniquement avec la structure de sortie demandée (titre, histoire, morale). N'ajoute aucun commentaire ou texte supplémentaire.`,
+Réponds uniquement avec la structure de sortie demandée (titre, histoire, morale, personnages). N'ajoute aucun commentaire ou texte supplémentaire.`,
   context: {
     lengthInstructionMap,
     toneInstructionMap,
@@ -103,13 +113,16 @@ Ne mentionne pas les emojis ou la description directement dans le texte, utilise
 
 4.  **Structure** : L'histoire doit avoir un début, un développement et une fin claire.
 
-5.  **Prénoms des personnages** : IMPORTANT - Varie les prénoms des personnages principaux. Ne pas toujours utiliser "Léo". Utilise une grande variété de prénoms français modernes et classiques : Emma, Lucas, Chloé, Nathan, Inès, Hugo, Manon, Arthur, Zoé, Louis, Camille, Gabriel, Léa, Tom, Sarah, Maxime, etc. Change de prénom à chaque histoire.
+5.  **Personnages** :
+    -   IMPORTANT : Varie les prénoms des personnages principaux. Ne pas toujours utiliser "Léo". Utilise une grande variété de prénoms français modernes et classiques : Emma, Lucas, Chloé, Nathan, Inès, Hugo, Manon, Arthur, Zoé, Louis, Camille, Gabriel, Léa, Tom, Sarah, Maxime, etc. Change de prénom à chaque histoire.
+    -   À la fin de ton processus, identifie **tous** les personnages de l'histoire. Pour chacun, fournis une très brève description physique et psychologique (2-3 adjectifs chacun).
+    -   Liste ces personnages dans le champ 'characters' dans leur ordre d'apparition.
 
 6.  **Morale** : À la fin de l'histoire, rédige une morale claire et simple en rapport avec les événements du récit. Ne la mélange pas avec l'histoire, mais présente-la séparément.
 
 7.  **Titre** : Donne un titre court et accrocheur à l'histoire.
 
-Réponds uniquement avec la structure de sortie demandée (titre, histoire, morale). N'ajoute aucun commentaire ou texte supplémentaire.`,
+Réponds uniquement avec la structure de sortie demandée (titre, histoire, morale, personnages). N'ajoute aucun commentaire ou texte supplémentaire.`,
   context: {
     lengthInstructionMap,
     toneInstructionMap,

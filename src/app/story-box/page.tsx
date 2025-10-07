@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { generateSpeech } from '@/ai/flows/tts-flow';
 import { generateImage, type ImageInput } from '@/ai/flows/image-flow';
 import { SyllableText } from '@/components/syllable-text';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import './halloween.css';
 
 // Halloween-specific emojis (October 1 - November 3)
@@ -180,7 +181,7 @@ export default function StoryBoxPage() {
   };
 
   const handleGenerateImage = async () => {
-      if (!story || isGeneratingImage || !isHalloweenPeriod()) return;
+      if (!story || isGeneratingImage) return;
       setIsGeneratingImage(true);
       setImageUrl(null);
       try {
@@ -253,43 +254,81 @@ export default function StoryBoxPage() {
     const paragraphs = story.story.split('\n').filter(p => p.trim() !== '');
 
     return (
-      <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
-        <div className="w-full max-w-3xl">
-           <div className="flex gap-2">
-             <Button onClick={() => setStory(null)} variant="outline">
-               <ArrowLeft className="mr-2 h-4 w-4" /> Retourner
-             </Button>
-             <Button onClick={openImmersiveReader} variant="secondary">
-                <BookOpen className="mr-2 h-4 w-4" /> Lecteur immersif
-             </Button>
-             <Button onClick={() => setShowSyllables(prev => !prev)} variant={showSyllables ? "default" : "secondary"}>
-                <SyllableText text="Syllabes" />
-             </Button>
-           </div>
-           <Card className="mt-8 shadow-xl">
-             <CardHeader className="text-center">
-                 <div className="mb-4 flex justify-center items-center gap-2 text-3xl">
+      <main className="flex min-h-screen w-full flex-col p-4 sm:p-8 bg-background">
+        <div className="flex gap-2 mb-8">
+            <Button onClick={() => setStory(null)} variant="outline">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Retourner
+            </Button>
+            <Button onClick={openImmersiveReader} variant="secondary">
+            <BookOpen className="mr-2 h-4 w-4" /> Lecteur immersif
+            </Button>
+            <Button onClick={() => setShowSyllables(prev => !prev)} variant={showSyllables ? "default" : "secondary"}>
+            <SyllableText text="Syllabes" />
+            </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          
+          {/* Character Sidebar */}
+          <div className="md:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-headline"><Users />Personnages</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {story.characters.length > 0 ? (
+                  <TooltipProvider delayDuration={100}>
+                    <ul className="space-y-2">
+                      {story.characters.map((char, index) => (
+                        <li key={index}>
+                           <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="font-semibold text-lg cursor-default p-2 rounded-md hover:bg-muted">{char.name}</span>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="w-64">
+                              <div className="space-y-2 p-2">
+                                <p><strong className="font-headline">Physique:</strong> {char.physicalDescription}</p>
+                                <p><strong className="font-headline">Mental:</strong> {char.psychologicalDescription}</p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </li>
+                      ))}
+                    </ul>
+                  </TooltipProvider>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Aucun personnage principal détecté dans cette histoire.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Story Content */}
+          <div className="md:col-span-3">
+            <Card className="shadow-xl">
+                <CardHeader className="text-center">
+                    <div className="mb-4 flex justify-center items-center gap-2 text-3xl">
                     <span className="text-sm font-medium text-muted-foreground">Inspiration :</span>
                     {creationMode === 'emoji' ? selectedEmojis.map(emoji => (
-                      <span key={emoji}>{emoji}</span>
+                        <span key={emoji}>{emoji}</span>
                     )) : (
-                      <p className="text-base italic text-muted-foreground">"{vocalDescription}"</p>
+                        <p className="text-base italic text-muted-foreground">"{vocalDescription}"</p>
                     )}
-                  </div>
+                    </div>
                 <CardTitle className="font-headline text-4xl">{story.title}</CardTitle>
                 <div className="flex justify-center gap-3 mt-4 flex-wrap">
-                  <Button onClick={() => handleGenerateAudio(story.title, -1)} disabled={audioState[-1]?.isLoading}>
-                      {audioState[-1]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
-                      Écouter le titre
-                  </Button>
-                  {isHalloweenPeriod() && (
+                    <Button onClick={() => handleGenerateAudio(story.title, -1)} disabled={audioState[-1]?.isLoading}>
+                        {audioState[-1]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                        Écouter le titre
+                    </Button>
+                    {isHalloweenPeriod() && (
                     <Button onClick={handleGenerateImage} disabled={isGeneratingImage} variant="secondary">
                         {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
                         {isGeneratingImage ? 'Création...' : 'Voir l\'illustration'}
                     </Button>
-                  )}
+                    )}
                 </div>
-                 {currentlyPlayingIndex !== null && audioState[currentlyPlayingIndex]?.dataUri && (
+                {currentlyPlayingIndex !== null && audioState[currentlyPlayingIndex]?.dataUri && (
                     <div className="flex justify-center pt-4">
                         <audio ref={audioRef} src={audioState[currentlyPlayingIndex]!.dataUri!} controls autoPlay/>
                     </div>
@@ -299,33 +338,34 @@ export default function StoryBoxPage() {
                         <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg max-w-full h-auto" />
                     </div>
                 )}
-             </CardHeader>
-             <CardContent className="space-y-6">
-                 {paragraphs.map((paragraph, index) => (
+                </CardHeader>
+                <CardContent className="space-y-6">
+                {paragraphs.map((paragraph, index) => (
                     <div key={index} className="space-y-2">
-                         <div className={cn("whitespace-pre-wrap font-body", getFontSize())}>
+                        <div className={cn("whitespace-pre-wrap font-body", getFontSize())}>
                             {showSyllables ? <SyllableText text={paragraph} /> : <p>{paragraph}</p>}
                         </div>
                         <Button onClick={() => handleGenerateAudio(paragraph, index)} size="sm" variant="outline" disabled={audioState[index]?.isLoading}>
-                             {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
-                             Écouter
+                            {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                            Écouter
                         </Button>
                     </div>
-                 ))}
+                ))}
                 <div className="border-t pt-4 text-center">
                     <p className="font-semibold text-lg font-headline">Morale de l'histoire</p>
-                     {showSyllables ? (
+                    {showSyllables ? (
                         <div className="italic text-muted-foreground mt-2"><SyllableText text={story.moral}/></div>
                     ) : (
                         <p className="italic text-muted-foreground mt-2">{story.moral}</p>
                     )}
-                     <Button onClick={() => handleGenerateAudio(story.moral, -2)} size="sm" variant="outline" disabled={audioState[-2]?.isLoading} className="mt-2">
-                             {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
-                             Écouter la morale
+                    <Button onClick={() => handleGenerateAudio(story.moral, -2)} size="sm" variant="outline" disabled={audioState[-2]?.isLoading} className="mt-2">
+                            {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                            Écouter la morale
                         </Button>
                 </div>
-             </CardContent>
-           </Card>
+                </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     );
