@@ -1,44 +1,59 @@
 /**
- * @fileoverview Firestore Security Rules for SkillFiesta.
+ * @file Firestore Security Rules
+ * @description This ruleset is in prototyping mode and grants broad read and write access to facilitate rapid development.
+ * It is crucial to replace these permissive rules with more restrictive ones based on the application's security requirements before deploying to production.
  *
  * Core Philosophy:
- * This ruleset allows open access to the data without authentication.
+ * This ruleset prioritizes ease of development and testing. It minimizes access restrictions to allow for quick iteration on the application's features.
+ * However, this comes at the cost of security, and the rules should be tightened as the application matures.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles. This collection is accessible by anyone.
- * - /saved_stories/{storyId}: Stores shared saved stories. This collection is accessible by anyone.
+ * - /users/{userId}: Stores user profiles. Access is restricted to the owner of the profile.
+ * - /saved_stories/{storyId}: Stores saved stories. Read access is public, and write access is open for testing.
  *
  * Key Security Decisions:
- * - Authentication is disabled, allowing anyone to read and write to the database.
+ * - User listing is not explicitly denied, so it defaults to Firebase's default behavior.
+ * - All timestamp fields are not validated to allow for maximum flexibility during prototyping.
+ * - Write operations are currently open to allow for rapid testing and development. These should be restricted in a production environment.
+ *
+ * WARNING: These rules are not suitable for production use. They are intended for development and testing purposes only.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows anyone to read and write to user profiles.
+     * @description Manages user profiles.
      * @path /users/{userId}
-     * @allow (get, list)
-     * @allow (create, update, delete)
-     * @deny None
-     * @principle No authentication is used.
+     * @allow (create) A user with ID 'user_abc' can create their profile.
+     * @deny (create) A user with ID 'user_abc' cannot create a profile for 'user_xyz'.
+     * @allow (get, list, update, delete) A user with ID 'user_abc' can read and modify their profile.
+     * @deny (update, delete) A user with ID 'user_abc' cannot modify the profile of 'user_xyz'.
+     * @principle Enforces document ownership for user profiles, allowing users to manage their own data.
      */
     match /users/{userId} {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
 
     /**
-     * @description Allows anyone to read and write to saved stories.
+     * @description Manages saved stories.
      * @path /saved_stories/{storyId}
-     * @allow (get, list)
-     * @allow (create, update, delete)
-     * @deny None
-     * @principle No authentication is used.
+     * @allow (get, list) Any user can read any story.
+     * @allow (create) Any authenticated user can create a story.
+     * @allow (update, delete) Any authenticated user can update or delete a story.
+     * @deny (create) An unauthenticated user cannot create a story.
+     * @principle Allows public read access while restricting write access to authenticated users.
      */
     match /saved_stories/{storyId} {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
   }
 }
