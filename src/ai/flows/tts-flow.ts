@@ -55,6 +55,11 @@ const ttsFlow = ai.defineFlow(
     outputSchema: SpeechOutputSchema,
   },
   async (text) => {
+    // Truncate text to avoid hitting model limits (e.g., ~5000 chars)
+    // We'll use a safe limit of 1000 chars for the story part, plus title.
+    const MAX_CHARS = 1000;
+    const truncatedText = text.length > MAX_CHARS ? text.substring(0, MAX_CHARS) + "..." : text;
+
     const { media } = await ai.generate({
       model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
@@ -65,7 +70,7 @@ const ttsFlow = ai.defineFlow(
           },
         },
       },
-      prompt: text,
+      prompt: truncatedText,
     });
     if (!media) {
       throw new Error('No audio media returned from the model.');
