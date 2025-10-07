@@ -1,0 +1,110 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the SkillFiesta application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.",
+          "format": "uuid"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "profilePictureUrl": {
+          "type": "string",
+          "description": "URL to the user's profile picture. Can be null if the user hasn't set one.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "firstName"
+      ]
+    },
+    "SavedStory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SavedStory",
+      "type": "object",
+      "description": "Represents a saved story within the SkillFiesta application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the saved story.",
+          "format": "uuid"
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the User who created the story. (Relationship: User 1:N SavedStory)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the story."
+        },
+        "content": {
+          "type": "string",
+          "description": "The actual story content."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the story was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "title",
+        "content",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Path-based ownership ensures only the user can modify their profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/saved_stories/{storyId}",
+        "definition": {
+          "entityName": "SavedStory",
+          "schema": {
+            "$ref": "#/backend/entities/SavedStory"
+          },
+          "description": "Stores shared saved stories. Includes denormalized 'authorId' for authorization independence.",
+          "params": [
+            {
+              "name": "storyId",
+              "description": "The unique identifier of the saved story."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to store user data and shared stories. It prioritizes authorization independence by denormalizing the author's ID within the `saved_stories` collection.  This avoids the need for `get()` calls in security rules when checking story ownership. The structure supports QAPs because stories are stored in a single collection, allowing listing all stories.  The design enforces data clarity through explicit naming conventions."
+  }
+}

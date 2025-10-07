@@ -1,8 +1,72 @@
+/**
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a user-ownership model for user profiles and allows shared read access to saved stories while restricting write access to the story's author.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile data. Only the user with the matching userId can read or write their profile.
+ * - /saved_stories/{storyId}: Stores shared saved stories. Anyone can read the stories, but only the author can modify or delete them. The authorId field is denormalized to enable efficient ownership checks.
+ *
+ * Key Security Decisions:
+ * - Users can only access their own user documents.
+ * - Saved stories are publicly readable, but only the author can modify them.
+ * - Listing of users is disallowed.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    /**
+     * @description Enforces user-ownership for user profiles. Only the user with the matching userId can read or write their profile.
+     * @path /users/{userId}
+     * @allow (create) - User 'user123' creates their profile with id matching auth.uid.
+     * @allow (get, update, delete) - User 'user123' reads/updates/deletes their own profile.
+     * @deny (create) - User 'user456' attempts to create a profile for 'user123'.
+     * @deny (get, update, delete) - User 'user456' attempts to read/update/delete profile 'user123'.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
+
+    /**
+     * @description Allows shared read access to saved stories while restricting write access to the story's author. The authorId field is denormalized to enable efficient ownership checks.
+     * @path /saved_stories/{storyId}
+     * @allow (get, list) - Any user can read or list saved stories.
+     * @allow (create) - User 'user123' creates a story with authorId set to 'user123'.
+     * @allow (update, delete) - User 'user123' updates/deletes their own story.
+     * @deny (create) - User 'user456' attempts to create a story with authorId set to 'user123'.
+     * @deny (update, delete) - User 'user456' attempts to update/delete story authored by 'user123'.
+     * @principle Enforces document ownership for writes, allows public reads.
+     */
+    match /saved_stories/{storyId} {
+      function isOwner(authorId) {
+        return request.auth.uid == authorId;
+      }
+
+      function isExistingOwner(authorId) {
+        return isOwner(authorId) && resource != null;
+      }
+
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.authorId);
+      allow delete: if isExistingOwner(resource.data.authorId);
+    }
+  }
+
+  function isSignedIn() {
+    return request.auth != null;
   }
 }
