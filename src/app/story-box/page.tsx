@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart } from 'lucide-react';
@@ -171,7 +171,7 @@ export default function StoryBoxPage() {
       
       // Auto-save medium and long stories
       if (student && (length === 'moyenne' || length === 'longue')) {
-        const saveResult = await saveStory(student, result, input, null); // No image initially
+        const saveResult = await saveStory(student, result, input, null);
         if (saveResult.success) {
           setCurrentStoryId(saveResult.id); // Keep track of the new story's ID
         }
@@ -458,6 +458,9 @@ export default function StoryBoxPage() {
                                 <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover cursor-pointer hover:opacity-90 transition-opacity" />
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl h-auto p-0">
+                                <DialogHeader>
+                                    <DialogTitleComponent className="sr-only">{story.title}</DialogTitleComponent>
+                                </DialogHeader>
                                 <img src={imageUrl} alt={story.title} className="w-full h-full object-contain rounded-lg" />
                             </DialogContent>
                         </Dialog>
