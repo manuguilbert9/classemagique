@@ -5,6 +5,8 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, orderBy, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import type { StoryOutput, StoryInput } from '@/ai/flows/story-flow';
 import type { Student } from './students';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export interface SavedStory {
   id: string;
@@ -27,7 +29,7 @@ export async function saveStory(author: Student, storyData: StoryOutput, storyIn
     return { success: false, error: "Author is required." };
   }
   try {
-    await addDoc(collection(db, 'saved_stories'), {
+    const dataToSave = {
       authorId: author.id,
       authorName: author.name,
       authorPhotoURL: author.photoURL || null,
@@ -37,7 +39,20 @@ export async function saveStory(author: Student, storyData: StoryOutput, storyIn
       emojis: storyInput.emojis || [],
       description: storyInput.description || '',
       createdAt: Timestamp.now()
-    });
+    };
+    
+    addDoc(collection(db, 'saved_stories'), dataToSave)
+        .catch(error => {
+            errorEmitter.emit(
+                'permission-error',
+                new FirestorePermissionError({
+                    path: 'saved_stories',
+                    operation: 'create',
+                    requestResourceData: dataToSave,
+                })
+            );
+        });
+
     return { success: true };
   } catch (error) {
     console.error("Error saving story to Firestore:", error);
@@ -67,6 +82,13 @@ export async function getSavedStories(): Promise<SavedStory[]> {
     return stories;
   } catch (error) {
     console.error("Error loading stories from Firestore:", error);
+    errorEmitter.emit(
+        'permission-error',
+        new FirestorePermissionError({
+            path: 'saved_stories',
+            operation: 'list',
+        })
+    );
     return [];
   }
 }
@@ -79,7 +101,17 @@ export async function deleteStory(storyId: string): Promise<{ success: boolean; 
         return { success: false, error: 'Story ID is required.' };
     }
     try {
-        await deleteDoc(doc(db, 'saved_stories', storyId));
+        const docRef = doc(db, 'saved_stories', storyId);
+        deleteDoc(docRef)
+            .catch(error => {
+                errorEmitter.emit(
+                    'permission-error',
+                    new FirestorePermissionError({
+                        path: `saved_stories/${storyId}`,
+                        operation: 'delete',
+                    })
+                );
+            });
         return { success: true };
     } catch (error) {
         console.error("Error deleting story:", error);
