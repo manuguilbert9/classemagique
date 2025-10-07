@@ -11,6 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { googleAI } from '@genkit-ai/google-genai';
+import { uploadImageFromDataURI } from '@/services/storage';
 
 const ImageInputSchema = z.object({
   storyTitle: z.string().describe('The title of the story'),
@@ -20,7 +21,7 @@ const ImageInputSchema = z.object({
 export type ImageInput = z.infer<typeof ImageInputSchema>;
 
 const ImageOutputSchema = z.object({
-  imageUrl: z.string().describe('The generated image as a data URI'),
+  imageUrl: z.string().describe('The generated image as a public Cloud Storage URL'),
 });
 export type ImageOutput = z.infer<typeof ImageOutputSchema>;
 
@@ -62,9 +63,12 @@ INSTRUCTIONS STRICTES :
     if (!media) {
       throw new Error('No image media returned from the model.');
     }
+    
+    // Upload the image from the data URI to Cloud Storage
+    const publicUrl = await uploadImageFromDataURI(media.url, 'story-images');
 
     return {
-      imageUrl: media.url,
+      imageUrl: publicUrl,
     };
   }
 );
