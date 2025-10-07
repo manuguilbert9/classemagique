@@ -34,20 +34,59 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the saved story.",
-          "format": "uuid"
+          "description": "Unique identifier for the saved story."
         },
         "authorId": {
           "type": "string",
-          "description": "Reference to the User who created the story. (Relationship: User 1:N SavedStory)"
+          "description": "Reference to the User who created the story."
+        },
+        "authorName": {
+            "type": "string",
+            "description": "Name of the author."
+        },
+        "authorPhotoURL": {
+            "type": "string",
+            "description": "URL of the author's profile picture."
+        },
+         "authorShowPhoto": {
+            "type": "boolean",
+            "description": "Whether to show the author's profile picture."
         },
         "title": {
           "type": "string",
           "description": "The title of the story."
         },
         "content": {
-          "type": "string",
-          "description": "The actual story content."
+          "type": "object",
+          "description": "The full story object, including content, moral, and characters.",
+           "properties": {
+                "title": { "type": "string" },
+                "story": { "type": "string" },
+                "moral": { "type": "string" },
+                "characters": { 
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": { "type": "string" },
+                            "appearance": { "type": "string" },
+                            "character": { "type": "string" },
+                            "motivation": { "type": "string" }
+                        },
+                        "required": ["name", "appearance", "character", "motivation"]
+                    }
+                }
+            },
+            "required": ["title", "story", "moral", "characters"]
+        },
+        "emojis": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Emojis used to generate the story."
+        },
+        "description": {
+            "type": "string",
+            "description": "Vocal description used to generate the story."
         },
         "createdAt": {
           "type": "string",
@@ -58,6 +97,7 @@
       "required": [
         "id",
         "authorId",
+        "authorName",
         "title",
         "content",
         "createdAt"
@@ -66,7 +106,6 @@
   },
   "auth": {
     "providers": [
-      "password",
       "anonymous"
     ]
   },
@@ -95,7 +134,7 @@
           "schema": {
             "$ref": "#/backend/entities/SavedStory"
           },
-          "description": "Stores shared saved stories. Includes denormalized 'authorId' for authorization independence.",
+          "description": "Stores shared saved stories. Includes denormalized author data for easy display.",
           "params": [
             {
               "name": "storyId",
@@ -104,7 +143,6 @@
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to store user data and shared stories. It prioritizes authorization independence by denormalizing the author's ID within the `saved_stories` collection.  This avoids the need for `get()` calls in security rules when checking story ownership. The structure supports QAPs because stories are stored in a single collection, allowing listing all stories.  The design enforces data clarity through explicit naming conventions."
+    ]
   }
 }

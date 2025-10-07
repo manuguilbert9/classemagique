@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
@@ -16,6 +16,11 @@ import { generateSpeech } from '@/ai/flows/tts-flow';
 import { generateImage, type ImageInput } from '@/ai/flows/image-flow';
 import { SyllableText } from '@/components/syllable-text';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { UserContext } from '@/context/user-context';
+import { saveStory, getSavedStories, type SavedStory } from '@/services/stories';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import './halloween.css';
 
 // Halloween-specific emojis (October 1 - November 3)
@@ -62,16 +67,18 @@ const getRandomEmojis = (pool: string[], count: number): string[] => {
   return shuffled.slice(0, count);
 };
 
+type ViewState = 'menu' | 'creation' | 'reading' | 'library';
 type CreationMode = 'emoji' | 'vocal';
 type StoryLength = 'extra-courte' | 'courte' | 'moyenne' | 'longue';
 type StoryTone = 'aventure' | 'comique' | 'effrayante' | 'terrifiante' | 'cauchemardesque';
 type AudioState = { [key: number]: { isLoading: boolean; dataUri: string | null } };
 
-
 export default function StoryBoxPage() {
-  const [creationMode, setCreationMode] = useState<CreationMode | null>(null);
+  const { student } = useContext(UserContext);
+  const [viewState, setViewState] = useState<ViewState>('menu');
 
   // Inputs
+  const [creationMode, setCreationMode] = useState<CreationMode | null>(null);
   const [selectedEmojis, setSelectedEmojis] = useState<string[]>([]);
   const [vocalDescription, setVocalDescription] = useState('');
   const [length, setLength] = useState<StoryLength>('courte');
@@ -80,12 +87,16 @@ export default function StoryBoxPage() {
   // Story state
   const [isLoading, setIsLoading] = useState(false);
   const [story, setStory] = useState<StoryOutput | null>(null);
+  const [storyInput, setStoryInput] = useState<StoryInput | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Library State
+  const [savedStories, setSavedStories] = useState<SavedStory[]>([]);
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
 
   // TTS State
   const [audioState, setAudioState] = useState<AudioState>({});
   const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({});
-
 
   // Image State (Halloween only)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -93,7 +104,6 @@ export default function StoryBoxPage() {
 
   // Display state
   const [showSyllables, setShowSyllables] = useState(false);
-
 
   // Emoji list state
   const [availableEmojis, setAvailableEmojis] = useState<string[]>([]);
@@ -105,14 +115,10 @@ export default function StoryBoxPage() {
       }
   });
 
-
   useEffect(() => {
-    // Generate the emoji list on component mount for the emoji mode
     if (isHalloweenPeriod()) {
-      // During Halloween, use only Halloween emojis
       setAvailableEmojis(halloweenEmojis);
     } else {
-      // Normal period: use base + random extras
       const randomEmojis = getRandomEmojis(extraEmojiPool, 24);
       setAvailableEmojis([...baseEmojis, ...randomEmojis]);
     }
@@ -135,7 +141,7 @@ export default function StoryBoxPage() {
       setError('Veuillez choisir au moins un emoji !');
       return;
     }
-     if (creationMode === 'vocal' && vocalDescription.trim() === '') {
+    if (creationMode === 'vocal' && vocalDescription.trim() === '') {
       setError('Veuillez décrire votre histoire !');
       return;
     }
@@ -144,7 +150,7 @@ export default function StoryBoxPage() {
     setIsLoading(true);
     setStory(null);
     setAudioState({});
-    setImageUrl(null); // Reset image on new story
+    setImageUrl(null);
 
     const input: StoryInput = {
       emojis: creationMode === 'emoji' ? selectedEmojis : undefined,
@@ -152,10 +158,17 @@ export default function StoryBoxPage() {
       length,
       tone,
     };
+    setStoryInput(input);
     
     try {
       const result = await generateStory(input);
       setStory(result);
+      setViewState('reading');
+      
+      // Auto-save medium and long stories
+      if (student && (length === 'moyenne' || length === 'longue')) {
+        await saveStory(student, result, input);
+      }
     } catch(e) {
       console.error(e);
       setError('Une erreur est survenue lors de la création de l\'histoire. Veuillez réessayer.');
@@ -163,7 +176,7 @@ export default function StoryBoxPage() {
       setIsLoading(false);
     }
   };
-  
+
   const handleGenerateAudio = async (text: string, index: number) => {
     if (!text) return;
     
@@ -187,41 +200,37 @@ export default function StoryBoxPage() {
   };
 
   const handleGenerateImage = async () => {
-      if (!story) return;
-      setIsGeneratingImage(true);
-      setError(null);
-      // We don't reset the image URL here so the old one stays visible during generation
-      try {
-          const imageInput: ImageInput = {
-              storyTitle: story.title,
-              storyContent: story.story,
-              tone,
-          };
-          const result = await generateImage(imageInput);
-          setImageUrl(result.imageUrl);
-      } catch (e) {
-          console.error("Image generation failed:", e);
-          setError("Impossible de générer l'illustration pour cette histoire.");
-      } finally {
-          setIsGeneratingImage(false);
-      }
+    if (!story) return;
+    setIsGeneratingImage(true);
+    setError(null);
+    try {
+      const imageInput: ImageInput = {
+        storyTitle: story.title,
+        storyContent: story.story,
+        tone,
+      };
+      const result = await generateImage(imageInput);
+      setImageUrl(result.imageUrl);
+    } catch (e) {
+      console.error("Image generation failed:", e);
+      setError("Impossible de générer l'illustration pour cette histoire.");
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   useEffect(() => {
-    // This effect ensures the audio plays automatically once it's loaded
     Object.keys(audioState).forEach(key => {
-        const index = parseInt(key, 10);
-        const state = audioState[index];
-        if (state && state.dataUri && audioRefs.current[index]) {
-            // Check if audio is new by seeing if src is different
-            if (audioRefs.current[index]!.src !== state.dataUri) {
-                audioRefs.current[index]!.src = state.dataUri;
-                audioRefs.current[index]!.play().catch(e => console.error("Audio play failed:", e));
-            }
+      const index = parseInt(key, 10);
+      const state = audioState[index];
+      if (state && state.dataUri && audioRefs.current[index]) {
+        if (audioRefs.current[index]!.src !== state.dataUri) {
+          audioRefs.current[index]!.src = state.dataUri;
+          audioRefs.current[index]!.play().catch(e => console.error("Audio play failed:", e));
         }
+      }
     });
   }, [audioState]);
-
 
   const getFontSize = () => {
     switch (length) {
@@ -231,12 +240,10 @@ export default function StoryBoxPage() {
       case 'longue': return 'text-base leading-relaxed';
       default: return 'text-lg';
     }
-  }
+  };
 
   const openImmersiveReader = () => {
     if (!story) return;
-
-    // This creates a data URI with simple HTML content to launch in Edge's immersive reader.
     const content = `
         <!DOCTYPE html>
         <html>
@@ -250,43 +257,66 @@ export default function StoryBoxPage() {
         </body>
         </html>
     `;
-    
     const dataUri = `data:text/html,${encodeURIComponent(content)}`;
     window.location.href = `read:${dataUri}`;
   };
 
-  const resetAll = () => {
-      setCreationMode(null);
-      setSelectedEmojis([]);
-      setVocalDescription('');
-      setStory(null);
-      setError(null);
-      setAudioState({});
-      audioRefs.current = {};
-      setImageUrl(null);
-  }
+  const resetCreation = () => {
+    setCreationMode(null);
+    setSelectedEmojis([]);
+    setVocalDescription('');
+    setStory(null);
+    setError(null);
+    setAudioState({});
+    audioRefs.current = {};
+    setImageUrl(null);
+    setStoryInput(null);
+    setViewState('menu');
+  };
 
-  if (story) {
+  const handleOpenLibrary = async () => {
+    setIsLoadingLibrary(true);
+    setViewState('library');
+    try {
+        const stories = await getSavedStories();
+        setSavedStories(stories);
+    } catch(e) {
+        setError("Impossible de charger les histoires sauvegardées.");
+    } finally {
+        setIsLoadingLibrary(false);
+    }
+  };
+
+  const handleReadStory = (savedStory: SavedStory) => {
+    setStory(savedStory.content);
+    setStoryInput({
+        emojis: savedStory.emojis,
+        description: savedStory.description,
+        length: savedStory.content.story.length > 1500 ? 'longue' : (savedStory.content.story.length > 500 ? 'moyenne' : 'courte'),
+        tone: 'aventure' // Placeholder, tone is not saved yet.
+    });
+    setViewState('reading');
+  };
+
+  if (viewState === 'reading' && story) {
     const paragraphs = story.story.split('\n').filter(p => p.trim() !== '');
-
     return (
       <main className="flex min-h-screen w-full flex-col p-4 sm:p-8 bg-background">
         <div className="flex gap-2 mb-8">
-            <Button onClick={() => setStory(null)} variant="outline">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Retourner
+            <Button onClick={() => setViewState(previous => previous === 'reading' ? 'menu' : 'reading')} variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Retour
             </Button>
             <Button onClick={openImmersiveReader} variant="secondary">
-            <BookOpen className="mr-2 h-4 w-4" /> Lecteur immersif
+                <BookOpen className="mr-2 h-4 w-4" /> Lecteur immersif
             </Button>
             <Button onClick={() => setShowSyllables(prev => !prev)} variant={showSyllables ? "default" : "secondary"}>
-            <SyllableText text="Syllabes" />
+                <SyllableText text="Syllabes" />
             </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          
-          {/* Character Sidebar */}
-          <div className="lg:col-span-1 lg:sticky lg:top-8 self-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[250px,1fr,250px] gap-8">
+          {/* Character Sidebar (Left) */}
+          <div className="lg:sticky lg:top-8 self-start order-2 lg:order-1">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-headline"><Users />Personnages</CardTitle>
@@ -314,24 +344,26 @@ export default function StoryBoxPage() {
                     </ul>
                   </TooltipProvider>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Aucun personnage principal détecté dans cette histoire.</p>
+                  <p className="text-sm text-muted-foreground">Aucun personnage principal détecté.</p>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Story Content */}
-          <div className="lg:col-span-3">
+          {/* Story Content (Center) */}
+          <div className="order-1 lg:order-2">
             <Card className="shadow-xl">
                 <CardHeader className="text-center">
+                    {storyInput && (
                     <div className="mb-4 flex justify-center items-center gap-2 text-3xl">
-                    <span className="text-sm font-medium text-muted-foreground">Inspiration :</span>
-                    {creationMode === 'emoji' ? selectedEmojis.map(emoji => (
-                        <span key={emoji}>{emoji}</span>
-                    )) : (
-                        <p className="text-base italic text-muted-foreground">"{vocalDescription}"</p>
-                    )}
+                        <span className="text-sm font-medium text-muted-foreground">Inspiration :</span>
+                        {storyInput.emojis && storyInput.emojis.length > 0 ? storyInput.emojis.map(emoji => (
+                            <span key={emoji}>{emoji}</span>
+                        )) : (
+                            <p className="text-base italic text-muted-foreground">"{storyInput.description}"</p>
+                        )}
                     </div>
+                    )}
                 <CardTitle className="font-headline text-4xl">{story.title}</CardTitle>
                 <div className="flex justify-center gap-3 mt-4 flex-wrap">
                     <Button onClick={() => handleGenerateAudio(story.title, -1)} disabled={audioState[-1]?.isLoading}>
@@ -383,8 +415,8 @@ export default function StoryBoxPage() {
             </Card>
           </div>
 
-          {/* Illustration Sidebar */}
-          <div className="lg:col-span-1 lg:sticky lg:top-8 self-start">
+          {/* Illustration Sidebar (Right) */}
+          <div className="lg:sticky lg:top-8 self-start order-3">
              {isHalloweenPeriod() && (
                 <Card>
                     <CardHeader>
@@ -417,186 +449,249 @@ export default function StoryBoxPage() {
 
   const halloweenClass = isHalloweenPeriod() ? 'halloween-mode' : '';
 
+  if(viewState === 'library') {
+    return (
+      <main className={`flex min-h-screen w-full flex-col items-center p-4 sm:p-8 ${isHalloweenPeriod() ? 'bg-[#1a0f0a]' : 'bg-background'} ${halloweenClass}`}>
+        <div className="w-full max-w-4xl">
+            <Button onClick={() => setViewState('menu')} variant="outline" className={isHalloweenPeriod() ? 'halloween-button' : ''}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Retour
+            </Button>
+            <h2 className={`font-headline text-4xl text-center my-8 ${isHalloweenPeriod() ? 'halloween-title' : ''}`}>Bibliothèque d'histoires</h2>
+            {isLoadingLibrary ? (
+                <Loader2 className="mx-auto h-12 w-12 animate-spin"/>
+            ) : savedStories.length === 0 ? (
+                <p className="text-center text-muted-foreground">Aucune histoire n'a encore été sauvegardée.</p>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {savedStories.map(s => (
+                        <Card key={s.id} className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow" onClick={() => handleReadStory(s)}>
+                            <CardHeader>
+                                <CardTitle>{s.title}</CardTitle>
+                                <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={s.authorShowPhoto ? s.authorPhotoURL : undefined} />
+                                        <AvatarFallback>{s.authorName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-semibold">{s.authorName}</p>
+                                        <p className="text-xs">{formatDistanceToNow(new Date(s.createdAt), { addSuffix: true, locale: fr })}</p>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
+                            </CardContent>
+                            <CardFooter>
+                                {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
+      </main>
+    );
+  }
+
+  // Fallback to menu view
   return (
-    <main className={`flex min-h-screen w-full flex-col items-center p-4 sm:p-8 ${isHalloweenPeriod() ? 'bg-[#1a0f0a]' : 'bg-background'} ${halloweenClass}`}>
+    <main className={`flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 ${isHalloweenPeriod() ? 'bg-[#1a0f0a]' : 'bg-background'} ${halloweenClass}`}>
       <div className="w-full max-w-3xl">
-         <Button asChild variant="outline" className={isHalloweenPeriod() ? 'halloween-button' : ''}>
+         <Button asChild variant="outline" className={`absolute top-8 left-8 ${isHalloweenPeriod() ? 'halloween-button' : ''}`}>
             <Link href="/">
              <ArrowLeft className="mr-2 h-4 w-4" /> Retour à l'accueil
             </Link>
          </Button>
-        <Card className={`mt-8 shadow-xl ${isHalloweenPeriod() ? 'halloween-card' : ''}`}>
-          <CardHeader className="text-center">
-            {isHalloweenPeriod() ? (
-              <div className="halloween-header">
-                <CardTitle className="font-headline text-4xl halloween-title">La Boîte Maudite</CardTitle>
-                <CardDescription className="text-lg halloween-subtitle">
-                  Ose ouvrir cette boîte ancienne et libère les histoires interdites...
-                </CardDescription>
-              </div>
-            ) : (
-              <>
-                <div className="mx-auto bg-primary/20 text-primary p-3 rounded-full w-fit mb-4">
-                    <Wand2 className="h-8 w-8"/>
-                </div>
-                <CardTitle className="font-headline text-4xl">La Boîte à Histoires</CardTitle>
-                <CardDescription className="text-lg">
-                  Choisis tes ingrédients et crée une histoire unique !
-                </CardDescription>
-              </>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-8">
-            {!creationMode ? (
-                 <div className="space-y-3 pt-6">
-                    <Label className="text-lg font-semibold text-center block">Comment veux-tu créer ton histoire ?</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                        <Button variant="outline" className="h-28 flex-col gap-2 text-lg" onClick={() => setCreationMode('emoji')}>
-                            <Smile className="h-8 w-8 text-primary"/>
-                            Avec des Emojis
-                        </Button>
-                        <Button variant="outline" className="h-28 flex-col gap-2 text-lg" onClick={() => setCreationMode('vocal')}>
-                            <MessageSquareText className="h-8 w-8 text-primary"/>
-                            Avec ma voix
-                        </Button>
-                    </div>
-                </div>
-            ) : (
-             <>
-                {/* Inspiration Section */}
-                <div className="space-y-3">
-                  <Label className="text-lg font-semibold">1. Décris ton histoire ou choisis des images :</Label>
-                   <Button variant="link" size="sm" onClick={() => setCreationMode(null)}>(Changer de mode)</Button>
-                  {creationMode === 'emoji' ? (
-                      <Card className="p-4 bg-muted/50">
-                        <div className="flex flex-wrap gap-3 justify-center">
-                          {availableEmojis.map((emoji) => (
-                            <button
-                              key={emoji}
-                              onClick={() => handleEmojiClick(emoji)}
-                              className={cn(
-                                'text-4xl p-2 rounded-lg transition-all transform hover:scale-110',
-                                selectedEmojis.includes(emoji)
-                                  ? 'bg-primary/20 ring-2 ring-primary'
-                                  : 'bg-background'
-                              )}
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      </Card>
-                  ) : (
-                      <div className="flex flex-col items-center gap-4">
-                        <Textarea 
-                            value={vocalDescription}
-                            onChange={(e) => setVocalDescription(e.target.value)}
-                            placeholder="Décris les personnages, le lieu, et ce qu'il se passe..."
-                            rows={3}
-                            className="text-base"
-                        />
-                        <Button onClick={isListening ? stopListening : startListening} disabled={!isSupported} variant={isListening ? "destructive" : "outline"}>
-                            {isListening ? <MicOff className="mr-2"/> : <Mic className="mr-2"/>}
-                            {isListening ? 'Arrêter la dictée' : 'Commencer la dictée'}
-                        </Button>
-                         {!isSupported && <p className="text-xs text-destructive">La reconnaissance vocale n'est pas supportée par ce navigateur.</p>}
-                      </div>
-                  )}
-                </div>
-                
-                {/* Length Selection */}
-                <div className="space-y-3">
-                    <Label className="text-lg font-semibold">2. Choisis la longueur de l'histoire :</Label>
-                     <RadioGroup value={length} onValueChange={(v) => setLength(v as StoryLength)} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                            <RadioGroupItem value="extra-courte" id="extra-courte" className="sr-only" />
-                            <Label htmlFor="extra-courte" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'extra-courte' && 'border-primary')}>
-                                <FileQuestion className="h-8 w-8 mb-2"/> Extra Courte
-                            </Label>
-                        </div>
-                        <div>
-                            <RadioGroupItem value="courte" id="courte" className="sr-only" />
-                            <Label htmlFor="courte" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'courte' && 'border-primary')}>
-                                <File className="h-8 w-8 mb-2"/> Courte
-                            </Label>
-                        </div>
-                         <div>
-                            <RadioGroupItem value="moyenne" id="moyenne" className="sr-only" />
-                            <Label htmlFor="moyenne" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'moyenne' && 'border-primary')}>
-                                <FileText className="h-8 w-8 mb-2"/> Moyenne
-                            </Label>
-                        </div>
-                         <div>
-                            <RadioGroupItem value="longue" id="longue" className="sr-only" />
-                            <Label htmlFor="longue" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'longue' && 'border-primary')}>
-                               <FilePlus className="h-8 w-8 mb-2"/> Longue
-                            </Label>
-                        </div>
-                     </RadioGroup>
-                </div>
 
-                 {/* Tone Selection */}
-                <div className="space-y-3">
-                    <Label className="text-lg font-semibold">3. Choisis le ton de l'histoire :</Label>
-                     {isHalloweenPeriod() ? (
-                       <RadioGroup value={tone} onValueChange={(v) => setTone(v as StoryTone)} className="grid grid-cols-3 gap-4">
-                          <div>
-                              <RadioGroupItem value="effrayante" id="effrayante" className="sr-only" />
-                              <Label htmlFor="effrayante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'effrayante' && 'border-primary')}>
-                                  <Ghost className="h-8 w-8 mb-2"/> Effrayante
-                              </Label>
-                          </div>
-                          <div>
-                              <RadioGroupItem value="terrifiante" id="terrifiante" className="sr-only" />
-                              <Label htmlFor="terrifiante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'terrifiante' && 'border-primary')}>
-                                  <Ghost className="h-8 w-8 mb-2"/> Terrifiante
-                              </Label>
-                          </div>
-                          <div>
-                              <RadioGroupItem value="cauchemardesque" id="cauchemardesque" className="sr-only" />
-                              <Label htmlFor="cauchemardesque" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer relative", tone === 'cauchemardesque' && 'border-primary')}>
-                                  <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded">10+</div>
-                                  <Ghost className="h-8 w-8 mb-2"/> Cauchemardesque
-                              </Label>
-                          </div>
-                       </RadioGroup>
-                     ) : (
-                       <RadioGroup value={tone} onValueChange={(v) => setTone(v as StoryTone)} className="grid grid-cols-3 gap-4">
-                          <div>
-                              <RadioGroupItem value="aventure" id="aventure" className="sr-only" />
-                              <Label htmlFor="aventure" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'aventure' && 'border-primary')}>
-                                  <Swords className="h-8 w-8 mb-2"/> Aventure
-                              </Label>
-                          </div>
-                           <div>
-                              <RadioGroupItem value="comique" id="comique" className="sr-only" />
-                              <Label htmlFor="comique" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'comique' && 'border-primary')}>
-                                 <Drama className="h-8 w-8 mb-2"/> Comique
-                              </Label>
-                          </div>
-                           <div>
-                              <RadioGroupItem value="effrayante" id="effrayante" className="sr-only" />
-                              <Label htmlFor="effrayante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'effrayante' && 'border-primary')}>
-                                  <Ghost className="h-8 w-8 mb-2"/> Effrayante
-                              </Label>
-                          </div>
-                       </RadioGroup>
-                     )}
-                </div>
-                
-                {/* Action Button */}
-                <div className="pt-4 text-center">
-                     <Button size="lg" onClick={handleGenerateStory} disabled={isLoading} className="text-xl py-7">
-                        {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Sparkles className="mr-2 h-6 w-6" />}
-                        {isLoading ? 'Création en cours...' : 'Écrire l\'histoire !'}
+        {viewState === 'menu' ? (
+             <Card className={`mt-8 shadow-xl ${isHalloweenPeriod() ? 'halloween-card' : ''}`}>
+                <CardHeader className="text-center">
+                    {isHalloweenPeriod() ? (
+                        <div className="halloween-header">
+                            <CardTitle className="font-headline text-4xl halloween-title">La Boîte Maudite</CardTitle>
+                            <CardDescription className="text-lg halloween-subtitle">
+                            Ose ouvrir cette boîte ancienne et libère les histoires interdites...
+                            </CardDescription>
+                        </div>
+                        ) : (
+                        <>
+                            <div className="mx-auto bg-primary/20 text-primary p-3 rounded-full w-fit mb-4">
+                                <BookHeart className="h-8 w-8"/>
+                            </div>
+                            <CardTitle className="font-headline text-4xl">La Boîte à Histoires</CardTitle>
+                        </>
+                    )}
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
+                     <Button variant="outline" className="h-32 flex-col gap-2 text-xl" onClick={() => setViewState('creation')}>
+                        <Wand2 className="h-10 w-10 text-primary"/>
+                        Créer une histoire
                     </Button>
-                    {error && <p className="text-destructive mt-4">{error}</p>}
-                </div>
-             </>
-            )}
+                     <Button variant="outline" className="h-32 flex-col gap-2 text-xl" onClick={handleOpenLibrary}>
+                        <BookOpen className="h-10 w-10 text-primary"/>
+                        Histoires sauvegardées
+                    </Button>
+                </CardContent>
+            </Card>
+        ) : ( // viewState === 'creation'
+            <Card className={`mt-8 shadow-xl ${isHalloweenPeriod() ? 'halloween-card' : ''}`}>
+            <CardHeader className="text-center">
+                <CardTitle className="font-headline text-4xl">Nouvelle Histoire</CardTitle>
+                <CardDescription className="text-lg">
+                    Choisis tes ingrédients et crée une histoire unique !
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+                {!creationMode ? (
+                    <div className="space-y-3 pt-6">
+                        <Label className="text-lg font-semibold text-center block">Comment veux-tu créer ton histoire ?</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                            <Button variant="outline" className="h-28 flex-col gap-2 text-lg" onClick={() => setCreationMode('emoji')}>
+                                <Smile className="h-8 w-8 text-primary"/>
+                                Avec des Emojis
+                            </Button>
+                            <Button variant="outline" className="h-28 flex-col gap-2 text-lg" onClick={() => setCreationMode('vocal')}>
+                                <MessageSquareText className="h-8 w-8 text-primary"/>
+                                Avec ma voix
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                <>
+                    {/* Inspiration Section */}
+                    <div className="space-y-3">
+                    <Label className="text-lg font-semibold">1. Décris ton histoire ou choisis des images :</Label>
+                    <Button variant="link" size="sm" onClick={() => setCreationMode(null)}>(Changer de mode)</Button>
+                    {creationMode === 'emoji' ? (
+                        <Card className="p-4 bg-muted/50">
+                            <div className="flex flex-wrap gap-3 justify-center">
+                            {availableEmojis.map((emoji) => (
+                                <button
+                                key={emoji}
+                                onClick={() => handleEmojiClick(emoji)}
+                                className={cn(
+                                    'text-4xl p-2 rounded-lg transition-all transform hover:scale-110',
+                                    selectedEmojis.includes(emoji)
+                                    ? 'bg-primary/20 ring-2 ring-primary'
+                                    : 'bg-background'
+                                )}
+                                >
+                                {emoji}
+                                </button>
+                            ))}
+                            </div>
+                        </Card>
+                    ) : (
+                        <div className="flex flex-col items-center gap-4">
+                            <Textarea 
+                                value={vocalDescription}
+                                onChange={(e) => setVocalDescription(e.target.value)}
+                                placeholder="Décris les personnages, le lieu, et ce qu'il se passe..."
+                                rows={3}
+                                className="text-base"
+                            />
+                            <Button onClick={isListening ? stopListening : startListening} disabled={!isSupported} variant={isListening ? "destructive" : "outline"}>
+                                {isListening ? <MicOff className="mr-2"/> : <Mic className="mr-2"/>}
+                                {isListening ? 'Arrêter la dictée' : 'Commencer la dictée'}
+                            </Button>
+                            {!isSupported && <p className="text-xs text-destructive">La reconnaissance vocale n'est pas supportée par ce navigateur.</p>}
+                        </div>
+                    )}
+                    </div>
+                    
+                    {/* Length Selection */}
+                    <div className="space-y-3">
+                        <Label className="text-lg font-semibold">2. Choisis la longueur de l'histoire :</Label>
+                        <RadioGroup value={length} onValueChange={(v) => setLength(v as StoryLength)} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <RadioGroupItem value="extra-courte" id="extra-courte" className="sr-only" />
+                                <Label htmlFor="extra-courte" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'extra-courte' && 'border-primary')}>
+                                    <FileQuestion className="h-8 w-8 mb-2"/> Extra Courte
+                                </Label>
+                            </div>
+                            <div>
+                                <RadioGroupItem value="courte" id="courte" className="sr-only" />
+                                <Label htmlFor="courte" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'courte' && 'border-primary')}>
+                                    <File className="h-8 w-8 mb-2"/> Courte
+                                </Label>
+                            </div>
+                            <div>
+                                <RadioGroupItem value="moyenne" id="moyenne" className="sr-only" />
+                                <Label htmlFor="moyenne" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'moyenne' && 'border-primary')}>
+                                    <FileText className="h-8 w-8 mb-2"/> Moyenne
+                                </Label>
+                            </div>
+                            <div>
+                                <RadioGroupItem value="longue" id="longue" className="sr-only" />
+                                <Label htmlFor="longue" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'longue' && 'border-primary')}>
+                                <FilePlus className="h-8 w-8 mb-2"/> Longue
+                                </Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
 
-          </CardContent>
-        </Card>
+                    {/* Tone Selection */}
+                    <div className="space-y-3">
+                        <Label className="text-lg font-semibold">3. Choisis le ton de l'histoire :</Label>
+                        {isHalloweenPeriod() ? (
+                        <RadioGroup value={tone} onValueChange={(v) => setTone(v as StoryTone)} className="grid grid-cols-3 gap-4">
+                            <div>
+                                <RadioGroupItem value="effrayante" id="effrayante" className="sr-only" />
+                                <Label htmlFor="effrayante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'effrayante' && 'border-primary')}>
+                                    <Ghost className="h-8 w-8 mb-2"/> Effrayante
+                                </Label>
+                            </div>
+                            <div>
+                                <RadioGroupItem value="terrifiante" id="terrifiante" className="sr-only" />
+                                <Label htmlFor="terrifiante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'terrifiante' && 'border-primary')}>
+                                    <Ghost className="h-8 w-8 mb-2"/> Terrifiante
+                                </Label>
+                            </div>
+                            <div>
+                                <RadioGroupItem value="cauchemardesque" id="cauchemardesque" className="sr-only" />
+                                <Label htmlFor="cauchemardesque" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer relative", tone === 'cauchemardesque' && 'border-primary')}>
+                                    <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded">10+</div>
+                                    <Ghost className="h-8 w-8 mb-2"/> Cauchemardesque
+                                </Label>
+                            </div>
+                        </RadioGroup>
+                        ) : (
+                        <RadioGroup value={tone} onValueChange={(v) => setTone(v as StoryTone)} className="grid grid-cols-3 gap-4">
+                            <div>
+                                <RadioGroupItem value="aventure" id="aventure" className="sr-only" />
+                                <Label htmlFor="aventure" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'aventure' && 'border-primary')}>
+                                    <Swords className="h-8 w-8 mb-2"/> Aventure
+                                </Label>
+                            </div>
+                            <div>
+                                <RadioGroupItem value="comique" id="comique" className="sr-only" />
+                                <Label htmlFor="comique" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'comique' && 'border-primary')}>
+                                <Drama className="h-8 w-8 mb-2"/> Comique
+                                </Label>
+                            </div>
+                            <div>
+                                <RadioGroupItem value="effrayante" id="effrayante" className="sr-only" />
+                                <Label htmlFor="effrayante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'effrayante' && 'border-primary')}>
+                                    <Ghost className="h-8 w-8 mb-2"/> Effrayante
+                                </Label>
+                            </div>
+                        </RadioGroup>
+                        )}
+                    </div>
+                    
+                    {/* Action Button */}
+                    <div className="pt-4 text-center">
+                        <Button size="lg" onClick={handleGenerateStory} disabled={isLoading} className="text-xl py-7">
+                            {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Sparkles className="mr-2 h-6 w-6" />}
+                            {isLoading ? 'Création en cours...' : 'Écrire l\'histoire !'}
+                        </Button>
+                        {error && <p className="text-destructive mt-4">{error}</p>}
+                    </div>
+                </>
+                )}
+            </CardContent>
+            </Card>
+        )}
       </div>
     </main>
   );
