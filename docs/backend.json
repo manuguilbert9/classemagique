@@ -1,0 +1,153 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the SkillFiesta application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.",
+          "format": "uuid"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "profilePictureUrl": {
+          "type": "string",
+          "description": "URL to the user's profile picture. Can be null if the user hasn't set one.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "firstName"
+      ]
+    },
+    "SavedStory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SavedStory",
+      "type": "object",
+      "description": "Represents a saved story within the SkillFiesta application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the saved story."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the User who created the story."
+        },
+        "authorName": {
+            "type": "string",
+            "description": "Name of the author."
+        },
+        "authorPhotoURL": {
+            "type": "string",
+            "description": "URL of the author's profile picture."
+        },
+         "authorShowPhoto": {
+            "type": "boolean",
+            "description": "Whether to show the author's profile picture."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the story."
+        },
+        "content": {
+          "type": "object",
+          "description": "The full story object, including content, moral, and characters.",
+           "properties": {
+                "title": { "type": "string" },
+                "story": { "type": "string" },
+                "moral": { "type": "string" },
+                "characters": { 
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": { "type": "string" },
+                            "appearance": { "type": "string" },
+                            "character": { "type": "string" },
+                            "motivation": { "type": "string" }
+                        },
+                        "required": ["name", "appearance", "character", "motivation"]
+                    }
+                }
+            },
+            "required": ["title", "story", "moral", "characters"]
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the generated illustration for the story.",
+          "format": "uri"
+        },
+        "emojis": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Emojis used to generate the story."
+        },
+        "description": {
+            "type": "string",
+            "description": "Vocal description used to generate the story."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the story was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "authorName",
+        "title",
+        "content",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Path-based ownership ensures only the user can modify their profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/saved_stories/{storyId}",
+        "definition": {
+          "entityName": "SavedStory",
+          "schema": {
+            "$ref": "#/backend/entities/SavedStory"
+          },
+          "description": "Stores shared saved stories. Includes denormalized author data for easy display.",
+          "params": [
+            {
+              "name": "storyId",
+              "description": "The unique identifier of the saved story."
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
