@@ -21,8 +21,9 @@ export type StoryInput = z.infer<typeof StoryInputSchema>;
 
 const CharacterSchema = z.object({
     name: z.string().describe("Le nom du personnage."),
-    physicalDescription: z.string().describe("Une brève description physique du personnage (2-3 adjectifs)."),
-    psychologicalDescription: z.string().describe("Une brève description psychologique du personnage (2-3 adjectifs)."),
+    appearance: z.string().describe("Une description de l'apparence du personnage (2-3 éléments visuels)."),
+    character: z.string().describe("Une description du caractère et du tempérament du personnage (2-3 traits de personnalité)."),
+    motivation: z.string().describe("Un secret, un objectif ou une motivation qui le rend intéressant."),
 });
 
 const StoryOutputSchema = z.object({
@@ -53,7 +54,7 @@ const promptForKids = ai.definePrompt({
   name: 'storyPromptForKids',
   input: { schema: StoryInputSchema },
   output: { schema: StoryOutputSchema },
-  prompt: `Tu es un conteur pour enfants, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un jeune public (environ 8-12 ans).
+  prompt: `Tu es un conteur pour enfants, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un jeune public (environ 8-12 ans). Tu es aussi un expert en création de personnages mémorables.
 
 Ta mission est de rédiger une histoire originale en français.
 
@@ -73,9 +74,13 @@ Ne mentionne pas les emojis ou la description directement dans le texte, utilise
 
 4.  **Structure** : L'histoire doit avoir un début, un développement et une fin claire.
 
-5.  **Personnages** :
-    -   IMPORTANT : Varie les prénoms des personnages principaux. Ne pas toujours utiliser "Léo". Utilise une grande variété de prénoms français modernes et classiques : Emma, Lucas, Chloé, Nathan, Inès, Hugo, Manon, Arthur, Zoé, Louis, Camille, Gabriel, Léa, Tom, Sarah, Maxime, etc. Change de prénom à chaque histoire.
-    -   À la fin de ton processus, identifie **tous** les personnages de l'histoire. Pour chacun, fournis une très brève description physique et psychologique (2-3 adjectifs chacun).
+5.  **Personnages (instruction TRÈS importante)** :
+    -   Varie les prénoms des personnages principaux. N'utilise pas toujours "Léo". Utilise une grande variété de prénoms français modernes et classiques. Change de prénom à chaque histoire.
+    -   À la fin de ton processus, identifie **tous** les personnages de l'histoire. Pour chacun, fournis une fiche de personnage détaillée :
+        -   **name**: Le nom du personnage.
+        -   **appearance**: Une description de son apparence (ex: "cheveux en bataille", "porte toujours un foulard rouge", "yeux rieurs").
+        -   **character**: Une description de son caractère (ex: "curieux et un peu maladroit", "courageuse mais secrètement timide", "toujours optimiste").
+        -   **motivation**: Son objectif principal, son secret, ou ce qui le rend unique (ex: "rêve de voler", "cherche un trésor perdu", "peut parler aux animaux").
     -   Liste ces personnages dans le champ 'characters' dans leur ordre d'apparition.
 
 6.  **Morale** : À la fin de l'histoire, rédige une morale claire et simple en rapport avec les événements du récit. Ne la mélange pas avec l'histoire, mais présente-la séparément.
@@ -93,7 +98,7 @@ const promptForTeens = ai.definePrompt({
   name: 'storyPromptForTeens',
   input: { schema: StoryInputSchema },
   output: { schema: StoryOutputSchema },
-  prompt: `Tu es un conteur pour ados, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un public jeune (pas de détails sordides).
+  prompt: `Tu es un conteur pour ados, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un public jeune (pas de détails sordides). Tu es aussi un expert en création de personnages mémorables.
 
 Ta mission est de rédiger une histoire originale en français.
 
@@ -113,9 +118,13 @@ Ne mentionne pas les emojis ou la description directement dans le texte, utilise
 
 4.  **Structure** : L'histoire doit avoir un début, un développement et une fin claire.
 
-5.  **Personnages** :
-    -   IMPORTANT : Varie les prénoms des personnages principaux. Ne pas toujours utiliser "Léo". Utilise une grande variété de prénoms français modernes et classiques : Emma, Lucas, Chloé, Nathan, Inès, Hugo, Manon, Arthur, Zoé, Louis, Camille, Gabriel, Léa, Tom, Sarah, Maxime, etc. Change de prénom à chaque histoire.
-    -   À la fin de ton processus, identifie **tous** les personnages de l'histoire. Pour chacun, fournis une très brève description physique et psychologique (2-3 adjectifs chacun).
+5.  **Personnages (instruction TRÈS importante)** :
+    -   Varie les prénoms des personnages principaux. N'utilise pas toujours "Léo". Utilise une grande variété de prénoms français modernes et classiques. Change de prénom à chaque histoire.
+    -   À la fin de ton processus, identifie **tous** les personnages de l'histoire. Pour chacun, fournis une fiche de personnage détaillée :
+        -   **name**: Le nom du personnage.
+        -   **appearance**: Une description de son apparence (ex: "cheveux en bataille", "porte toujours un foulard rouge", "yeux rieurs").
+        -   **character**: Une description de son caractère (ex: "curieux et un peu maladroit", "courageuse mais secrètement timide", "toujours optimiste").
+        -   **motivation**: Son objectif principal, son secret, ou ce qui le rend unique (ex: "rêve de voler", "cherche un trésor perdu", "peut parler aux animaux").
     -   Liste ces personnages dans le champ 'characters' dans leur ordre d'apparition.
 
 6.  **Morale** : À la fin de l'histoire, rédige une morale claire et simple en rapport avec les événements du récit. Ne la mélange pas avec l'histoire, mais présente-la séparément.

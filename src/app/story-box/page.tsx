@@ -144,6 +144,7 @@ export default function StoryBoxPage() {
     setIsLoading(true);
     setStory(null);
     setAudioState({});
+    setImageUrl(null); // Reset image on new story
 
     const input: StoryInput = {
       emojis: creationMode === 'emoji' ? selectedEmojis : undefined,
@@ -186,9 +187,10 @@ export default function StoryBoxPage() {
   };
 
   const handleGenerateImage = async () => {
-      if (!story || isGeneratingImage) return;
+      if (!story) return;
       setIsGeneratingImage(true);
-      setImageUrl(null);
+      setError(null);
+      // We don't reset the image URL here so the old one stays visible during generation
       try {
           const imageInput: ImageInput = {
               storyTitle: story.title,
@@ -300,9 +302,10 @@ export default function StoryBoxPage() {
                               <span className="font-semibold text-lg cursor-default p-2 rounded-md hover:bg-muted">{char.name}</span>
                             </TooltipTrigger>
                             <TooltipContent side="right" className="w-64">
-                              <div className="space-y-2 p-2">
-                                <p><strong className="font-headline">Physique:</strong> {char.physicalDescription}</p>
-                                <p><strong className="font-headline">Mental:</strong> {char.psychologicalDescription}</p>
+                              <div className="space-y-2 p-2 text-sm">
+                                <p><strong className="font-headline text-base">Apparence:</strong> {char.appearance}</p>
+                                <p><strong className="font-headline text-base">Caractère:</strong> {char.character}</p>
+                                <p><strong className="font-headline text-base">Motivation:</strong> {char.motivation}</p>
                               </div>
                             </TooltipContent>
                           </Tooltip>
@@ -338,7 +341,7 @@ export default function StoryBoxPage() {
                     {isHalloweenPeriod() && (
                     <Button onClick={handleGenerateImage} disabled={isGeneratingImage} variant="secondary">
                         {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
-                        {isGeneratingImage ? 'Création...' : 'Voir l\'illustration'}
+                        {isGeneratingImage ? 'Création...' : (imageUrl ? 'Régénérer l\'illustration' : 'Créer l\'illustration')}
                     </Button>
                     )}
                 </div>
