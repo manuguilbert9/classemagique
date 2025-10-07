@@ -1,85 +1,44 @@
 /**
- * @file Firestore Security Rules for SkillFiesta
+ * @fileoverview Firestore Security Rules for SkillFiesta.
  *
- * @core_philosophy This ruleset enforces a user-ownership model for user profiles,
- *  allowing each user to read and write their own data. It also allows public
- *  read access to saved stories, but restricts modifications to the original author.
+ * Core Philosophy:
+ * This ruleset allows open access to the data without authentication.
  *
- * @data_structure
- * - /users/{userId}: Stores individual user profiles, secured via path-based ownership.
- * - /saved_stories/{storyId}: Stores publicly accessible saved stories with owner-only write access.
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles. This collection is accessible by anyone.
+ * - /saved_stories/{storyId}: Stores shared saved stories. This collection is accessible by anyone.
  *
- * @key_security_decisions
- * - Users can only manage their own profile data.
- * - Listing users is disallowed.
- * - Saved stories are publicly readable to facilitate sharing, but only the author can modify or delete their stories.
- * - Anonymous authentication is the primary method.
- *
- * @denormalization_for_authorization
- * - SavedStory documents contain denormalized 'authorId' and 'authorName' fields to simplify ownership checks.
- *
- * @structural_segregation Public stories are stored in a top-level collection separate from private user data.
+ * Key Security Decisions:
+ * - Authentication is disabled, allowing anyone to read and write to the database.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Allows anyone to read and write to user profiles.
      * @path /users/{userId}
-     * @allow (create) User with ID 'user123' creates their profile.
-     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their own profile.
-     * @deny (create) User with ID 'user123' tries to create a profile for 'anotherUser'.
-     * @deny (get, update, delete) User with ID 'user123' tries to read/update/delete profile 'anotherUser'.
-     * @principle Enforces document ownership for all operations on user profiles.
+     * @allow (get, list)
+     * @allow (create, update, delete)
+     * @deny None
+     * @principle No authentication is used.
      */
     match /users/{userId} {
-      // Verifies the user is signed in.
-      allow get: if isSignedIn() && isOwner(userId);
-      // Allows a user to create their own document if the userId matches the authenticated user's ID.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == request.auth.uid;
-      // Updates are only allowed if the user is signed in and is the owner of the document.
-      allow update: if isSignedIn() && isExistingOwner(userId) && resource.data.id == request.resource.data.id;
-      // Deletes are only allowed if the user is signed in and is the owner of the document.
-      allow delete: if isSignedIn() && isExistingOwner(userId);
-      // Listing users is disallowed.
-      allow list: if false;
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Controls access to saved story documents.
+     * @description Allows anyone to read and write to saved stories.
      * @path /saved_stories/{storyId}
-     * @allow (get, list) Any user can read any saved story.
-     * @allow (create) Any authenticated user can create a saved story with their authorId.
-     * @allow (update, delete) Only the author of the story can update or delete it.
-     * @deny (create) User tries to create a story with mismatched authorId.
-     * @deny (update, delete) User tries to update/delete a story they didn't author.
-     * @principle Allows public read access but restricts modifications to the original author.
+     * @allow (get, list)
+     * @allow (create, update, delete)
+     * @deny None
+     * @principle No authentication is used.
      */
     match /saved_stories/{storyId} {
-      // Allows anyone to read saved stories.
       allow get, list: if true;
-      // Allows a user to create a saved story if the authorId matches the authenticated user's ID.
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      // Allows a user to update or delete a saved story only if they are the author of the story.
-      allow update, delete: if isSignedIn() && resource != null && isOwner(resource.data.authorId);
-    }
-
-    // --- Helper Functions ---
-
-    // Returns true if the user is signed in.
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Returns true if the userId matches the authenticated user's ID.
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // Returns true if the user is the owner of the existing document.
-    function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+      allow create, update, delete: if true;
     }
   }
 }
