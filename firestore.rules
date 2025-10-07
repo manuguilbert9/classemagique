@@ -1,59 +1,80 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset is in prototyping mode and grants broad read and write access to facilitate rapid development.
- * It is crucial to replace these permissive rules with more restrictive ones based on the application's security requirements before deploying to production.
+ * @fileOverview Firestore Security Rules for SkillFiesta.
  *
  * Core Philosophy:
- * This ruleset prioritizes ease of development and testing. It minimizes access restrictions to allow for quick iteration on the application's features.
- * However, this comes at the cost of security, and the rules should be tightened as the application matures.
+ * This ruleset enforces a user-ownership model for user profiles and a public-read, owner-write model for saved stories.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles. Access is restricted to the owner of the profile.
- * - /saved_stories/{storyId}: Stores saved stories. Read access is public, and write access is open for testing.
+ * - /users/{userId}: Stores individual user profiles. Only the user can read/write their own profile.
+ * - /saved_stories/{storyId}: Stores publicly accessible stories, but only the author can create, update, or delete them.
  *
  * Key Security Decisions:
- * - User listing is not explicitly denied, so it defaults to Firebase's default behavior.
- * - All timestamp fields are not validated to allow for maximum flexibility during prototyping.
- * - Write operations are currently open to allow for rapid testing and development. These should be restricted in a production environment.
+ * - Users can only access their own profile data. User listing is disallowed.
+ * - Saved stories are publicly readable, but write access is restricted to the author.
+ * - Data validation is minimized to facilitate rapid prototyping. Only authorization-critical fields are validated.
  *
- * WARNING: These rules are not suitable for production use. They are intended for development and testing purposes only.
+ * Denormalization for Authorization:
+ * - Saved stories denormalize the author's ID directly onto the document to avoid needing a `get()` call to the `users` collection.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages user profiles.
+     * @description Controls access to user profile documents.
      * @path /users/{userId}
-     * @allow (create) A user with ID 'user_abc' can create their profile.
-     * @deny (create) A user with ID 'user_abc' cannot create a profile for 'user_xyz'.
-     * @allow (get, list, update, delete) A user with ID 'user_abc' can read and modify their profile.
-     * @deny (update, delete) A user with ID 'user_abc' cannot modify the profile of 'user_xyz'.
-     * @principle Enforces document ownership for user profiles, allowing users to manage their own data.
+     * @allow (create) - User with ID 'user123' can create their profile if authenticated as 'user123'.
+     * @allow (get, update, delete) - User with ID 'user123' can read/write their profile if authenticated as 'user123'.
+     * @deny (create) - User with ID 'user456' cannot create a profile for 'user123'.
+     * @deny (update, delete) - User with ID 'user456' cannot modify/delete the profile of 'user123'.
+     * @principle Enforces strict user-ownership for profile data.
      */
     match /users/{userId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+      // Helper function to check if the request is from the owner
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Helper function to check if the request is from an existing owner
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; // Prevent listing all users
+
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id; // Enforce immutability of userId
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Manages saved stories.
+     * @description Controls access to saved story documents.
      * @path /saved_stories/{storyId}
-     * @allow (get, list) Any user can read any story.
-     * @allow (create) Any authenticated user can create a story.
-     * @allow (update, delete) Any authenticated user can update or delete a story.
-     * @deny (create) An unauthenticated user cannot create a story.
-     * @principle Allows public read access while restricting write access to authenticated users.
+     * @allow (get, list) - Any user (even unauthenticated) can read/list saved stories.
+     * @allow (create) - Authenticated user 'user123' can create a story with authorId 'user123'.
+     * @allow (update, delete) - Authenticated user 'user123' can modify/delete a story where they are the author.
+     * @deny (create) - Unauthenticated user cannot create a story.
+     * @deny (update, delete) - User 'user456' cannot modify/delete a story authored by 'user123'.
+     * @principle Allows public read access but restricts write access to the author.
      */
     match /saved_stories/{storyId} {
+      // Helper function to check if the request is from the author
+      function isAuthor(authorId) {
+        return request.auth != null && request.auth.uid == authorId;
+      }
+
+      // Helper function to check if the request is from an existing author
+      function isExistingAuthor(authorId) {
+        return isAuthor(authorId) && resource != null;
+      }
+
       allow get: if true;
       allow list: if true;
-      allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      allow update: if isExistingAuthor(resource.data.authorId);
+      allow delete: if isExistingAuthor(resource.data.authorId);
     }
   }
 }
