@@ -220,12 +220,10 @@ export default function StoryBoxPage() {
         const result = await generateImage(imageInput);
         setImageUrl(result.imageUrl);
         
-        // Update the existing story record with the new image URL
-        // The saveStory function handles creating or updating
         await saveStory(student, story, storyInput!, result.imageUrl);
         // If a new story was created and now has an ID, update it
         if (!currentStoryId) {
-            const saved = await getSavedStories(); // This is a bit inefficient, could be improved
+            const saved = await getSavedStories();
             const newStory = saved.find(s => s.title === story.title && s.authorId === student.id);
             if (newStory) setCurrentStoryId(newStory.id);
         }
@@ -395,7 +393,7 @@ export default function StoryBoxPage() {
                 </div>
                  {audioState[-1]?.dataUri && (
                     <div className="flex justify-center pt-4">
-                        <audio controls ref={el => audioRefs.current[-1] = el} src={audioState[-1].dataUri!} />
+                        <audio controls ref={el => { audioRefs.current[-1] = el; }} src={audioState[-1].dataUri!} />
                     </div>
                 )}
                 </CardHeader>
@@ -411,7 +409,7 @@ export default function StoryBoxPage() {
                                 Écouter
                             </Button>
                             {audioState[index]?.dataUri && (
-                                <audio controls ref={el => audioRefs.current[index] = el} src={audioState[index].dataUri!} className="h-8" />
+                                <audio controls ref={el => { audioRefs.current[index] = el; }} src={audioState[index].dataUri!} className="h-8" />
                             )}
                         </div>
                     </div>
@@ -429,7 +427,7 @@ export default function StoryBoxPage() {
                                 Écouter la morale
                         </Button>
                         {audioState[-2]?.dataUri && (
-                             <audio controls ref={el => audioRefs.current[-2] = el} src={audioState[-2].dataUri!} className="h-8" />
+                             <audio controls ref={el => { audioRefs.current[-2] = el; }} src={audioState[-2].dataUri!} className="h-8" />
                         )}
                     </div>
                 </div>
