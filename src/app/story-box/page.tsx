@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart } from 'lucide-react';
@@ -440,10 +441,10 @@ export default function StoryBoxPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {(!imageUrl || isHalloweenPeriod()) && (
+                    {!imageUrl && (
                       <Button onClick={handleGenerateImage} disabled={isGeneratingImage} className="w-full">
                         {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                        {imageUrl ? 'Régénérer' : 'Générer l\'illustration'}
+                        Générer l'illustration
                       </Button>
                     )}
                     {isGeneratingImage && !imageUrl && (
@@ -452,7 +453,14 @@ export default function StoryBoxPage() {
                         </div>
                     )}
                     {imageUrl ? (
-                        <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover" />
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover cursor-pointer hover:opacity-90 transition-opacity" />
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl h-auto p-0">
+                                <img src={imageUrl} alt={story.title} className="w-full h-full object-contain rounded-lg" />
+                            </DialogContent>
+                        </Dialog>
                     ) : (
                         !isGeneratingImage && (
                             <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
@@ -460,7 +468,7 @@ export default function StoryBoxPage() {
                             </div>
                         )
                     )}
-                        {error && <p className="text-destructive text-sm">{error}</p>}
+                    {error && <p className="text-destructive text-sm">{error}</p>}
                 </CardContent>
             </Card>
           </div>
