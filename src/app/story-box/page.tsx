@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart, Trash2, Settings2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart, Trash2, Settings2, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
@@ -116,7 +116,6 @@ export default function StoryBoxPage() {
   // Library State
   const [savedStories, setSavedStories] = useState<SavedStory[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // TTS State
   const [audioState, setAudioState] = useState<AudioState>({});
@@ -217,22 +216,22 @@ export default function StoryBoxPage() {
 
         const existingAudioUrl = currentStory?.audioUrls?.[index];
         
-        const audioEl = audioRefs.current[index];
-        if (audioEl) {
-             if (existingAudioUrl) {
-                if (audioEl.src !== existingAudioUrl) {
-                    audioEl.src = existingAudioUrl;
-                }
-                audioEl.play().catch(e => console.error("Audio play failed:", e));
-                return;
-             }
-             if(audioState[index]?.dataUri) {
-                audioEl.play().catch(e => console.error("Audio play failed:", e));
-                return;
-             }
+        // If audio already exists, play it directly
+        if(existingAudioUrl) {
+            const audio = new Audio(existingAudioUrl);
+            audio.play().catch(e => console.error("Audio play failed:", e));
+            return;
         }
         
+        // If audio is loading, do nothing
         if (audioState[index]?.isLoading) return;
+
+        // If audio data is in state, play it from there
+        if(audioState[index]?.dataUri) {
+            const audio = new Audio(audioState[index].dataUri!);
+            audio.play().catch(e => console.error("Audio play failed:", e));
+            return;
+        }
 
         setAudioState(prev => ({ ...prev, [index]: { isLoading: true, dataUri: null } }));
         setError(null);
@@ -240,6 +239,11 @@ export default function StoryBoxPage() {
         try {
             const result = await generateSpeech({ text, speakingRate });
             
+            // Play the new audio
+            const audio = new Audio(result.audioDataUri);
+            audio.play().catch(e => console.error("Audio play failed:", e));
+
+            // Update state with the new data URI
             setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioDataUri } }));
             
             // Save the new URL to the database if we have a current story context
@@ -297,22 +301,6 @@ export default function StoryBoxPage() {
             setIsGeneratingImage(false);
         }
     };
-
-    useEffect(() => {
-        Object.keys(audioState).forEach(key => {
-            const index = parseInt(key, 10);
-            const state = audioState[index];
-            const audioEl = audioRefs.current[index];
-
-            if (state?.dataUri && audioEl) {
-                if(audioEl.src !== state.dataUri) {
-                    audioEl.src = state.dataUri;
-                }
-                audioEl.play().catch(e => console.error("Audio autoplay failed:", e));
-            }
-        });
-    }, [audioState]);
-
 
   const getFontSize = () => {
     switch (length) {
@@ -486,11 +474,6 @@ export default function StoryBoxPage() {
                         Écouter le titre
                     </Button>
                 </div>
-                 {audioState[-1]?.dataUri && (
-                    <div className="flex justify-center pt-4">
-                        <audio controls ref={el => { audioRefs.current[-1] = el; }} src={audioState[-1].dataUri} />
-                    </div>
-                )}
                 </CardHeader>
                 <CardContent className="space-y-6">
                 {paragraphs.map((paragraph, index) => (
@@ -503,9 +486,6 @@ export default function StoryBoxPage() {
                                 {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                                 Écouter
                             </Button>
-                             {audioState[index]?.dataUri && (
-                                <audio controls ref={el => { audioRefs.current[index] = el; }} src={audioState[index]?.dataUri} className="h-8" />
-                            )}
                         </div>
                     </div>
                 ))}
@@ -521,9 +501,6 @@ export default function StoryBoxPage() {
                                 {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                                 Écouter la morale
                         </Button>
-                         {audioState[-2]?.dataUri && (
-                             <audio controls ref={el => { audioRefs.current[-2] = el; }} src={audioState[-2]?.dataUri} className="h-8" />
-                        )}
                     </div>
                 </div>
                 </CardContent>
@@ -597,53 +574,52 @@ export default function StoryBoxPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {savedStories.map(s => (
                       <AlertDialog key={s.id}>
-                        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                            <Card
-                                className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative"
-                                onClick={() => handleReadStory(s)}
-                                onContextMenu={(e) => {
-                                    e.preventDefault();
-                                    setDropdownOpen(true);
-                                }}
-                            >
-                                <DropdownMenuTrigger asChild>
-                                    <div className="absolute top-2 right-2 h-4 w-4" />
-                                </DropdownMenuTrigger>
-                                {s.imageUrl && (
-                                    <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
-                                )}
-                                <CardHeader>
-                                    <CardTitle>{s.title}</CardTitle>
-                                    <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src={s.authorShowPhoto ? s.authorPhotoURL : undefined} />
-                                            <AvatarFallback>{s.authorName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-semibold">{s.authorName}</p>
-                                            <p className="text-xs">{formatDistanceToNow(new Date(s.createdAt), { addSuffix: true, locale: fr })}</p>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                    <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
-                                </CardContent>
-                                <CardFooter className='pt-0'>
-                                  {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
-                                </CardFooter>
-                            </Card>
-                             {student && student.id === s.authorId && (
-                              <DropdownMenuContent>
-                                  <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                          <Trash2 className="mr-2 h-4 w-4" />
-                                          Supprimer
-                                      </DropdownMenuItem>
-                                  </AlertDialogTrigger>
-                              </DropdownMenuContent>
+                        <Card
+                            className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative group"
+                            onClick={() => handleReadStory(s)}
+                        >
+                            {student && student.id === s.authorId && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                                            <MoreHorizontal className="h-5 w-5" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem className="text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Supprimer
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             )}
-                        </DropdownMenu>
-                        <AlertDialogContent>
+
+                            {s.imageUrl && (
+                                <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
+                            )}
+                            <CardHeader>
+                                <CardTitle>{s.title}</CardTitle>
+                                <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={s.authorShowPhoto ? s.authorPhotoURL : undefined} />
+                                        <AvatarFallback>{s.authorName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-semibold">{s.authorName}</p>
+                                        <p className="text-xs">{formatDistanceToNow(new Date(s.createdAt), { addSuffix: true, locale: fr })}</p>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
+                            </CardContent>
+                            <CardFooter className='pt-0'>
+                                {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
+                            </CardFooter>
+                        </Card>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                                 <AlertDialogDescription>
