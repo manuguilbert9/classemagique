@@ -4,17 +4,17 @@
 
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart, Trash2, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { Textarea } from '@/components/ui/textarea';
-import { generateSpeech } from '@/ai/flows/tts-flow';
+import { generateSpeech, type SpeechInput } from '@/ai/flows/tts-flow';
 import { generateImage, type ImageInput } from '@/ai/flows/image-flow';
 import { SyllableText } from '@/components/syllable-text';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -24,6 +24,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import './halloween.css';
+import { Slider } from '@/components/ui/slider';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 // Halloween-specific emojis (October 1 - November 3)
 const halloweenEmojis = [
@@ -99,6 +101,7 @@ export default function StoryBoxPage() {
 
   // TTS State
   const [audioState, setAudioState] = useState<AudioState>({});
+  const [speakingRate, setSpeakingRate] = useState(0.8);
   const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({});
 
   // Image State
@@ -212,7 +215,8 @@ export default function StoryBoxPage() {
         setError(null);
 
         try {
-            const result = await generateSpeech(text);
+            const speechInput: SpeechInput = { text, speakingRate };
+            const result = await generateSpeech(speechInput);
             const newAudioUrl = result.audioUrl;
             
             // Save the new URL to the database
@@ -375,7 +379,7 @@ export default function StoryBoxPage() {
     const paragraphs = story.story.split('\n').filter(p => p.trim() !== '');
     return (
       <main className="flex min-h-screen w-full flex-col p-4 sm:p-8 bg-background">
-        <div className="flex gap-2 mb-8">
+        <div className="flex gap-2 mb-8 items-center">
             <Button onClick={() => setViewState('menu')} variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Retour
             </Button>
@@ -383,8 +387,28 @@ export default function StoryBoxPage() {
                 <BookOpen className="mr-2 h-4 w-4" /> Lecteur immersif
             </Button>
             <Button onClick={() => setShowSyllables(prev => !prev)} variant={showSyllables ? "default" : "secondary"}>
-                <SyllableText text="Syllabes" />
+                Syllabes
             </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="secondary">
+                  <Settings2 className="mr-2 h-4 w-4" /> Vitesse ({speakingRate.toFixed(2)}x)
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-4">
+                <div className="space-y-4">
+                  <Label htmlFor="speed-slider">Vitesse de lecture</Label>
+                  <Slider
+                    id="speed-slider"
+                    min={0.25}
+                    max={1.5}
+                    step={0.05}
+                    value={[speakingRate]}
+                    onValueChange={(value) => setSpeakingRate(value[0])}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[250px,1fr,250px] gap-8">
@@ -444,7 +468,7 @@ export default function StoryBoxPage() {
                         Écouter le titre
                     </Button>
                 </div>
-                 {((currentStory?.audioUrls && currentStory.audioUrls[-1]) || audioState[-1]?.url) && (
+                 {(currentStory?.audioUrls?.[-1] || audioState[-1]?.url) && (
                     <div className="flex justify-center pt-4">
                         <audio controls ref={el => { audioRefs.current[-1] = el; }} src={currentStory?.audioUrls?.[-1] || audioState[-1]?.url!} />
                     </div>
@@ -461,7 +485,7 @@ export default function StoryBoxPage() {
                                 {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                                 Écouter
                             </Button>
-                             {((currentStory?.audioUrls && currentStory.audioUrls[index]) || audioState[index]?.url) && (
+                             {(currentStory?.audioUrls?.[index] || audioState[index]?.url) && (
                                 <audio controls ref={el => { audioRefs.current[index] = el; }} src={currentStory?.audioUrls?.[index] || audioState[index]?.url!} className="h-8" />
                             )}
                         </div>
@@ -479,7 +503,7 @@ export default function StoryBoxPage() {
                                 {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                                 Écouter la morale
                         </Button>
-                         {((currentStory?.audioUrls && currentStory.audioUrls[-2]) || audioState[-2]?.url) && (
+                         {(currentStory?.audioUrls?.[-2] || audioState[-2]?.url) && (
                              <audio controls ref={el => { audioRefs.current[-2] = el; }} src={currentStory?.audioUrls?.[-2] || audioState[-2]?.url!} className="h-8" />
                         )}
                     </div>
