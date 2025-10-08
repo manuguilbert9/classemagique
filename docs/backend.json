@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -83,6 +84,14 @@
           "type": "string",
           "description": "URL of the generated illustration for the story.",
           "format": "uri"
+        },
+        "audioUrls": {
+            "type": "object",
+            "description": "Map of audio URLs for the story parts (title, moral, paragraphs).",
+            "additionalProperties": {
+                "type": "string",
+                "format": "uri"
+            }
         },
         "emojis": {
             "type": "array",
