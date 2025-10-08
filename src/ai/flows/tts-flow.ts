@@ -61,7 +61,7 @@ const ttsFlow = ai.defineFlow(
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
-          speakingRate: 0.8,
+          speakingRate: 0.7,
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: 'Kore' },
           },
