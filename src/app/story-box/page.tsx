@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/sto
 import Link from 'next/link';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { Textarea } from '@/components/ui/textarea';
-import { generateSpeech } from '@/ai/flows/tts-flow';
+import { generateSpeech, type SpeechInput } from '@/ai/flows/tts-flow';
 import { generateImage, type ImageInput } from '@/ai/flows/image-flow';
 import { SyllableText } from '@/components/syllable-text';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -237,28 +237,16 @@ export default function StoryBoxPage() {
         setError(null);
 
         try {
-            const result = await generateSpeech({ text, speakingRate });
+            const speechInput: SpeechInput = { text, speakingRate };
+            const result = await generateSpeech(speechInput);
             
             // Play the new audio
-            const audio = new Audio(result.audioUrl);
+            const audio = new Audio(result.audioDataUri);
             audio.play().catch(e => console.error("Audio play failed:", e));
 
             // Update state with the new data URI
-            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioUrl } }));
+            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioDataUri } }));
             
-            // Save the new URL to the database if we have a current story context
-            if (student && currentStory) {
-                const newAudioUrls = { [index]: result.audioUrl };
-                const saveResult = await saveStory(student, story, storyInput!, currentStory.imageUrl, currentStory.id, newAudioUrls);
-
-                if (saveResult.success) {
-                    setCurrentStory(prev => prev ? ({ 
-                        ...prev, 
-                        audioUrls: { ...(prev.audioUrls || {}), ...newAudioUrls }, 
-                        id: saveResult.id 
-                    }) : null);
-                }
-            }
         } catch (e: any) {
             console.error("Audio generation failed:", e);
             setError(`Impossible de générer l'audio : ${e.message || "Erreur inconnue"}`);
