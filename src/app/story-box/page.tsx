@@ -212,7 +212,7 @@ export default function StoryBoxPage() {
   };
 
     const handleGenerateAudio = async (text: string, index: number) => {
-        if (!text || !story) return;
+        if (!text || !story || !student) return;
 
         const existingAudioUrl = currentStory?.audioUrls?.[index];
         
@@ -241,12 +241,27 @@ export default function StoryBoxPage() {
             const result = await generateSpeech(speechInput);
             
             // Play the new audio
-            const audio = new Audio(result.audioDataUri);
+            const audio = new Audio(result.audioUrl);
             audio.play().catch(e => console.error("Audio play failed:", e));
 
             // Update state with the new data URI
-            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioDataUri } }));
+            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioUrl } }));
             
+            // Persist the audio URL to the story document
+            await saveStory(student, story, storyInput!, currentStory?.imageUrl ?? null, currentStory?.id, { [index]: result.audioUrl });
+            
+            // Update local currentStory state to reflect the new audio URL
+            setCurrentStory(prev => {
+                if (!prev) return null;
+                return {
+                    ...prev,
+                    audioUrls: {
+                        ...(prev.audioUrls || {}),
+                        [index]: result.audioUrl
+                    }
+                };
+            });
+
         } catch (e: any) {
             console.error("Audio generation failed:", e);
             setError(`Impossible de générer l'audio : ${e.message || "Erreur inconnue"}`);
