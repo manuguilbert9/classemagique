@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -116,6 +116,7 @@ export default function StoryBoxPage() {
   // Library State
   const [savedStories, setSavedStories] = useState<SavedStory[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // TTS State
   const [audioState, setAudioState] = useState<AudioState>({});
@@ -212,10 +213,10 @@ export default function StoryBoxPage() {
   };
 
     const handleGenerateAudio = async (text: string, index: number) => {
-        if (!text || !student || !story) return;
+        if (!text || !story) return;
 
-        // Check if audio already exists or is loading
-        const existingAudioUrl = audioState[index]?.dataUri;
+        const existingAudioUrl = currentStory?.audioUrls?.[index];
+        
         if (existingAudioUrl) {
             const audioEl = audioRefs.current[index];
             if (audioEl) {
@@ -226,19 +227,31 @@ export default function StoryBoxPage() {
             }
             return;
         }
+
         if (audioState[index]?.isLoading) return;
-        
-        // Start generation
+
         setAudioState(prev => ({ ...prev, [index]: { isLoading: true, dataUri: null } }));
         setError(null);
 
         try {
             const speechInput: SpeechInput = { text, speakingRate };
             const result = await generateSpeech(speechInput);
-            const newAudioUrl = result.audioDataUri;
             
-            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: newAudioUrl } }));
+            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioUrl } }));
+            
+            // Save the new URL to the database if we have a current story context
+            if (student && currentStory) {
+                const newAudioUrls = { [index]: result.audioUrl };
+                const saveResult = await saveStory(student, story, storyInput!, currentStory.imageUrl, currentStory.id, newAudioUrls);
 
+                if (saveResult.success) {
+                    setCurrentStory(prev => prev ? ({ 
+                        ...prev, 
+                        audioUrls: { ...(prev.audioUrls || {}), ...newAudioUrls }, 
+                        id: saveResult.id 
+                    }) : null);
+                }
+            }
         } catch (e: any) {
             console.error("Audio generation failed:", e);
             setError(`Impossible de générer l'audio : ${e.message || "Erreur inconnue"}`);
@@ -282,7 +295,7 @@ export default function StoryBoxPage() {
         }
     };
 
-   useEffect(() => {
+    useEffect(() => {
         Object.keys(audioState).forEach(key => {
             const index = parseInt(key, 10);
             const state = audioState[index];
@@ -472,7 +485,7 @@ export default function StoryBoxPage() {
                 </div>
                  {audioState[-1]?.dataUri && (
                     <div className="flex justify-center pt-4">
-                        <audio controls ref={el => { if (el) audioRefs.current[-1] = el; }} src={audioState[-1].dataUri!} />
+                        <audio controls ref={el => { audioRefs.current[-1] = el }} src={audioState[-1].dataUri!} />
                     </div>
                 )}
                 </CardHeader>
@@ -488,7 +501,7 @@ export default function StoryBoxPage() {
                                 Écouter
                             </Button>
                              {audioState[index]?.dataUri && (
-                                <audio controls ref={el => { if (el) audioRefs.current[index] = el; }} src={audioState[index]?.dataUri!} className="h-8" />
+                                <audio controls ref={el => { audioRefs.current[index] = el; }} src={audioState[index]?.dataUri!} className="h-8" />
                             )}
                         </div>
                     </div>
@@ -506,7 +519,7 @@ export default function StoryBoxPage() {
                                 Écouter la morale
                         </Button>
                          {audioState[-2]?.dataUri && (
-                             <audio controls ref={el => { if (el) audioRefs.current[-2] = el; }} src={audioState[-2]?.dataUri!} className="h-8" />
+                             <audio controls ref={el => { audioRefs.current[-2] = el; }} src={audioState[-2]?.dataUri!} className="h-8" />
                         )}
                     </div>
                 </div>
@@ -581,9 +594,14 @@ export default function StoryBoxPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {savedStories.map(s => (
                       <AlertDialog key={s.id}>
-                        <DropdownMenu>
+                        <DropdownMenu onOpenChange={setDropdownOpen}>
                             <DropdownMenuTrigger asChild>
-                                <Card className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative">
+                                <Card className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative"
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        setDropdownOpen(true);
+                                    }}
+                                >
                                      {s.imageUrl && (
                                         <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
                                     )}
@@ -603,9 +621,9 @@ export default function StoryBoxPage() {
                                     <CardContent className="flex-grow" onClick={() => handleReadStory(s)}>
                                         <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
                                     </CardContent>
-                                    <div className='p-6 pt-0' onClick={() => handleReadStory(s)}>
+                                    <CardFooter className='pt-0' onClick={() => handleReadStory(s)}>
                                       {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
-                                    </div>
+                                    </CardFooter>
                                 </Card>
                             </DropdownMenuTrigger>
                              {student && student.id === s.authorId && (
