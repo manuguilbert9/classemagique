@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
@@ -19,7 +19,7 @@ import { generateImage, type ImageInput } from '@/ai/flows/image-flow';
 import { SyllableText } from '@/components/syllable-text';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { UserContext } from '@/context/user-context';
-import { saveStory, getSavedStories, type SavedStory } from '@/services/stories';
+import { saveStory, getSavedStories, deleteStory, type SavedStory } from '@/services/stories';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -318,6 +318,24 @@ export default function StoryBoxPage() {
     setViewState('reading');
   };
 
+  const handleDeleteStory = async (storyId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation(); // Prevent card click event
+    }
+
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette histoire ?')) {
+      return;
+    }
+
+    const result = await deleteStory(storyId);
+    if (result.success) {
+      // Refresh the library
+      setSavedStories(prev => prev.filter(s => s.id !== storyId));
+    } else {
+      alert('Erreur lors de la suppression : ' + (result.error || 'Erreur inconnue'));
+    }
+  };
+
   if (viewState === 'reading' && story) {
     const paragraphs = story.story.split('\n').filter(p => p.trim() !== '');
     return (
@@ -501,9 +519,19 @@ export default function StoryBoxPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {savedStories.map(s => (
-                        <Card key={s.id} className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow" onClick={() => handleReadStory(s)}>
+                        <Card key={s.id} className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative" onClick={() => handleReadStory(s)}>
                              {s.imageUrl && (
                                 <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
+                            )}
+                            {student && student.id === s.authorId && (
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-2 right-2 h-8 w-8 z-10"
+                                    onClick={(e) => handleDeleteStory(s.id, e)}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                             )}
                             <CardHeader>
                                 <CardTitle>{s.title}</CardTitle>
