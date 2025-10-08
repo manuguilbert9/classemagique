@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/sto
 import Link from 'next/link';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { Textarea } from '@/components/ui/textarea';
-import { generateSpeech, type SpeechInput } from '@/ai/flows/tts-flow';
+import { generateSpeech } from '@/ai/flows/tts-flow';
 import { generateImage, type ImageInput } from '@/ai/flows/image-flow';
 import { SyllableText } from '@/components/syllable-text';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -217,27 +217,30 @@ export default function StoryBoxPage() {
 
         const existingAudioUrl = currentStory?.audioUrls?.[index];
         
-        if (existingAudioUrl) {
-            const audioEl = audioRefs.current[index];
-            if (audioEl) {
+        const audioEl = audioRefs.current[index];
+        if (audioEl) {
+             if (existingAudioUrl) {
                 if (audioEl.src !== existingAudioUrl) {
                     audioEl.src = existingAudioUrl;
                 }
                 audioEl.play().catch(e => console.error("Audio play failed:", e));
-            }
-            return;
+                return;
+             }
+             if(audioState[index]?.dataUri) {
+                audioEl.play().catch(e => console.error("Audio play failed:", e));
+                return;
+             }
         }
-
+        
         if (audioState[index]?.isLoading) return;
 
         setAudioState(prev => ({ ...prev, [index]: { isLoading: true, dataUri: null } }));
         setError(null);
 
         try {
-            const speechInput: SpeechInput = { text, speakingRate };
-            const result = await generateSpeech(speechInput);
+            const result = await generateSpeech({ text, speakingRate });
             
-            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioUrl } }));
+            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioDataUri } }));
             
             // Save the new URL to the database if we have a current story context
             if (student && currentStory) {
@@ -485,7 +488,7 @@ export default function StoryBoxPage() {
                 </div>
                  {audioState[-1]?.dataUri && (
                     <div className="flex justify-center pt-4">
-                        <audio controls ref={el => { audioRefs.current[-1] = el }} src={audioState[-1].dataUri!} />
+                        <audio controls ref={el => { audioRefs.current[-1] = el; }} src={audioState[-1].dataUri} />
                     </div>
                 )}
                 </CardHeader>
@@ -501,7 +504,7 @@ export default function StoryBoxPage() {
                                 Écouter
                             </Button>
                              {audioState[index]?.dataUri && (
-                                <audio controls ref={el => { audioRefs.current[index] = el; }} src={audioState[index]?.dataUri!} className="h-8" />
+                                <audio controls ref={el => { audioRefs.current[index] = el; }} src={audioState[index]?.dataUri} className="h-8" />
                             )}
                         </div>
                     </div>
@@ -519,7 +522,7 @@ export default function StoryBoxPage() {
                                 Écouter la morale
                         </Button>
                          {audioState[-2]?.dataUri && (
-                             <audio controls ref={el => { audioRefs.current[-2] = el; }} src={audioState[-2]?.dataUri!} className="h-8" />
+                             <audio controls ref={el => { audioRefs.current[-2] = el; }} src={audioState[-2]?.dataUri} className="h-8" />
                         )}
                     </div>
                 </div>
@@ -553,7 +556,7 @@ export default function StoryBoxPage() {
                             <DialogTrigger asChild>
                                 <img src={currentStory.imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover cursor-pointer hover:opacity-90 transition-opacity" />
                             </DialogTrigger>
-                             <DialogContent className="w-[90vw] h-[90vh] max-w-[90vw] max-h-[90vh] p-4">
+                             <DialogContent className="max-w-[90vw] max-h-[90vh] p-4">
                                 <DialogHeader>
                                     <DialogTitleComponent className="sr-only">{story.title}</DialogTitleComponent>
                                 </DialogHeader>
@@ -594,38 +597,41 @@ export default function StoryBoxPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {savedStories.map(s => (
                       <AlertDialog key={s.id}>
-                        <DropdownMenu onOpenChange={setDropdownOpen}>
-                            <DropdownMenuTrigger asChild>
-                                <Card className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative"
-                                    onContextMenu={(e) => {
-                                        e.preventDefault();
-                                        setDropdownOpen(true);
-                                    }}
-                                >
-                                     {s.imageUrl && (
-                                        <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
-                                    )}
-                                    <CardHeader onClick={() => handleReadStory(s)}>
-                                        <CardTitle>{s.title}</CardTitle>
-                                        <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={s.authorShowPhoto ? s.authorPhotoURL : undefined} />
-                                                <AvatarFallback>{s.authorName.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="font-semibold">{s.authorName}</p>
-                                                <p className="text-xs">{formatDistanceToNow(new Date(s.createdAt), { addSuffix: true, locale: fr })}</p>
-                                            </div>
+                        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                            <Card
+                                className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative"
+                                onClick={() => handleReadStory(s)}
+                                onContextMenu={(e) => {
+                                    e.preventDefault();
+                                    setDropdownOpen(true);
+                                }}
+                            >
+                                <DropdownMenuTrigger asChild>
+                                    <div className="absolute top-2 right-2 h-4 w-4" />
+                                </DropdownMenuTrigger>
+                                {s.imageUrl && (
+                                    <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
+                                )}
+                                <CardHeader>
+                                    <CardTitle>{s.title}</CardTitle>
+                                    <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src={s.authorShowPhoto ? s.authorPhotoURL : undefined} />
+                                            <AvatarFallback>{s.authorName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-semibold">{s.authorName}</p>
+                                            <p className="text-xs">{formatDistanceToNow(new Date(s.createdAt), { addSuffix: true, locale: fr })}</p>
                                         </div>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow" onClick={() => handleReadStory(s)}>
-                                        <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
-                                    </CardContent>
-                                    <CardFooter className='pt-0' onClick={() => handleReadStory(s)}>
-                                      {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
-                                    </CardFooter>
-                                </Card>
-                            </DropdownMenuTrigger>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-grow">
+                                    <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
+                                </CardContent>
+                                <CardFooter className='pt-0'>
+                                  {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
+                                </CardFooter>
+                            </Card>
                              {student && student.id === s.authorId && (
                               <DropdownMenuContent>
                                   <AlertDialogTrigger asChild>
