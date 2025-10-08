@@ -7,6 +7,7 @@ import type { StoryOutput, StoryInput } from '@/ai/flows/story-flow';
 import type { Student } from './students';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { deleteFileFromUrl } from './storage';
 
 export interface SavedStory {
   id: string;
@@ -165,24 +166,52 @@ export async function getSavedStories(): Promise<SavedStory[]> {
 }
 
 /**
- * Deletes a story from the database.
+ * Deletes a story and its associated files from Cloud Storage.
  */
 export async function deleteStory(storyId: string): Promise<{ success: boolean; error?: string }> {
     if (!storyId) {
         return { success: false, error: 'Story ID is required.' };
     }
+    const docRef = doc(db, 'saved_stories', storyId);
+
     try {
-        const docRef = doc(db, 'saved_stories', storyId);
-        await deleteDoc(docRef)
-            .catch(error => {
-                errorEmitter.emit(
-                    'permission-error',
-                    new FirestorePermissionError({
-                        path: `saved_stories/${storyId}`,
-                        operation: 'delete',
-                    })
-                );
-            });
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { success: true }; // Already deleted
+        }
+
+        const storyData = docSnap.data() as SavedStory;
+
+        // 1. Delete image from Storage if it exists
+        if (storyData.imageUrl) {
+            try {
+                await deleteFileFromUrl(storyData.imageUrl);
+            } catch (storageError) {
+                console.warn(`Could not delete image for story ${storyId}:`, storageError);
+                // Non-fatal, we still want to delete the DB entry
+            }
+        }
+        
+        // 2. Delete audio files from Storage if they exist
+        if (storyData.audioUrls) {
+            const audioDeletePromises = Object.values(storyData.audioUrls).map(url =>
+                deleteFileFromUrl(url).catch(err => console.warn(`Could not delete audio file ${url}:`, err))
+            );
+            await Promise.all(audioDeletePromises);
+        }
+
+        // 3. Delete the Firestore document
+        await deleteDoc(docRef).catch(error => {
+            errorEmitter.emit(
+                'permission-error',
+                new FirestorePermissionError({
+                    path: `saved_stories/${storyId}`,
+                    operation: 'delete',
+                })
+            );
+            throw error;
+        });
+
         return { success: true };
     } catch (error) {
         console.error("Error deleting story:", error);
