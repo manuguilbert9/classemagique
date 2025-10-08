@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -184,18 +185,13 @@ export async function deleteStory(storyId: string): Promise<{ success: boolean; 
 
         // 1. Delete image from Storage if it exists
         if (storyData.imageUrl) {
-            try {
-                await deleteFileFromUrl(storyData.imageUrl);
-            } catch (storageError) {
-                console.warn(`Could not delete image for story ${storyId}:`, storageError);
-                // Non-fatal, we still want to delete the DB entry
-            }
+            await deleteFileFromUrl(storyData.imageUrl);
         }
         
         // 2. Delete audio files from Storage if they exist
         if (storyData.audioUrls) {
             const audioDeletePromises = Object.values(storyData.audioUrls).map(url =>
-                deleteFileFromUrl(url).catch(err => console.warn(`Could not delete audio file ${url}:`, err))
+                deleteFileFromUrl(url)
             );
             await Promise.all(audioDeletePromises);
         }

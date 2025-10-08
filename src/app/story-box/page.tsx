@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -240,11 +240,11 @@ export default function StoryBoxPage() {
             const result = await generateSpeech({ text, speakingRate });
             
             // Play the new audio
-            const audio = new Audio(result.audioDataUri);
+            const audio = new Audio(result.audioUrl);
             audio.play().catch(e => console.error("Audio play failed:", e));
 
             // Update state with the new data URI
-            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioDataUri } }));
+            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioUrl } }));
             
             // Save the new URL to the database if we have a current story context
             if (student && currentStory) {
@@ -581,7 +581,7 @@ export default function StoryBoxPage() {
                             {student && student.id === s.authorId && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-50 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                                             <MoreHorizontal className="h-5 w-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
