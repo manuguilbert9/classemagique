@@ -73,7 +73,7 @@ type ViewState = 'menu' | 'creation' | 'reading' | 'library';
 type CreationMode = 'emoji' | 'vocal';
 type StoryLength = 'extra-courte' | 'courte' | 'moyenne' | 'longue';
 type StoryTone = 'aventure' | 'comique' | 'effrayante' | 'terrifiante' | 'cauchemardesque';
-type AudioState = { [key: number]: { isLoading: boolean; dataUri: string | null } };
+type AudioState = { [key: number]: { isLoading: boolean; url: string | null } };
 
 export default function StoryBoxPage() {
   const { student } = useContext(UserContext);
@@ -89,8 +89,8 @@ export default function StoryBoxPage() {
   // Story state
   const [isLoading, setIsLoading] = useState(false);
   const [story, setStory] = useState<StoryOutput | null>(null);
-  const [currentStoryId, setCurrentStoryId] = useState<string | null>(null); // To track the current story for updates
   const [storyInput, setStoryInput] = useState<StoryInput | null>(null);
+  const [currentStory, setCurrentStory] = useState<SavedStory | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Library State
@@ -103,7 +103,6 @@ export default function StoryBoxPage() {
 
   // Image State
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   // Display state
   const [showSyllables, setShowSyllables] = useState(false);
@@ -153,8 +152,7 @@ export default function StoryBoxPage() {
     setIsLoading(true);
     setStory(null);
     setAudioState({});
-    setImageUrl(null);
-    setCurrentStoryId(null);
+    setCurrentStory(null);
 
     const input: StoryInput = {
       emojis: creationMode === 'emoji' ? selectedEmojis : undefined,
@@ -173,7 +171,15 @@ export default function StoryBoxPage() {
       if (student && (length === 'moyenne' || length === 'longue')) {
         const saveResult = await saveStory(student, result, input, null);
         if (saveResult.success) {
-          setCurrentStoryId(saveResult.id); // Keep track of the new story's ID
+           setCurrentStory({
+               id: saveResult.id,
+               authorId: student.id,
+               authorName: student.name,
+               title: result.title,
+               content: result,
+               createdAt: new Date().toISOString(),
+               ...input
+           });
         }
       }
     } catch(e) {
@@ -184,70 +190,101 @@ export default function StoryBoxPage() {
     }
   };
 
-  const handleGenerateAudio = async (text: string, index: number) => {
-    if (!text) return;
-    
-    const existingAudio = audioState[index];
-    if (existingAudio?.dataUri) {
-      audioRefs.current[index]?.play();
-      return;
-    }
-    if (existingAudio?.isLoading) return;
+    const handleGenerateAudio = async (text: string, index: number) => {
+        if (!text || !student || !story) return;
 
-    setAudioState(prev => ({ ...prev, [index]: { isLoading: true, dataUri: null } }));
-    setError(null);
-    try {
-      const result = await generateSpeech(text);
-      setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: result.audioDataUri } }));
-    } catch (e: any) {
-      console.error("Audio generation failed:", e);
-      setError(`Impossible de générer l'audio : ${e.message || "Erreur inconnue"}`);
-      setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: null } }));
-    }
-  };
-
-  const handleGenerateImage = async () => {
-    if (!story || !student) return;
-
-    setIsGeneratingImage(true);
-    setError(null);
-    try {
-        const imageInput: ImageInput = {
-            storyTitle: story.title,
-            storyContent: story.story,
-            tone,
-        };
-        const result = await generateImage(imageInput);
-        setImageUrl(result.imageUrl);
+        // Check if audio already exists or is loading
+        const existingAudioUrl = currentStory?.audioUrls?.[index] || audioState[index]?.url;
+        if (existingAudioUrl) {
+            const audioEl = audioRefs.current[index];
+            if (audioEl) {
+                if (audioEl.src !== existingAudioUrl) {
+                    audioEl.src = existingAudioUrl;
+                }
+                audioEl.play().catch(e => console.error("Audio play failed:", e));
+            }
+            return;
+        }
+        if (audioState[index]?.isLoading) return;
         
-        await saveStory(student, story, storyInput!, result.imageUrl);
-        // If a new story was created and now has an ID, update it
-        if (!currentStoryId) {
-            const saved = await getSavedStories();
-            const newStory = saved.find(s => s.title === story.title && s.authorId === student.id);
-            if (newStory) setCurrentStoryId(newStory.id);
-        }
+        // Start generation
+        setAudioState(prev => ({ ...prev, [index]: { isLoading: true, url: null } }));
+        setError(null);
 
-    } catch (e) {
-        console.error("Image generation failed:", e);
-        setError("Impossible de générer l'illustration pour cette histoire.");
-    } finally {
-        setIsGeneratingImage(false);
-    }
-};
+        try {
+            const result = await generateSpeech(text);
+            const newAudioUrl = result.audioUrl;
+            
+            // Save the new URL to the database
+            const saveResult = await saveStory(student, story, storyInput!, currentStory?.imageUrl || null, currentStory?.id, { [index]: newAudioUrl });
 
-  useEffect(() => {
-    Object.keys(audioState).forEach(key => {
-      const index = parseInt(key, 10);
-      const state = audioState[index];
-      if (state && state.dataUri && audioRefs.current[index]) {
-        if (audioRefs.current[index]!.src !== state.dataUri) {
-          audioRefs.current[index]!.src = state.dataUri;
-          audioRefs.current[index]!.play().catch(e => console.error("Audio play failed:", e));
+            // Update local state for both story and audio
+            if (saveResult.success) {
+                setCurrentStory(prev => prev ? ({
+                    ...prev,
+                    audioUrls: { ...prev.audioUrls, [index]: newAudioUrl }
+                }) : null);
+            }
+            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, url: newAudioUrl } }));
+
+        } catch (e: any) {
+            console.error("Audio generation failed:", e);
+            setError(`Impossible de générer l'audio : ${e.message || "Erreur inconnue"}`);
+            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, url: null } }));
         }
-      }
-    });
-  }, [audioState]);
+    };
+
+    const handleGenerateImage = async () => {
+        if (!story || !student) return;
+
+        setIsGeneratingImage(true);
+        setError(null);
+        try {
+            const imageInput: ImageInput = {
+                storyTitle: story.title,
+                storyContent: story.story,
+                tone,
+            };
+            const result = await generateImage(imageInput);
+            
+            const saveResult = await saveStory(student, story, storyInput!, result.imageUrl, currentStory?.id);
+
+            if (saveResult.success) {
+                setCurrentStory(prev => prev ? ({ ...prev, imageUrl: result.imageUrl, id: saveResult.id }) : ({
+                    id: saveResult.id,
+                    authorId: student.id,
+                    authorName: student.name,
+                    title: story.title,
+                    content: story,
+                    imageUrl: result.imageUrl,
+                    createdAt: new Date().toISOString(),
+                    ...storyInput
+                }));
+            }
+
+        } catch (e) {
+            console.error("Image generation failed:", e);
+            setError("Impossible de générer l'illustration pour cette histoire.");
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    };
+
+   useEffect(() => {
+        // This effect ensures that when audioState is updated with a new URL,
+        // the corresponding audio element's src is updated and played.
+        Object.keys(audioState).forEach(key => {
+            const index = parseInt(key, 10);
+            const state = audioState[index];
+            const audioEl = audioRefs.current[index];
+
+            if (state?.url && audioEl && audioEl.src !== state.url) {
+                audioEl.src = state.url;
+                audioEl.play().catch(e => console.error("Audio autoplay failed:", e));
+            }
+        });
+    }, [audioState]);
+
 
   const getFontSize = () => {
     switch (length) {
@@ -286,8 +323,7 @@ export default function StoryBoxPage() {
     setError(null);
     setAudioState({});
     audioRefs.current = {};
-    setImageUrl(null);
-    setCurrentStoryId(null);
+    setCurrentStory(null);
     setStoryInput(null);
     setViewState('menu');
   };
@@ -307,8 +343,7 @@ export default function StoryBoxPage() {
 
   const handleReadStory = (savedStory: SavedStory) => {
     setStory(savedStory.content);
-    setImageUrl(savedStory.imageUrl || null);
-    setCurrentStoryId(savedStory.id);
+    setCurrentStory(savedStory);
     setStoryInput({
         emojis: savedStory.emojis,
         description: savedStory.description,
@@ -409,9 +444,9 @@ export default function StoryBoxPage() {
                         Écouter le titre
                     </Button>
                 </div>
-                 {audioState[-1]?.dataUri && (
+                 {((currentStory?.audioUrls && currentStory.audioUrls[-1]) || audioState[-1]?.url) && (
                     <div className="flex justify-center pt-4">
-                        <audio controls ref={el => { audioRefs.current[-1] = el; }} src={audioState[-1].dataUri!} />
+                        <audio controls ref={el => { audioRefs.current[-1] = el; }} src={currentStory?.audioUrls?.[-1] || audioState[-1]?.url!} />
                     </div>
                 )}
                 </CardHeader>
@@ -426,8 +461,8 @@ export default function StoryBoxPage() {
                                 {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                                 Écouter
                             </Button>
-                            {audioState[index]?.dataUri && (
-                                <audio controls ref={el => { audioRefs.current[index] = el; }} src={audioState[index].dataUri!} className="h-8" />
+                             {((currentStory?.audioUrls && currentStory.audioUrls[index]) || audioState[index]?.url) && (
+                                <audio controls ref={el => { audioRefs.current[index] = el; }} src={currentStory?.audioUrls?.[index] || audioState[index]?.url!} className="h-8" />
                             )}
                         </div>
                     </div>
@@ -444,8 +479,8 @@ export default function StoryBoxPage() {
                                 {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                                 Écouter la morale
                         </Button>
-                        {audioState[-2]?.dataUri && (
-                             <audio controls ref={el => { audioRefs.current[-2] = el; }} src={audioState[-2].dataUri!} className="h-8" />
+                         {((currentStory?.audioUrls && currentStory.audioUrls[-2]) || audioState[-2]?.url) && (
+                             <audio controls ref={el => { audioRefs.current[-2] = el; }} src={currentStory?.audioUrls?.[-2] || audioState[-2]?.url!} className="h-8" />
                         )}
                     </div>
                 </div>
@@ -454,7 +489,7 @@ export default function StoryBoxPage() {
           </div>
 
           {/* Illustration Sidebar (Right) */}
-          <div className="lg:sticky lg:top-8 self-start order-3">
+           <div className="lg:sticky lg:top-8 self-start order-3">
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 font-headline">
@@ -463,27 +498,27 @@ export default function StoryBoxPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {!imageUrl && (
+                    {(!currentStory?.imageUrl) && (
                       <Button onClick={handleGenerateImage} disabled={isGeneratingImage} className="w-full">
                         {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                         Générer l'illustration
                       </Button>
                     )}
-                    {isGeneratingImage && !imageUrl && (
+                    {isGeneratingImage && !currentStory?.imageUrl && (
                         <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
                             <Loader2 className="h-10 w-10 text-muted-foreground animate-spin"/>
                         </div>
                     )}
-                    {imageUrl ? (
+                    {currentStory?.imageUrl ? (
                         <Dialog>
                             <DialogTrigger asChild>
-                                <img src={imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover cursor-pointer hover:opacity-90 transition-opacity" />
+                                <img src={currentStory.imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover cursor-pointer hover:opacity-90 transition-opacity" />
                             </DialogTrigger>
                              <DialogContent className="max-w-[90vw] max-h-[90vh] w-auto h-auto p-4">
                                 <DialogHeader>
                                     <DialogTitleComponent className="sr-only">{story.title}</DialogTitleComponent>
                                 </DialogHeader>
-                                <img src={imageUrl} alt={story.title} className="w-full h-full object-contain rounded-lg" />
+                                <img src={currentStory.imageUrl} alt={story.title} className="w-full h-full object-contain rounded-lg" />
                             </DialogContent>
                         </Dialog>
                     ) : (
