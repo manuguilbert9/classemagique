@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -26,6 +26,24 @@ import { fr } from 'date-fns/locale';
 import './halloween.css';
 import { Slider } from '@/components/ui/slider';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 // Halloween-specific emojis (October 1 - November 3)
 const halloweenEmojis = [
@@ -75,7 +93,7 @@ type ViewState = 'menu' | 'creation' | 'reading' | 'library';
 type CreationMode = 'emoji' | 'vocal';
 type StoryLength = 'extra-courte' | 'courte' | 'moyenne' | 'longue';
 type StoryTone = 'aventure' | 'comique' | 'effrayante' | 'terrifiante' | 'cauchemardesque';
-type AudioState = { [key: number]: { isLoading: boolean; url: string | null } };
+type AudioState = { [key: number]: { isLoading: boolean; dataUri: string | null } };
 
 export default function StoryBoxPage() {
   const { student } = useContext(UserContext);
@@ -101,7 +119,7 @@ export default function StoryBoxPage() {
 
   // TTS State
   const [audioState, setAudioState] = useState<AudioState>({});
-  const [speakingRate, setSpeakingRate] = useState(0.8);
+  const [speakingRate, setSpeakingRate] = useState(0.7);
   const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({});
 
   // Image State
@@ -197,7 +215,7 @@ export default function StoryBoxPage() {
         if (!text || !student || !story) return;
 
         // Check if audio already exists or is loading
-        const existingAudioUrl = currentStory?.audioUrls?.[index] || audioState[index]?.url;
+        const existingAudioUrl = audioState[index]?.dataUri;
         if (existingAudioUrl) {
             const audioEl = audioRefs.current[index];
             if (audioEl) {
@@ -211,30 +229,20 @@ export default function StoryBoxPage() {
         if (audioState[index]?.isLoading) return;
         
         // Start generation
-        setAudioState(prev => ({ ...prev, [index]: { isLoading: true, url: null } }));
+        setAudioState(prev => ({ ...prev, [index]: { isLoading: true, dataUri: null } }));
         setError(null);
 
         try {
             const speechInput: SpeechInput = { text, speakingRate };
             const result = await generateSpeech(speechInput);
-            const newAudioUrl = result.audioUrl;
+            const newAudioUrl = result.audioDataUri;
             
-            // Save the new URL to the database
-            const saveResult = await saveStory(student, story, storyInput!, currentStory?.imageUrl || null, currentStory?.id, { [index]: newAudioUrl });
-
-            // Update local state for both story and audio
-            if (saveResult.success) {
-                setCurrentStory(prev => prev ? ({
-                    ...prev,
-                    audioUrls: { ...prev.audioUrls, [index]: newAudioUrl }
-                }) : null);
-            }
-            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, url: newAudioUrl } }));
+            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: newAudioUrl } }));
 
         } catch (e: any) {
             console.error("Audio generation failed:", e);
             setError(`Impossible de générer l'audio : ${e.message || "Erreur inconnue"}`);
-            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, url: null } }));
+            setAudioState(prev => ({ ...prev, [index]: { isLoading: false, dataUri: null } }));
         }
     };
 
@@ -275,15 +283,15 @@ export default function StoryBoxPage() {
     };
 
    useEffect(() => {
-        // This effect ensures that when audioState is updated with a new URL,
-        // the corresponding audio element's src is updated and played.
         Object.keys(audioState).forEach(key => {
             const index = parseInt(key, 10);
             const state = audioState[index];
             const audioEl = audioRefs.current[index];
 
-            if (state?.url && audioEl && audioEl.src !== state.url) {
-                audioEl.src = state.url;
+            if (state?.dataUri && audioEl) {
+                if(audioEl.src !== state.dataUri) {
+                    audioEl.src = state.dataUri;
+                }
                 audioEl.play().catch(e => console.error("Audio autoplay failed:", e));
             }
         });
@@ -348,27 +356,21 @@ export default function StoryBoxPage() {
   const handleReadStory = (savedStory: SavedStory) => {
     setStory(savedStory.content);
     setCurrentStory(savedStory);
+    setAudioState({});
+    const inputLength = savedStory.content.story.length;
+    const determinedLength: StoryLength = inputLength < 200 ? 'extra-courte' : inputLength < 800 ? 'courte' : inputLength < 2000 ? 'moyenne' : 'longue';
     setStoryInput({
         emojis: savedStory.emojis,
         description: savedStory.description,
-        length: savedStory.content.story.length > 1500 ? 'longue' : (savedStory.content.story.length > 500 ? 'moyenne' : 'courte'),
+        length: determinedLength,
         tone: 'aventure' // Placeholder, tone is not saved yet.
     });
     setViewState('reading');
   };
 
-  const handleDeleteStory = async (storyId: string, event?: React.MouseEvent) => {
-    if (event) {
-      event.stopPropagation(); // Prevent card click event
-    }
-
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette histoire ?')) {
-      return;
-    }
-
+  const handleDeleteStory = async (storyId: string) => {
     const result = await deleteStory(storyId);
     if (result.success) {
-      // Refresh the library
       setSavedStories(prev => prev.filter(s => s.id !== storyId));
     } else {
       alert('Erreur lors de la suppression : ' + (result.error || 'Erreur inconnue'));
@@ -468,9 +470,9 @@ export default function StoryBoxPage() {
                         Écouter le titre
                     </Button>
                 </div>
-                 {(currentStory?.audioUrls?.[-1] || audioState[-1]?.url) && (
+                 {audioState[-1]?.dataUri && (
                     <div className="flex justify-center pt-4">
-                        <audio controls ref={el => { audioRefs.current[-1] = el; }} src={currentStory?.audioUrls?.[-1] || audioState[-1]?.url!} />
+                        <audio controls ref={el => { if (el) audioRefs.current[-1] = el; }} src={audioState[-1].dataUri!} />
                     </div>
                 )}
                 </CardHeader>
@@ -485,8 +487,8 @@ export default function StoryBoxPage() {
                                 {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                                 Écouter
                             </Button>
-                             {(currentStory?.audioUrls?.[index] || audioState[index]?.url) && (
-                                <audio controls ref={el => { audioRefs.current[index] = el; }} src={currentStory?.audioUrls?.[index] || audioState[index]?.url!} className="h-8" />
+                             {audioState[index]?.dataUri && (
+                                <audio controls ref={el => { if (el) audioRefs.current[index] = el; }} src={audioState[index]?.dataUri!} className="h-8" />
                             )}
                         </div>
                     </div>
@@ -503,8 +505,8 @@ export default function StoryBoxPage() {
                                 {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
                                 Écouter la morale
                         </Button>
-                         {(currentStory?.audioUrls?.[-2] || audioState[-2]?.url) && (
-                             <audio controls ref={el => { audioRefs.current[-2] = el; }} src={currentStory?.audioUrls?.[-2] || audioState[-2]?.url!} className="h-8" />
+                         {audioState[-2]?.dataUri && (
+                             <audio controls ref={el => { if (el) audioRefs.current[-2] = el; }} src={audioState[-2]?.dataUri!} className="h-8" />
                         )}
                     </div>
                 </div>
@@ -538,7 +540,7 @@ export default function StoryBoxPage() {
                             <DialogTrigger asChild>
                                 <img src={currentStory.imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover cursor-pointer hover:opacity-90 transition-opacity" />
                             </DialogTrigger>
-                             <DialogContent className="max-w-[90vw] max-h-[90vh] w-auto h-auto p-4">
+                             <DialogContent className="w-[90vw] h-[90vh] max-w-[90vw] max-h-[90vh] p-4">
                                 <DialogHeader>
                                     <DialogTitleComponent className="sr-only">{story.title}</DialogTitleComponent>
                                 </DialogHeader>
@@ -578,40 +580,60 @@ export default function StoryBoxPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {savedStories.map(s => (
-                        <Card key={s.id} className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative" onClick={() => handleReadStory(s)}>
-                             {s.imageUrl && (
-                                <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
-                            )}
-                            {student && student.id === s.authorId && (
-                                <Button
-                                    variant="destructive"
-                                    size="icon"
-                                    className="absolute top-2 right-2 h-8 w-8 z-10"
-                                    onClick={(e) => handleDeleteStory(s.id, e)}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            )}
-                            <CardHeader>
-                                <CardTitle>{s.title}</CardTitle>
-                                <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={s.authorShowPhoto ? s.authorPhotoURL : undefined} />
-                                        <AvatarFallback>{s.authorName.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-semibold">{s.authorName}</p>
-                                        <p className="text-xs">{formatDistanceToNow(new Date(s.createdAt), { addSuffix: true, locale: fr })}</p>
+                      <AlertDialog key={s.id}>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Card className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative">
+                                     {s.imageUrl && (
+                                        <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
+                                    )}
+                                    <CardHeader onClick={() => handleReadStory(s)}>
+                                        <CardTitle>{s.title}</CardTitle>
+                                        <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={s.authorShowPhoto ? s.authorPhotoURL : undefined} />
+                                                <AvatarFallback>{s.authorName.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-semibold">{s.authorName}</p>
+                                                <p className="text-xs">{formatDistanceToNow(new Date(s.createdAt), { addSuffix: true, locale: fr })}</p>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow" onClick={() => handleReadStory(s)}>
+                                        <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
+                                    </CardContent>
+                                    <div className='p-6 pt-0' onClick={() => handleReadStory(s)}>
+                                      {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
                                     </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
-                            </CardContent>
-                             <CardFooter>
-                                 {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
-                             </CardFooter>
-                        </Card>
+                                </Card>
+                            </DropdownMenuTrigger>
+                             {student && student.id === s.authorId && (
+                              <DropdownMenuContent>
+                                  <AlertDialogTrigger asChild>
+                                      <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Supprimer
+                                      </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                              </DropdownMenuContent>
+                            )}
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Êtes-vous sûr de vouloir supprimer définitivement l'histoire "{s.title}" ? Cette action est irréversible.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteStory(s.id)} className="bg-destructive hover:bg-destructive/90">
+                                    Supprimer
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     ))}
                 </div>
             )}
