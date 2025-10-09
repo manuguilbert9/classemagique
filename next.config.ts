@@ -6,7 +6,14 @@ const nextConfig = {
 
   // Configuration pour le service des images
   images: {
-    unoptimized: false,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        port: '',
+        pathname: '/v0/b/classemagique2.appspot.com/**',
+      },
+    ],
   },
 
   // Assurer que les assets publics sont bien copiés dans le standalone
