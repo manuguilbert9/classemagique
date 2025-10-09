@@ -15,11 +15,6 @@ const nextConfig = {
       },
     ],
   },
-
-  // Assurer que les assets publics sont bien copiés dans le standalone
-  outputFileTracingIncludes: {
-      '/': ['./public/**/*'],
-  },
 };
 
 export default nextConfig;
