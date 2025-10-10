@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { googleAI } from '@genkit-ai/google-genai';
-import { uploadImageFromDataURI } from '@/services/storage';
+import { uploadDataURI } from '@/services/storage';
 
 const ImageInputSchema = z.object({
   storyTitle: z.string().describe('The title of the story'),
@@ -65,7 +65,7 @@ INSTRUCTIONS STRICTES :
     }
     
     // Upload the image from the data URI to Cloud Storage
-    const publicUrl = await uploadImageFromDataURI(media.url, 'story-images');
+    const publicUrl = await uploadDataURI(media.url, 'story-images');
 
     return {
       imageUrl: publicUrl,

@@ -1,9 +1,9 @@
 
 'use server';
 /**
- * @fileOverview A flow to convert text to speech.
+ * @fileOverview A flow to convert text to speech and store it in Cloud Storage.
  *
- * - generateSpeech - A function that takes a string and returns a data URI for an audio file.
+ * - generateSpeech - A function that takes a string and returns a public URL for an audio file.
  * - SpeechInput - The input type for the generateSpeech function.
  * - SpeechOutput - The return type for the generateSpeech function.
  */
@@ -12,12 +12,16 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import wav from 'wav';
 import { googleAI } from '@genkit-ai/google-genai';
+import { uploadDataURI } from '@/services/storage';
 
-const SpeechInputSchema = z.string();
+const SpeechInputSchema = z.object({
+  text: z.string(),
+  speakingRate: z.number().min(0.25).max(1.5).default(1.0),
+});
 export type SpeechInput = z.infer<typeof SpeechInputSchema>;
 
 const SpeechOutputSchema = z.object({
-    audioDataUri: z.string().describe("The generated audio as a data URI in WAV format. Expected format: 'data:audio/wav;base64,<encoded_data>'."),
+    audioUrl: z.string().describe("The public Cloud Storage URL for the generated audio in WAV format."),
 });
 export type SpeechOutput = z.infer<typeof SpeechOutputSchema>;
 
@@ -54,7 +58,7 @@ const ttsFlow = ai.defineFlow(
     inputSchema: SpeechInputSchema,
     outputSchema: SpeechOutputSchema,
   },
-  async (text) => {
+  async (input) => {
     const { media } = await ai.generate({
       model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
@@ -65,7 +69,7 @@ const ttsFlow = ai.defineFlow(
           },
         },
       },
-      prompt: text,
+      prompt: input.text,
     });
     if (!media) {
       throw new Error('No audio media returned from the model.');
@@ -77,13 +81,16 @@ const ttsFlow = ai.defineFlow(
     );
 
     const wavBase64 = await toWav(audioBuffer);
+    const audioDataUri = 'data:audio/wav;base64,' + wavBase64;
+    
+    // Upload the WAV data URI to Cloud Storage
+    const publicUrl = await uploadDataURI(audioDataUri, 'story-audio');
 
     return {
-      audioDataUri: 'data:audio/wav;base64,' + wavBase64,
+      audioUrl: publicUrl,
     };
   }
 );
-
 
 export async function generateSpeech(input: SpeechInput): Promise<SpeechOutput> {
   return ttsFlow(input);

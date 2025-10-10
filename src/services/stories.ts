@@ -3,11 +3,12 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, Timestamp, deleteDoc, doc, updateDoc, setDoc, WriteBatch, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, Timestamp, deleteDoc, doc, updateDoc, setDoc, WriteBatch, writeBatch, getDoc } from 'firebase/firestore';
 import type { StoryOutput, StoryInput } from '@/ai/flows/story-flow';
 import type { Student } from './students';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { deleteFileFromUrl } from './storage';
 
 export interface SavedStory {
   id: string;
@@ -18,6 +19,7 @@ export interface SavedStory {
   title: string;
   content: StoryOutput;
   imageUrl?: string;
+  audioUrls?: Record<string, string>;
   emojis?: string[];
   description?: string;
   createdAt: string; // ISO string
@@ -31,7 +33,9 @@ export async function saveStory(
     author: Student, 
     storyData: StoryOutput, 
     storyInput: StoryInput, 
-    imageUrl: string | null
+    imageUrl: string | null,
+    storyIdToUpdate?: string | null,
+    newAudioUrls?: Record<string, string>
 ): Promise<{ success: boolean; id: string; error?: string }> {
     if (!author) {
         return { success: false, id: '', error: "Author is required." };
@@ -40,32 +44,55 @@ export async function saveStory(
     try {
         const storiesCollection = collection(db, 'saved_stories');
         
-        // Query to find if a story with the same title by the same author already exists
-        const q = query(
-            storiesCollection,
-            where('authorId', '==', author.id),
-            where('title', '==', storyData.title)
-        );
-        const querySnapshot = await getDocs(q);
+        let storyId = storyIdToUpdate;
+        let existingDoc: any = null;
 
-        if (!querySnapshot.empty) {
-            // Story exists, update it
-            const existingDoc = querySnapshot.docs[0];
-            const storyId = existingDoc.id;
+        // If an ID is provided, try to fetch that document directly.
+        if (storyId) {
             const docRef = doc(db, 'saved_stories', storyId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                existingDoc = docSnap;
+            }
+        }
+        
+        // If no ID or document not found with ID, search by title and author
+        if (!existingDoc) {
+             const q = query(
+                storiesCollection,
+                where('authorId', '==', author.id),
+                where('title', '==', storyData.title)
+            );
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                existingDoc = querySnapshot.docs[0];
+                storyId = existingDoc.id;
+            }
+        }
 
-            await updateDoc(docRef, {
-                // Update fields that might change, like the image or content
+
+        if (existingDoc && storyId) {
+            // Story exists, update it
+            const docRef = doc(db, 'saved_stories', storyId);
+            const dataToUpdate: any = {
                 content: storyData,
-                imageUrl: imageUrl,
                 emojis: storyInput.emojis || [],
                 description: storyInput.description || '',
-                // Keep original author info and creation date
-            }).catch(error => {
+            };
+
+            if (imageUrl) {
+                dataToUpdate.imageUrl = imageUrl;
+            }
+            if (newAudioUrls) {
+                const existingAudioUrls = existingDoc.data()?.audioUrls || {};
+                dataToUpdate.audioUrls = { ...existingAudioUrls, ...newAudioUrls };
+            }
+
+            await updateDoc(docRef, dataToUpdate).catch(error => {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: `saved_stories/${storyId}`,
                     operation: 'update',
-                    requestResourceData: { imageUrl },
+                    requestResourceData: dataToUpdate,
                 }));
                 throw error; // Propagate error
             });
@@ -82,6 +109,7 @@ export async function saveStory(
                 title: storyData.title,
                 content: storyData,
                 imageUrl: imageUrl || null,
+                audioUrls: newAudioUrls || {},
                 emojis: storyInput.emojis || [],
                 description: storyInput.description || '',
                 createdAt: Timestamp.now()
@@ -139,24 +167,47 @@ export async function getSavedStories(): Promise<SavedStory[]> {
 }
 
 /**
- * Deletes a story from the database.
+ * Deletes a story and its associated files from Cloud Storage.
  */
 export async function deleteStory(storyId: string): Promise<{ success: boolean; error?: string }> {
     if (!storyId) {
         return { success: false, error: 'Story ID is required.' };
     }
+    const docRef = doc(db, 'saved_stories', storyId);
+
     try {
-        const docRef = doc(db, 'saved_stories', storyId);
-        await deleteDoc(docRef)
-            .catch(error => {
-                errorEmitter.emit(
-                    'permission-error',
-                    new FirestorePermissionError({
-                        path: `saved_stories/${storyId}`,
-                        operation: 'delete',
-                    })
-                );
-            });
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { success: true }; // Already deleted
+        }
+
+        const storyData = docSnap.data() as SavedStory;
+
+        // 1. Delete image from Storage if it exists
+        if (storyData.imageUrl) {
+            await deleteFileFromUrl(storyData.imageUrl);
+        }
+        
+        // 2. Delete audio files from Storage if they exist
+        if (storyData.audioUrls) {
+            const audioDeletePromises = Object.values(storyData.audioUrls).map(url =>
+                deleteFileFromUrl(url)
+            );
+            await Promise.all(audioDeletePromises);
+        }
+
+        // 3. Delete the Firestore document
+        await deleteDoc(docRef).catch(error => {
+            errorEmitter.emit(
+                'permission-error',
+                new FirestorePermissionError({
+                    path: `saved_stories/${storyId}`,
+                    operation: 'delete',
+                })
+            );
+            throw error;
+        });
+
         return { success: true };
     } catch (error) {
         console.error("Error deleting story:", error);
