@@ -26,6 +26,37 @@ type Feedback = 'correct' | 'incorrect' | null;
 
 const NUM_PROBLEMS = 3;
 
+// Fonction pour déterminer la couleur d'une colonne (unités, dizaines, centaines, etc.)
+function getColumnColorClasses(columnIndex: number) {
+    const colors = [
+        {
+            border: 'border-blue-400',
+            text: 'text-blue-700',
+            bg: 'bg-blue-50',
+            ring: 'focus-within:ring-blue-300'
+        }, // Unités
+        {
+            border: 'border-red-400',
+            text: 'text-red-700',
+            bg: 'bg-red-50',
+            ring: 'focus-within:ring-red-300'
+        }, // Dizaines
+        {
+            border: 'border-green-400',
+            text: 'text-green-700',
+            bg: 'bg-green-50',
+            ring: 'focus-within:ring-green-300'
+        }, // Centaines
+        {
+            border: 'border-gray-500',
+            text: 'text-gray-700',
+            bg: 'bg-gray-50',
+            ring: 'focus-within:ring-gray-300'
+        }, // Au-delà
+    ];
+    return colors[Math.min(columnIndex, colors.length - 1)];
+}
+
 function CarryNoteInput({
     cellId,
     value,
@@ -39,51 +70,65 @@ function CarryNoteInput({
     onChange: (id: string, value: string) => void;
     onToggleCrossed: (id: string) => void;
 }) {
-    const colorClass = useMemo(() => {
-        const column = parseInt(cellId.split('-')[1], 10);
-        if (column === 0) return 'text-blue-600 border-blue-400 focus-within:ring-blue-300';
-        if (column === 1) return 'text-red-600 border-red-400 focus-within:ring-red-300';
-        if (column === 2) return 'text-green-600 border-green-400 focus-within:ring-green-300';
-        return 'text-gray-600 border-gray-400 focus-within:ring-gray-300';
-    }, [cellId]);
+    const columnIndex = parseInt(cellId.split('-')[1], 10);
+    const colors = getColumnColorClasses(columnIndex);
 
     return (
-        <label
-            htmlFor={cellId}
-            className={cn(
-                'relative flex h-8 w-8 cursor-text items-center justify-center rounded-full border-2 border-dashed bg-background text-sm font-semibold transition focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-background sm:h-10 sm:w-10 sm:text-base',
-                colorClass,
-                isCrossed && 'focus-within:border-destructive/70 focus-within:ring-destructive/40'
-            )}
-            onContextMenu={(event) => {
-                event.preventDefault();
-                onToggleCrossed(cellId);
+        <div
+            className="relative flex h-10 w-10 items-center justify-center cursor-pointer group"
+            onClick={() => {
+                // Clic simple pour barrer/débarrer
+                if (value) {
+                    onToggleCrossed(cellId);
+                }
             }}
         >
-            <input
-                id={cellId}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={2}
-                value={value}
-                onChange={(event) => {
-                    const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
-                    onChange(cellId, sanitized);
-                }}
-                onFocus={(event) => event.currentTarget.select()}
-                className="absolute inset-0 h-full w-full cursor-text rounded-full border-none bg-transparent text-center text-base font-semibold text-transparent caret-primary focus:outline-none"
-                aria-label="Retenue"
-            />
-            <span
+            <label
+                htmlFor={cellId}
                 className={cn(
-                    'pointer-events-none text-base font-semibold text-foreground transition-colors',
-                    !value && 'text-muted-foreground',
-                    isCrossed && 'line-through decoration-4 decoration-destructive'
+                    'relative flex h-10 w-10 cursor-text items-center justify-center rounded-md border-2 border-dashed text-sm font-bold transition-all',
+                    colors.border,
+                    colors.bg,
+                    colors.text,
+                    colors.ring,
+                    'focus-within:ring-2 focus-within:ring-offset-1',
+                    isCrossed && 'opacity-60',
+                    !value && 'border-opacity-30'
                 )}
             >
-                {value || ''}
-            </span>
-        </label>
+                <input
+                    id={cellId}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={2}
+                    value={value}
+                    onChange={(event) => {
+                        const sanitized = event.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
+                        onChange(cellId, sanitized);
+                    }}
+                    onFocus={(event) => event.currentTarget.select()}
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute inset-0 h-full w-full cursor-text rounded-md border-none bg-transparent text-center text-sm font-bold text-transparent caret-primary focus:outline-none"
+                    aria-label="Retenue ou emprunt"
+                />
+                <span
+                    className={cn(
+                        'pointer-events-none text-sm font-bold transition-all',
+                        isCrossed && 'line-through decoration-2 decoration-red-600'
+                    )}
+                >
+                    {value || ''}
+                </span>
+            </label>
+            {/* Indicateur pour montrer qu'on peut cliquer pour barrer */}
+            {value && !isCrossed && (
+                <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="h-4 w-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                        ✕
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -419,21 +464,6 @@ export function LongCalculationExercise() {
     };
 
     const gridTemplateStyle = { gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 3.5rem))` };
-    
-    const columnColors = [
-        'border-blue-400', 
-        'border-red-400', 
-        'border-green-400', 
-        'border-yellow-400', 
-        'border-purple-400'
-    ];
-    const columnTextColors = [
-        'text-blue-600', 
-        'text-red-600', 
-        'text-green-600', 
-        'text-yellow-600', 
-        'text-purple-600'
-    ];
 
     return (
         <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6">
@@ -461,29 +491,87 @@ export function LongCalculationExercise() {
                                     </div>
                                 )}
                             </div>
-                            {/* Operands */}
+                            {/* Operands avec annotations au-dessus */}
                             {operands.map((operand, operandIndex) => (
-                                <div key={`operand-row-${operandIndex}`} className="flex items-center gap-2">
-                                    <div className="w-8 text-2xl font-bold text-primary flex justify-center">
-                                        {operandIndex === operands.length - 1 ? symbol : ''}
+                                <Fragment key={`operand-row-${operandIndex}`}>
+                                    {/* Annotations au-dessus de chaque opérande */}
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8" />
+                                        <div className="grid gap-2" style={gridTemplateStyle}>
+                                            {columnIndices.map((columnIndex) => {
+                                                const colors = getColumnColorClasses(columnIndex);
+                                                return (
+                                                    <div key={`annotation-${operandIndex}-${columnIndex}`} className="flex justify-center items-center h-8">
+                                                        <input
+                                                            id={`annotation-${operandIndex}-${columnIndex}`}
+                                                            inputMode="numeric"
+                                                            pattern="[0-9]*"
+                                                            maxLength={1}
+                                                            value={calculationState[`annotation-${operandIndex}-${columnIndex}`]?.value || ''}
+                                                            onChange={(e) => handleInputChange(`annotation-${operandIndex}-${columnIndex}`, e.target.value.replace(/[^0-9]/g, ''))}
+                                                            onFocus={(e) => e.currentTarget.select()}
+                                                            placeholder="•"
+                                                            className={cn(
+                                                                "h-8 w-8 rounded-md border border-dashed text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all",
+                                                                colors.border,
+                                                                colors.bg,
+                                                                colors.text,
+                                                                colors.ring,
+                                                                "placeholder:text-muted-foreground/30"
+                                                            )}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                    <div className="grid gap-2" style={gridTemplateStyle}>
-                                        {columnIndices.map((columnIndex) =>
-                                            <div key={`op-${operandIndex}-${columnIndex}`} className="relative flex h-14 w-14 items-center justify-center rounded-md border-2 border-muted bg-muted/20 text-3xl font-bold">
-                                                 <button
-                                                    type="button"
-                                                    onClick={() => handleToggleCrossed(`op-${operandIndex}-${columnIndex}`)}
-                                                    className={cn(
-                                                        "transition-all",
-                                                        calculationState[`op-${operandIndex}-${columnIndex}`]?.isCrossed && "line-through decoration-4 decoration-destructive"
-                                                    )}
-                                                >
-                                                    {getOperandDigit(operand, columnIndex)}
-                                                </button>
-                                            </div>
-                                        )}
+                                    {/* Chiffres de l'opérande */}
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 text-2xl font-bold text-primary flex justify-center">
+                                            {operandIndex === operands.length - 1 ? symbol : ''}
+                                        </div>
+                                        <div className="grid gap-2" style={gridTemplateStyle}>
+                                            {columnIndices.map((columnIndex) => {
+                                                const colors = getColumnColorClasses(columnIndex);
+                                                const digit = getOperandDigit(operand, columnIndex);
+                                                const isCrossed = calculationState[`op-${operandIndex}-${columnIndex}`]?.isCrossed;
+
+                                                return (
+                                                    <div
+                                                        key={`op-${operandIndex}-${columnIndex}`}
+                                                        className={cn(
+                                                            "relative flex h-14 w-14 items-center justify-center rounded-md border-2 text-3xl font-bold cursor-pointer group transition-all hover:scale-105",
+                                                            colors.border,
+                                                            digit ? colors.bg : 'bg-muted/10',
+                                                            isCrossed && 'opacity-60'
+                                                        )}
+                                                        onClick={() => {
+                                                            if (digit) {
+                                                                handleToggleCrossed(`op-${operandIndex}-${columnIndex}`);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <span className={cn(
+                                                            "transition-all",
+                                                            colors.text,
+                                                            isCrossed && "line-through decoration-[3px] decoration-red-600"
+                                                        )}>
+                                                            {digit}
+                                                        </span>
+                                                        {/* Indicateur pour montrer qu'on peut cliquer pour barrer */}
+                                                        {digit && !isCrossed && (
+                                                            <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <div className="h-4 w-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                                                                    ✕
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
+                                </Fragment>
                             ))}
                             {/* Separator */}
                             <div className="flex items-center gap-2">
@@ -495,7 +583,7 @@ export function LongCalculationExercise() {
                             {/* Result */}
                             <div className="grid gap-2" style={gridTemplateStyle}>
                                 {columnIndices.map((columnIndex) => {
-                                    const colorIndex = columnIndex % columnColors.length;
+                                    const colors = getColumnColorClasses(columnIndex);
                                     return (
                                         <input
                                             key={`result-${columnIndex}`}
@@ -506,12 +594,15 @@ export function LongCalculationExercise() {
                                             value={calculationState[`result-${columnIndex}`]?.value || ''}
                                             onChange={(e) => handleInputChange(`result-${columnIndex}`, e.target.value.replace(/[^0-9]/g, ''))}
                                             onFocus={(e) => e.currentTarget.select()}
-                                            className={cn("h-14 w-14 rounded-md border-2 bg-background text-center text-3xl font-bold focus:outline-none focus:ring-2 focus:ring-offset-2",
-                                                columnColors[colorIndex],
-                                                `focus:ring-${columnColors[colorIndex].replace('border-','').replace('-400','')}-300`
+                                            className={cn(
+                                                "h-14 w-14 rounded-md border-2 text-center text-3xl font-bold focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all",
+                                                colors.border,
+                                                colors.bg,
+                                                colors.text,
+                                                colors.ring
                                             )}
                                         />
-                                    )
+                                    );
                                 })}
                             </div>
                         </div>
@@ -519,7 +610,7 @@ export function LongCalculationExercise() {
                 </CardContent>
             </Card>
 
-            <div className="w-full">
+            <div className="w-full space-y-3">
                 <Button onClick={handleValidate} size="lg" className={cn("w-full text-lg",
                     feedback === 'correct' && 'bg-green-500 hover:bg-green-600',
                     feedback === 'incorrect' && 'bg-red-500 hover:bg-red-500',
@@ -528,6 +619,18 @@ export function LongCalculationExercise() {
                     {feedback === 'incorrect' && <X className="mr-2"/>}
                     Valider ma réponse
                 </Button>
+
+                {/* Aide visuelle */}
+                <Card className="bg-muted/50 border-dashed">
+                    <CardContent className="p-3">
+                        <div className="text-xs space-y-1 text-muted-foreground">
+                            <p className="font-semibold text-foreground mb-2">💡 Aide :</p>
+                            <p>• <span className="font-semibold">Clique</span> sur un chiffre pour le barrer</p>
+                            <p>• Utilise les <span className="font-semibold">petites cases en pointillé</span> pour les retenues et annotations</p>
+                            <p>• <span className="inline-block w-3 h-3 rounded-full bg-blue-400 mx-1"></span> Unités, <span className="inline-block w-3 h-3 rounded-full bg-red-400 mx-1"></span> Dizaines, <span className="inline-block w-3 h-3 rounded-full bg-green-400 mx-1"></span> Centaines</p>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );
