@@ -20,7 +20,7 @@ type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playin
 
 const GAME_COST = 2;
 const GHOST_HUNT_COST = 4;
-const PHOTO_UNLOCK_COST = 80;
+const PHOTO_UNLOCK_COST = 30;
 
 export default function RewardsPage() {
   const { student, refreshStudent } = useContext(UserContext);
