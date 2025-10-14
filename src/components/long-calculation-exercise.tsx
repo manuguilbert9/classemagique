@@ -494,37 +494,39 @@ export function LongCalculationExercise() {
                             {/* Operands avec annotations au-dessus */}
                             {operands.map((operand, operandIndex) => (
                                 <Fragment key={`operand-row-${operandIndex}`}>
-                                    {/* Annotations au-dessus de chaque opérande */}
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8" />
-                                        <div className="grid gap-2" style={gridTemplateStyle}>
-                                            {columnIndices.map((columnIndex) => {
-                                                const colors = getColumnColorClasses(columnIndex);
-                                                return (
-                                                    <div key={`annotation-${operandIndex}-${columnIndex}`} className="flex justify-center items-center h-8">
-                                                        <input
-                                                            id={`annotation-${operandIndex}-${columnIndex}`}
-                                                            inputMode="numeric"
-                                                            pattern="[0-9]*"
-                                                            maxLength={1}
-                                                            value={calculationState[`annotation-${operandIndex}-${columnIndex}`]?.value || ''}
-                                                            onChange={(e) => handleInputChange(`annotation-${operandIndex}-${columnIndex}`, e.target.value.replace(/[^0-9]/g, ''))}
-                                                            onFocus={(e) => e.currentTarget.select()}
-                                                            placeholder="•"
-                                                            className={cn(
-                                                                "h-8 w-8 rounded-md border border-dashed text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all",
-                                                                colors.border,
-                                                                colors.bg,
-                                                                colors.text,
-                                                                colors.ring,
-                                                                "placeholder:text-muted-foreground/30"
-                                                            )}
-                                                        />
-                                                    </div>
-                                                );
-                                            })}
+                                    {/* Annotations au-dessus de chaque opérande (uniquement pour les soustractions) */}
+                                    {operation === 'subtraction' && (
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8" />
+                                            <div className="grid gap-2" style={gridTemplateStyle}>
+                                                {columnIndices.map((columnIndex) => {
+                                                    const colors = getColumnColorClasses(columnIndex);
+                                                    return (
+                                                        <div key={`annotation-${operandIndex}-${columnIndex}`} className="flex justify-center items-center h-8">
+                                                            <input
+                                                                id={`annotation-${operandIndex}-${columnIndex}`}
+                                                                inputMode="numeric"
+                                                                pattern="[0-9]*"
+                                                                maxLength={1}
+                                                                value={calculationState[`annotation-${operandIndex}-${columnIndex}`]?.value || ''}
+                                                                onChange={(e) => handleInputChange(`annotation-${operandIndex}-${columnIndex}`, e.target.value.replace(/[^0-9]/g, ''))}
+                                                                onFocus={(e) => e.currentTarget.select()}
+                                                                placeholder="•"
+                                                                className={cn(
+                                                                    "h-8 w-8 rounded-md border border-dashed text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all",
+                                                                    colors.border,
+                                                                    colors.bg,
+                                                                    colors.text,
+                                                                    colors.ring,
+                                                                    "placeholder:text-muted-foreground/30"
+                                                                )}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                     {/* Chiffres de l'opérande */}
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 text-2xl font-bold text-primary flex justify-center">
@@ -540,13 +542,15 @@ export function LongCalculationExercise() {
                                                     <div
                                                         key={`op-${operandIndex}-${columnIndex}`}
                                                         className={cn(
-                                                            "relative flex h-14 w-14 items-center justify-center rounded-md border-2 text-3xl font-bold cursor-pointer group transition-all hover:scale-105",
+                                                            "relative flex h-14 w-14 items-center justify-center rounded-md border-2 text-3xl font-bold transition-all",
                                                             colors.border,
                                                             digit ? colors.bg : 'bg-muted/10',
-                                                            isCrossed && 'opacity-60'
+                                                            isCrossed && 'opacity-60',
+                                                            operation === 'subtraction' && digit && 'cursor-pointer group hover:scale-105'
                                                         )}
                                                         onClick={() => {
-                                                            if (digit) {
+                                                            // Le barrage n'est possible que pour les soustractions
+                                                            if (operation === 'subtraction' && digit) {
                                                                 handleToggleCrossed(`op-${operandIndex}-${columnIndex}`);
                                                             }
                                                         }}
@@ -558,8 +562,8 @@ export function LongCalculationExercise() {
                                                         )}>
                                                             {digit}
                                                         </span>
-                                                        {/* Indicateur pour montrer qu'on peut cliquer pour barrer */}
-                                                        {digit && !isCrossed && (
+                                                        {/* Indicateur pour montrer qu'on peut cliquer pour barrer (uniquement pour les soustractions) */}
+                                                        {operation === 'subtraction' && digit && !isCrossed && (
                                                             <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <div className="h-4 w-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
                                                                     ✕
@@ -581,7 +585,9 @@ export function LongCalculationExercise() {
                                 </div>
                             </div>
                             {/* Result */}
-                            <div className="grid gap-2" style={gridTemplateStyle}>
+                            <div className="flex items-center gap-2">
+                                <div className="w-8" />
+                                <div className="grid gap-2" style={gridTemplateStyle}>
                                 {columnIndices.map((columnIndex) => {
                                     const colors = getColumnColorClasses(columnIndex);
                                     return (
@@ -604,6 +610,7 @@ export function LongCalculationExercise() {
                                         />
                                     );
                                 })}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -625,8 +632,13 @@ export function LongCalculationExercise() {
                     <CardContent className="p-3">
                         <div className="text-xs space-y-1 text-muted-foreground">
                             <p className="font-semibold text-foreground mb-2">💡 Aide :</p>
-                            <p>• <span className="font-semibold">Clique</span> sur un chiffre pour le barrer</p>
-                            <p>• Utilise les <span className="font-semibold">petites cases en pointillé</span> pour les retenues et annotations</p>
+                            <p>• Utilise les <span className="font-semibold">cases en pointillé du haut</span> pour les retenues</p>
+                            {operation === 'subtraction' && (
+                                <>
+                                    <p>• <span className="font-semibold">Clique</span> sur un chiffre pour le barrer (soustraction)</p>
+                                    <p>• Utilise les <span className="font-semibold">petites cases au-dessus</span> pour noter les emprunts</p>
+                                </>
+                            )}
                             <p>• <span className="inline-block w-3 h-3 rounded-full bg-blue-400 mx-1"></span> Unités, <span className="inline-block w-3 h-3 rounded-full bg-red-400 mx-1"></span> Dizaines, <span className="inline-block w-3 h-3 rounded-full bg-green-400 mx-1"></span> Centaines</p>
                         </div>
                     </CardContent>
