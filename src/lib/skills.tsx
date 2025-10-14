@@ -425,6 +425,14 @@ export const skills: Skill[] = [
     allowedLevels: ['A', 'B', 'C', 'D'],
   },
   {
+    name: 'Tableau de numération',
+    slug: 'place-value-table',
+    description: "Placer les chiffres d'un nombre dans un tableau de numération.",
+    icon: <Table />,
+    category: 'Nombres et calcul',
+    allowedLevels: ['B', 'C', 'D'],
+  },
+  {
     name: 'Écoute les nombres',
     slug: 'ecoute-les-nombres',
     description: "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
