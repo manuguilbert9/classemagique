@@ -4,16 +4,17 @@ import type { Question, NumberLevelSettings } from './questions';
 import { numberToWords } from "./utils";
 
 // Définit les colonnes du tableau de numération en fonction du niveau
+// Toujours au moins 4 colonnes
 function getColumnsForLevel(level: string): string[] {
   switch(level) {
     case 'B':
-      return ['C', 'D', 'U']; // Centaines, Dizaines, Unités
+      return ['UM', 'C', 'D', 'U']; // Unités de milliers, Centaines, Dizaines, Unités (4 colonnes minimum)
     case 'C':
       return ['CM', 'DM', 'UM', 'C', 'D', 'U']; // Centaines de milliers, Dizaines de milliers, Unités de milliers, Centaines, Dizaines, Unités
     case 'D':
       return ['CM (millions)', 'DM (millions)', 'UM (millions)', 'CM', 'DM', 'UM', 'C', 'D', 'U']; // Jusqu'aux centaines de millions
     default:
-      return ['C', 'D', 'U'];
+      return ['UM', 'C', 'D', 'U'];
   }
 }
 

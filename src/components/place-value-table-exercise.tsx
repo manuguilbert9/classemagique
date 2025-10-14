@@ -26,6 +26,23 @@ interface PlaceValueTableMetadata {
   decomposition: Record<string, string>;
 }
 
+// Fonction pour déterminer la couleur d'une colonne selon sa position
+// Unités = bleu, Dizaines = rouge, Centaines = vert, au-delà = noir
+function getColumnColor(columnName: string): string {
+  // Extrait la dernière lettre pour identifier le type de colonne
+  const lastChar = columnName.charAt(columnName.length - 1);
+
+  if (lastChar === 'U' || columnName.endsWith('UM')) {
+    return 'bg-blue-100 text-blue-900'; // Unités en bleu
+  } else if (lastChar === 'D' || columnName.endsWith('DM')) {
+    return 'bg-red-100 text-red-900'; // Dizaines en rouge
+  } else if (lastChar === 'C' || columnName.endsWith('CM')) {
+    return 'bg-green-100 text-green-900'; // Centaines en vert
+  } else {
+    return 'bg-gray-100 text-gray-900'; // Au-delà en noir
+  }
+}
+
 export function PlaceValueTableExercise() {
   const { student } = useContext(UserContext);
   const searchParams = useSearchParams();
@@ -229,7 +246,7 @@ export function PlaceValueTableExercise() {
                     Nombre
                   </th>
                   {metadata.columns.map((col, index) => (
-                    <th key={index} className="border-2 border-gray-400 bg-blue-100 px-3 py-2 text-sm font-semibold min-w-[60px]">
+                    <th key={index} className={cn("border-2 border-gray-400 px-3 py-2 text-sm font-semibold min-w-[60px]", getColumnColor(col))}>
                       {col}
                     </th>
                   ))}
