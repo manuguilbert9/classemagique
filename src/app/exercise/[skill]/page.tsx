@@ -36,6 +36,7 @@ import { DecodingExercise } from '@/components/decoding-exercise';
 import { MysteryNumberExercise } from '@/components/mystery-number-exercise';
 import { MbpRuleExercise } from '@/components/mbp-rule-exercise';
 import { PlaceValueTableExercise } from '@/components/place-value-table-exercise';
+import { SubtractionTrainingExercise } from '@/components/subtraction-training-exercise';
 import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
@@ -138,6 +139,9 @@ export default function ExercisePage() {
         break;
       case 'place-value-table':
         exerciseComponent = <PlaceValueTableExercise />;
+        break;
+      case 'subtraction-training':
+        exerciseComponent = <SubtractionTrainingExercise />;
         break;
       case 'denombrement':
       case 'time':

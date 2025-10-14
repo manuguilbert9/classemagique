@@ -24,6 +24,7 @@ import {
   Wand,
   Table,
   HelpCircle,
+  GraduationCap,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -502,6 +503,14 @@ export const skills: Skill[] = [
     icon: <SquarePen />,
     category: 'Nombres et calcul',
     allowedLevels: ['B', 'C', 'D'],
+  },
+  {
+    name: 'Entraînement soustraction',
+    slug: 'subtraction-training',
+    description: "Apprendre la méthode de la soustraction posée étape par étape avec un guide interactif.",
+    icon: <GraduationCap />,
+    category: 'Nombres et calcul',
+    isFixedLevel: 'B',
   },
   {
     name: 'Calcul mental',
