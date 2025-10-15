@@ -14,7 +14,8 @@ export const calculateNuggets = (score: number, skillSlug: string): number => {
     // These exercises are completion-based.
     const completionBasedSkills = [
         'fluence', 'reading-race', // MCLM scores
-        'decoding', 'syllable-table', 'writing-notebook', 'lire-des-phrases' // Completion scores
+        'decoding', 'syllable-table', 'writing-notebook', 'lire-des-phrases', // Completion scores
+        'subtraction-training' // Guided subtraction training (3 problems)
     ];
 
     if (completionBasedSkills.includes(skillSlug)) {

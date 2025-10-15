@@ -4,7 +4,9 @@
       "Bash(git push:*)",
       "Bash(git add:*)",
       "Bash(git log:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Read(//c/Users/Manu/Downloads/**)",
+      "Bash(npm run build)"
     ],
     "deny": [],
     "ask": []

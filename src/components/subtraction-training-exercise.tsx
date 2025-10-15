@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, RotateCcw, ArrowDown } from 'lucide-react';
+import { Play, RotateCcw, ArrowDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { generateSubtractionTrainingSet, SubtractionQuestion } from '@/lib/subtraction-training-questions';
+import { addScore } from '@/services/scores';
+import { UserContext } from '@/context/user-context';
 
 // Fonction pour déterminer la couleur d'une colonne
 function getColumnColorClasses(columnIndex: number) {
@@ -50,6 +53,15 @@ interface Step {
 }
 
 export function SubtractionTrainingExercise() {
+    const { student } = useContext(UserContext);
+
+    // Progression state
+    const [questions, setQuestions] = useState<SubtractionQuestion[]>([]);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [allQuestionsCompleted, setAllQuestionsCompleted] = useState(false);
+    const [hasCollectedReward, setHasCollectedReward] = useState(false);
+
+    // Current problem state
     const [minuend, setMinuend] = useState(['', '', '']);
     const [subtrahend, setSubtrahend] = useState(['', '', '']);
     const [started, setStarted] = useState(false);
@@ -64,6 +76,13 @@ export function SubtractionTrainingExercise() {
     const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
     const [expectedSteps, setExpectedSteps] = useState<Step[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
+
+    // Initialize questions on mount
+    useEffect(() => {
+        const questionSet = generateSubtractionTrainingSet();
+        setQuestions(questionSet);
+        loadQuestion(questionSet[0]);
+    }, []);
 
     const calculateExpectedSteps = (): Step[] => {
         const num1 = minuend.map(d => d === '' ? 0 : parseInt(d));
@@ -192,6 +211,60 @@ export function SubtractionTrainingExercise() {
         }
     }, [currentStepIndex, expectedSteps]);
 
+    const loadQuestion = (question: SubtractionQuestion) => {
+        // Store the question but don't fill the cells - student must fill them
+        setMinuend(['', '', '']);
+        setSubtrahend(['', '', '']);
+    };
+
+    const nextQuestion = () => {
+        if (currentQuestionIndex < questions.length - 1) {
+            const nextIndex = currentQuestionIndex + 1;
+            setCurrentQuestionIndex(nextIndex);
+            loadQuestion(questions[nextIndex]);
+            resetCurrentProblem();
+        } else {
+            // All questions completed
+            setAllQuestionsCompleted(true);
+        }
+    };
+
+    const resetCurrentProblem = () => {
+        setStarted(false);
+        setUserRetenues(['', '', '']);
+        setUserSmallOnes(['', '', '']);
+        setBarredCells([false, false, false]);
+        setUserResult(['', '', '']);
+        setCurrentStepIndex(0);
+        setCompleted(false);
+        setCurrentHint('');
+        setHighlightPosition(null);
+        setHighlightType('');
+    };
+
+    const collectReward = async () => {
+        if (!hasCollectedReward && student?.id) {
+            try {
+                // addScore will automatically give nuggets based on calculateNuggets
+                // We mark this as completion-based (score > 0 gives 2 nuggets)
+                await addScore({
+                    userId: student.id,
+                    skill: 'subtraction-training',
+                    score: 1, // Completion score
+                    details: [{
+                        question: 'Entraînement soustraction posée (3 calculs)',
+                        userAnswer: 'Completed',
+                        correctAnswer: 'Completed',
+                        status: 'completed'
+                    }]
+                });
+                setHasCollectedReward(true);
+            } catch (error) {
+                console.error('Error collecting reward:', error);
+            }
+        }
+    };
+
     const checkAndAdvance = () => {
         if (currentStepIndex >= expectedSteps.length) return;
 
@@ -241,18 +314,14 @@ export function SubtractionTrainingExercise() {
     };
 
     const reset = () => {
-        setMinuend(['', '', '']);
-        setSubtrahend(['', '', '']);
-        setStarted(false);
-        setUserRetenues(['', '', '']);
-        setUserSmallOnes(['', '', '']);
-        setBarredCells([false, false, false]);
-        setUserResult(['', '', '']);
-        setCurrentStepIndex(0);
-        setCompleted(false);
-        setCurrentHint('');
-        setHighlightPosition(null);
-        setHighlightType('');
+        // Reset everything and restart from first question
+        const questionSet = generateSubtractionTrainingSet();
+        setQuestions(questionSet);
+        setCurrentQuestionIndex(0);
+        loadQuestion(questionSet[0]);
+        setAllQuestionsCompleted(false);
+        setHasCollectedReward(false);
+        resetCurrentProblem();
     };
 
     const handleMouseDown = (index: number) => {
@@ -272,6 +341,65 @@ export function SubtractionTrainingExercise() {
         }
     };
 
+    // Show completion screen after all 3 questions
+    if (allQuestionsCompleted) {
+        return (
+            <div className="w-full max-w-4xl mx-auto">
+                <Card className="shadow-2xl">
+                    <CardHeader>
+                        <CardTitle className="text-center font-headline text-4xl text-green-700">
+                            🎉 Félicitations ! 🎉
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="text-center space-y-4">
+                            <p className="text-2xl font-bold text-gray-800">
+                                Tu as terminé les 3 soustractions !
+                            </p>
+                            <p className="text-lg text-gray-600">
+                                Tu maîtrises maintenant la méthode de la soustraction posée.
+                            </p>
+
+                            {!hasCollectedReward ? (
+                                <div className="mt-8">
+                                    <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 border-4 border-yellow-400">
+                                        <CardContent className="p-6">
+                                            <p className="text-xl font-bold text-amber-900 mb-4">
+                                                🏆 Récompense : 2 pépites !
+                                            </p>
+                                            <Button
+                                                onClick={collectReward}
+                                                size="lg"
+                                                className="bg-yellow-500 hover:bg-yellow-600 text-white text-xl px-8 py-6"
+                                            >
+                                                Récupérer mes pépites
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            ) : (
+                                <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-4 border-green-400">
+                                    <CardContent className="p-6">
+                                        <p className="text-xl font-bold text-green-900">
+                                            ✅ Pépites récupérées ! Continue comme ça !
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            <div className="mt-8">
+                                <Button onClick={reset} size="lg" className="text-lg">
+                                    <RotateCcw className="mr-2" />
+                                    Recommencer un nouvel exercice
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className="w-full max-w-4xl mx-auto">
             <Card className="shadow-2xl mb-6">
@@ -282,13 +410,36 @@ export function SubtractionTrainingExercise() {
                     <p className="text-center text-muted-foreground mt-2">
                         Suis les instructions étape par étape !
                     </p>
+                    {/* Progress indicator */}
+                    <div className="flex justify-center gap-2 mt-4">
+                        {[0, 1, 2].map((i) => (
+                            <div
+                                key={i}
+                                className={cn(
+                                    "w-16 h-2 rounded-full transition-all",
+                                    i < currentQuestionIndex ? "bg-green-500" :
+                                    i === currentQuestionIndex ? "bg-blue-500" :
+                                    "bg-gray-300"
+                                )}
+                            />
+                        ))}
+                    </div>
+                    <p className="text-center text-sm text-gray-600 mt-2">
+                        Calcul {currentQuestionIndex + 1} sur 3
+                        {currentQuestionIndex === 0 && " (sans emprunt)"}
+                        {currentQuestionIndex === 1 && " (1 emprunt)"}
+                        {currentQuestionIndex === 2 && " (2 emprunts)"}
+                    </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {!started && (
+                    {!started && questions.length > 0 && (
                         <Card className="bg-blue-50 border-2 border-blue-300">
                             <CardContent className="p-4">
-                                <p className="text-lg font-bold text-blue-900 text-center">
-                                    📝 Commence par remplir les nombres de ta soustraction
+                                <p className="text-lg font-bold text-blue-900 text-center mb-2">
+                                    📝 Remplis les cases pour effectuer cette soustraction :
+                                </p>
+                                <p className="text-2xl font-bold text-blue-900 text-center">
+                                    {questions[currentQuestionIndex].num1} − {questions[currentQuestionIndex].num2}
                                 </p>
                             </CardContent>
                         </Card>
@@ -298,12 +449,17 @@ export function SubtractionTrainingExercise() {
                         {!started ? (
                             <Button onClick={startExercise} size="lg" className="text-lg">
                                 <Play className="mr-2" />
-                                Commencer l'exercice
+                                Commencer ce calcul
+                            </Button>
+                        ) : completed ? (
+                            <Button onClick={nextQuestion} size="lg" className="text-lg bg-green-600 hover:bg-green-700">
+                                <ChevronRight className="mr-2" />
+                                Calcul suivant
                             </Button>
                         ) : (
                             <Button onClick={reset} variant="outline" size="lg" className="text-lg">
                                 <RotateCcw className="mr-2" />
-                                Recommencer
+                                Recommencer tout
                             </Button>
                         )}
                     </div>
