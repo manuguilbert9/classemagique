@@ -162,7 +162,7 @@ export function SubtractionTrainingExercise() {
                 type: 'result',
                 position: i,
                 expectedValue: null,
-                hint: `Maintenant calcule la soustraction des ${getPositionName(i)} et écris le résultat.`,
+                hint: `Maintenant calcule la soustraction des ${getPositionName(i)} et écris le résultat dans la case du bas.`,
                 highlight: { position: i, type: 'result' },
                 hasBeenBorrowed: hasBeenBorrowed[i],
                 workingDigit: workingNum[i],
@@ -466,6 +466,15 @@ export function SubtractionTrainingExercise() {
 
                     <div className="flex justify-center">
                         <div className="inline-block relative">
+                            {/* Labels C D U en haut */}
+                            <div className="flex gap-3 mb-2">
+                                {[0, 1, 2].map((i) => (
+                                    <div key={i} className="w-20 text-center text-sm text-gray-600 font-bold">
+                                        {i === 0 ? 'C' : i === 1 ? 'D' : 'U'}
+                                    </div>
+                                ))}
+                            </div>
+
                             {/* Ligne des retenues */}
                             <div className="flex gap-3 mb-2">
                                 {[0, 1, 2].map((i) => {
@@ -504,7 +513,6 @@ export function SubtractionTrainingExercise() {
 
                             {/* Ligne du minuende */}
                             <div className="flex gap-3 mb-3 relative items-center">
-                                <span className="absolute -left-8 text-2xl text-gray-600 font-bold">−</span>
                                 {[0, 1, 2].map((i) => {
                                     const colors = getColumnColorClasses(i);
                                     return (
@@ -579,16 +587,14 @@ export function SubtractionTrainingExercise() {
                                                     </>
                                                 )}
                                             </div>
-                                            <div className="text-center text-xs text-gray-500 mt-1 font-semibold">
-                                                {i === 0 ? 'C' : i === 1 ? 'D' : 'U'}
-                                            </div>
                                         </div>
                                     );
                                 })}
                             </div>
 
-                            {/* Ligne du soustracteur */}
-                            <div className="flex gap-3 mb-3">
+                            {/* Ligne du subtrahend (soustracteur) */}
+                            <div className="flex gap-3 mb-3 relative items-center">
+                                <span className="absolute -left-8 text-2xl text-gray-600 font-bold">−</span>
                                 {[0, 1, 2].map((i) => {
                                     const colors = getColumnColorClasses(i);
                                     return (
