@@ -477,6 +477,20 @@ export function LongCalculationExercise() {
                 <CardContent className="pt-2 sm:pt-6">
                     <div className="flex flex-col items-center gap-2">
                         <div className="space-y-1">
+                            {/* Labels C D U en haut */}
+                            <div className="flex items-center gap-2">
+                                <div className="w-8" />
+                                <div className="grid gap-2" style={gridTemplateStyle}>
+                                    {columnIndices.map((columnIndex) => {
+                                        const label = columnIndex === 0 ? 'U' : columnIndex === 1 ? 'D' : columnIndex === 2 ? 'C' : '';
+                                        return (
+                                            <div key={`label-${columnIndex}`} className="flex justify-center items-center h-6">
+                                                <span className="text-sm font-bold text-gray-600">{label}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                             {/* Retenues */}
                             <div className="grid gap-2 h-12" style={gridTemplateStyle}>
                                 {columnIndices.map((columnIndex) =>
@@ -530,7 +544,12 @@ export function LongCalculationExercise() {
                                     {/* Chiffres de l'opérande */}
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 text-2xl font-bold text-primary flex justify-center">
-                                            {operandIndex === operands.length - 1 ? symbol : ''}
+                                            {/* Pour les soustractions, afficher le symbole seulement sur la dernière ligne (subtrahend) */}
+                                            {/* Pour les additions, afficher le symbole sur toutes les lignes sauf la première */}
+                                            {operation === 'subtraction'
+                                                ? (operandIndex === operands.length - 1 ? symbol : '')
+                                                : (operandIndex > 0 ? symbol : '')
+                                            }
                                         </div>
                                         <div className="grid gap-2" style={gridTemplateStyle}>
                                             {columnIndices.map((columnIndex) => {
