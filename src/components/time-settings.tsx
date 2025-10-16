@@ -13,23 +13,27 @@ interface TimeSettingsProps {
 }
 
 const difficultyDesc = [
-  "Niveau 1 : Guidage complet (cercle des minutes et couleurs)",
-  "Niveau 2 : Aiguilles en couleur, sans fond coloré",
-  "Niveau 3 : Introduction des heures de l'après-midi",
-  "Niveau 4 : Maîtrise (sans cercle des minutes)",
+  "Niveau A : Guidage complet (cercle des minutes et couleurs)",
+  "Niveau B : Aiguilles en couleur, sans fond coloré",
+  "Niveau C : Introduction des heures de l'après-midi",
+  "Niveau D : Maîtrise (sans cercle des minutes)",
 ];
 
-export function TimeSettings({ onStart }: TimeSettingsProps) {
-  const [difficulty, setDifficulty] = useState(0);
+interface TimeSettingsExtendedProps extends TimeSettingsProps {
+  initialDifficulty?: number;
+}
+
+export function TimeSettings({ onStart, initialDifficulty = 0 }: TimeSettingsExtendedProps) {
+  const [difficulty, setDifficulty] = useState(initialDifficulty);
 
   const handleSubmit = () => {
     onStart({
       difficulty,
-      // Level 4 (difficulty 3) should not show the minute circle.
-      showMinuteCircle: difficulty < 3, 
-      // Only level 1 (difficulty 0) has color matching on background and numbers
-      matchColors: difficulty === 0, 
-      // Level 1 and 2 have colored hands
+      // Level D (difficulty 3) should not show the minute circle.
+      showMinuteCircle: difficulty < 3,
+      // Only level A (difficulty 0) has color matching on background and numbers
+      matchColors: difficulty === 0,
+      // Level A and B have colored hands
       coloredHands: difficulty < 2,
     });
   };

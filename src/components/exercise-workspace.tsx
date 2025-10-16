@@ -107,6 +107,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 startCurrencyExercise({ difficulty });
             }
             // If no level, the settings component will be shown
+        } else if (skill.slug === 'time') {
+            if (student?.levels?.[skill.slug]) {
+                const level = student.levels[skill.slug];
+                const difficulty = level.charCodeAt(0) - 'A'.charCodeAt(0);
+                startTimeExercise({ difficulty, showMinuteCircle: difficulty < 3, matchColors: difficulty === 0, coloredHands: difficulty < 2 });
+            }
+            // If no level, the settings component will be shown
         }
     }
     if (!isUserLoading) {
@@ -410,6 +417,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             const difficulty = level.charCodeAt(0) - 'A'.charCodeAt(0);
             startCurrencyExercise({ difficulty });
         }
+    } else if (skill.slug === 'time') {
+       if (student?.levels?.[skill.slug]) {
+            const level = student.levels[skill.slug];
+            const difficulty = level.charCodeAt(0) - 'A'.charCodeAt(0);
+            startTimeExercise({ difficulty, showMinuteCircle: difficulty < 3, matchColors: difficulty === 0, coloredHands: difficulty < 2 });
+        }
     }
   };
 
@@ -420,7 +433,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   if (!isReadyToStart && hasConfigurableSettings) {
       if (skill.slug === 'calculation') return <CalculationSettings onStart={startCalculationExercise} />;
       if (skill.slug === 'currency') return <CurrencySettings onStart={startCurrencyExercise} />;
-      if (skill.slug === 'time') return <TimeSettings onStart={startTimeExercise} />;
+      if (skill.slug === 'time') {
+          const initialDifficulty = student?.levels?.[skill.slug]
+              ? student.levels[skill.slug].charCodeAt(0) - 'A'.charCodeAt(0)
+              : 0;
+          return <TimeSettings onStart={startTimeExercise} initialDifficulty={initialDifficulty} />;
+      }
       if (skill.slug === 'denombrement') return <CountSettings onStart={startCountExercise} />;
       if (skill.slug === 'lire-les-nombres') return (
           <Card className="w-full max-w-2xl mx-auto shadow-2xl">
