@@ -93,7 +93,7 @@ const simpleWords: WordWithEmoji[] = [
   { word: 'zone', emoji: '🗺️' },
   { word: 'vase', emoji: '🏺' },
   { word: 'bec', emoji: '🦆' },
-  { word: 'té', emoji: '🍵' },
+  { word: 'thé', emoji: '🍵' },
   { word: 'île', emoji: '🏝️' },
   { word: 'nid', emoji: '🪺' },
   { word: 'arc', emoji: '🏹' },
