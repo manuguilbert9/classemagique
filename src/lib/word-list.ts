@@ -5,19 +5,22 @@ export interface WordWithEmoji {
 }
 
 const simpleWords: WordWithEmoji[] = [
-  { word: 'le', emoji: '📖' },
-  { word: 'la', emoji: '🚗' },
-  { word: 'un', emoji: '🍎' },
-  { word: 'une', emoji: '🍌' },
-  { word: 'ma', emoji: '🏠' },
-  { word: 'sa', emoji: '👗' },
-  { word: 'ta', emoji: '✏️' },
-  { word: 'mon', emoji: '🐶' },
-  { word: 'son', emoji: '🐱' },
-  { word: 'ton', emoji: '🚲' },
+  // Articles et déterminants (pas d'emoji spécifique)
+  { word: 'le', emoji: '📝' },
+  { word: 'la', emoji: '📝' },
+  { word: 'un', emoji: '📝' },
+  { word: 'une', emoji: '📝' },
+  { word: 'ma', emoji: '📝' },
+  { word: 'sa', emoji: '📝' },
+  { word: 'ta', emoji: '📝' },
+  { word: 'mon', emoji: '📝' },
+  { word: 'son', emoji: '📝' },
+  { word: 'ton', emoji: '📝' },
+  // Pronoms
   { word: 'il', emoji: '👦' },
   { word: 'elle', emoji: '👧' },
   { word: 'a', emoji: '🔤' },
+  // Noms avec emojis correspondants
   { word: 'ami', emoji: '🧑‍🤝‍🧑' },
   { word: 'papa', emoji: '👨' },
   { word: 'papi', emoji: '👴' },
@@ -48,7 +51,7 @@ const simpleWords: WordWithEmoji[] = [
   { word: 'fleur', emoji: '🌸' },
   { word: 'chat', emoji: '🐈' },
   { word: 'chien', emoji: '🐕' },
-  { word: 'table', emoji: '🪑' },
+  { word: 'table', emoji: '🪑' }, // Note: utilise l'emoji chaise car pas d'emoji table distinct
   { word: 'chaise', emoji: '🪑' },
   { word: 'pomme', emoji: '🍎' },
   { word: 'poire', emoji: '🍐' },

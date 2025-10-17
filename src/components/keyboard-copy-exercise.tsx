@@ -201,16 +201,25 @@ export function KeyboardCopyExercise() {
                     </div>
 
                     <div className="relative font-mono text-5xl sm:text-6xl font-bold tracking-wider uppercase">
-                        {currentWord.split('').map((char, index) => (
-                            <span key={index} className="relative inline-block mx-1">
-                                <span className="opacity-20">{char}</span>
-                                {index < typedWord.length && (
-                                    <span className="absolute left-0 text-green-500">
-                                        {typedWord[index].toUpperCase()}
-                                    </span>
-                                )}
-                            </span>
-                        ))}
+                        {currentWord.split('').map((char, index) => {
+                            const isTyped = index < typedWord.length;
+                            const isCurrent = index === typedWord.length;
+                            const isFuture = index > typedWord.length;
+
+                            return (
+                                <span
+                                    key={index}
+                                    className={cn(
+                                        "inline-block mx-1 transition-all duration-200",
+                                        isTyped && "text-gray-400",
+                                        isCurrent && "text-black scale-125",
+                                        isFuture && "text-gray-400"
+                                    )}
+                                >
+                                    {char}
+                                </span>
+                            );
+                        })}
                     </div>
                      <input
                         type="text"
