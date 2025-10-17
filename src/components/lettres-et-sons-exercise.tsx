@@ -17,7 +17,6 @@ import { Checkbox } from './ui/checkbox';
 import { syllableAttackData } from '@/lib/syllable-data'; // Re-using data for word variety
 
 const NUM_QUESTIONS = 10;
-const ALL_LETTERS = "abcdefghijklmnopqrstuvwxyz";
 
 interface WordOption {
     word: string;
@@ -25,7 +24,7 @@ interface WordOption {
 }
 
 interface SoundQuestion {
-    letter: string;
+    sound: string;
     options: WordOption[];
 }
 
@@ -40,22 +39,26 @@ function generateQuestion(): SoundQuestion {
         return shuffled;
     };
 
-    // Find all letters that have at least 2 words in the dataset
-    const validLetters = ALL_LETTERS.split('').filter(letter => {
-        const wordsForLetter = syllableAttackData.filter(d => d.word.startsWith(letter));
-        return wordsForLetter.length >= 2;
+    // Get all unique sounds that have at least 2 words
+    const soundCounts = new Map<string, number>();
+    syllableAttackData.forEach(item => {
+        soundCounts.set(item.sound, (soundCounts.get(item.sound) || 0) + 1);
     });
 
-    // Select a random letter from valid letters only
-    const letter = validLetters[Math.floor(Math.random() * validLetters.length)];
+    const validSounds = Array.from(soundCounts.entries())
+        .filter(([_, count]) => count >= 2)
+        .map(([sound, _]) => sound);
 
-    // Get all words starting with that letter and shuffle
-    const allCorrectWords = syllableAttackData.filter(d => d.word.startsWith(letter));
+    // Select a random sound from valid sounds only
+    const selectedSound = validSounds[Math.floor(Math.random() * validSounds.length)];
+
+    // Get all words with that sound and shuffle
+    const allCorrectWords = syllableAttackData.filter(d => d.sound === selectedSound);
     const shuffledCorrectWords = shuffleArray(allCorrectWords);
     const correctWords = shuffledCorrectWords.slice(0, 2);
 
-    // Get all words NOT starting with that letter and shuffle
-    const allIncorrectWords = syllableAttackData.filter(d => !d.word.startsWith(letter));
+    // Get all words WITHOUT that sound and shuffle
+    const allIncorrectWords = syllableAttackData.filter(d => d.sound !== selectedSound);
     const shuffledIncorrectWords = shuffleArray(allIncorrectWords);
     const incorrectWords = shuffledIncorrectWords.slice(0, 2);
 
@@ -67,7 +70,7 @@ function generateQuestion(): SoundQuestion {
     // Shuffle options
     const shuffledOptions = shuffleArray(options);
 
-    return { letter, options: shuffledOptions };
+    return { sound: selectedSound, options: shuffledOptions };
 }
 
 export function LettresEtSonsExercise() {
@@ -122,7 +125,7 @@ export function LettresEtSonsExercise() {
                           selectedWords.every(word => correctOptions.includes(word));
 
         const detail: ScoreDetail = {
-            question: `Identifier les mots avec le son [${currentQuestion.letter}]`,
+            question: `Identifier les mots avec le son [${currentQuestion.sound}]`,
             userAnswer: selectedWords.join(', '),
             correctAnswer: correctOptions.join(', '),
             status: isCorrect ? 'correct' : 'incorrect',
@@ -218,7 +221,7 @@ export function LettresEtSonsExercise() {
                 </div>
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl">
-                        Coche les mots où tu entends le son <span className="text-primary font-mono text-3xl">[{currentQuestion.letter}]</span>
+                        Coche les mots où tu entends le son <span className="text-primary font-mono text-3xl">[{currentQuestion.sound}]</span>
                     </CardTitle>
                     <CardDescription>Clique sur le haut-parleur pour écouter chaque mot.</CardDescription>
                 </CardHeader>
