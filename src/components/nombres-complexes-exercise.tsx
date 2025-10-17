@@ -71,6 +71,18 @@ export function NombresComplexesExercise() {
     window.speechSynthesis.speak(utterance);
   }, []);
 
+  // Auto-play audio on question load for audio-based questions
+  useEffect(() => {
+    if (currentQuestion && !feedback && currentQuestion.textToSpeak) {
+      if (currentQuestion.type === 'audio-qcm' || currentQuestion.type === 'audio-to-text-input') {
+        const timer = setTimeout(() => {
+          handleSpeak(currentQuestion.textToSpeak!);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentQuestion, feedback, handleSpeak]);
+
   const handleNextQuestion = () => {
     setShowConfetti(false);
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
@@ -213,9 +225,10 @@ export function NombresComplexesExercise() {
                 {currentQuestion.optionsWithAudio?.map(opt => (
                     <div key={opt.text}>
                         <RadioGroupItem value={opt.text} id={opt.text} className="sr-only" />
-                        <Label htmlFor={opt.text} className={cn("flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-20 text-xl", selectedOption === opt.text && 'border-primary')}>
-                             <Button variant="ghost" size="icon" className="h-12 w-12" onClick={(e) => { e.preventDefault(); handleSpeak(opt.audio); }}>
-                                 <Volume2 className="h-8 w-8 text-muted-foreground" />
+                        <Label htmlFor={opt.text} className={cn("flex flex-col items-center justify-center gap-2 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer min-h-24 text-lg", selectedOption === opt.text && 'border-primary bg-primary/10')}>
+                             <span className="font-medium text-center">{opt.audio}</span>
+                             <Button variant="ghost" size="icon" className="h-10 w-10" onClick={(e) => { e.preventDefault(); handleSpeak(opt.audio); }}>
+                                 <Volume2 className="h-6 w-6 text-muted-foreground" />
                              </Button>
                         </Label>
                     </div>
@@ -272,11 +285,16 @@ export function NombresComplexesExercise() {
           {renderQuestion()}
         </CardContent>
         <CardFooter className="h-24 flex flex-col items-center justify-center">
-            {currentQuestion.type !== 'audio-to-text-input' && (
-              <Button onClick={checkAnswer} disabled={!selectedOption || !!feedback}>
-                Valider
-              </Button>
-            )}
+            <Button
+              onClick={checkAnswer}
+              disabled={
+                (currentQuestion.type === 'audio-to-text-input' && !userInput.trim()) ||
+                (currentQuestion.type !== 'audio-to-text-input' && !selectedOption) ||
+                !!feedback
+              }
+            >
+              Valider
+            </Button>
             <div className="pt-4">
               {feedback === 'correct' && (
                 <div className="text-2xl font-bold text-green-600 animate-pulse flex items-center gap-2"><Check/> Correct !</div>

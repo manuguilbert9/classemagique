@@ -4,10 +4,90 @@
 import type { Question } from './questions';
 import { numberToFrench } from './utils';
 
-// Generates questions for the "nombres-complexes" skill (60-99)
+// Helper function to generate trap numbers for a given answer
+function generateTraps(answerNumber: number, count: number): Set<number> {
+    const traps = new Set<number>([answerNumber]);
+    const tens = Math.floor(answerNumber / 10) * 10;
+    const ones = answerNumber % 10;
+
+    // Piège voisin (n-1, n+1)
+    if (answerNumber > 0) traps.add(answerNumber - 1);
+    if (answerNumber < 99) traps.add(answerNumber + 1);
+
+    // Pièges spécifiques aux nombres complexes (60-99)
+    if (answerNumber >= 60) {
+        // Piège de dizaine (70 vs 90, 80 vs 90)
+        if (tens === 70) traps.add(90 + ones);
+        if (tens === 80) traps.add(90 + ones);
+        if (tens === 90) {
+            traps.add(70 + ones);
+            traps.add(80 + ones);
+        }
+        if (tens === 60) traps.add(70 + ones);
+
+        // Piège de structure morphologique (72 vs 92, 62 vs 72)
+        if (ones === 2) {
+            if (tens === 70) traps.add(92);
+            if (tens === 90) traps.add(72);
+            if (tens >= 60) traps.add(62);
+        }
+
+        // Piège d'inversion (67 vs 76)
+        if (ones > 0 && ones <= 9) {
+            const invertedTens = ones * 10;
+            const invertedOnes = Math.floor(tens / 10);
+            const inverted = invertedTens + invertedOnes;
+            if (inverted >= 0 && inverted <= 99 && inverted !== answerNumber) {
+                traps.add(inverted);
+            }
+        }
+    }
+
+    // Pièges pour les nombres 20-59
+    if (answerNumber >= 20 && answerNumber < 60) {
+        // Confusion de dizaine (23 vs 33 vs 43)
+        const otherTens = [20, 30, 40, 50].filter(t => t !== tens);
+        otherTens.forEach(t => {
+            if (ones > 0) traps.add(t + ones);
+        });
+    }
+
+    // Compléter avec des nombres aléatoires dans la même gamme si nécessaire
+    let attempts = 0;
+    while (traps.size < count && attempts < 50) {
+        let randomNum: number;
+        if (answerNumber < 20) {
+            randomNum = Math.floor(Math.random() * 21);
+        } else if (answerNumber < 60) {
+            randomNum = Math.floor(Math.random() * 39) + 21;
+        } else {
+            randomNum = Math.floor(Math.random() * 40) + 60;
+        }
+        traps.add(randomNum);
+        attempts++;
+    }
+
+    return traps;
+}
+
+// Generates questions for the "nombres-complexes" skill
+// Covers multiple ranges: 0-20 (simple), 21-59 (intermediate), 60-99 (complex)
 export async function generateNombresComplexesQuestion(): Promise<Question> {
     const questionType = Math.random();
-    const answerNumber = Math.floor(Math.random() * 40) + 60; // 60 to 99
+
+    // Select number range with weighted probability
+    // 20% for 0-20, 30% for 21-59, 50% for 60-99 (most challenging)
+    const rangeSelector = Math.random();
+    let answerNumber: number;
+
+    if (rangeSelector < 0.2) {
+        answerNumber = Math.floor(Math.random() * 21); // 0-20
+    } else if (rangeSelector < 0.5) {
+        answerNumber = Math.floor(Math.random() * 39) + 21; // 21-59
+    } else {
+        answerNumber = Math.floor(Math.random() * 40) + 60; // 60-99
+    }
+
     const answerText = String(answerNumber);
     const answerAudio = numberToFrench[answerNumber] || answerText;
 
@@ -25,28 +105,7 @@ export async function generateNombresComplexesQuestion(): Promise<Question> {
     }
     // 2. Écrit vers oral
     else if (questionType < 0.5) {
-        const options = new Set<number>([answerNumber]);
-        const tens = Math.floor(answerNumber / 10) * 10;
-        
-        // Piège de dizaine (82 vs 92)
-        if (tens === 80) options.add(90 + (answerNumber % 10));
-        else if (tens === 90) options.add(80 + (answerNumber % 10));
-        else if (tens === 70) options.add(90 + (answerNumber % 10));
-
-        // Piège de voisin
-        if (answerNumber > 60) options.add(answerNumber - 1);
-        if (answerNumber < 99) options.add(answerNumber + 1);
-
-        // Piège de structure morphologique (72 vs 92, 72 vs 62)
-        if (answerNumber % 10 === 2) {
-             if (tens === 70) options.add(92);
-             if (tens === 90) options.add(72);
-             options.add(62);
-        }
-
-        while (options.size < 4) {
-            options.add(Math.floor(Math.random() * 40) + 60);
-        }
+        const options = generateTraps(answerNumber, 4);
 
         return {
             id: Date.now(),
@@ -63,36 +122,7 @@ export async function generateNombresComplexesQuestion(): Promise<Question> {
     }
     // 3. Oral vers écrit
     else {
-        const options = new Set<number>([answerNumber]);
-        const tens = Math.floor(answerNumber / 10) * 10;
-
-        // Piège voisin (n-1 ou n+1)
-        const neighbor = Math.random() > 0.5 ? answerNumber + 1 : answerNumber - 1;
-        if (neighbor >= 60 && neighbor <= 99) options.add(neighbor);
-
-        // Piège de dizaine
-        if (tens === 60) options.add(70 + (answerNumber % 10));
-        if (tens === 70) options.add(90 + (answerNumber % 10));
-        if (tens === 80) options.add(90 + (answerNumber % 10));
-        if (tens === 90) options.add(70 + (answerNumber % 10));
-        
-        // Piège de structure (65 vs 75)
-        if (tens === 60 && answerNumber % 10 > 0) options.add(70 + (answerNumber % 10));
-
-        // Piège d'inversion (67 vs 76)
-        const ones = answerNumber % 10;
-        if (ones > 0) {
-            const invertedTens = ones * 10;
-            const invertedOnes = Math.floor(tens / 10);
-            const inverted = invertedTens + invertedOnes;
-            if (inverted >= 60 && inverted <= 99) {
-                options.add(inverted);
-            }
-        }
-
-        while (options.size < 4) {
-            options.add(Math.floor(Math.random() * 40) + 60);
-        }
+        const options = generateTraps(answerNumber, 4);
 
         return {
             id: Date.now(),
