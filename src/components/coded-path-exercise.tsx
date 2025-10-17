@@ -337,7 +337,7 @@ export function CodedPathExercise() {
         if (move === 'up') nextPos.y--;
         if (move === 'down') nextPos.y++;
         if (move === 'left') nextPos.x--;
-        if (move === 'right') nextPos.y++;
+        if (move === 'right') nextPos.x++;
 
         const { y, x } = nextPos;
         if (y < 0 || y >= currentLevelData.grid.length || x < 0 || x >= currentLevelData.grid[0].length || currentLevelData.grid[y][x] === 'wall' || brokenTraps.some(t => t.x === x && t.y === y)) {
