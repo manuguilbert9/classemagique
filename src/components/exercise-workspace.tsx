@@ -279,11 +279,20 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   }
   
   const handleToggleCountItem = (index: number) => {
-    setSelectedCountIndices(prev => 
-        prev.includes(index) 
-            ? prev.filter(i => i !== index)
-            : [...prev, index]
-    );
+    setSelectedCountIndices(prev => {
+        // If already selected, don't allow deselection
+        if (prev.includes(index)) {
+            return prev;
+        }
+
+        // Only allow selecting the next item in sequence (left to right)
+        if (prev.length === index) {
+            return [...prev, index];
+        }
+
+        // Invalid selection - not the next in sequence
+        return prev;
+    });
   };
   
   const handleKeyboardCountKeystroke = useCallback((key: string) => {
@@ -511,22 +520,39 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   const renderCount = () => {
     const maxNumber = exerciseData.countSettings?.maxNumber || 10;
+    const nextIndex = selectedCountIndices.length;
+
     return (
       <>
         <div className="flex flex-wrap items-center justify-center gap-2 text-5xl">
-          {Array.from({ length: exerciseData.countNumber! }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => handleToggleCountItem(index)}
-              className={cn(
-                "transition-all rounded-full p-1",
-                selectedCountIndices.includes(index) && "ring-2 ring-green-500 opacity-50"
-              )}
-              aria-label={`Objet ${index + 1}`}
-            >
-              {exerciseData.countEmoji}
-            </button>
-          ))}
+          {Array.from({ length: exerciseData.countNumber! }).map((_, index) => {
+            const isSelected = selectedCountIndices.includes(index);
+            const isNext = index === nextIndex;
+            const isPast = index < nextIndex;
+
+            return (
+              <button
+                key={index}
+                onClick={() => handleToggleCountItem(index)}
+                disabled={!!feedback}
+                className={cn(
+                  "transition-all rounded-full p-1 relative",
+                  isSelected && "ring-4 ring-green-500 opacity-50",
+                  isNext && !feedback && "ring-4 ring-blue-400 animate-pulse cursor-pointer",
+                  isPast && !isSelected && "opacity-30 cursor-not-allowed",
+                  !isNext && !isSelected && !isPast && "opacity-30 cursor-not-allowed"
+                )}
+                aria-label={`Objet ${index + 1}`}
+              >
+                {exerciseData.countEmoji}
+                {isSelected && (
+                  <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    {selectedCountIndices.indexOf(index) + 1}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 w-full max-w-lg pt-6">
           {Array.from({ length: maxNumber }, (_, i) => i + 1).map((num) => (
