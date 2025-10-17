@@ -39,10 +39,12 @@ function generateQuestion(): SoundQuestion {
         return shuffled;
     };
 
-    // Get all unique sounds that have at least 2 words
+    // Get all unique sounds that appear in at least 2 different words
     const soundCounts = new Map<string, number>();
     syllableAttackData.forEach(item => {
-        soundCounts.set(item.sound, (soundCounts.get(item.sound) || 0) + 1);
+        item.sounds.forEach(sound => {
+            soundCounts.set(sound, (soundCounts.get(sound) || 0) + 1);
+        });
     });
 
     const validSounds = Array.from(soundCounts.entries())
@@ -52,13 +54,13 @@ function generateQuestion(): SoundQuestion {
     // Select a random sound from valid sounds only
     const selectedSound = validSounds[Math.floor(Math.random() * validSounds.length)];
 
-    // Get all words with that sound and shuffle
-    const allCorrectWords = syllableAttackData.filter(d => d.sound === selectedSound);
+    // Get all words that CONTAIN that sound and shuffle
+    const allCorrectWords = syllableAttackData.filter(d => d.sounds.includes(selectedSound));
     const shuffledCorrectWords = shuffleArray(allCorrectWords);
     const correctWords = shuffledCorrectWords.slice(0, 2);
 
-    // Get all words WITHOUT that sound and shuffle
-    const allIncorrectWords = syllableAttackData.filter(d => d.sound !== selectedSound);
+    // Get all words that DON'T CONTAIN that sound and shuffle
+    const allIncorrectWords = syllableAttackData.filter(d => !d.sounds.includes(selectedSound));
     const shuffledIncorrectWords = shuffleArray(allIncorrectWords);
     const incorrectWords = shuffledIncorrectWords.slice(0, 2);
 
@@ -221,7 +223,7 @@ export function LettresEtSonsExercise() {
                 </div>
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl">
-                        Coche les mots qui <strong>commencent</strong> par le son <span className="text-primary font-mono text-3xl">[{currentQuestion.sound}]</span>
+                        Coche les mots où tu <strong>entends</strong> le son <span className="text-primary font-mono text-3xl">[{currentQuestion.sound}]</span>
                     </CardTitle>
                     <CardDescription>Clique sur le haut-parleur pour écouter chaque mot.</CardDescription>
                 </CardHeader>
