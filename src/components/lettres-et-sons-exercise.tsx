@@ -30,36 +30,44 @@ interface SoundQuestion {
 }
 
 function generateQuestion(): SoundQuestion {
-    // Select a random letter
-    const letter = ALL_LETTERS[Math.floor(Math.random() * ALL_LETTERS.length)];
+    // Helper function to shuffle array
+    const shuffleArray = <T,>(array: T[]): T[] => {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    };
 
-    // Find two correct words starting with that letter
-    const correctWords = syllableAttackData.filter(d => d.word.startsWith(letter)).slice(0, 2);
-    
-    // Find two incorrect words (distractors)
-    const incorrectWords = syllableAttackData.filter(d => !d.word.startsWith(letter)).slice(0, 2);
+    // Find all letters that have at least 2 words in the dataset
+    const validLetters = ALL_LETTERS.split('').filter(letter => {
+        const wordsForLetter = syllableAttackData.filter(d => d.word.startsWith(letter));
+        return wordsForLetter.length >= 2;
+    });
 
-    // If we don't have enough words, we'll just use what we have (edge case)
-    let fallbackCounter = 1;
-    while (correctWords.length < 2) {
-        correctWords.push({ word: `exemple${fallbackCounter++}`, syllable: 'ex', image: '' }); // fallback
-    }
-     while (incorrectWords.length < 2) {
-        incorrectWords.push({ word: `test${fallbackCounter++}`, syllable: 'te', image: '' }); // fallback
-    }
-    
+    // Select a random letter from valid letters only
+    const letter = validLetters[Math.floor(Math.random() * validLetters.length)];
+
+    // Get all words starting with that letter and shuffle
+    const allCorrectWords = syllableAttackData.filter(d => d.word.startsWith(letter));
+    const shuffledCorrectWords = shuffleArray(allCorrectWords);
+    const correctWords = shuffledCorrectWords.slice(0, 2);
+
+    // Get all words NOT starting with that letter and shuffle
+    const allIncorrectWords = syllableAttackData.filter(d => !d.word.startsWith(letter));
+    const shuffledIncorrectWords = shuffleArray(allIncorrectWords);
+    const incorrectWords = shuffledIncorrectWords.slice(0, 2);
+
     const options: WordOption[] = [
         ...correctWords.map(w => ({ word: w.word, isCorrect: true })),
         ...incorrectWords.map(w => ({ word: w.word, isCorrect: false }))
     ];
 
     // Shuffle options
-    for (let i = options.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [options[i], options[j]] = [options[j], options[i]];
-    }
+    const shuffledOptions = shuffleArray(options);
 
-    return { letter, options };
+    return { letter, options: shuffledOptions };
 }
 
 export function LettresEtSonsExercise() {
@@ -237,6 +245,7 @@ export function LettresEtSonsExercise() {
                                     checked={isSelected}
                                     className="h-6 w-6"
                                 />
+                                <p className="font-bold text-2xl uppercase flex-1">{option.word}</p>
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -246,9 +255,6 @@ export function LettresEtSonsExercise() {
                                 >
                                     <Volume2 className="h-8 w-8 text-muted-foreground" />
                                 </Button>
-                                {feedback && (
-                                     <p className="font-semibold text-lg">{option.word}</p>
-                                )}
                             </div>
                         )})}
                     </div>
