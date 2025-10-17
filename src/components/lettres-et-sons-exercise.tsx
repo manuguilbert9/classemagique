@@ -221,7 +221,7 @@ export function LettresEtSonsExercise() {
                 </div>
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl">
-                        Coche les mots où tu entends le son <span className="text-primary font-mono text-3xl">[{currentQuestion.sound}]</span>
+                        Coche les mots qui <strong>commencent</strong> par le son <span className="text-primary font-mono text-3xl">[{currentQuestion.sound}]</span>
                     </CardTitle>
                     <CardDescription>Clique sur le haut-parleur pour écouter chaque mot.</CardDescription>
                 </CardHeader>
