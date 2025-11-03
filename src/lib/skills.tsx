@@ -4,6 +4,7 @@ import { type ReactElement } from 'react';
 import {
   Clock,
   PiggyBank,
+  Coins,
   Ear,
   SquarePen,
   Spline,
@@ -533,6 +534,14 @@ export const skills: Skill[] = [
     description: 'Apprendre à utiliser les pièces et les billets en euros.',
     icon: <PiggyBank />,
     category: 'Grandeurs et mesures',
+  },
+  {
+    name: 'Rendre la Monnaie',
+    slug: 'change-making',
+    description: 'Apprendre à rendre la monnaie en vendant des objets.',
+    icon: <Coins />,
+    category: 'Grandeurs et mesures',
+    allowedLevels: ['B', 'C', 'D'],
   },
   {
     name: 'Calendrier',
