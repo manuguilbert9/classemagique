@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScoreTube } from '@/components/score-tube';
 import { CalculationSettings } from '@/components/calculation-settings';
 import { CurrencySettings } from '@/components/currency-settings';
+import { ChangeMakingSettings } from '@/components/change-making-settings';
 import { TimeSettings } from '@/components/time-settings';
 import { CountSettings } from '@/components/count-settings';
 import { PriceTag } from '@/components/price-tag';
@@ -87,7 +88,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   useEffect(() => {
     async function loadNonConfigurableQuestions() {
-        if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count'].includes(skill.slug)) {
+        if (!['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count'].includes(skill.slug)) {
             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
             setQuestions(generatedQuestions);
             setIsReadyToStart(true);
@@ -407,7 +408,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setNumberLevelSettings(null);
     resetInteractiveStates();
     
-    if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count'].includes(skill.slug)) {
+    if (!['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count'].includes(skill.slug)) {
       const newQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
       setQuestions(newQuestions);
       setIsReadyToStart(true);
@@ -436,12 +437,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   };
 
   const hasConfigurableSettings = useMemo(() => 
-    ['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres'].includes(skill.slug), 
+    ['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres'].includes(skill.slug), 
   [skill.slug]);
 
   if (!isReadyToStart && hasConfigurableSettings) {
       if (skill.slug === 'calculation') return <CalculationSettings onStart={startCalculationExercise} />;
       if (skill.slug === 'currency') return <CurrencySettings onStart={startCurrencyExercise} />;
+      if (skill.slug === 'change-making') return <ChangeMakingSettings onStart={startNumberLevelExercise} />;
       if (skill.slug === 'time') {
           const initialDifficulty = student?.levels?.[skill.slug]
               ? student.levels[skill.slug].charCodeAt(0) - 'A'.charCodeAt(0)
