@@ -626,27 +626,35 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       ) : null}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
-        {exerciseData.options?.map((option: string, index: number) => (
-          <Button
-            key={`${option}-${index}`}
-            variant="outline"
-            onClick={() => handleQcmAnswer(option)}
-            className={cn(
-              "text-xl h-20 p-4 justify-center transition-all duration-300 transform active:scale-95",
-              feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
-              feedback === 'incorrect' && 'bg-red-500/80 text-white border-red-600 animate-shake',
-              feedback && option !== exerciseData.answer && 'opacity-50',
-              feedback && option === exerciseData.answer && 'opacity-100'
-            )}
-            disabled={!!feedback}
-          >
-            <span className="flex items-center gap-4">
-              {feedback === 'correct' && option === exerciseData.answer && <Check />}
-              {feedback === 'incorrect' && <X />}
-              {option}
-            </span>
-          </Button>
-        ))}
+        {exerciseData.options?.map((option: string, index: number) => {
+          // Pour l'exercice GN/NI, appliquer des couleurs spéciales
+          const isGnNiExercise = skill.slug === 'gn-ni';
+          const gnNiColorClass = isGnNiExercise
+            ? (option === 'gn' ? 'text-blue-600 font-bold' : option === 'ni' ? 'text-red-600 font-bold' : '')
+            : '';
+
+          return (
+            <Button
+              key={`${option}-${index}`}
+              variant="outline"
+              onClick={() => handleQcmAnswer(option)}
+              className={cn(
+                "text-xl h-20 p-4 justify-center transition-all duration-300 transform active:scale-95",
+                feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+                feedback === 'incorrect' && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                feedback && option !== exerciseData.answer && 'opacity-50',
+                feedback && option === exerciseData.answer && 'opacity-100'
+              )}
+              disabled={!!feedback}
+            >
+              <span className={cn("flex items-center gap-4", gnNiColorClass)}>
+                {feedback === 'correct' && option === exerciseData.answer && <Check />}
+                {feedback === 'incorrect' && <X />}
+                {option}
+              </span>
+            </Button>
+          );
+        })}
       </div>
     </>
   );

@@ -15,6 +15,7 @@ import { generateLireLesNombresQuestion } from './reading-number-questions';
 import { generateCurrencyQuestion } from './currency-questions';
 import { generateAdaptiveMentalMathQuestion } from './adaptive-mental-math';
 import { generateChangeMakingQuestions } from './change-making-questions';
+import { generateGnNiQuestions } from './gn-ni-questions';
 
 
 export interface Question {
@@ -184,6 +185,10 @@ export async function generateQuestions(
   }
   if (skill === 'change-making' && settings?.numberLevel) {
       return Promise.resolve(generateChangeMakingQuestions(settings.numberLevel.level as 'B' | 'C' | 'D', count));
+  }
+  
+  if (skill === 'gn-ni') {
+      return Promise.resolve(generateGnNiQuestions());
   }
   
   if (skill === 'mystery-number') {

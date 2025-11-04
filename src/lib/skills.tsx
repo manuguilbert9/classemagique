@@ -341,6 +341,14 @@ export const skills: Skill[] = [
     isFixedLevel: 'B',
   },
   {
+    name: 'GN ou NI ?',
+    slug: 'gn-ni',
+    description: 'Choisis entre GN (bleu) et NI (rouge) pour compléter les mots de la liste D4.',
+    icon: <SoundBlendIcon label="GN" />,
+    category: 'Orthographe',
+    isFixedLevel: 'B',
+  },
+  {
     name: 'Sens de lecture',
     slug: 'reading-direction',
     description: 'Appuie sur les objets de gauche à droite, ligne par ligne, pour t\'habituer au sens de la lecture.',
