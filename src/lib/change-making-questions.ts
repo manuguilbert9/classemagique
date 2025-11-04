@@ -20,7 +20,23 @@ const shopItems: ShopItem[] = [
   { name: "une gomme", emoji: "🧽" },
   { name: "des crayons", emoji: "✏️" },
   { name: "un sac", emoji: "🎒" },
+  { name: "une calculatrice", emoji: "🔢" },
+  { name: "un compas", emoji: "📐" },
+  { name: "des feutres", emoji: "🖍️" },
+  { name: "un classeur", emoji: "📁" },
 ];
+
+/**
+ * Mélange un tableau aléatoirement (algorithme de Fisher-Yates)
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 /**
  * Génère une question de niveau B
@@ -28,13 +44,7 @@ const shopItems: ShopItem[] = [
  * - Argent donné : un seul billet légèrement supérieur
  * - Monnaie à rendre : simple
  */
-function generateLevelBQuestion(id: number): Question {
-  const item = shopItems[id % shopItems.length];
-
-  // Prix possibles : 3€, 4€, 6€, 7€, 8€, 12€, 13€, 16€
-  const possiblePrices = [3, 4, 6, 7, 8, 12, 13, 16];
-  const price = possiblePrices[Math.floor(Math.random() * possiblePrices.length)];
-
+function generateLevelBQuestion(id: number, item: ShopItem, price: number): Question {
   // Déterminer le billet donné (légèrement supérieur)
   let paymentAmount: number;
   let paymentBill: string;
@@ -81,13 +91,7 @@ function generateLevelBQuestion(id: number): Question {
  * - Argent donné : billets supérieurs
  * - Monnaie à rendre : avec pièce de 50 cents
  */
-function generateLevelCQuestion(id: number): Question {
-  const item = shopItems[id % shopItems.length];
-
-  // Prix possibles : X.50€ entre 3.50€ et 19.50€
-  const basePrice = Math.floor(Math.random() * 17) + 3; // 3 à 19
-  const price = basePrice + 0.5;
-
+function generateLevelCQuestion(id: number, item: ShopItem, price: number): Question {
   // Déterminer les billets donnés
   let paymentAmount: number;
   let paymentBills: string[];
@@ -137,14 +141,7 @@ function generateLevelCQuestion(id: number): Question {
  * - Argent donné : grosses coupures
  * - Monnaie à rendre : complexe
  */
-function generateLevelDQuestion(id: number): Question {
-  const item = shopItems[id % shopItems.length];
-
-  // Prix avec tous les cents : entre 5€ et 35€
-  const euros = Math.floor(Math.random() * 31) + 5; // 5 à 35
-  const cents = Math.floor(Math.random() * 100); // 0 à 99
-  const price = euros + (cents / 100);
-
+function generateLevelDQuestion(id: number, item: ShopItem, price: number): Question {
   // Déterminer les grosses coupures données
   let paymentAmount: number;
   let paymentBills: string[];
@@ -202,16 +199,44 @@ export function generateChangeMakingQuestions(
 ): Question[] {
   const questions: Question[] = [];
 
+  // Mélanger les objets pour avoir une variation
+  const shuffledItems = shuffleArray(shopItems);
+
+  // Générer des prix variés selon le niveau
+  let possiblePrices: number[] = [];
+
+  if (level === "B") {
+    // Niveau B : prix ronds de 2€ à 18€
+    possiblePrices = [2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18];
+  } else if (level === "C") {
+    // Niveau C : prix avec .50 uniquement
+    possiblePrices = [2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5, 19.5];
+  } else {
+    // Niveau D : prix avec tous les cents possibles
+    const basePrices = [5, 6, 7, 8, 9, 10, 12, 15, 17, 19, 22, 25, 28, 30, 33, 35];
+    possiblePrices = basePrices.flatMap(base => {
+      const variations = [0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95];
+      return variations.map(v => base + v);
+    });
+  }
+
+  // Mélanger les prix
+  const shuffledPrices = shuffleArray(possiblePrices);
+
+  // Générer les questions en combinant objets et prix
   for (let i = 0; i < count; i++) {
+    const item = shuffledItems[i % shuffledItems.length];
+    const price = shuffledPrices[i % shuffledPrices.length];
+
     switch (level) {
       case "B":
-        questions.push(generateLevelBQuestion(i));
+        questions.push(generateLevelBQuestion(i, item, price));
         break;
       case "C":
-        questions.push(generateLevelCQuestion(i));
+        questions.push(generateLevelCQuestion(i, item, price));
         break;
       case "D":
-        questions.push(generateLevelDQuestion(i));
+        questions.push(generateLevelDQuestion(i, item, price));
         break;
     }
   }
