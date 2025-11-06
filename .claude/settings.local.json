@@ -6,7 +6,8 @@
       "Bash(git log:*)",
       "Bash(git commit:*)",
       "Read(//c/Users/Manu/Downloads/**)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
