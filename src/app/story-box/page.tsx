@@ -54,7 +54,7 @@ const availableEmojisList = [
   '🚂', '⛵', '🚁', 'sous-marin', 'amulette', 'potion', 'sortilège', 'trésor',
   'sorcière', 'ogre', 'loup', 'prince', 'princesse', 'chevalier', 'navire', 'forêt hantée',
   'grotte secrète', 'montagne', 'désert', 'planète lointaine', 'robot ami', 'extraterrestre farceur',
-  'école de magie', 'cirque', 'zoo', 'musée', 'parc d'attractions', 'bibliothèque', 'laboratoire',
+  'école de magie', 'cirque', 'zoo', 'musée', 'parc d\'attractions', 'bibliothèque', 'laboratoire',
   'bague magique', 'épée légendaire', 'tapis volant', 'grimoire ancien', 'portail mystérieux'
 ];
 
@@ -422,7 +422,203 @@ export default function StoryBoxPage() {
           {/* Story Content (Center) */}
           <div className="order-1 lg:order-2">
             <Card className="shadow-xl">
-                <CardHeader className="text-center"
+                <CardHeader className="text-center">
+                    {storyInput && (
+                    <div className="mb-4 flex justify-center items-center gap-2 text-3xl">
+                        <span className="text-sm font-medium text-muted-foreground">Inspiration :</span>
+                        {storyInput.emojis && storyInput.emojis.length > 0 ? storyInput.emojis.map(emoji => (
+                            <span key={emoji}>{emoji}</span>
+                        )) : (
+                            <p className="text-base italic text-muted-foreground">"{storyInput.description}"</p>
+                        )}
+                    </div>
+                    )}
+                <CardTitle className="font-headline text-4xl">{story.title}</CardTitle>
+                <div className="flex justify-center gap-3 mt-4 flex-wrap">
+                    <Button onClick={() => handleGenerateAudio(story.title, -1)} disabled={audioState[-1]?.isLoading}>
+                        {audioState[-1]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                        Écouter le titre
+                    </Button>
+                </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                {paragraphs.map((paragraph, index) => (
+                    <div key={index} className="space-y-3 border-b pb-4 last:border-b-0">
+                        <div className={cn("whitespace-pre-wrap font-body", getFontSize())}>
+                            {showSyllables ? <SyllableText text={paragraph} /> : <p>{paragraph}</p>}
+                        </div>
+                        <div className="flex flex-col items-start gap-2">
+                            <Button onClick={() => handleGenerateAudio(paragraph, index)} size="sm" variant="outline" disabled={audioState[index]?.isLoading}>
+                                {audioState[index]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                                Écouter
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+                <div className="border-t pt-4 text-center">
+                    <p className="font-semibold text-lg font-headline">Morale de l'histoire</p>
+                    {showSyllables ? (
+                        <div className="italic text-muted-foreground mt-2"><SyllableText text={story.moral}/></div>
+                    ) : (
+                        <p className="italic text-muted-foreground mt-2">{story.moral}</p>
+                    )}
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                        <Button onClick={() => handleGenerateAudio(story.moral, -2)} size="sm" variant="outline" disabled={audioState[-2]?.isLoading}>
+                                {audioState[-2]?.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                                Écouter la morale
+                        </Button>
+                    </div>
+                </div>
+                </CardContent>
+            </Card>
+          </div>
+
+          {/* Illustration Sidebar (Right) */}
+           <div className="lg:sticky lg:top-8 self-start order-3">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline">
+                        <ImageIcon />
+                        Illustration
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {(!currentStory?.imageUrl) && (
+                      <Button onClick={handleGenerateImage} disabled={isGeneratingImage} className="w-full">
+                        {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                        Générer l'illustration
+                      </Button>
+                    )}
+                    {isGeneratingImage && !currentStory?.imageUrl && (
+                        <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
+                            <Loader2 className="h-10 w-10 text-muted-foreground animate-spin"/>
+                        </div>
+                    )}
+                    {currentStory?.imageUrl ? (
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <img src={currentStory.imageUrl} alt={story.title} className="rounded-lg shadow-lg aspect-portrait object-cover cursor-pointer hover:opacity-90 transition-opacity" />
+                            </DialogTrigger>
+                             <DialogContent className="max-w-[90vw] max-h-[90vh] p-4">
+                                <DialogHeader>
+                                    <DialogTitleComponent className="sr-only">{story.title}</DialogTitleComponent>
+                                </DialogHeader>
+                                <img src={currentStory.imageUrl} alt={story.title} className="w-full h-full object-contain rounded-lg" />
+                            </DialogContent>
+                        </Dialog>
+                    ) : (
+                        !isGeneratingImage && (
+                            <div className="aspect-portrait bg-muted rounded-lg flex items-center justify-center">
+                                <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                            </div>
+                        )
+                    )}
+                    {error && <p className="text-destructive text-sm">{error}</p>}
+                </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if(viewState === 'library') {
+    return (
+      <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
+        <div className="w-full max-w-4xl">
+            <Button onClick={() => setViewState('menu')} variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Retour
+            </Button>
+            <h2 className="font-headline text-4xl text-center my-8">Bibliothèque d'histoires</h2>
+            {isLoadingLibrary ? (
+                <Loader2 className="mx-auto h-12 w-12 animate-spin"/>
+            ) : savedStories.length === 0 ? (
+                <p className="text-center text-muted-foreground">Aucune histoire n'a encore été sauvegardée.</p>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {savedStories.map(s => (
+                        <Card
+                            key={s.id}
+                            className="flex flex-col cursor-pointer hover:shadow-lg hover:border-primary transition-shadow relative group"
+                        >
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-50 group-hover:opacity-100 transition-opacity z-10">
+                                        <MoreHorizontal className="h-5 w-5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Supprimer
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Êtes-vous sûr de vouloir supprimer définitivement l'histoire "{s.title}" ? Cette action est irréversible.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteStory(s.id)} className="bg-destructive hover:bg-destructive/90">
+                                                    Supprimer
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <div className="flex-grow" onClick={() => handleReadStory(s)}>
+                                {s.imageUrl && (
+                                    <img src={s.imageUrl} alt={s.title} className="rounded-t-lg aspect-[4/3] object-cover" />
+                                )}
+                                <CardHeader>
+                                    <CardTitle>{s.title}</CardTitle>
+                                    <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src={s.authorShowPhoto ? s.authorPhotoURL : undefined} />
+                                            <AvatarFallback>{s.authorName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-semibold">{s.authorName}</p>
+                                            <p className="text-xs">{formatDistanceToNow(new Date(s.createdAt), { addSuffix: true, locale: fr })}</p>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-grow">
+                                    <p className="text-sm text-muted-foreground line-clamp-4">{s.content.story}</p>
+                                </CardContent>
+                                <CardFooter className='pt-0'>
+                                    {s.emojis && s.emojis.length > 0 && <div className="text-xl">{s.emojis.join(' ')}</div>}
+                                </CardFooter>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
+      </main>
+    );
+  }
+
+  // Fallback to menu view
+  return (
+    <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background">
+      <div className="w-full max-w-3xl">
+         <Button asChild variant="outline" className="absolute top-8 left-8">
+            <Link href="/">
+             <ArrowLeft className="mr-2 h-4 w-4" /> Retour à l'accueil
+            </Link>
+         </Button>
+
+        {viewState === 'menu' ? (
+             <Card className="mt-8 shadow-xl">
+                <CardHeader className="text-center">
                     <div className="mx-auto bg-primary/20 text-primary p-3 rounded-full w-fit mb-4">
                         <BookHeart className="h-8 w-8"/>
                     </div>
