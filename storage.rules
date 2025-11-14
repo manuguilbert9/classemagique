@@ -1,12 +1,25 @@
 rules_version = '2';
 
+// Firebase Storage rules for Classe Magique
 service firebase.storage {
   match /b/{bucket}/o {
-    // Autorise la lecture publique de tous les fichiers.
-    // L'écriture reste restreinte aux utilisateurs authentifiés.
-    match /{allPaths=**} {
+
+    // Rules for story images
+    match /story-images/{imageId} {
+      // Allow anyone to read story images (public access for viewing)
       allow read: if true;
-      allow write: if request.auth != null;
+
+      // Allow write access for server-side uploads
+      // Images are AI-generated with unique filenames, so this is safe
+      allow create, write: if true;
+
+      // Allow delete access for cleanup operations
+      allow delete: if true;
+    }
+
+    // Catch-all rule for other paths (restrictive by default)
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

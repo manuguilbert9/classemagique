@@ -1,8 +1,18 @@
 
 'use server';
 
-import { storage } from '@/lib/firebase';
-import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import * as admin from 'firebase-admin';
+
+// Initialize Firebase Admin SDK if not already initialized
+if (!admin.apps.length) {
+  admin.initializeApp({
+    projectId: 'classemagique2',
+    storageBucket: 'classemagique2.firebasestorage.app',
+  });
+}
+
+const bucket = admin.storage().bucket();
+const bucketName = 'classemagique2.firebasestorage.app';
 
 /**
  * Uploads a file from a data URI to Firebase Cloud Storage.
@@ -15,21 +25,41 @@ export async function uploadDataURI(dataURI: string, path: string): Promise<stri
     throw new Error('Invalid data URI provided.');
   }
 
-  // Extract mime type to determine file extension
-  const mimeType = dataURI.substring(dataURI.indexOf(':') + 1, dataURI.indexOf(';'));
+  // Extract mime type and base64 data
+  const matches = dataURI.match(/^data:([^;]+);base64,(.+)$/);
+  if (!matches) {
+    throw new Error('Invalid data URI format.');
+  }
+
+  const mimeType = matches[1];
+  const base64Data = matches[2];
   const extension = mimeType.split('/')[1] || 'bin';
+
+  // Convert base64 to buffer
+  const buffer = Buffer.from(base64Data, 'base64');
 
   // Create a unique filename for the file
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${extension}`;
-  const storageRef = ref(storage, `${path}/${fileName}`);
+  const filePath = `${path}/${fileName}`;
 
-  // The 'data_url' format for uploadString handles the data URI directly.
-  const snapshot = await uploadString(storageRef, dataURI, 'data_url');
-  
-  // Get the public URL of the uploaded file.
-  const downloadURL = await getDownloadURL(snapshot.ref);
+  // Get file reference
+  const file = bucket.file(filePath);
 
-  return downloadURL;
+  // Upload the file
+  await file.save(buffer, {
+    metadata: {
+      contentType: mimeType,
+    },
+    public: true, // Make the file publicly accessible
+  });
+
+  // Make the file publicly accessible
+  await file.makePublic();
+
+  // Return the public URL
+  const publicUrl = `https://storage.googleapis.com/${bucketName}/${filePath}`;
+
+  return publicUrl;
 }
 
 
@@ -41,14 +71,30 @@ export async function deleteFileFromUrl(fileUrl: string): Promise<{ success: boo
   if (!fileUrl) {
     return { success: true }; // Nothing to delete
   }
-  
+
   try {
-    const fileRef = ref(storage, fileUrl);
-    await deleteObject(fileRef);
+    // Extract the file path from the URL
+    // URL format: https://storage.googleapis.com/bucket-name/path/to/file
+    const urlPattern = new RegExp(`https://storage\\.googleapis\\.com/${bucketName}/(.+)`);
+    const matches = fileUrl.match(urlPattern);
+
+    if (!matches) {
+      console.warn(`Invalid storage URL format: ${fileUrl}`);
+      return { success: false, error: 'Invalid storage URL format' };
+    }
+
+    const filePath = matches[1];
+
+    // Get file reference
+    const file = bucket.file(filePath);
+
+    // Delete the file
+    await file.delete();
+
     return { success: true };
   } catch (error: any) {
     // It's common to try to delete a file that doesn't exist, which is not a critical failure.
-    if (error.code === 'storage/object-not-found') {
+    if (error.code === 404) {
         console.warn(`File not found for deletion, but this is okay: ${fileUrl}`);
         return { success: true };
     }
