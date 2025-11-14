@@ -45,3 +45,8 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+.firebase/
+
+# Service account keys (NEVER commit these!)
+serviceAccountKey*.json
+*-firebase-adminsdk-*.json

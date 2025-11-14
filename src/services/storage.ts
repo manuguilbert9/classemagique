@@ -1,11 +1,52 @@
 
 'use server';
 
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getStorage } from 'firebase-admin/storage';
+import * as path from 'path';
+import * as fs from 'fs';
+
 const bucketName = 'classemagique2.firebasestorage.app';
-const apiKey = 'AIzaSyCWxtFBSdvAGiJN06WxRLFtFZ0xGPe9E9Q'; // Firebase API key
+
+// Initialize Firebase Admin with minimal config
+// In production (Firebase Hosting/Cloud Functions), credentials are auto-detected
+// In development, we look for serviceAccountKey.json
+function getAdminStorage() {
+  try {
+    if (!getApps().length) {
+      // Check if we're in development and have a service account key
+      const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
+
+      if (fs.existsSync(serviceAccountPath)) {
+        // Development: Use service account key
+        console.log('Using service account key for Firebase Admin');
+        const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+        initializeApp({
+          credential: cert(serviceAccount),
+          storageBucket: bucketName,
+        });
+      } else {
+        // Production or using GOOGLE_APPLICATION_CREDENTIALS
+        console.log('Using default credentials for Firebase Admin');
+        initializeApp({
+          projectId: 'classemagique2',
+          storageBucket: bucketName,
+        });
+      }
+    }
+    return getStorage().bucket();
+  } catch (error) {
+    console.error('Failed to initialize Firebase Admin:', error);
+    throw new Error(
+      'Storage service not available. ' +
+      'In development, please create a serviceAccountKey.json file. ' +
+      'See SETUP_SERVICE_ACCOUNT.md for instructions.'
+    );
+  }
+}
 
 /**
- * Uploads a file from a data URI to Firebase Cloud Storage using REST API.
+ * Uploads a file from a data URI to Firebase Cloud Storage.
  * @param dataURI The data URI of the file (e.g., "data:image/png;base64,...").
  * @param path The path in Cloud Storage where the file will be saved (e.g., "story-images").
  * @returns The public URL of the uploaded file.
@@ -32,27 +73,29 @@ export async function uploadDataURI(dataURI: string, path: string): Promise<stri
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${extension}`;
   const filePath = `${path}/${fileName}`;
 
-  // Upload using Google Cloud Storage REST API
-  const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(filePath)}`;
+  try {
+    const bucket = getAdminStorage();
+    const file = bucket.file(filePath);
 
-  const response = await fetch(uploadUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': mimeType,
-      'Content-Length': buffer.length.toString(),
-    },
-    body: buffer,
-  });
+    // Upload the file
+    await file.save(buffer, {
+      metadata: {
+        contentType: mimeType,
+      },
+      public: true,
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to upload file: ${response.status} ${response.statusText} - ${errorText}`);
+    // Make the file publicly accessible
+    await file.makePublic();
+
+    // Return the public URL
+    const publicUrl = `https://storage.googleapis.com/${bucketName}/${filePath}`;
+
+    return publicUrl;
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    throw new Error(`Failed to upload file: ${error.message}`);
   }
-
-  // Return the public URL
-  const publicUrl = `https://storage.googleapis.com/${bucketName}/${filePath}`;
-
-  return publicUrl;
 }
 
 
@@ -78,26 +121,19 @@ export async function deleteFileFromUrl(fileUrl: string): Promise<{ success: boo
 
     const filePath = matches[1];
 
-    // Delete using Google Cloud Storage REST API
-    const deleteUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(filePath)}`;
+    const bucket = getAdminStorage();
+    const file = bucket.file(filePath);
 
-    const response = await fetch(deleteUrl, {
-      method: 'DELETE',
-    });
-
-    // 404 is OK - file doesn't exist
-    if (response.status === 404) {
-      console.warn(`File not found for deletion, but this is okay: ${fileUrl}`);
-      return { success: true };
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete file: ${response.status} ${response.statusText} - ${errorText}`);
-    }
+    // Delete the file
+    await file.delete();
 
     return { success: true };
   } catch (error: any) {
+    // It's common to try to delete a file that doesn't exist, which is not a critical failure.
+    if (error.code === 404) {
+      console.warn(`File not found for deletion, but this is okay: ${fileUrl}`);
+      return { success: true };
+    }
     console.error(`Error deleting file from URL ${fileUrl}:`, error);
     if (error instanceof Error) {
       return { success: false, error: error.message };
