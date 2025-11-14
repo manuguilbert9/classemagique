@@ -17,26 +17,35 @@ function getAdminStorage() {
       // Check if we're in development and have a service account key
       const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
 
+      console.log('🔍 Checking for service account at:', serviceAccountPath);
+      console.log('📁 File exists:', fs.existsSync(serviceAccountPath));
+
       if (fs.existsSync(serviceAccountPath)) {
         // Development: Use service account key
-        console.log('Using service account key for Firebase Admin');
+        console.log('✅ Using service account key for Firebase Admin');
         const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+        console.log('📧 Service account email:', serviceAccount.client_email);
         initializeApp({
           credential: cert(serviceAccount),
           storageBucket: bucketName,
         });
+        console.log('✅ Firebase Admin initialized successfully');
       } else {
         // Production or using GOOGLE_APPLICATION_CREDENTIALS
-        console.log('Using default credentials for Firebase Admin');
+        console.log('⚠️ Using default credentials for Firebase Admin');
         initializeApp({
           projectId: 'classemagique2',
           storageBucket: bucketName,
         });
       }
+    } else {
+      console.log('ℹ️ Firebase Admin already initialized');
     }
-    return getStorage().bucket();
+    const bucket = getStorage().bucket();
+    console.log('✅ Got storage bucket:', bucket.name);
+    return bucket;
   } catch (error) {
-    console.error('Failed to initialize Firebase Admin:', error);
+    console.error('❌ Failed to initialize Firebase Admin:', error);
     throw new Error(
       'Storage service not available. ' +
       'In development, please create a serviceAccountKey.json file. ' +
