@@ -63,9 +63,42 @@ INSTRUCTIONS STRICTES :
     if (!media) {
       throw new Error('No image media returned from the model.');
     }
-    
-    // Upload the image from the data URI to Cloud Storage
-    const publicUrl = await uploadDataURI(media.url, 'story-images');
+
+    console.log('📸 Genkit Media Response:', JSON.stringify(media, null, 2));
+
+    let publicUrl: string;
+
+    // Check if it's a data URI
+    if (media.url.startsWith('data:')) {
+      console.log('📦 Uploading Data URI...');
+      publicUrl = await uploadDataURI(media.url, 'story-images');
+    } else {
+      // It's likely a remote URL (e.g. from Google Cloud Storage temporary link)
+      console.log('🌐 Model returned remote URL:', media.url);
+
+      // Fetch the image data
+      try {
+        const response = await fetch(media.url);
+        if (!response.ok) throw new Error(`Failed to fetch image from remote URL: ${response.statusText}`);
+
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64 = buffer.toString('base64');
+        const mimeType = media.contentType || 'image/png'; // Default to png if unknown
+
+        const dataUri = `data:${mimeType};base64,${base64}`;
+
+        console.log('📦 Converted to Data URI, uploading...');
+        publicUrl = await uploadDataURI(dataUri, 'story-images');
+      } catch (fetchError: any) {
+        console.error('❌ Error processing remote URL:', fetchError);
+        // Fallback: try to return the remote URL directly if it's accessible (though it might expire)
+        // But for now, let's throw to see the error
+        throw new Error(`Failed to process remote image URL: ${fetchError.message}`);
+      }
+    }
+
+    console.log('✅ Image uploaded successfully:', publicUrl);
 
     return {
       imageUrl: publicUrl,
