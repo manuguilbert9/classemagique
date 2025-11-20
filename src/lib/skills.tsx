@@ -571,6 +571,14 @@ export const skills: Skill[] = [
     category: 'Grandeurs et mesures',
     allowedLevels: ['A', 'B', 'C', 'D'],
   },
+  {
+    name: 'La Brocante',
+    slug: 'flea-market',
+    description: "Rends la monnaie exacte au client.",
+    icon: <ShoppingBag />,
+    category: 'Grandeurs et mesures',
+    allowedLevels: ['B', 'C', 'D'],
+  },
 ];
 
 export function getSkillBySlug(slug: string): Skill | undefined {
