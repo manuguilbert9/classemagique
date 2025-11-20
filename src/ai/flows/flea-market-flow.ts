@@ -3,23 +3,23 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const FleaMarketInputSchema = z.object({
+const FleaMarketInputSchema = z.object({
     itemName: z.string(),
     studentPrice: z.number(),
     level: z.enum(['B', 'C', 'D']),
 });
 
-export const FleaMarketOutputSchema = z.object({
+const FleaMarketOutputSchema = z.object({
     emoji: z.string(),
     finalPrice: z.number(),
     message: z.string(),
     isNegotiated: z.boolean(),
 });
 
-export type FleaMarketInput = z.infer<typeof FleaMarketInputSchema>;
-export type FleaMarketOutput = z.infer<typeof FleaMarketOutputSchema>;
+type FleaMarketInput = z.infer<typeof FleaMarketInputSchema>;
+type FleaMarketOutput = z.infer<typeof FleaMarketOutputSchema>;
 
-export const fleaMarketPrompt = ai.definePrompt({
+const fleaMarketPrompt = ai.definePrompt({
     name: 'fleaMarketPrompt',
     input: { schema: FleaMarketInputSchema },
     output: { schema: FleaMarketOutputSchema },
@@ -52,7 +52,7 @@ Retourne un JSON :
 `,
 });
 
-export const fleaMarketFlow = ai.defineFlow(
+const fleaMarketFlowInternal = ai.defineFlow(
     {
         name: 'fleaMarketFlow',
         inputSchema: FleaMarketInputSchema,
@@ -63,3 +63,7 @@ export const fleaMarketFlow = ai.defineFlow(
         return output!;
     }
 );
+
+export async function fleaMarketFlow(input: FleaMarketInput): Promise<FleaMarketOutput> {
+    return fleaMarketFlowInternal(input);
+}
