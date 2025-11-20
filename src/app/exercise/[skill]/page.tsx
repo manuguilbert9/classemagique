@@ -37,12 +37,13 @@ import { MysteryNumberExercise } from '@/components/mystery-number-exercise';
 import { MbpRuleExercise } from '@/components/mbp-rule-exercise';
 import { PlaceValueTableExercise } from '@/components/place-value-table-exercise';
 import { SubtractionTrainingExercise } from '@/components/subtraction-training-exercise';
+import { NounIdentificationExercise } from '@/components/noun-identification-exercise';
 import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  
+
   const skillSlug = typeof params.skill === 'string' ? params.skill : '';
   const from = searchParams.get('from');
 
@@ -51,7 +52,7 @@ export default function ExercisePage() {
   if (!skill) {
     notFound();
   }
-  
+
   const style = categoryStyles[skill.category] || { bg: 'bg-gray-200', text: 'text-gray-800' };
   const returnHref = from === 'devoirs' ? '/devoirs' : '/en-classe';
 
@@ -114,13 +115,16 @@ export default function ExercisePage() {
         break;
       case 'spelling':
         // The /spelling/[id] page handles specific exercises, but this renders the selector.
-        exerciseComponent = <SpellingExercise exerciseId="" onFinish={() => {}} />;
+        exerciseComponent = <SpellingExercise exerciseId="" onFinish={() => { }} />;
         break;
       case 'phrase-construction':
         exerciseComponent = <PhraseConstructionExercise />;
         break;
       case 'label-game':
         exerciseComponent = <LabelGameExercise />;
+        break;
+      case 'reperer-nom':
+        exerciseComponent = <NounIdentificationExercise />;
         break;
       case 'coded-path':
         exerciseComponent = <CodedPathExercise />;
@@ -152,7 +156,7 @@ export default function ExercisePage() {
       default:
         exerciseComponent = <ExerciseWorkspace skill={skill} />;
     }
-     // Wrap every exercise component in a Card with the correct style
+    // Wrap every exercise component in a Card with the correct style
     return <div className={cn("rounded-lg p-0.5", style.bg, style.text === 'text-white' ? 'text-white' : 'text-gray-800')}><div className="bg-background rounded-md">{exerciseComponent}</div></div>;
   };
 
@@ -160,13 +164,13 @@ export default function ExercisePage() {
     <div className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-8">
       <div className="w-full max-w-4xl">
         <header className="relative flex items-center justify-between mb-8">
-           <Button asChild variant="ghost" className="hidden sm:inline-flex">
+          <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link href={returnHref}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour
             </Link>
           </Button>
-           <Button asChild variant="ghost" size="icon" className="sm:hidden">
+          <Button asChild variant="ghost" size="icon" className="sm:hidden">
             <Link href={returnHref} aria-label="Retour">
               <ArrowLeft className="h-5 w-5" />
             </Link>

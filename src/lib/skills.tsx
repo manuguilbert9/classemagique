@@ -26,6 +26,7 @@ import {
   Table,
   HelpCircle,
   GraduationCap,
+  Highlighter,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -44,18 +45,18 @@ export type SkillCategory =
   | "Problèmes";
 
 export const allSkillCategories: SkillCategory[] = [
-    "Phonologie",
-    "Lecture / compréhension",
-    "Ecriture",
-    "Orthographe",
-    "Grammaire",
-    "Conjugaison",
-    "Vocabulaire",
-    "Nombres et calcul",
-    "Grandeurs et mesures",
-    "Espace et géométrie",
-    "Organisation et gestion de données",
-    "Problèmes"
+  "Phonologie",
+  "Lecture / compréhension",
+  "Ecriture",
+  "Orthographe",
+  "Grammaire",
+  "Conjugaison",
+  "Vocabulaire",
+  "Nombres et calcul",
+  "Grandeurs et mesures",
+  "Espace et géométrie",
+  "Organisation et gestion de données",
+  "Problèmes"
 ];
 
 export const categoryStyles: Record<SkillCategory, { bg: string; text: string }> = {
@@ -72,10 +73,10 @@ export const categoryStyles: Record<SkillCategory, { bg: string; text: string }>
   'Nombres et calcul': { bg: 'bg-gradient-to-br from-yellow-100 to-amber-200', text: 'text-gray-800' },
   'Grandeurs et mesures': { bg: 'bg-gradient-to-br from-orange-100 to-yellow-200', text: 'text-gray-800' },
   'Espace et géométrie': { bg: 'bg-gradient-to-br from-amber-100 to-orange-200', text: 'text-gray-800' },
-  
+
   // Pôle Joker
   'Problèmes': { bg: 'bg-gradient-to-br from-lime-100 to-green-200', text: 'text-gray-800' },
-  
+
   // Fallback/Other
   'Organisation et gestion de données': { bg: 'bg-gradient-to-br from-gray-100 to-gray-200', text: 'text-gray-800' },
 };
@@ -316,7 +317,7 @@ export const skills: Skill[] = [
     icon: <PenLine />,
     category: 'Orthographe',
   },
-    {
+  {
     name: 'Le son [an]',
     slug: 'son-an',
     description: "Choisis la bonne écriture (an, en, am, em) pour compléter les mots.",
@@ -372,7 +373,7 @@ export const skills: Skill[] = [
     category: 'Lecture / compréhension',
     isFixedLevel: 'B',
   },
-   {
+  {
     name: 'Fluence',
     slug: 'fluence',
     description: "Chronomètre ta lecture d'un texte et calcule ton score de fluence (MCLM).",
@@ -386,7 +387,7 @@ export const skills: Skill[] = [
     icon: <BookCopy />,
     category: 'Ecriture',
   },
-    {
+  {
     name: 'Copie au clavier',
     slug: 'keyboard-copy',
     description: "Recopie des mots simples lettre par lettre en suivant un modèle.",
@@ -411,6 +412,14 @@ export const skills: Skill[] = [
     allowedLevels: ['B', 'C', 'D'],
   },
   {
+    name: 'Repérer le nom',
+    slug: 'reperer-nom',
+    description: "Clique sur les noms dans la phrase.",
+    icon: <Highlighter />,
+    category: 'Grammaire',
+    allowedLevels: ['B', 'C', 'D'],
+  },
+  {
     name: 'Parcours Codé',
     slug: 'coded-path',
     description: "Guidez le personnage jusqu'à la clé en créant une séquence de flèches.",
@@ -418,7 +427,7 @@ export const skills: Skill[] = [
     category: 'Espace et géométrie',
     allowedLevels: ['A', 'B', 'C'],
   },
-    {
+  {
     name: 'Nombre Mystère',
     slug: 'mystery-number',
     description: "Devine le nombre secret en utilisant les indices qui apparaissent un par un.",
@@ -505,7 +514,7 @@ export const skills: Skill[] = [
     icon: <Clock />,
     category: 'Grandeurs et mesures',
   },
-   {
+  {
     name: 'Calcul Posé',
     slug: 'long-calculation',
     description: "Additionner/soustraire en colonnes avec ou sans retenue.",
@@ -567,54 +576,54 @@ export function getSkillBySlug(slug: string): Skill | undefined {
 
 
 export function difficultyLevelToString(
-    skillSlug: string,
-    scoreValue: number, // Pass the score value directly
-    calcSettings?: CalculationSettings,
-    currSettings?: CurrencySettings,
-    timeSettings?: TimeSettings,
-    calendarSettings?: CalendarSettings,
-    numberLevelSettings?: NumberLevelSettings,
-    countSettings?: CountSettings,
-    readingRaceSettings?: ReadingRaceSettings
+  skillSlug: string,
+  scoreValue: number, // Pass the score value directly
+  calcSettings?: CalculationSettings,
+  currSettings?: CurrencySettings,
+  timeSettings?: TimeSettings,
+  calendarSettings?: CalendarSettings,
+  numberLevelSettings?: NumberLevelSettings,
+  countSettings?: CountSettings,
+  readingRaceSettings?: ReadingRaceSettings
 ): string | null {
-    const skill = getSkillBySlug(skillSlug);
-    if (skill?.isFixedLevel) {
-        return `Niveau ${skill.isFixedLevel}`;
-    }
+  const skill = getSkillBySlug(skillSlug);
+  if (skill?.isFixedLevel) {
+    return `Niveau ${skill.isFixedLevel}`;
+  }
 
-    if (readingRaceSettings?.level) {
-        return readingRaceSettings.level;
-    }
-    if (numberLevelSettings?.level) {
-        return `Niveau ${numberLevelSettings.level}`;
-    }
-     if (calendarSettings?.level) {
-        return `Niveau ${calendarSettings.level}`;
-    }
+  if (readingRaceSettings?.level) {
+    return readingRaceSettings.level;
+  }
+  if (numberLevelSettings?.level) {
+    return `Niveau ${numberLevelSettings.level}`;
+  }
+  if (calendarSettings?.level) {
+    return `Niveau ${calendarSettings.level}`;
+  }
 
-    if (skillSlug === 'time' && timeSettings) {
-        const difficultyMap: Record<number, SkillLevel> = { 0: 'A', 1: 'B', 2: 'C', 3: 'D' };
-        const level = difficultyMap[timeSettings.difficulty] || 'A';
-        return `Niveau ${level}`;
-    }
+  if (skillSlug === 'time' && timeSettings) {
+    const difficultyMap: Record<number, SkillLevel> = { 0: 'A', 1: 'B', 2: 'C', 3: 'D' };
+    const level = difficultyMap[timeSettings.difficulty] || 'A';
+    return `Niveau ${level}`;
+  }
 
-    if (skillSlug === 'currency' && currSettings) {
-        return `Niveau ${String.fromCharCode(65 + currSettings.difficulty)}`;
-    }
+  if (skillSlug === 'currency' && currSettings) {
+    return `Niveau ${String.fromCharCode(65 + currSettings.difficulty)}`;
+  }
 
-    if (skillSlug === 'denombrement') {
-        return "Niveau A"; // isFixedLevel handles this, but as a fallback.
-    }
-    
-    // Fallback for skills that might not have detailed settings but are level-based
-    if (skill?.allowedLevels) {
-        // Find student level for this skill if available, otherwise make a guess
-         if (scoreValue < 50) return `Niveau ${skill.allowedLevels[0]}`;
-         if (scoreValue < 80 && skill.allowedLevels.length > 1) return `Niveau ${skill.allowedLevels[1]}`;
-         return `Niveau ${skill.allowedLevels[skill.allowedLevels.length-1]}`;
-    }
+  if (skillSlug === 'denombrement') {
+    return "Niveau A"; // isFixedLevel handles this, but as a fallback.
+  }
+
+  // Fallback for skills that might not have detailed settings but are level-based
+  if (skill?.allowedLevels) {
+    // Find student level for this skill if available, otherwise make a guess
+    if (scoreValue < 50) return `Niveau ${skill.allowedLevels[0]}`;
+    if (scoreValue < 80 && skill.allowedLevels.length > 1) return `Niveau ${skill.allowedLevels[1]}`;
+    return `Niveau ${skill.allowedLevels[skill.allowedLevels.length - 1]}`;
+  }
 
 
-    // Fallback for any other case where level can't be determined
-    return null;
+  // Fallback for any other case where level can't be determined
+  return null;
 }
