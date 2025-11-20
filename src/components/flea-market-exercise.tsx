@@ -15,24 +15,11 @@ import { currency, formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import type { SkillLevel } from '@/lib/skills';
 import Image from 'next/image';
+import { fleaMarketFlow } from '@/ai/flows/flea-market-flow';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const NUM_QUESTIONS = 5;
-
-// Items to sell
-const MARKET_ITEMS = [
-    { name: "un livre", emoji: "📚" },
-    { name: "un ballon", emoji: "⚽" },
-    { name: "une poupée", emoji: "🧸" },
-    { name: "une voiture", emoji: "🚗" },
-    { name: "un jeu", emoji: "🎮" },
-    { name: "un chapeau", emoji: "hat" }, // using emoji directly in render if needed or lucide
-    { name: "une pomme", emoji: "🍎" },
-    { name: "un gâteau", emoji: "🍰" },
-    { name: "un vélo", emoji: "🚲" },
-    { name: "une guitare", emoji: "🎸" },
-    { name: "un robot", emoji: "🤖" },
-    { name: "une plante", emoji: "🪴" },
-];
 
 interface CurrencyItem {
     name: string;
@@ -50,7 +37,15 @@ export function FleaMarketExercise() {
     const [level, setLevel] = useState<SkillLevel>('B');
 
     // Game state
+    const [phase, setPhase] = useState<'setup' | 'negotiation' | 'transaction'>('setup');
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+    // Setup inputs
+    const [inputItemName, setInputItemName] = useState('');
+    const [inputPrice, setInputPrice] = useState('');
+    const [isNegotiating, setIsNegotiating] = useState(false);
+    const [negotiationMessage, setNegotiationMessage] = useState('');
+
     const [currentItem, setCurrentItem] = useState<{ name: string, emoji: string } | null>(null);
     const [price, setPrice] = useState(0);
     const [payment, setPayment] = useState(0);
@@ -74,56 +69,81 @@ export function FleaMarketExercise() {
     // Helper to round to 2 decimals to avoid float issues
     const round = (num: number) => Math.round(num * 100) / 100;
 
-    const generateQuestion = useMemo(() => {
-        return () => {
-            const item = MARKET_ITEMS[Math.floor(Math.random() * MARKET_ITEMS.length)];
-            setCurrentItem(item);
+    const handleSetupSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!inputItemName || !inputPrice) return;
 
-            let newPrice = 0;
-            let possiblePayments: number[] = [];
+        setIsNegotiating(true);
+        try {
+            const studentPrice = parseFloat(inputPrice.replace(',', '.'));
 
-            if (level === 'B') {
-                // Level B: Integers < 20, no cents
-                newPrice = Math.floor(Math.random() * 18) + 1; // 1 to 18
-                // Payment must be greater than price
-                const bills = [5, 10, 20, 50];
-                possiblePayments = bills.filter(b => b > newPrice);
-            } else if (level === 'C') {
-                // Level C: Integers < 100, no cents
-                newPrice = Math.floor(Math.random() * 90) + 5; // 5 to 95
-                const bills = [10, 20, 50, 100, 200];
-                possiblePayments = bills.filter(b => b > newPrice);
-            } else {
-                // Level D: With cents
-                const euros = Math.floor(Math.random() * 45) + 1;
-                const cents = [0.10, 0.20, 0.50, 0.90, 0.95, 0.99][Math.floor(Math.random() * 6)];
-                newPrice = round(euros + cents);
-                const bills = [5, 10, 20, 50, 100];
-                possiblePayments = bills.filter(b => b > newPrice);
-            }
+            // Call AI to negotiate/validate
+            const result = await fleaMarketFlow({
+                itemName: inputItemName,
+                studentPrice,
+                level: (level === 'A' || level === 'A+' || level === 'A++') ? 'B' : level as 'B' | 'C' | 'D'
+            });
 
-            // Fallback if no payment found (rare but possible if price is high)
-            if (possiblePayments.length === 0) possiblePayments = [Math.ceil(newPrice / 10) * 10 + 10];
+            setCurrentItem({ name: inputItemName, emoji: result.emoji });
+            setPrice(result.finalPrice);
+            setNegotiationMessage(result.message);
 
-            // Pick the smallest possible payment that is strictly greater (simulate realistic payment)
-            // or random one? Let's pick a random one from valid options to vary difficulty
-            const selectedPayment = possiblePayments[Math.floor(Math.random() * Math.min(3, possiblePayments.length))];
+            // Generate payment based on final price
+            generatePayment(result.finalPrice);
 
-            setPrice(newPrice);
-            setPayment(selectedPayment);
+            setPhase('negotiation');
+        } catch (error) {
+            console.error("AI Negotiation failed", error);
+            // Fallback logic if AI fails
+            setCurrentItem({ name: inputItemName, emoji: "📦" });
+            const fallbackPrice = parseFloat(inputPrice.replace(',', '.'));
+            setPrice(fallbackPrice);
+            setNegotiationMessage("D'accord, je te le prends !");
+            generatePayment(fallbackPrice);
+            setPhase('negotiation');
+        } finally {
+            setIsNegotiating(false);
+        }
+    };
 
-            // Find image for payment if it exists in our currency list
-            const currencyItem = currency.find(c => c.value === selectedPayment);
-            setPaymentImage(currencyItem ? currencyItem.image : null);
+    const generatePayment = (itemPrice: number) => {
+        let possiblePayments: number[] = [];
 
-            setUserChange([]);
-            setFeedback(null);
-        };
-    }, [level]);
+        // Logic to find bills/coins greater than price
+        const bills = [5, 10, 20, 50, 100, 200];
+        possiblePayments = bills.filter(b => b > itemPrice);
 
-    useEffect(() => {
-        generateQuestion();
-    }, [generateQuestion, currentQuestionIndex]);
+        // If price is small (e.g. < 5), maybe pay with coins too?
+        // For simplicity let's stick to bills or large coins if needed.
+        if (itemPrice < 2 && level === 'D') {
+            possiblePayments = [2, 5, 10];
+        }
+
+        // Fallback
+        if (possiblePayments.length === 0) possiblePayments = [Math.ceil(itemPrice / 10) * 10 + 10];
+
+        const selectedPayment = possiblePayments[Math.floor(Math.random() * Math.min(3, possiblePayments.length))];
+        setPayment(selectedPayment);
+
+        const currencyItem = currency.find(c => c.value === selectedPayment);
+        setPaymentImage(currencyItem ? currencyItem.image : null);
+    };
+
+    const startTransaction = () => {
+        setPhase('transaction');
+        setUserChange([]);
+        setFeedback(null);
+    };
+
+    // Reset for next question
+    const prepareNextQuestion = () => {
+        setInputItemName('');
+        setInputPrice('');
+        setPhase('setup');
+        setNegotiationMessage('');
+        setFeedback(null);
+        setUserChange([]);
+    };
 
     const handleAddMoney = (item: CurrencyItem) => {
         if (feedback) return;
@@ -168,6 +188,7 @@ export function FleaMarketExercise() {
         setShowConfetti(false);
         if (currentQuestionIndex < NUM_QUESTIONS - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
+            prepareNextQuestion();
         } else {
             setIsFinished(true);
         }
@@ -179,7 +200,7 @@ export function FleaMarketExercise() {
         setIsFinished(false);
         setHasBeenSaved(false);
         setSessionDetails([]);
-        generateQuestion();
+        prepareNextQuestion();
     };
 
     useEffect(() => {
@@ -244,140 +265,203 @@ export function FleaMarketExercise() {
                     La Brocante
                 </CardTitle>
                 <CardDescription className="text-center text-lg">
-                    Je t'achète un objet. Rends-moi la monnaie exacte !
+                    Vends tes objets et rends la monnaie au client !
                 </CardDescription>
                 <Progress value={((currentQuestionIndex) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
             </CardHeader>
             <CardContent className="flex flex-col gap-8 p-6">
 
-                {/* Scenario Section */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8 bg-muted/30 p-6 rounded-xl border-2 border-dashed border-primary/20">
-                    {/* Item to sell */}
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="text-6xl animate-bounce-slow">{currentItem?.emoji}</div>
-                        <div className="font-bold text-xl">{currentItem?.name}</div>
-                        <div className="bg-white px-4 py-2 rounded-full shadow-sm border font-mono text-2xl text-primary font-bold transform -rotate-3">
-                            {formatCurrency(price)}
-                        </div>
-                    </div>
-
-                    {/* Arrow */}
-                    <div className="hidden md:block text-4xl text-muted-foreground">➡️</div>
-
-                    {/* Payment */}
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Je te donne</div>
-                        {paymentImage ? (
-                            <div className="relative w-32 h-20 md:w-40 md:h-24 transition-transform hover:scale-105">
-                                <Image
-                                    src={paymentImage}
-                                    alt={`${payment}€`}
-                                    fill
-                                    className="object-contain drop-shadow-md"
+                {/* Setup Phase */}
+                {phase === 'setup' && (
+                    <div className="flex flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="text-xl font-bold text-center">Que veux-tu vendre ?</div>
+                        <form onSubmit={handleSetupSubmit} className="w-full max-w-md space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="item">Nom de l'objet</Label>
+                                <Input
+                                    id="item"
+                                    placeholder="ex: un vieux livre, une épée magique..."
+                                    value={inputItemName}
+                                    onChange={(e) => setInputItemName(e.target.value)}
+                                    autoComplete="off"
+                                    className="text-lg"
                                 />
                             </div>
-                        ) : (
-                            <div className="text-4xl font-bold bg-green-100 text-green-800 px-6 py-4 rounded-lg border-2 border-green-300">
-                                {formatCurrency(payment)}
+                            <div className="space-y-2">
+                                <Label htmlFor="price">Ton prix (€)</Label>
+                                <Input
+                                    id="price"
+                                    type="number"
+                                    step={level === 'D' ? "0.01" : "1"}
+                                    placeholder="ex: 5"
+                                    value={inputPrice}
+                                    onChange={(e) => setInputPrice(e.target.value)}
+                                    className="text-lg"
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    {level === 'B' && "Niveau B : Choisis un prix entier (sans virgule) moins de 20€."}
+                                    {level === 'C' && "Niveau C : Choisis un prix entier (sans virgule) moins de 100€."}
+                                    {level === 'D' && "Niveau D : Tu peux mettre des centimes !"}
+                                </p>
                             </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Interaction Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-                    {/* Money Tray (User Selection) */}
-                    <div className="bg-slate-50 p-4 rounded-xl border shadow-inner min-h-[200px] flex flex-col">
-                        <div className="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 className="font-bold text-slate-700">Ta monnaie à rendre :</h3>
-                            <span className={cn(
-                                "text-2xl font-mono font-bold",
-                                userTotal > (payment - price) ? "text-red-500" : "text-blue-600"
-                            )}>
-                                {formatCurrency(userTotal)}
-                            </span>
-                        </div>
-
-                        <div className="flex-grow flex flex-wrap content-start gap-2 p-2">
-                            {userChange.map((item, idx) => (
-                                <button
-                                    key={`${item.name}-${idx}`}
-                                    onClick={() => handleRemoveMoney(idx)}
-                                    className="relative w-16 h-16 transition-transform hover:scale-110 active:scale-95"
-                                    disabled={!!feedback}
-                                >
-                                    <Image
-                                        src={item.image}
-                                        alt={item.name}
-                                        fill
-                                        className="object-contain drop-shadow-sm"
-                                    />
-                                </button>
-                            ))}
-                            {userChange.length === 0 && (
-                                <div className="w-full h-full flex items-center justify-center text-muted-foreground italic">
-                                    Clique sur les pièces et billets pour préparer la monnaie.
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-4 flex justify-end">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setUserChange([])}
-                                disabled={userChange.length === 0 || !!feedback}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            >
-                                <Trash2 className="w-4 h-4 mr-2" /> Tout effacer
+                            <Button type="submit" size="lg" className="w-full text-xl" disabled={!inputItemName || !inputPrice || isNegotiating}>
+                                {isNegotiating ? <Loader2 className="animate-spin mr-2" /> : "Proposer au client"}
                             </Button>
-                        </div>
+                        </form>
                     </div>
+                )}
 
-                    {/* Cash Register (Available Money) */}
-                    <div className="flex flex-col gap-4">
-                        <h3 className="font-bold text-slate-700 text-center">La caisse</h3>
-                        <div className="grid grid-cols-4 gap-3 justify-items-center">
-                            {availableCurrency.map((item) => (
-                                <button
-                                    key={item.name}
-                                    onClick={() => handleAddMoney(item)}
-                                    disabled={!!feedback}
-                                    className="relative w-16 h-16 transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Image
-                                        src={item.image}
-                                        alt={item.name}
-                                        fill
-                                        className="object-contain drop-shadow-md"
-                                    />
-                                </button>
-                            ))}
+                {/* Negotiation Phase */}
+                {phase === 'negotiation' && (
+                    <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in-95">
+                        <div className="text-6xl">{currentItem?.emoji}</div>
+                        <div className="bg-blue-50 p-6 rounded-xl border-2 border-blue-200 max-w-lg text-center space-y-4">
+                            <div className="font-bold text-xl text-blue-800">Le client dit :</div>
+                            <div className="text-2xl italic">"{negotiationMessage}"</div>
+                            <div className="text-lg">
+                                Prix final : <span className="font-bold bg-white px-3 py-1 rounded border">{formatCurrency(price)}</span>
+                            </div>
                         </div>
+                        <Button onClick={startTransaction} size="lg" className="text-xl px-8 animate-pulse">
+                            Accepter et encaisser
+                        </Button>
                     </div>
-                </div>
+                )}
+
+                {/* Transaction Phase */}
+                {phase === 'transaction' && (
+                    <>
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-8 bg-muted/30 p-6 rounded-xl border-2 border-dashed border-primary/20">
+                            {/* Item to sell */}
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="text-6xl animate-bounce-slow">{currentItem?.emoji}</div>
+                                <div className="font-bold text-xl">{currentItem?.name}</div>
+                                <div className="bg-white px-4 py-2 rounded-full shadow-sm border font-mono text-2xl text-primary font-bold transform -rotate-3">
+                                    {formatCurrency(price)}
+                                </div>
+                            </div>
+
+                            {/* Arrow */}
+                            <div className="hidden md:block text-4xl text-muted-foreground">➡️</div>
+
+                            {/* Payment */}
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Je te donne</div>
+                                {paymentImage ? (
+                                    <div className="relative w-32 h-20 md:w-40 md:h-24 transition-transform hover:scale-105">
+                                        <Image
+                                            src={paymentImage}
+                                            alt={`${payment}€`}
+                                            fill
+                                            className="object-contain drop-shadow-md"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="text-4xl font-bold bg-green-100 text-green-800 px-6 py-4 rounded-lg border-2 border-green-300">
+                                        {formatCurrency(payment)}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Interaction Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                            {/* Money Tray (User Selection) */}
+                            <div className="bg-slate-50 p-4 rounded-xl border shadow-inner min-h-[200px] flex flex-col">
+                                <div className="flex justify-between items-center mb-4 border-b pb-2">
+                                    <h3 className="font-bold text-slate-700">Ta monnaie à rendre :</h3>
+                                    <span className={cn(
+                                        "text-2xl font-mono font-bold",
+                                        userTotal > (payment - price) ? "text-red-500" : "text-blue-600"
+                                    )}>
+                                        {formatCurrency(userTotal)}
+                                    </span>
+                                </div>
+
+                                <div className="flex-grow flex flex-wrap content-start gap-2 p-2">
+                                    {userChange.map((item, idx) => (
+                                        <button
+                                            key={`${item.name}-${idx}`}
+                                            onClick={() => handleRemoveMoney(idx)}
+                                            className="relative w-16 h-16 transition-transform hover:scale-110 active:scale-95"
+                                            disabled={!!feedback}
+                                        >
+                                            <Image
+                                                src={item.image}
+                                                alt={item.name}
+                                                fill
+                                                className="object-contain drop-shadow-sm"
+                                            />
+                                        </button>
+                                    ))}
+                                    {userChange.length === 0 && (
+                                        <div className="w-full h-full flex items-center justify-center text-muted-foreground italic">
+                                            Clique sur les pièces et billets pour préparer la monnaie.
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-4 flex justify-end">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setUserChange([])}
+                                        disabled={userChange.length === 0 || !!feedback}
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                        <Trash2 className="w-4 h-4 mr-2" /> Tout effacer
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Cash Register (Available Money) */}
+                            <div className="flex flex-col gap-4">
+                                <h3 className="font-bold text-slate-700 text-center">La caisse</h3>
+                                <div className="grid grid-cols-4 gap-3 justify-items-center">
+                                    {availableCurrency.map((item) => (
+                                        <button
+                                            key={item.name}
+                                            onClick={() => handleAddMoney(item)}
+                                            disabled={!!feedback}
+                                            className="relative w-16 h-16 transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <Image
+                                                src={item.image}
+                                                alt={item.name}
+                                                fill
+                                                className="object-contain drop-shadow-md"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
 
             </CardContent>
-            <CardFooter className="flex-col gap-4 pt-6 pb-8">
-                <Button size="lg" onClick={checkAnswer} disabled={!!feedback || userChange.length === 0} className="text-xl px-12 py-6 h-auto shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
-                    <Check className="mr-2 h-6 w-6" /> Je rends la monnaie
-                </Button>
+            {phase === 'transaction' && (
+                <CardFooter className="flex-col gap-4 pt-6 pb-8">
+                    <Button size="lg" onClick={checkAnswer} disabled={!!feedback || userChange.length === 0} className="text-xl px-12 py-6 h-auto shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                        <Check className="mr-2 h-6 w-6" /> Je rends la monnaie
+                    </Button>
 
-                {feedback === 'correct' && (
-                    <div className="text-2xl font-bold text-green-600 flex items-center gap-2 animate-pulse bg-green-50 px-6 py-3 rounded-full border border-green-200">
-                        <ThumbsUp className="h-8 w-8" /> Merci ! Le compte est bon.
-                    </div>
-                )}
-                {feedback === 'incorrect' && (
-                    <div className="text-xl font-bold text-red-600 flex flex-col items-center gap-2 animate-shake bg-red-50 px-6 py-3 rounded-xl border border-red-200">
-                        <div className="flex items-center gap-2"><X className="h-6 w-6" /> Ce n'est pas ça.</div>
-                        <div className="text-base font-normal text-slate-700">
-                            Il fallait rendre <span className="font-bold">{formatCurrency(round(payment - price))}</span>.
+                    {feedback === 'correct' && (
+                        <div className="text-2xl font-bold text-green-600 flex items-center gap-2 animate-pulse bg-green-50 px-6 py-3 rounded-full border border-green-200">
+                            <ThumbsUp className="h-8 w-8" /> Merci ! Le compte est bon.
                         </div>
-                    </div>
-                )}
-            </CardFooter>
+                    )}
+                    {feedback === 'incorrect' && (
+                        <div className="text-xl font-bold text-red-600 flex flex-col items-center gap-2 animate-shake bg-red-50 px-6 py-3 rounded-xl border border-red-200">
+                            <div className="flex items-center gap-2"><X className="h-6 w-6" /> Ce n'est pas ça.</div>
+                            <div className="text-base font-normal text-slate-700">
+                                Il fallait rendre <span className="font-bold">{formatCurrency(round(payment - price))}</span>.
+                            </div>
+                        </div>
+                    )}
+                </CardFooter>
+            )}
             <style jsx>{`
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
