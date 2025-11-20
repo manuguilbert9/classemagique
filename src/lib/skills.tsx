@@ -426,7 +426,7 @@ export const skills: Skill[] = [
     description: "Clique sur les adjectifs dans la phrase.",
     icon: <Palette />,
     category: 'Grammaire',
-    allowedLevels: ['B', 'C', 'D'],
+    allowedLevels: ['B', 'C'],
   },
   {
     name: 'Parcours Codé',

@@ -13,13 +13,15 @@ import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { ADJECTIVE_SENTENCES } from '@/data/grammaire/adjectives-sentences';
 import { cn } from '@/lib/utils';
+import { SkillLevel } from '@/lib/skills';
 
 const NUM_QUESTIONS = 10;
 
 interface Token {
     id: string;
     text: string;
-    isTarget: boolean;
+    isTarget: boolean; // Adjective
+    isNoun: boolean;   // Noun (for Level B hint)
     cleanText: string;
 }
 
@@ -29,6 +31,7 @@ export function AdjectiveIdentificationExercise() {
     const isHomework = searchParams.get('from') === 'devoirs';
     const homeworkDate = searchParams.get('date');
 
+    const [level, setLevel] = useState<SkillLevel>('B');
     const [sentenceTokens, setSentenceTokens] = useState<Token[]>([]);
     const [selectedTokenIds, setSelectedTokenIds] = useState<Set<string>>(new Set());
 
@@ -41,6 +44,12 @@ export function AdjectiveIdentificationExercise() {
     const [showConfetti, setShowConfetti] = useState(false);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
+
+    useEffect(() => {
+        if (student?.levels?.['reperer-adjectif']) {
+            setLevel(student.levels['reperer-adjectif']);
+        }
+    }, [student]);
 
     // Initialize questions
     useEffect(() => {
@@ -56,7 +65,7 @@ export function AdjectiveIdentificationExercise() {
         let idCounter = 0;
 
         rawTokens.forEach(rawToken => {
-            // Handle "L'[avion]" or "d'[eau]"
+            // Handle "L'[avion]" or "d'{eau}"
             const apostropheMatch = rawToken.match(/^(.+')(.+)$/);
 
             if (apostropheMatch) {
@@ -65,6 +74,7 @@ export function AdjectiveIdentificationExercise() {
                     id: `token-${idCounter++}`,
                     text: part1,
                     isTarget: false,
+                    isNoun: false,
                     cleanText: part1
                 });
 
@@ -80,8 +90,10 @@ export function AdjectiveIdentificationExercise() {
     }, []);
 
     const processToken = (raw: string, tokens: Token[], id: number) => {
-        // Check if it's a target (surrounded by [])
+        // Check if it's a target (adjective) [word]
         const targetMatch = raw.match(/^\[(.*?)\]([.,!?;:]*)$/);
+        // Check if it's a noun {word}
+        const nounMatch = raw.match(/^\{(.*?)\}([.,!?;:]*)$/);
 
         if (targetMatch) {
             const word = targetMatch[1];
@@ -91,6 +103,7 @@ export function AdjectiveIdentificationExercise() {
                 id: `token-${id}`,
                 text: word,
                 isTarget: true,
+                isNoun: false,
                 cleanText: word
             });
 
@@ -99,6 +112,28 @@ export function AdjectiveIdentificationExercise() {
                     id: `token-${id}-punct`,
                     text: punct,
                     isTarget: false,
+                    isNoun: false,
+                    cleanText: punct
+                });
+            }
+        } else if (nounMatch) {
+            const word = nounMatch[1];
+            const punct = nounMatch[2];
+
+            tokens.push({
+                id: `token-${id}`,
+                text: word,
+                isTarget: false,
+                isNoun: true,
+                cleanText: word
+            });
+
+            if (punct) {
+                tokens.push({
+                    id: `token-${id}-punct`,
+                    text: punct,
+                    isTarget: false,
+                    isNoun: false,
                     cleanText: punct
                 });
             }
@@ -109,12 +144,14 @@ export function AdjectiveIdentificationExercise() {
                     id: `token-${id}`,
                     text: punctMatch[1],
                     isTarget: false,
+                    isNoun: false,
                     cleanText: punctMatch[1]
                 });
                 tokens.push({
                     id: `token-${id}-punct`,
                     text: punctMatch[2],
                     isTarget: false,
+                    isNoun: false,
                     cleanText: punctMatch[2]
                 });
             } else {
@@ -122,6 +159,7 @@ export function AdjectiveIdentificationExercise() {
                     id: `token-${id}`,
                     text: raw,
                     isTarget: false,
+                    isNoun: false,
                     cleanText: raw
                 });
             }
@@ -222,12 +260,13 @@ export function AdjectiveIdentificationExercise() {
                         skill: 'reperer-adjectif',
                         score: score,
                         details: sessionDetails,
+                        numberLevelSettings: { level }
                     });
                 }
             }
         };
         saveResult();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate, level]);
 
     if (questions.length === 0) {
         return (
@@ -264,6 +303,7 @@ export function AdjectiveIdentificationExercise() {
                 <CardTitle className="font-headline text-2xl text-center">Repère les adjectifs</CardTitle>
                 <CardDescription className="text-center text-lg">
                     Clique sur tous les <span className="font-bold text-primary">adjectifs</span> dans la phrase.
+                    {level === 'B' && <span className="block text-sm text-muted-foreground mt-2">(Aide : Les noms sont en vert pour t'aider)</span>}
                 </CardDescription>
                 <Progress value={((currentQuestionIndex) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
             </CardHeader>
@@ -277,11 +317,25 @@ export function AdjectiveIdentificationExercise() {
                             disabled={!!feedback}
                             className={cn(
                                 "px-3 py-1 rounded-lg transition-all duration-200 border-2",
+                                // Default state
                                 !selectedTokenIds.has(token.id) && "border-transparent hover:bg-muted",
+
+                                // Level B Hint: Nouns are green
+                                level === 'B' && token.isNoun && !selectedTokenIds.has(token.id) && !feedback && "text-green-600 font-medium",
+
+                                // Selected state
                                 selectedTokenIds.has(token.id) && !feedback && "bg-primary/10 border-primary text-primary font-bold transform scale-105",
+
+                                // Correct feedback (for correct adjectives)
                                 feedback === 'correct' && token.isTarget && "bg-green-100 border-green-500 text-green-700 font-bold",
+
+                                // Incorrect feedback (missed adjectives)
                                 feedback === 'incorrect' && token.isTarget && !selectedTokenIds.has(token.id) && "bg-green-100 border-green-500 text-green-700 font-bold border-dashed",
+
+                                // Incorrect feedback (wrongly selected)
                                 feedback === 'incorrect' && !token.isTarget && selectedTokenIds.has(token.id) && "bg-red-100 border-red-500 text-red-700 line-through",
+
+                                // Punctuation (non-interactive look)
                                 /^[.,!?;:]+$/.test(token.text) && "cursor-default hover:bg-transparent border-transparent px-0"
                             )}
                         >
