@@ -39,6 +39,7 @@ import { PlaceValueTableExercise } from '@/components/place-value-table-exercise
 import { SubtractionTrainingExercise } from '@/components/subtraction-training-exercise';
 import { NounIdentificationExercise } from '@/components/noun-identification-exercise';
 import { AdjectiveIdentificationExercise } from '@/components/adjective-identification-exercise';
+import { FleaMarketExercise } from '@/components/flea-market-exercise';
 import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
@@ -129,6 +130,9 @@ export default function ExercisePage() {
         break;
       case 'reperer-adjectif':
         exerciseComponent = <AdjectiveIdentificationExercise />;
+        break;
+      case 'flea-market':
+        exerciseComponent = <FleaMarketExercise />;
         break;
       case 'coded-path':
         exerciseComponent = <CodedPathExercise />;

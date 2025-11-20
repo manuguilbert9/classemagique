@@ -28,6 +28,7 @@ import {
   GraduationCap,
   Highlighter,
   Palette,
+  ShoppingBag,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -515,13 +516,6 @@ export const skills: Skill[] = [
     icon: <Spline />,
     category: 'Vocabulaire',
     allowedLevels: ['B', 'C', 'D'],
-  },
-  {
-    name: 'L\'heure',
-    slug: 'time',
-    description: "Lire l'heure sur une horloge à aiguilles.",
-    icon: <Clock />,
-    category: 'Grandeurs et mesures',
   },
   {
     name: 'Calcul Posé',
