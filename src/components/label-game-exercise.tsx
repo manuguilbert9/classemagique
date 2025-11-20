@@ -16,24 +16,24 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { SkillLevel } from '@/lib/skills';
-import { PHRASES_RAW } from '@/data/grammaire/phrases';
+import { PHRASE_CONSTRUCTION_SENTENCES } from '@/data/grammaire/phrase-construction-sentences';
 
 const NUM_QUESTIONS = 5;
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = (array: any[]) => {
-  let currentIndex = array.length,  randomIndex;
-  const newArray = [...array]; // Create a copy to avoid mutating the original
-  
-  while (currentIndex !== 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
+    let currentIndex = array.length, randomIndex;
+    const newArray = [...array]; // Create a copy to avoid mutating the original
 
-    [newArray[currentIndex], newArray[randomIndex]] = [
-      newArray[randomIndex], newArray[currentIndex]];
-  }
+    while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
 
-  return newArray;
+        [newArray[currentIndex], newArray[randomIndex]] = [
+            newArray[randomIndex], newArray[currentIndex]];
+    }
+
+    return newArray;
 };
 
 
@@ -44,21 +44,21 @@ interface LabelItem {
 
 // The component for each draggable word label
 function SortableLabel({ item }: { item: LabelItem }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 10 : 'auto',
-  };
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : 'auto',
+    };
 
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm cursor-grab active:cursor-grabbing active:shadow-md"
-    >
-      <span className="text-xl font-medium select-none">{item.word}</span>
-    </div>
-  );
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners}
+            className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm cursor-grab active:cursor-grabbing active:shadow-md"
+        >
+            <span className="text-xl font-medium select-none">{item.word}</span>
+        </div>
+    );
 }
 
 export function LabelGameExercise() {
@@ -66,14 +66,10 @@ export function LabelGameExercise() {
     const searchParams = useSearchParams();
     const isHomework = searchParams.get('from') === 'devoirs';
     const homeworkDate = searchParams.get('date');
-    
+
     const [level, setLevel] = useState<SkillLevel>('B');
     const [allPhrases] = useState<string[]>(() => {
-        if (!PHRASES_RAW) return [];
-        return PHRASES_RAW
-            .split('\n')
-            .map((line) => line.trim())
-            .filter((line) => line.length > 0);
+        return PHRASE_CONSTRUCTION_SENTENCES;
     });
 
     const [currentSentence, setCurrentSentence] = useState('');
@@ -100,7 +96,7 @@ export function LabelGameExercise() {
         setSessionDetails([]);
         setShowConfetti(false);
     }, []);
-    
+
     useEffect(() => {
         if (student?.levels?.['label-game']) {
             setLevel(student.levels['label-game']);
@@ -111,7 +107,7 @@ export function LabelGameExercise() {
         if (!level || allPhrases.length === 0) return;
 
         let phrasePool: string[] = [];
-        
+
         // Filter phrases based on word count for each level
         if (level === 'B') { // 2 to 4 words
             phrasePool = allPhrases.filter(p => {
@@ -119,12 +115,12 @@ export function LabelGameExercise() {
                 return wordCount >= 2 && wordCount <= 4;
             });
         } else if (level === 'C') { // 4 to 6 words
-             phrasePool = allPhrases.filter(p => {
+            phrasePool = allPhrases.filter(p => {
                 const wordCount = p.split(/\s+/).length;
                 return wordCount > 4 && wordCount <= 6;
             });
         } else if (level === 'D') { // 7+ words
-             phrasePool = allPhrases.filter(p => {
+            phrasePool = allPhrases.filter(p => {
                 const wordCount = p.split(/\s+/).length;
                 return wordCount > 6;
             });
@@ -134,11 +130,11 @@ export function LabelGameExercise() {
             const sentence = phrasePool[Math.floor(Math.random() * phrasePool.length)];
             const words = sentence.split(/\s+/).filter(Boolean);
             const shuffledLabels = shuffleArray(words.map((word, i) => ({ id: `${currentQuestionIndex}-${i}-${word}`, word })));
-            
+
             setCurrentSentence(sentence);
             setOrderedLabels(shuffledLabels);
         } else {
-             // Fallback if no phrases match the criteria for a level
+            // Fallback if no phrases match the criteria for a level
             const sentence = allPhrases[Math.floor(Math.random() * allPhrases.length)];
             const words = sentence.split(/\s+/).filter(Boolean);
             const shuffledLabels = shuffleArray(words.map((word, i) => ({ id: `${currentQuestionIndex}-${i}-${word}`, word })));
@@ -163,7 +159,7 @@ export function LabelGameExercise() {
             setIsFinished(true);
         }
     };
-    
+
     const checkAnswer = () => {
         if (feedback) return;
 
@@ -202,7 +198,7 @@ export function LabelGameExercise() {
 
     useEffect(() => {
         const saveResult = async () => {
-             if (isFinished && student && !hasBeenSaved && level) {
+            if (isFinished && student && !hasBeenSaved && level) {
                 setHasBeenSaved(true);
                 const score = (correctAnswers / NUM_QUESTIONS) * 100;
                 if (isHomework && homeworkDate) {
@@ -243,7 +239,7 @@ export function LabelGameExercise() {
             </Card>
         );
     }
-    
+
     if (isFinished) {
         const score = (correctAnswers / NUM_QUESTIONS) * 100;
         return (
@@ -259,19 +255,19 @@ export function LabelGameExercise() {
             </Card>
         );
     }
-    
+
     return (
         <Card className="w-full max-w-2xl mx-auto shadow-2xl">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-                <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100}} />
+                <Confetti active={showConfetti} config={{ angle: 90, spread: 360, startVelocity: 40, elementCount: 100 }} />
             </div>
             <CardHeader>
                 <CardTitle className="font-headline text-2xl text-center">Le jeu des étiquettes</CardTitle>
                 <CardDescription className="text-center">Fais glisser les mots pour remettre la phrase dans le bon ordre.</CardDescription>
-                 <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
+                <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
             </CardHeader>
             <CardContent className="min-h-[300px] flex flex-col items-center justify-center gap-6 p-6">
-                
+
                 <div className="p-4 bg-muted rounded-lg w-full min-h-[8rem] flex items-center justify-center">
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                         <SortableContext items={orderedLabels.map(l => l.id)} strategy={horizontalListSortingStrategy}>
@@ -284,14 +280,14 @@ export function LabelGameExercise() {
                     </DndContext>
                 </div>
             </CardContent>
-             <CardFooter className="flex-col gap-4 pt-6">
+            <CardFooter className="flex-col gap-4 pt-6">
                 <Button size="lg" onClick={checkAnswer} disabled={!!feedback}>
-                    <Check className="mr-2"/> Valider
+                    <Check className="mr-2" /> Valider
                 </Button>
-                {feedback === 'correct' && <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse"><ThumbsUp/> Parfait !</div>}
-                {feedback === 'incorrect' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X/> Oups, ce n'est pas le bon ordre. La bonne phrase était : "{currentSentence}"</div>}
+                {feedback === 'correct' && <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse"><ThumbsUp /> Parfait !</div>}
+                {feedback === 'incorrect' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X /> Oups, ce n'est pas le bon ordre. La bonne phrase était : "{currentSentence}"</div>}
             </CardFooter>
-             <style jsx>{`
+            <style jsx>{`
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
                     10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }

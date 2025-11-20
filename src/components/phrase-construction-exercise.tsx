@@ -13,7 +13,8 @@ import { Check, RefreshCw, X, Loader2, Wand2, ThumbsUp, Send, Gem } from 'lucide
 import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail, saveHomeworkResult as saveHomeworkResultWithNuggets } from '@/services/scores';
-import { generatePhraseWords, validateConstructedPhrase, type ValidatePhraseOutput } from '@/ai/flows/phrase-construction-flow';
+import { validateConstructedPhrase, type ValidatePhraseOutput } from '@/ai/flows/phrase-construction-flow';
+import { PHRASE_CONSTRUCTION_SENTENCES } from '@/data/grammaire/phrase-construction-sentences';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { Progress } from './ui/progress';
@@ -47,14 +48,14 @@ export function PhraseConstructionExercise() {
 
   const [level, setLevel] = useState<SkillLevel>('B');
   const [gameState, setGameState] = useState<'generating' | 'playing' | 'validating' | 'feedback' | 'finished'>('generating');
-  
+
   const [wordsToUse, setWordsToUse] = useState<string[]>([]);
   const [userSentence, setUserSentence] = useState('');
   const [validationResult, setValidationResult] = useState<ValidatePhraseOutput | null>(null);
-  
+
   const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
-  
+
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
@@ -68,22 +69,54 @@ export function PhraseConstructionExercise() {
     setGameState('generating');
     setUserSentence('');
     setValidationResult(null);
+
+    // Simulate a small delay for better UX (so it doesn't feel instant/glitchy)
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     try {
-      // Ensure the level is valid for the AI flow (A, A+, A++ -> B)
-      const flowLevel: 'B' | 'C' | 'D' = (level === 'A' || level === 'A+' || level === 'A++') ? 'B' : level as 'B' | 'C' | 'D';
-      const result = await generatePhraseWords({ level: flowLevel });
-      setWordsToUse(shuffleArray(result.words));
+      // Filter sentences based on level (approximate logic based on word count)
+      let pool = PHRASE_CONSTRUCTION_SENTENCES;
+
+      if (level === 'B' || level === 'A' || level === 'A+' || level === 'A++') {
+        // Short sentences (approx < 6 words)
+        pool = PHRASE_CONSTRUCTION_SENTENCES.filter(s => s.split(' ').length <= 6);
+      } else if (level === 'C') {
+        // Medium sentences (6-10 words)
+        pool = PHRASE_CONSTRUCTION_SENTENCES.filter(s => {
+          const len = s.split(' ').length;
+          return len > 6 && len <= 10;
+        });
+      } else {
+        // Long sentences (> 10 words)
+        pool = PHRASE_CONSTRUCTION_SENTENCES.filter(s => s.split(' ').length > 10);
+      }
+
+      // Fallback if pool is empty
+      if (pool.length === 0) pool = PHRASE_CONSTRUCTION_SENTENCES;
+
+      const randomSentence = pool[Math.floor(Math.random() * pool.length)];
+
+      // Split into words and shuffle
+      // Remove punctuation for the word list to make it a bit harder/cleaner, or keep it?
+      // Usually for construction, we might want to keep punctuation or let the user add it.
+      // The previous AI flow returned words. Let's just split by space and keep punctuation attached for now, 
+      // or better: clean punctuation from words to force user to think about order, 
+      // BUT the validation AI expects a full sentence.
+      // Let's stick to: split by space, shuffle.
+      const words = randomSentence.split(' ');
+      setWordsToUse(shuffleArray(words));
+
       setGameState('playing');
     } catch (error) {
       console.error("Failed to generate words:", error);
-      // Handle error appropriately
+      setGameState('playing');
     }
   }, [level]);
 
   useEffect(() => {
     generateNewExercise();
   }, [generateNewExercise]);
-  
+
   const handleSubmit = async () => {
     if (!userSentence.trim() || gameState !== 'playing') return;
 
@@ -97,7 +130,7 @@ export function PhraseConstructionExercise() {
         level: flowLevel,
       });
       setValidationResult(result);
-      
+
       const detail: ScoreDetail = {
         question: `Mots: ${wordsToUse.join(', ')}`,
         userAnswer: userSentence,
@@ -111,22 +144,22 @@ export function PhraseConstructionExercise() {
       if (result.isCorrect) {
         setShowConfetti(true);
       }
-      
+
       setGameState('feedback');
     } catch (error) {
       console.error("Failed to validate sentence:", error);
       setGameState('playing'); // Revert state on error
     }
   };
-  
+
   const handleNext = () => {
-      setShowConfetti(false);
-      if(currentSentenceIndex < NUM_SENTENCES_PER_SESSION - 1) {
-          setCurrentSentenceIndex(prev => prev + 1);
-          generateNewExercise();
-      } else {
-          setGameState('finished');
-      }
+    setShowConfetti(false);
+    if (currentSentenceIndex < NUM_SENTENCES_PER_SESSION - 1) {
+      setCurrentSentenceIndex(prev => prev + 1);
+      generateNewExercise();
+    } else {
+      setGameState('finished');
+    }
   };
 
   const typedWordCounts = useMemo(() => {
@@ -146,42 +179,42 @@ export function PhraseConstructionExercise() {
 
   useEffect(() => {
     const saveFinalScore = async () => {
-        if (gameState === 'finished' && student && !hasBeenSaved) {
-            setHasBeenSaved(true);
-            const totalScore = sessionDetails.reduce((acc, detail) => {
-                 // Use the score saved in the detail object
-                 const score = detail.score || 0;
-                 return acc + score;
-            }, 0);
-            const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
-            
-            let result: { success: boolean; error?: string; nuggetsEarned?: number };
-            if (isHomework && homeworkDate) {
-                result = await saveHomeworkResultWithNuggets({
-                    userId: student.id,
-                    date: homeworkDate,
-                    skillSlug: 'phrase-construction',
-                    score: finalScore,
-                });
-            } else {
-                result = await addScore({
-                    userId: student.id,
-                    skill: 'phrase-construction',
-                    score: finalScore,
-                    details: sessionDetails,
-                    numberLevelSettings: { level }
-                });
-            }
+      if (gameState === 'finished' && student && !hasBeenSaved) {
+        setHasBeenSaved(true);
+        const totalScore = sessionDetails.reduce((acc, detail) => {
+          // Use the score saved in the detail object
+          const score = detail.score || 0;
+          return acc + score;
+        }, 0);
+        const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
 
-            if (result.success && result.nuggetsEarned && result.nuggetsEarned > 0) {
-              toast({
-                  title: `+${result.nuggetsEarned} pépite${result.nuggetsEarned > 1 ? 's' : ''} !`,
-                  description: "Bravo pour tes efforts !",
-                  className: "bg-amber-100 border-amber-300 text-amber-800",
-                  icon: <Gem className="h-6 w-6 text-amber-500" />,
-              });
-            }
+        let result: { success: boolean; error?: string; nuggetsEarned?: number };
+        if (isHomework && homeworkDate) {
+          result = await saveHomeworkResultWithNuggets({
+            userId: student.id,
+            date: homeworkDate,
+            skillSlug: 'phrase-construction',
+            score: finalScore,
+          });
+        } else {
+          result = await addScore({
+            userId: student.id,
+            skill: 'phrase-construction',
+            score: finalScore,
+            details: sessionDetails,
+            numberLevelSettings: { level }
+          });
         }
+
+        if (result.success && result.nuggetsEarned && result.nuggetsEarned > 0) {
+          toast({
+            title: `+${result.nuggetsEarned} pépite${result.nuggetsEarned > 1 ? 's' : ''} !`,
+            description: "Bravo pour tes efforts !",
+            className: "bg-amber-100 border-amber-300 text-amber-800",
+            icon: <Gem className="h-6 w-6 text-amber-500" />,
+          });
+        }
+      }
     };
     saveFinalScore();
   }, [gameState, student, hasBeenSaved, sessionDetails, level, isHomework, homeworkDate, toast]);
@@ -207,12 +240,12 @@ export function PhraseConstructionExercise() {
       </Card>
     );
   }
-  
+
   if (gameState === 'finished') {
     const totalScore = sessionDetails.reduce((acc, detail) => acc + (detail.score || 0), 0);
     const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
     const correctCount = sessionDetails.filter(d => d.status === 'correct').length;
-     return (
+    return (
       <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
         <CardHeader>
           <CardTitle className="text-4xl font-headline mb-4">Session terminée !</CardTitle>
@@ -237,7 +270,7 @@ export function PhraseConstructionExercise() {
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-2xl">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-        <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3}} />
+        <Confetti active={showConfetti} config={{ angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3 }} />
       </div>
 
       <CardHeader>
@@ -245,24 +278,24 @@ export function PhraseConstructionExercise() {
         <CardDescription className="text-center">Utilise tous les mots suivants pour former une phrase qui a du sens.</CardDescription>
         <Progress value={((currentSentenceIndex + 1) / NUM_SENTENCES_PER_SESSION) * 100} className="w-full mt-4 h-3" />
       </CardHeader>
-      
+
       <CardContent className="space-y-6">
         <div className="flex flex-wrap items-center justify-center gap-3 p-4 bg-muted rounded-lg">
           {wordsToUse.map((word, index) => {
-             const normalizedWord = word.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const normalizedWord = word.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             const countInSentence = typedWordCounts.get(normalizedWord) || 0;
             const alreadyRenderedUsed = renderedUsageCount.get(normalizedWord) || 0;
-            
+
             const isUsed = countInSentence > alreadyRenderedUsed;
 
             if (isUsed) {
-                renderedUsageCount.set(normalizedWord, alreadyRenderedUsed + 1);
+              renderedUsageCount.set(normalizedWord, alreadyRenderedUsed + 1);
             }
 
             return (
-              <Badge 
-                key={`${word}-${index}`} 
-                variant={isUsed ? 'default' : 'secondary'} 
+              <Badge
+                key={`${word}-${index}`}
+                variant={isUsed ? 'default' : 'secondary'}
                 className={cn(
                   "text-xl px-4 py-2 transition-colors duration-300",
                   isUsed && "bg-green-200 text-green-800"
@@ -273,7 +306,7 @@ export function PhraseConstructionExercise() {
             );
           })}
         </div>
-        
+
         <Textarea
           value={userSentence}
           onChange={(e) => setUserSentence(e.target.value)}
@@ -282,50 +315,50 @@ export function PhraseConstructionExercise() {
           className="text-xl"
           disabled={gameState !== 'playing'}
         />
-        
+
         <div className="text-center">
-            <Button 
-                onClick={handleSubmit} 
-                disabled={gameState !== 'playing' || !userSentence.trim()}
-                size="lg"
-            >
-              {gameState === 'validating' ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-5 w-5" />
-              )}
-              Valider ma phrase
-            </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={gameState !== 'playing' || !userSentence.trim()}
+            size="lg"
+          >
+            {gameState === 'validating' ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="mr-2 h-5 w-5" />
+            )}
+            Valider ma phrase
+          </Button>
         </div>
-        
+
         {gameState === 'feedback' && validationResult && (
-           <Card className={cn("p-4", validationResult.isCorrect ? "bg-green-100 border-green-400" : "bg-red-100 border-red-400")}>
-             <CardContent className="flex items-start gap-4 p-0">
-               {validationResult.isCorrect ? <ThumbsUp className="h-8 w-8 text-green-600 flex-shrink-0 mt-1" /> : <X className="h-8 w-8 text-red-600 flex-shrink-0 mt-1" />}
-               <div className="space-y-1 flex-grow">
-                 <div className="flex justify-between items-center">
-                   <p className="font-semibold">{validationResult.feedback}</p>
-                   <Badge variant={validationResult.isCorrect ? "default" : "destructive"}>{validationResult.score}/100</Badge>
-                 </div>
-                 {!validationResult.isCorrect && validationResult.correctedSentence && (
-                    <p className="text-sm text-muted-foreground">Exemple correct : <em className="font-medium">"{validationResult.correctedSentence}"</em></p>
-                 )}
-               </div>
-             </CardContent>
-           </Card>
+          <Card className={cn("p-4", validationResult.isCorrect ? "bg-green-100 border-green-400" : "bg-red-100 border-red-400")}>
+            <CardContent className="flex items-start gap-4 p-0">
+              {validationResult.isCorrect ? <ThumbsUp className="h-8 w-8 text-green-600 flex-shrink-0 mt-1" /> : <X className="h-8 w-8 text-red-600 flex-shrink-0 mt-1" />}
+              <div className="space-y-1 flex-grow">
+                <div className="flex justify-between items-center">
+                  <p className="font-semibold">{validationResult.feedback}</p>
+                  <Badge variant={validationResult.isCorrect ? "default" : "destructive"}>{validationResult.score}/100</Badge>
+                </div>
+                {!validationResult.isCorrect && validationResult.correctedSentence && (
+                  <p className="text-sm text-muted-foreground">Exemple correct : <em className="font-medium">"{validationResult.correctedSentence}"</em></p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         )}
       </CardContent>
 
       <CardFooter className="flex justify-center">
-         {gameState === 'feedback' && (
-             <Button 
-                onClick={handleNext} 
-                variant="secondary"
-            >
+        {gameState === 'feedback' && (
+          <Button
+            onClick={handleNext}
+            variant="secondary"
+          >
             <Wand2 className="mr-2 h-4 w-4" />
             {currentSentenceIndex < NUM_SENTENCES_PER_SESSION - 1 ? "Exercice Suivant" : "Terminer la session"}
-            </Button>
-         )}
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
