@@ -38,6 +38,7 @@ import { MbpRuleExercise } from '@/components/mbp-rule-exercise';
 import { PlaceValueTableExercise } from '@/components/place-value-table-exercise';
 import { SubtractionTrainingExercise } from '@/components/subtraction-training-exercise';
 import { NounIdentificationExercise } from '@/components/noun-identification-exercise';
+import { AdjectiveIdentificationExercise } from '@/components/adjective-identification-exercise';
 import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
@@ -125,6 +126,9 @@ export default function ExercisePage() {
         break;
       case 'reperer-nom':
         exerciseComponent = <NounIdentificationExercise />;
+        break;
+      case 'reperer-adjectif':
+        exerciseComponent = <AdjectiveIdentificationExercise />;
         break;
       case 'coded-path':
         exerciseComponent = <CodedPathExercise />;

@@ -27,6 +27,7 @@ import {
   HelpCircle,
   GraduationCap,
   Highlighter,
+  Palette,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -416,6 +417,14 @@ export const skills: Skill[] = [
     slug: 'reperer-nom',
     description: "Clique sur les noms dans la phrase.",
     icon: <Highlighter />,
+    category: 'Grammaire',
+    allowedLevels: ['B', 'C', 'D'],
+  },
+  {
+    name: 'Repérer l\'adjectif',
+    slug: 'reperer-adjectif',
+    description: "Clique sur les adjectifs dans la phrase.",
+    icon: <Palette />,
     category: 'Grammaire',
     allowedLevels: ['B', 'C', 'D'],
   },
