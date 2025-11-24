@@ -12,6 +12,7 @@ import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { ADJECTIVE_SENTENCES } from '@/data/grammaire/adjectives-sentences';
+import { ADJECTIVE_PHRASES } from '@/data/grammaire/adjectives-phrases';
 import { cn } from '@/lib/utils';
 import { SkillLevel } from '@/lib/skills';
 
@@ -54,9 +55,10 @@ export function AdjectiveIdentificationExercise() {
     // Initialize questions
     useEffect(() => {
         // Shuffle and pick NUM_QUESTIONS
-        const shuffled = [...ADJECTIVE_SENTENCES].sort(() => 0.5 - Math.random());
+        const sourceData = level === 'B' ? ADJECTIVE_PHRASES : ADJECTIVE_SENTENCES;
+        const shuffled = [...sourceData].sort(() => 0.5 - Math.random());
         setQuestions(shuffled.slice(0, NUM_QUESTIONS));
-    }, []);
+    }, [level]);
 
     // Parse sentence into tokens
     const parseSentence = useCallback((sentence: string) => {

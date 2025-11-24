@@ -12,7 +12,9 @@ import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { NOUN_SENTENCES } from '@/data/grammaire/nouns-sentences';
+import { NOUN_PHRASES } from '@/data/grammaire/nouns-phrases';
 import { cn } from '@/lib/utils';
+import { SkillLevel } from '@/lib/skills';
 
 const NUM_QUESTIONS = 10;
 
@@ -29,6 +31,7 @@ export function NounIdentificationExercise() {
     const isHomework = searchParams.get('from') === 'devoirs';
     const homeworkDate = searchParams.get('date');
 
+    const [level, setLevel] = useState<SkillLevel>('B');
     const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
     const [sentenceTokens, setSentenceTokens] = useState<Token[]>([]);
     const [selectedTokenIds, setSelectedTokenIds] = useState<Set<string>>(new Set());
@@ -43,12 +46,19 @@ export function NounIdentificationExercise() {
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
+    useEffect(() => {
+        if (student?.levels?.['reperer-nom']) {
+            setLevel(student.levels['reperer-nom']);
+        }
+    }, [student]);
+
     // Initialize questions
     useEffect(() => {
         // Shuffle and pick NUM_QUESTIONS
-        const shuffled = [...NOUN_SENTENCES].sort(() => 0.5 - Math.random());
+        const sourceData = level === 'B' ? NOUN_PHRASES : NOUN_SENTENCES;
+        const shuffled = [...sourceData].sort(() => 0.5 - Math.random());
         setQuestions(shuffled.slice(0, NUM_QUESTIONS));
-    }, []);
+    }, [level]);
 
     // Parse sentence into tokens
     const parseSentence = useCallback((sentence: string) => {
