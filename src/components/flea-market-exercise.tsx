@@ -370,6 +370,54 @@ export function FleaMarketExercise() {
                             </div>
                         </div>
 
+                        {/* Visual Aid for Level B */}
+                        {level === 'B' && (
+                            <div className="w-full max-w-2xl mx-auto mb-2 animate-in fade-in slide-in-from-bottom-2">
+                                <div className="flex justify-between text-sm font-bold text-muted-foreground mb-1 px-1">
+                                    <span>Prix : {formatCurrency(price)}</span>
+                                    <span>Total à atteindre : {formatCurrency(payment)}</span>
+                                </div>
+                                <div className="relative h-14 w-full bg-slate-100 rounded-xl border-2 border-slate-300 overflow-hidden flex shadow-inner">
+                                    {/* Price Segment */}
+                                    <div
+                                        style={{ width: `${(price / payment) * 100}%` }}
+                                        className="h-full bg-blue-100 border-r-2 border-blue-200 flex flex-col items-center justify-center shrink-0"
+                                    >
+                                        <span className="text-[10px] uppercase font-bold text-blue-600">Prix</span>
+                                        <span className="font-bold text-blue-800 text-sm leading-none">{formatCurrency(price)}</span>
+                                    </div>
+
+                                    {/* Change Segment */}
+                                    <div
+                                        style={{ width: `${Math.min((userTotal / payment) * 100, 100 - (price / payment) * 100)}%` }}
+                                        className={cn(
+                                            "h-full flex flex-col items-center justify-center transition-all duration-300 shrink-0",
+                                            (userTotal + price) > payment + 0.001 ? "bg-red-100 border-r-2 border-red-200" : "bg-green-100 border-r-2 border-green-200",
+                                            userTotal === 0 && "w-0 border-none"
+                                        )}
+                                    >
+                                        {userTotal > 0 && (
+                                            <div className="flex flex-col items-center overflow-hidden whitespace-nowrap px-1">
+                                                <span className={cn("text-[10px] uppercase font-bold", (userTotal + price) > payment + 0.001 ? "text-red-600" : "text-green-600")}>
+                                                    Rendu
+                                                </span>
+                                                <span className={cn("font-bold text-sm leading-none", (userTotal + price) > payment + 0.001 ? "text-red-800" : "text-green-800")}>
+                                                    {formatCurrency(userTotal)}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Empty Space Text */}
+                                    {(userTotal + price) < payment - 0.001 && (
+                                        <div className="flex-grow flex items-center justify-center text-xs text-muted-foreground italic bg-slate-50/50">
+                                            Complète jusqu'au bout !
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Interaction Section */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
