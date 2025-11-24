@@ -303,7 +303,7 @@ export function AdjectiveIdentificationExercise() {
                 <CardTitle className="font-headline text-2xl text-center">Repère les adjectifs</CardTitle>
                 <CardDescription className="text-center text-lg">
                     Clique sur tous les <span className="font-bold text-primary">adjectifs</span> dans la phrase.
-                    {level === 'B' && <span className="block text-sm text-muted-foreground mt-2">(Aide : Les noms sont en vert pour t'aider)</span>}
+                    {level === 'B' && <span className="block text-sm text-muted-foreground mt-2">(Aide : Les noms sont en bleu pour t'aider)</span>}
                 </CardDescription>
                 <Progress value={((currentQuestionIndex) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
             </CardHeader>
@@ -320,8 +320,8 @@ export function AdjectiveIdentificationExercise() {
                                 // Default state
                                 !selectedTokenIds.has(token.id) && "border-transparent hover:bg-muted",
 
-                                // Level B Hint: Nouns are green
-                                level === 'B' && token.isNoun && !selectedTokenIds.has(token.id) && !feedback && "text-green-600 font-medium",
+                                // Level B Hint: Nouns are blue
+                                level === 'B' && token.isNoun && !selectedTokenIds.has(token.id) && !feedback && "text-blue-600 font-medium",
 
                                 // Selected state
                                 selectedTokenIds.has(token.id) && !feedback && "bg-primary/10 border-primary text-primary font-bold transform scale-105",
