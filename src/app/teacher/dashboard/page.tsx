@@ -24,6 +24,7 @@ import { getAllWritingEntries, WritingEntry } from '@/services/writing';
 import { getAllHomework, type Homework, getHomeworkResultsForUser, HomeworkResult } from '@/services/homework';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { ThemeSettings } from '@/components/teacher/theme-settings';
 
 
 export default function TeacherDashboardPage() {
@@ -31,14 +32,14 @@ export default function TeacherDashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-   // Data states
+  // Data states
   const [students, setStudents] = useState<Student[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [allScores, setAllScores] = useState<Score[]>([]);
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
   const [allHomework, setAllHomework] = useState<Homework[]>([]);
   const [allHomeworkResults, setAllHomeworkResults] = useState<HomeworkResult[]>([]);
-  
+
   const refreshAllData = useCallback(async () => {
     // This function can be used for a hard refresh if needed, but onSnapshot handles real-time updates.
     // For simplicity, we can leave this logic within useEffect.
@@ -49,11 +50,11 @@ export default function TeacherDashboardPage() {
     if (!isAuth) {
       router.replace('/teacher/login');
       return;
-    } 
-    
+    }
+
     setIsAuthenticated(true);
     setIsLoading(true);
-    
+
     const unsubscribers = [
       onSnapshot(query(collection(db, 'students'), orderBy('name', 'asc')), snapshot => {
         setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student)));
@@ -63,27 +64,27 @@ export default function TeacherDashboardPage() {
         setGroups(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Group)));
       }),
       onSnapshot(query(collection(db, 'scores'), orderBy('createdAt', 'desc')), snapshot => {
-        setAllScores(snapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data(),
-            createdAt: (doc.data().createdAt as any).toDate().toISOString()
+        setAllScores(snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: (doc.data().createdAt as any).toDate().toISOString()
         } as Score)));
       }),
-       onSnapshot(query(collection(db, 'writingEntries'), orderBy('createdAt', 'desc')), snapshot => {
-        setAllWritingEntries(snapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data(),
-            createdAt: (doc.data().createdAt as any).toDate().toISOString()
+      onSnapshot(query(collection(db, 'writingEntries'), orderBy('createdAt', 'desc')), snapshot => {
+        setAllWritingEntries(snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: (doc.data().createdAt as any).toDate().toISOString()
         } as WritingEntry)));
       }),
-       onSnapshot(query(collection(db, 'homework')), snapshot => {
+      onSnapshot(query(collection(db, 'homework')), snapshot => {
         setAllHomework(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Homework)));
       }),
-       onSnapshot(query(collection(db, 'homeworkResults')), snapshot => {
-        setAllHomeworkResults(snapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data(),
-             createdAt: (doc.data().createdAt as any)?.toDate().toISOString()
+      onSnapshot(query(collection(db, 'homeworkResults')), snapshot => {
+        setAllHomeworkResults(snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: (doc.data().createdAt as any)?.toDate().toISOString()
         } as HomeworkResult)));
       }),
     ];
@@ -91,7 +92,7 @@ export default function TeacherDashboardPage() {
     return () => unsubscribers.forEach(unsub => unsub());
 
   }, [router]);
-  
+
   const handleLogout = () => {
     sessionStorage.removeItem('teacher_authenticated');
     router.push('/');
@@ -111,13 +112,13 @@ export default function TeacherDashboardPage() {
         <header className="flex items-center justify-between mb-8 max-w-7xl mx-auto w-full">
           <Logo />
           <div className="flex items-center gap-4">
-              <FullscreenToggle />
-              <Button asChild variant="outline">
-                  <Link href="/"><Home className="mr-2"/> Accueil Principal</Link>
-              </Button>
-              <Button onClick={handleLogout} variant="destructive">
-                  <LogOut className="mr-2"/> Déconnexion
-              </Button>
+            <FullscreenToggle />
+            <Button asChild variant="outline">
+              <Link href="/"><Home className="mr-2" /> Accueil Principal</Link>
+            </Button>
+            <Button onClick={handleLogout} variant="destructive">
+              <LogOut className="mr-2" /> Déconnexion
+            </Button>
           </div>
         </header>
 
@@ -128,42 +129,43 @@ export default function TeacherDashboardPage() {
             </div>
           ) : (
             <Tabs defaultValue="students" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="students">Élèves</TabsTrigger>
-                    <TabsTrigger value="groups">Groupes</TabsTrigger>
-                    <TabsTrigger value="homework">Devoirs</TabsTrigger>
-                    <TabsTrigger value="results">Résultats</TabsTrigger>
-                    <TabsTrigger value="database">Réglages</TabsTrigger>
-                </TabsList>
-                <TabsContent value="students" className="mt-6">
-                    <StudentManager students={students} />
-                </TabsContent>
-                <TabsContent value="groups" className="mt-6">
-                    <GroupManager initialStudents={students} initialGroups={groups} />
-                </TabsContent>
-                <TabsContent value="homework" className="mt-6">
-                    <HomeworkManager 
-                        students={students}
-                        groups={groups}
-                        allHomework={allHomework}
-                        allHomeworkResults={allHomeworkResults}
-                    />
-                </TabsContent>
-                 <TabsContent value="results" className="mt-6">
-                    <ResultsManager 
-                        students={students} 
-                        allScores={allScores} 
-                        allWritingEntries={allWritingEntries}
-                    />
-                </TabsContent>
-                 <TabsContent value="database" className="mt-6">
-                    <DatabaseManager onDataRefresh={refreshAllData} />
-                </TabsContent>
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="students">Élèves</TabsTrigger>
+                <TabsTrigger value="groups">Groupes</TabsTrigger>
+                <TabsTrigger value="homework">Devoirs</TabsTrigger>
+                <TabsTrigger value="results">Résultats</TabsTrigger>
+                <TabsTrigger value="database">Réglages</TabsTrigger>
+              </TabsList>
+              <TabsContent value="students" className="mt-6">
+                <StudentManager students={students} />
+              </TabsContent>
+              <TabsContent value="groups" className="mt-6">
+                <GroupManager initialStudents={students} initialGroups={groups} />
+              </TabsContent>
+              <TabsContent value="homework" className="mt-6">
+                <HomeworkManager
+                  students={students}
+                  groups={groups}
+                  allHomework={allHomework}
+                  allHomeworkResults={allHomeworkResults}
+                />
+              </TabsContent>
+              <TabsContent value="results" className="mt-6">
+                <ResultsManager
+                  students={students}
+                  allScores={allScores}
+                  allWritingEntries={allWritingEntries}
+                />
+              </TabsContent>
+              <TabsContent value="database" className="mt-6 space-y-6">
+                <ThemeSettings />
+                <DatabaseManager onDataRefresh={refreshAllData} />
+              </TabsContent>
             </Tabs>
           )}
         </div>
-         <footer className="max-w-7xl mx-auto w-full pt-8 mt-auto flex justify-end">
-            <BuildInfo />
+        <footer className="max-w-7xl mx-auto w-full pt-8 mt-auto flex justify-end">
+          <BuildInfo />
         </footer>
       </main>
     </TooltipProvider>
