@@ -2,13 +2,17 @@
 
 import { useEffect, useRef } from 'react';
 import { useTheme } from '@/context/theme-context';
+import { usePathname } from 'next/navigation';
 
 export function SnowEffect() {
     const { theme } = useTheme();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
+    const pathname = usePathname();
+
     useEffect(() => {
         if (theme !== 'christmas') return;
+        if (pathname?.startsWith('/exercise/')) return;
 
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -82,9 +86,10 @@ export function SnowEffect() {
             window.removeEventListener('resize', handleResize);
             cancelAnimationFrame(animationFrameId);
         };
-    }, [theme]);
+    }, [theme, pathname]);
 
     if (theme !== 'christmas') return null;
+    if (pathname?.startsWith('/exercise/')) return null;
 
     return (
         <canvas

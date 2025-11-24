@@ -7,14 +7,12 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { ThemeProvider } from '@/context/theme-context';
 
 import { SnowEffect } from '@/components/theme/snow-effect';
-import { ChristmasDecorations } from '@/components/theme/christmas-decorations';
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <SnowEffect />
-        <ChristmasDecorations />
         <UserProvider>
           <ChatProvider>
             {children}
