@@ -122,7 +122,13 @@ export function FleaMarketExercise() {
         // Fallback
         if (possiblePayments.length === 0) possiblePayments = [Math.ceil(itemPrice / 10) * 10 + 10];
 
-        const selectedPayment = possiblePayments[Math.floor(Math.random() * Math.min(3, possiblePayments.length))];
+        let selectedPayment: number;
+        if (level === 'B') {
+            // For Level B, always pay with the bill immediately superior to the price
+            selectedPayment = possiblePayments[0];
+        } else {
+            selectedPayment = possiblePayments[Math.floor(Math.random() * Math.min(3, possiblePayments.length))];
+        }
         setPayment(selectedPayment);
 
         const currencyItem = currency.find(c => c.value === selectedPayment);
