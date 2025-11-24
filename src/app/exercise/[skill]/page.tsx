@@ -40,6 +40,7 @@ import { SubtractionTrainingExercise } from '@/components/subtraction-training-e
 import { NounIdentificationExercise } from '@/components/noun-identification-exercise';
 import { AdjectiveIdentificationExercise } from '@/components/adjective-identification-exercise';
 import { FleaMarketExercise } from '@/components/flea-market-exercise';
+import { SumCompositionExercise } from '@/components/sum-composition-exercise';
 import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
@@ -133,6 +134,9 @@ export default function ExercisePage() {
         break;
       case 'flea-market':
         exerciseComponent = <FleaMarketExercise />;
+        break;
+      case 'composition-somme':
+        exerciseComponent = <SumCompositionExercise />;
         break;
       case 'coded-path':
         exerciseComponent = <CodedPathExercise />;

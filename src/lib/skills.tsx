@@ -579,6 +579,14 @@ export const skills: Skill[] = [
     category: 'Grandeurs et mesures',
     allowedLevels: ['B', 'C', 'D'],
   },
+  {
+    name: 'Composition de Somme',
+    slug: 'composition-somme',
+    description: "Sélectionne les pièces et billets pour composer une somme.",
+    icon: <Coins />,
+    category: 'Grandeurs et mesures',
+    isFixedLevel: 'A',
+  },
 ];
 
 export function getSkillBySlug(slug: string): Skill | undefined {
