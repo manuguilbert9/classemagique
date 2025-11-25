@@ -16,8 +16,9 @@ import { BocciaGame } from '@/components/boccia-game';
 import { GearRacerGame } from '@/components/gear-racer-game';
 import { GhostHuntGame } from '@/components/ghost-hunt-game';
 import { SantaSleighGame } from '@/components/santa-sleigh-game';
+import { NeonSkiGame } from '@/components/neon-ski-game';
 
-type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer' | 'playing_ghost_hunt' | 'playing_santa_sleigh';
+type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer' | 'playing_ghost_hunt' | 'playing_santa_sleigh' | 'playing_neon_ski';
 
 const GAME_COST = 2;
 const GHOST_HUNT_COST = 4;
@@ -28,7 +29,7 @@ export default function RewardsPage() {
   const [gameState, setGameState] = useState<GameState>('selection');
   const { toast } = useToast();
 
-  const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia' | 'gear_racer' | 'ghost_hunt' | 'santa_sleigh') => {
+  const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia' | 'gear_racer' | 'ghost_hunt' | 'santa_sleigh' | 'neon_ski') => {
     const cost = game === 'ghost_hunt' ? GHOST_HUNT_COST : GAME_COST;
 
     if (!student || (student.nuggets || 0) < cost) {
@@ -55,6 +56,8 @@ export default function RewardsPage() {
         setGameState('playing_ghost_hunt');
       } else if (game === 'santa_sleigh') {
         setGameState('playing_santa_sleigh');
+      } else if (game === 'neon_ski') {
+        setGameState('playing_neon_ski');
       }
     } else {
       toast({
@@ -210,6 +213,21 @@ export default function RewardsPage() {
     );
   }
 
+  if (gameState === 'playing_neon_ski') {
+    return (
+      <NeonSkiGame
+        onExit={handleExitGame}
+        onReplay={() => handlePlay('neon_ski')}
+        canReplay={(student?.nuggets || 0) >= GAME_COST}
+        gameCost={GAME_COST}
+        onGameEnd={(score) => {
+          // Optional: Add nuggets based on score
+          handleExitGame();
+        }}
+      />
+    );
+  }
+
   return (
     <main className="container mx-auto px-4 py-8">
       <header className="mb-12 text-center space-y-4 relative">
@@ -349,6 +367,23 @@ export default function RewardsPage() {
           </CardContent>
           <CardContent>
             <Button onClick={() => handlePlay('santa_sleigh')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
+              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
+            </Button>
+            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
+          </CardContent>
+        </Card>
+        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+          <CardHeader>
+            <CardTitle className="font-headline text-3xl text-cyan-600">Ski on Neon</CardTitle>
+            <CardDescription className="text-lg">Glisse sur les ondes lumineuses !</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-32 w-32 mx-auto text-primary flex items-center justify-center text-6xl bg-slate-900 rounded-full border-2 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]">
+              ⛷️
+            </div>
+          </CardContent>
+          <CardContent>
+            <Button onClick={() => handlePlay('neon_ski')} size="lg" className="w-full text-lg bg-cyan-600 hover:bg-cyan-500" disabled={(student.nuggets || 0) < GAME_COST}>
               Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
             {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
