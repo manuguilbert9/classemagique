@@ -192,7 +192,7 @@ export function SantaSleighGame({ onExit, onReplay, canReplay, gameCost, onGameE
                         width: HOUSE_WIDTH,
                         height: HOUSE_HEIGHT,
                         type: 'house',
-                        image: `/images/santa-game/house${houseType}.png`,
+                        image: `https://firebasestorage.googleapis.com/v0/b/classemagique2.firebasestorage.app/o/assets%2Fsanta%2Fmaison${houseType}.png?alt=media`,
                         vx: -3 // Scroll speed
                     });
                 }
@@ -351,7 +351,7 @@ export function SantaSleighGame({ onExit, onReplay, canReplay, gameCost, onGameE
                                 top: santaPos.y,
                                 width: PLAYER_WIDTH,
                                 height: PLAYER_HEIGHT,
-                                backgroundImage: 'url(/images/santa-game/sleigh.png)',
+                                backgroundImage: 'url(https://firebasestorage.googleapis.com/v0/b/classemagique2.firebasestorage.app/o/assets%2Fsanta%2Fsanta.png?alt=media)',
                                 backgroundSize: 'contain',
                                 backgroundRepeat: 'no-repeat',
                                 transition: 'top 0.1s linear, left 0.1s linear' // Smooth out key movement slightly
