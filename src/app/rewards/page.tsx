@@ -98,6 +98,25 @@ export default function RewardsPage() {
     setGameState('selection');
   };
 
+  const handleNeonSkiGameEnd = async (score: number) => {
+    if (!student) return;
+    // Conversion: 1 nugget per 50 meters
+    const nuggets = Math.floor(score / 50);
+
+    if (nuggets > 0) {
+      const result = await addNuggets(student.id, nuggets);
+      if (result.success) {
+        refreshStudent();
+        toast({
+          title: 'Bravo !',
+          description: `Tu as gagné ${nuggets} pépites !`,
+          className: 'bg-green-100 border-green-300 text-green-800',
+        });
+      }
+    }
+    setGameState('selection');
+  };
+
   const handleUnlockPhoto = async () => {
     if (!student || (student.nuggets || 0) < PHOTO_UNLOCK_COST) {
       toast({
@@ -220,10 +239,7 @@ export default function RewardsPage() {
         onReplay={() => handlePlay('neon_ski')}
         canReplay={(student?.nuggets || 0) >= GAME_COST}
         gameCost={GAME_COST}
-        onGameEnd={(score) => {
-          // Optional: Add nuggets based on score
-          handleExitGame();
-        }}
+        onGameEnd={handleNeonSkiGameEnd}
       />
     );
   }

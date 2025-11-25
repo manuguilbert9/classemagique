@@ -621,13 +621,18 @@ export function NeonSkiGame({ onExit, onReplay, canReplay, gameCost, onGameEnd }
                     <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm">
                         <div className="text-center space-y-6 p-8 bg-slate-900/90 border border-cyan-500/50 rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.3)]">
                             <h2 className="text-4xl font-bold text-white">GAME OVER</h2>
-                            <div className="text-6xl font-mono text-cyan-400 text-shadow-neon">{Math.floor(score)} m</div>
+                            <div className="space-y-2">
+                                <div className="text-6xl font-mono text-cyan-400 text-shadow-neon">{Math.floor(score)} m</div>
+                                <div className="text-xl text-yellow-400 font-bold">
+                                    +{Math.floor(score / 50)} pépites
+                                </div>
+                            </div>
 
                             <div className="flex gap-4 justify-center pt-4">
                                 <Button size="lg" onClick={resetGame} className="bg-cyan-600 hover:bg-cyan-500 text-white">
                                     <RotateCcw className="mr-2 h-5 w-5" /> Rejouer
                                 </Button>
-                                <Button variant="outline" size="lg" onClick={onExit} className="border-slate-500 text-slate-300 hover:bg-slate-800">
+                                <Button variant="outline" size="lg" onClick={() => onGameEnd && onGameEnd(score)} className="border-slate-500 text-slate-300 hover:bg-slate-800">
                                     Quitter
                                 </Button>
                             </div>
