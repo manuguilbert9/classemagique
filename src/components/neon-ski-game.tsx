@@ -623,9 +623,6 @@ export function NeonSkiGame({ onExit, onReplay, canReplay, gameCost, onGameEnd }
                             <h2 className="text-4xl font-bold text-white">GAME OVER</h2>
                             <div className="space-y-2">
                                 <div className="text-6xl font-mono text-cyan-400 text-shadow-neon">{Math.floor(score)} m</div>
-                                <div className="text-xl text-yellow-400 font-bold">
-                                    +{Math.floor(score / 50)} pépites
-                                </div>
                             </div>
 
                             <div className="flex gap-4 justify-center pt-4">

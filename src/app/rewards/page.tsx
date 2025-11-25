@@ -99,23 +99,7 @@ export default function RewardsPage() {
   };
 
   const handleNeonSkiGameEnd = async (score: number) => {
-    if (!student) return;
-    // Conversion: 1 nugget per 50 meters
-    const nuggets = Math.floor(score / 50);
-
-    if (nuggets > 0) {
-      const result = await addNuggets(student.id, nuggets);
-      if (result.success) {
-        refreshStudent();
-        toast({
-          title: 'Bravo !',
-          description: `Tu as gagné ${nuggets} pépites !`,
-          className: 'bg-green-100 border-green-300 text-green-800',
-        });
-      }
-    }
-    // Don't close the game automatically
-    // setGameState('selection');
+    // No rewards for Neon Ski
   };
 
   const handleUnlockPhoto = async () => {
@@ -370,7 +354,6 @@ export default function RewardsPage() {
             </Button>
             {(student.nuggets || 0) < GHOST_HUNT_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
           </CardContent>
-
         </Card>
         <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
           <CardHeader>
