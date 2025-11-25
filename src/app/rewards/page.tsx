@@ -15,8 +15,9 @@ import { AirDefenseGame } from '@/components/air-defense-game';
 import { BocciaGame } from '@/components/boccia-game';
 import { GearRacerGame } from '@/components/gear-racer-game';
 import { GhostHuntGame } from '@/components/ghost-hunt-game';
+import { SantaSleighGame } from '@/components/santa-sleigh-game';
 
-type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer' | 'playing_ghost_hunt';
+type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer' | 'playing_ghost_hunt' | 'playing_santa_sleigh';
 
 const GAME_COST = 2;
 const GHOST_HUNT_COST = 4;
@@ -27,7 +28,7 @@ export default function RewardsPage() {
   const [gameState, setGameState] = useState<GameState>('selection');
   const { toast } = useToast();
 
-  const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia' | 'gear_racer' | 'ghost_hunt') => {
+  const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia' | 'gear_racer' | 'ghost_hunt' | 'santa_sleigh') => {
     const cost = game === 'ghost_hunt' ? GHOST_HUNT_COST : GAME_COST;
 
     if (!student || (student.nuggets || 0) < cost) {
@@ -52,6 +53,8 @@ export default function RewardsPage() {
         setGameState('playing_gear_racer');
       } else if (game === 'ghost_hunt') {
         setGameState('playing_ghost_hunt');
+      } else if (game === 'santa_sleigh') {
+        setGameState('playing_santa_sleigh');
       }
     } else {
       toast({
@@ -73,6 +76,23 @@ export default function RewardsPage() {
     if (result.success) {
       refreshStudent();
     }
+  }
+
+
+  const handleSantaGameEnd = async (score: number) => {
+    if (!student) return;
+    if (score > 0) {
+      const result = await addNuggets(student.id, score);
+      if (result.success) {
+        refreshStudent();
+        toast({
+          title: 'Bravo !',
+          description: `Tu as gagné ${score} pépites !`,
+          className: 'bg-green-100 border-green-300 text-green-800',
+        });
+      }
+    }
+    setGameState('selection');
   };
 
   const handleUnlockPhoto = async () => {
@@ -109,71 +129,84 @@ export default function RewardsPage() {
       });
     }
   };
-  
+
   if (!student) {
     return (
-        <main className="container mx-auto px-4 py-8">
-            <header className="mb-12 text-center space-y-4">
-                <Logo />
-                <h2 className="font-headline text-4xl sm:text-5xl">Veuillez vous connecter</h2>
-                <Button asChild>
-                    <Link href="/">Retour à l'accueil</Link>
-                </Button>
-            </header>
-        </main>
+      <main className="container mx-auto px-4 py-8">
+        <header className="mb-12 text-center space-y-4">
+          <Logo />
+          <h2 className="font-headline text-4xl sm:text-5xl">Veuillez vous connecter</h2>
+          <Button asChild>
+            <Link href="/">Retour à l'accueil</Link>
+          </Button>
+        </header>
+      </main>
     );
   }
 
   if (gameState === 'playing_snake') {
     return (
-        <SnakeGame 
-            onGameOver={handleExitGame} 
-            onReplay={() => handlePlay('snake')}
-            canReplay={(student?.nuggets || 0) >= GAME_COST}
-            gameCost={GAME_COST}
-        />
+      <SnakeGame
+        onGameOver={handleExitGame}
+        onReplay={() => handlePlay('snake')}
+        canReplay={(student?.nuggets || 0) >= GAME_COST}
+        gameCost={GAME_COST}
+      />
     );
   }
 
   if (gameState === 'playing_air_defense') {
     return (
-        <AirDefenseGame
-            onExit={handleExitGame}
-            onReplay={() => handlePlay('air_defense')}
-            canReplay={(student?.nuggets || 0) >= GAME_COST}
-            gameCost={GAME_COST}
-            onBossDefeated={handleBossDefeated}
-        />
+      <AirDefenseGame
+        onExit={handleExitGame}
+        onReplay={() => handlePlay('air_defense')}
+        canReplay={(student?.nuggets || 0) >= GAME_COST}
+        gameCost={GAME_COST}
+        onBossDefeated={handleBossDefeated}
+      />
     );
   }
-  
+
   if (gameState === 'playing_boccia') {
     return (
-        <BocciaGame
-            onExit={handleExitGame}
-        />
+      <BocciaGame
+        onExit={handleExitGame}
+      />
     );
   }
 
   if (gameState === 'playing_gear_racer') {
     return (
-        <GearRacerGame
-            onExit={handleExitGame}
-            onReplay={() => handlePlay('gear_racer')}
-            canReplay={(student?.nuggets || 0) >= GAME_COST}
-            gameCost={GAME_COST}
-        />
+      <GearRacerGame
+        onExit={handleExitGame}
+        onReplay={() => handlePlay('gear_racer')}
+        canReplay={(student?.nuggets || 0) >= GAME_COST}
+        gameCost={GAME_COST}
+      />
     );
   }
 
   if (gameState === 'playing_ghost_hunt') {
     return (
-        <GhostHuntGame
-            onExit={handleExitGame}
-            onReplay={() => handlePlay('ghost_hunt')}
-            canReplay={(student?.nuggets || 0) >= GHOST_HUNT_COST}
-            gameCost={GHOST_HUNT_COST}
-        />
+      <GhostHuntGame
+        onExit={handleExitGame}
+        onReplay={() => handlePlay('ghost_hunt')}
+        canReplay={(student?.nuggets || 0) >= GHOST_HUNT_COST}
+        gameCost={GHOST_HUNT_COST}
+      />
+    );
+
+  }
+
+  if (gameState === 'playing_santa_sleigh') {
+    return (
+      <SantaSleighGame
+        onExit={handleExitGame}
+        onReplay={() => handlePlay('santa_sleigh')}
+        canReplay={(student?.nuggets || 0) >= GAME_COST}
+        gameCost={GAME_COST}
+        onGameEnd={handleSantaGameEnd}
+      />
     );
   }
 
@@ -190,8 +223,8 @@ export default function RewardsPage() {
         <Logo />
         <h2 className="font-headline text-4xl sm:text-5xl">Salle des récompenses</h2>
         <div className="flex items-center justify-center gap-2 bg-amber-100 border border-amber-300 rounded-full px-4 py-2 text-amber-800 font-bold text-xl w-fit mx-auto">
-            <Gem className="h-6 w-6" />
-            <span>{student.nuggets || 0} pépites</span>
+          <Gem className="h-6 w-6" />
+          <span>{student.nuggets || 0} pépites</span>
         </div>
       </header>
 
@@ -237,13 +270,13 @@ export default function RewardsPage() {
             <Gamepad2 className="h-32 w-32 mx-auto text-primary" />
           </CardContent>
           <CardContent>
-             <Button onClick={() => handlePlay('snake')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
+            <Button onClick={() => handlePlay('snake')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
               Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
             {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
           </CardContent>
         </Card>
-         <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
+        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
           <CardHeader>
             <CardTitle className="font-headline text-3xl">Défense Aérienne</CardTitle>
             <CardDescription className="text-lg">Détruisez les envahisseurs !</CardDescription>
@@ -252,7 +285,7 @@ export default function RewardsPage() {
             <Shield className="h-32 w-32 mx-auto text-primary" />
           </CardContent>
           <CardContent>
-             <Button onClick={() => handlePlay('air_defense')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
+            <Button onClick={() => handlePlay('air_defense')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
               Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
             {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
@@ -267,7 +300,7 @@ export default function RewardsPage() {
             <Disc3 className="h-32 w-32 mx-auto text-primary" />
           </CardContent>
           <CardContent>
-             <Button onClick={() => handlePlay('boccia')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
+            <Button onClick={() => handlePlay('boccia')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
               Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
             {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
@@ -282,7 +315,7 @@ export default function RewardsPage() {
             <Car className="h-32 w-32 mx-auto text-primary" />
           </CardContent>
           <CardContent>
-             <Button onClick={() => handlePlay('gear_racer')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
+            <Button onClick={() => handlePlay('gear_racer')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
               Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
             {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
@@ -297,13 +330,31 @@ export default function RewardsPage() {
             <Zap className="h-32 w-32 mx-auto text-primary" />
           </CardContent>
           <CardContent>
-             <Button onClick={() => handlePlay('ghost_hunt')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GHOST_HUNT_COST}>
+            <Button onClick={() => handlePlay('ghost_hunt')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GHOST_HUNT_COST}>
               Jouer pour {GHOST_HUNT_COST} <Gem className="ml-2 h-5 w-5" />
             </Button>
             {(student.nuggets || 0) < GHOST_HUNT_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
           </CardContent>
+
+        </Card>
+        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
+          <CardHeader>
+            <CardTitle className="font-headline text-3xl">Livraison de Cadeaux</CardTitle>
+            <CardDescription className="text-lg">Aide le Père Noël à distribuer les cadeaux !</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-32 w-32 mx-auto text-primary flex items-center justify-center text-6xl">
+              🎅
+            </div>
+          </CardContent>
+          <CardContent>
+            <Button onClick={() => handlePlay('santa_sleigh')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
+              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
+            </Button>
+            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
+          </CardContent>
         </Card>
       </div>
-    </main>
+    </main >
   );
 }
