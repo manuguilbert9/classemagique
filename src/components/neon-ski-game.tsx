@@ -632,7 +632,7 @@ export function NeonSkiGame({ onExit, onReplay, canReplay, gameCost, onGameEnd }
                                 <Button size="lg" onClick={resetGame} className="bg-cyan-600 hover:bg-cyan-500 text-white">
                                     <RotateCcw className="mr-2 h-5 w-5" /> Rejouer
                                 </Button>
-                                <Button variant="outline" size="lg" onClick={() => onGameEnd && onGameEnd(score)} className="border-slate-500 text-slate-300 hover:bg-slate-800">
+                                <Button variant="outline" size="lg" onClick={onExit} className="border-slate-500 text-slate-300 hover:bg-slate-800">
                                     Quitter
                                 </Button>
                             </div>

@@ -114,7 +114,8 @@ export default function RewardsPage() {
         });
       }
     }
-    setGameState('selection');
+    // Don't close the game automatically
+    // setGameState('selection');
   };
 
   const handleUnlockPhoto = async () => {
