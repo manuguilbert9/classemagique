@@ -11,7 +11,7 @@ import { UserContext } from '@/context/user-context';
 import { addScore } from '@/services/scores';
 import { generateProblem, correctProblem, type GeneratedProblem, type CorrectionFeedback, type ProblemCategory } from '@/ai/flows/word-problems-flow';
 import { useToast } from '@/hooks/use-toast';
-import { Gem, RefreshCw, Check, ArrowRight, Calculator, MessageSquare } from 'lucide-react';
+import { Gem, RefreshCw, Check, ArrowRight, Calculator, MessageSquare, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScoreTube } from '@/components/score-tube';
 import { getSkillBySlug } from '@/lib/skills';
@@ -39,6 +39,14 @@ export function WordProblemsExercise() {
     const [feedback, setFeedback] = useState<CorrectionFeedback | null>(null);
     const [score, setScore] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
+
+    const handleSpeak = (text: string) => {
+        if (!text || !('speechSynthesis' in window)) return;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    };
 
     useEffect(() => {
         loadProblem();
@@ -119,23 +127,7 @@ export function WordProblemsExercise() {
     const saveResult = async () => {
         if (!student) return;
 
-        // Calculate final score (e.g., 2 nuggets per correct answer = 6 max, but here we store percentage)
-        // The user requested "2 pépites par problème correctement résolu".
-        // addScore handles nuggets logic based on score, but we might want to force it or just rely on high score.
-        // Actually, the user requirement is specific: "récompense 2 pépites par problème correctement résolu".
-        // Standard logic in addScore is usually based on percentage.
-        // Let's stick to standard percentage for the score record, and maybe the backend handles nuggets.
-        // Or I can rely on the fact that 100% usually gives max nuggets.
-        // Wait, `addScore` returns nuggets earned.
-        // I will calculate the percentage.
         const finalScore = (score / NUM_PROBLEMS) * 100;
-
-        // Custom nugget logic isn't easily injectable into `addScore` without modifying it.
-        // However, `addScore` might have a `nuggets` override? No, I checked `addScore` signature in `exercise-workspace` usage.
-        // It takes `Score` object.
-        // Let's just save the score. If the user wants EXACTLY 2 nuggets per problem, I might need to adjust `addScore` or just accept the default calculation which is usually generous enough.
-        // Actually, for 3 questions, 100% is hard to map to exactly 6 nuggets if the system gives 5 for 100%.
-        // But I can't change the backend logic easily right now. I'll proceed with standard saving.
 
         const result = await addScore({
             userId: student.id,
@@ -191,9 +183,14 @@ export function WordProblemsExercise() {
                             <Skeleton className="h-4 w-3/4" />
                         </div>
                     ) : (
-                        <p className="text-xl sm:text-2xl font-medium leading-relaxed text-gray-800">
-                            {problem?.text}
-                        </p>
+                        <div className="flex items-start gap-4">
+                            <p className="text-xl sm:text-2xl font-medium leading-relaxed text-gray-800 flex-grow">
+                                {problem?.text}
+                            </p>
+                            <Button variant="ghost" size="icon" onClick={() => handleSpeak(problem?.text || '')} className="flex-shrink-0 text-primary hover:text-primary/80 hover:bg-primary/10">
+                                <Volume2 className="h-6 w-6" />
+                            </Button>
+                        </div>
                     )}
                 </CardHeader>
                 <CardContent className="p-6 space-y-8">
@@ -217,9 +214,14 @@ export function WordProblemsExercise() {
                             )}
                         />
                         {feedback?.calculationFeedback && (
-                            <p className="text-red-600 text-sm flex items-start gap-1">
-                                <span className="font-bold">Attention :</span> {feedback.calculationFeedback}
-                            </p>
+                            <div className="flex items-start gap-2 text-red-600 text-sm">
+                                <p className="flex-grow">
+                                    <span className="font-bold">Attention :</span> {feedback.calculationFeedback}
+                                </p>
+                                <Button variant="ghost" size="icon" onClick={() => handleSpeak(`Attention : ${feedback.calculationFeedback}`)} className="h-6 w-6 text-red-600 hover:bg-red-100">
+                                    <Volume2 className="h-4 w-4" />
+                                </Button>
+                            </div>
                         )}
                     </div>
 
@@ -246,9 +248,14 @@ export function WordProblemsExercise() {
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xl">=</div>
                         </div>
                         {feedback?.resultFeedback && (
-                            <p className="text-red-600 text-sm flex items-start gap-1">
-                                <span className="font-bold">Attention :</span> {feedback.resultFeedback}
-                            </p>
+                            <div className="flex items-start gap-2 text-red-600 text-sm">
+                                <p className="flex-grow">
+                                    <span className="font-bold">Attention :</span> {feedback.resultFeedback}
+                                </p>
+                                <Button variant="ghost" size="icon" onClick={() => handleSpeak(`Attention : ${feedback.resultFeedback}`)} className="h-6 w-6 text-red-600 hover:bg-red-100">
+                                    <Volume2 className="h-4 w-4" />
+                                </Button>
+                            </div>
                         )}
                     </div>
 
@@ -271,19 +278,31 @@ export function WordProblemsExercise() {
                             )}
                         />
                         {feedback?.sentenceFeedback && (
-                            <p className="text-red-600 text-sm flex items-start gap-1">
-                                <span className="font-bold">Attention :</span> {feedback.sentenceFeedback}
-                            </p>
+                            <div className="flex items-start gap-2 text-red-600 text-sm">
+                                <p className="flex-grow">
+                                    <span className="font-bold">Attention :</span> {feedback.sentenceFeedback}
+                                </p>
+                                <Button variant="ghost" size="icon" onClick={() => handleSpeak(`Attention : ${feedback.sentenceFeedback}`)} className="h-6 w-6 text-red-600 hover:bg-red-100">
+                                    <Volume2 className="h-4 w-4" />
+                                </Button>
+                            </div>
                         )}
                     </div>
 
                     {/* General Feedback */}
                     {feedback && !feedback.isCorrect && feedback.generalFeedback && (
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
-                            <p className="font-medium flex items-center gap-2">
-                                💡 Conseil de la maîtresse
-                            </p>
-                            <p className="mt-1">{feedback.generalFeedback}</p>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-medium flex items-center gap-2">
+                                        💡 Petit conseil :
+                                    </p>
+                                    <p className="mt-1">{feedback.generalFeedback}</p>
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={() => handleSpeak(`Petit conseil : ${feedback.generalFeedback}`)} className="text-blue-800 hover:bg-blue-100">
+                                    <Volume2 className="h-5 w-5" />
+                                </Button>
+                            </div>
                         </div>
                     )}
 
