@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 // --- Input/Output Schemas ---
 
-export const ProblemCategorySchema = z.enum([
+const ProblemCategorySchema = z.enum([
     'problemes-transformation',
     'problemes-composition',
     'problemes-comparaison',
@@ -108,7 +108,7 @@ Feedback must be in French, encouraging, and suitable for a child.
 
 // --- Flows ---
 
-export const generateProblemFlow = ai.defineFlow(
+const generateProblemFlow = ai.defineFlow(
     {
         name: 'generateProblemFlow',
         inputSchema: GenerateProblemInputSchema,
@@ -120,7 +120,7 @@ export const generateProblemFlow = ai.defineFlow(
     }
 );
 
-export const correctProblemFlow = ai.defineFlow(
+const correctProblemFlow = ai.defineFlow(
     {
         name: 'correctProblemFlow',
         inputSchema: CorrectProblemInputSchema,
