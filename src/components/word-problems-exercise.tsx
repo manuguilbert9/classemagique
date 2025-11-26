@@ -203,7 +203,6 @@ export function WordProblemsExercise() {
                         </Label>
                         <Input
                             id="calculation"
-                            placeholder="Exemple : 5 + 3"
                             value={calculation}
                             onChange={(e) => setCalculation(e.target.value)}
                             disabled={!!feedback?.isCorrect || isCorrecting}
@@ -213,7 +212,7 @@ export function WordProblemsExercise() {
                                     feedback?.isCorrect ? "border-green-500 bg-green-50" : ""
                             )}
                         />
-                        {feedback?.calculationFeedback && (
+                        {feedback && feedback.calculationFeedback && (
                             <div className="flex items-start gap-2 text-red-600 text-sm">
                                 <p className="flex-grow">
                                     <span className="font-bold">Attention :</span> {feedback.calculationFeedback}
@@ -235,7 +234,6 @@ export function WordProblemsExercise() {
                             <Input
                                 id="result"
                                 type="number"
-                                placeholder="0"
                                 value={result}
                                 onChange={(e) => setResult(e.target.value)}
                                 disabled={!!feedback?.isCorrect || isCorrecting}
@@ -247,7 +245,7 @@ export function WordProblemsExercise() {
                             />
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xl">=</div>
                         </div>
-                        {feedback?.resultFeedback && (
+                        {feedback && feedback.resultFeedback && (
                             <div className="flex items-start gap-2 text-red-600 text-sm">
                                 <p className="flex-grow">
                                     <span className="font-bold">Attention :</span> {feedback.resultFeedback}
@@ -267,7 +265,6 @@ export function WordProblemsExercise() {
                         </Label>
                         <Textarea
                             id="sentence"
-                            placeholder="Exemple : Il a 8 pommes."
                             value={sentence}
                             onChange={(e) => setSentence(e.target.value)}
                             disabled={!!feedback?.isCorrect || isCorrecting}
@@ -277,7 +274,7 @@ export function WordProblemsExercise() {
                                     feedback?.isCorrect ? "border-green-500 bg-green-50" : ""
                             )}
                         />
-                        {feedback?.sentenceFeedback && (
+                        {feedback && feedback.sentenceFeedback && (
                             <div className="flex items-start gap-2 text-red-600 text-sm">
                                 <p className="flex-grow">
                                     <span className="font-bold">Attention :</span> {feedback.sentenceFeedback}
