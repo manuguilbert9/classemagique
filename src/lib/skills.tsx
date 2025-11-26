@@ -29,6 +29,7 @@ import {
   Highlighter,
   Palette,
   ShoppingBag,
+  Calculator,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -586,6 +587,38 @@ export const skills: Skill[] = [
     icon: <Coins />,
     category: 'Grandeurs et mesures',
     isFixedLevel: 'A',
+  },
+  {
+    name: 'Problèmes de Transformation',
+    slug: 'problemes-transformation',
+    description: "Résous des problèmes de temps et de chronologie.",
+    icon: <Calculator />,
+    category: 'Problèmes',
+    allowedLevels: ['B', 'C', 'D'],
+  },
+  {
+    name: 'Problèmes de Composition',
+    slug: 'problemes-composition',
+    description: "Trouve la partie manquante ou le tout.",
+    icon: <Calculator />,
+    category: 'Problèmes',
+    allowedLevels: ['B', 'C', 'D'],
+  },
+  {
+    name: 'Problèmes de Comparaison',
+    slug: 'problemes-comparaison',
+    description: "Compare des quantités (plus que, moins que).",
+    icon: <Calculator />,
+    category: 'Problèmes',
+    allowedLevels: ['B', 'C', 'D'],
+  },
+  {
+    name: 'Problèmes Complexes',
+    slug: 'problemes-composition-transformation',
+    description: "Résous des problèmes avec des nombres relatifs et des bilans.",
+    icon: <Calculator />,
+    category: 'Problèmes',
+    allowedLevels: ['C', 'D'],
   },
 ];
 

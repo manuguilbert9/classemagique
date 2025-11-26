@@ -41,6 +41,7 @@ import { NounIdentificationExercise } from '@/components/noun-identification-exe
 import { AdjectiveIdentificationExercise } from '@/components/adjective-identification-exercise';
 import { FleaMarketExercise } from '@/components/flea-market-exercise';
 import { SumCompositionExercise } from '@/components/sum-composition-exercise';
+import { WordProblemsExercise } from '@/components/word-problems-exercise';
 import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
@@ -158,6 +159,12 @@ export default function ExercisePage() {
         break;
       case 'subtraction-training':
         exerciseComponent = <SubtractionTrainingExercise />;
+        break;
+      case 'problemes-transformation':
+      case 'problemes-composition':
+      case 'problemes-comparaison':
+      case 'problemes-composition-transformation':
+        exerciseComponent = <WordProblemsExercise />;
         break;
       case 'denombrement':
       case 'time':
