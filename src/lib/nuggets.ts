@@ -22,11 +22,17 @@ export const calculateNuggets = (score: number, skillSlug: string): number => {
         if (score > 0) return 2; // Fixed 2 nuggets for completing the exercise
         return 0;
     }
-    
+
     if (skillSlug.startsWith('orthographe-')) {
         if (score >= 90) return 3;
         if (score >= 70) return 2;
         return 0; // No nuggets below 70 for spelling
+    }
+
+    // For Word Problems (Problèmes)
+    // Max 6 nuggets (2 per problem). Score is passed as percentage of 6 points.
+    if (skillSlug.startsWith('problemes-')) {
+        return Math.round((score / 100) * 6);
     }
 
     // For percentage-based scores (default)

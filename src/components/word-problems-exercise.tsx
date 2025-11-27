@@ -37,7 +37,9 @@ export function WordProblemsExercise() {
     const [sentence, setSentence] = useState('');
 
     const [feedback, setFeedback] = useState<CorrectionFeedback | null>(null);
-    const [score, setScore] = useState(0);
+    const [score, setScore] = useState(0); // This will now track "problems solved" for UI if needed, or we can just use totalPoints/2 for rough progress
+    const [totalPoints, setTotalPoints] = useState(0); // Weighted score: 2 for 1st try, 1 for >1
+    const [attempts, setAttempts] = useState(0); // Attempts for current problem
     const [isFinished, setIsFinished] = useState(false);
 
     const handleSpeak = (text: string) => {
@@ -58,6 +60,7 @@ export function WordProblemsExercise() {
         setCalculation('');
         setResult('');
         setSentence('');
+        setAttempts(0);
 
         try {
             // Map skill slug to problem category
@@ -96,12 +99,17 @@ export function WordProblemsExercise() {
             setFeedback(correction);
 
             if (correction.isCorrect) {
-                setScore(prev => prev + 1);
+                const pointsEarned = attempts === 0 ? 2 : 1;
+                setTotalPoints(prev => prev + pointsEarned);
+                setScore(prev => prev + 1); // Increment solved count
+
                 toast({
                     title: "Bravo !",
-                    description: "C'est la bonne réponse !",
+                    description: `C'est la bonne réponse ! (+${pointsEarned} pépite${pointsEarned > 1 ? 's' : ''})`,
                     className: "bg-green-100 border-green-300 text-green-800",
                 });
+            } else {
+                setAttempts(prev => prev + 1);
             }
         } catch (error) {
             console.error("Failed to correct problem:", error);
@@ -127,7 +135,8 @@ export function WordProblemsExercise() {
     const saveResult = async () => {
         if (!student) return;
 
-        const finalScore = (score / NUM_PROBLEMS) * 100;
+        const maxPoints = NUM_PROBLEMS * 2; // 2 points per problem
+        const finalScore = (totalPoints / maxPoints) * 100;
 
         const result = await addScore({
             userId: student.id,
@@ -155,7 +164,7 @@ export function WordProblemsExercise() {
                     <p className="text-2xl">
                         Tu as résolu <span className="font-bold text-primary">{score}</span> problèmes sur <span className="font-bold">{NUM_PROBLEMS}</span>.
                     </p>
-                    <ScoreTube score={(score / NUM_PROBLEMS) * 100} />
+                    <ScoreTube score={(totalPoints / (NUM_PROBLEMS * 2)) * 100} />
                     <Button onClick={() => window.location.reload()} variant="outline" size="lg" className="mt-4">
                         <RefreshCw className="mr-2" />
                         Recommencer
@@ -171,7 +180,7 @@ export function WordProblemsExercise() {
                 <h2 className="text-2xl font-bold text-primary">Problème {currentProblemIndex + 1} / {NUM_PROBLEMS}</h2>
                 <div className="flex items-center gap-2 bg-amber-100 px-3 py-1 rounded-full text-amber-800 font-bold">
                     <Gem className="h-4 w-4" />
-                    <span>{score * 2} pépites gagnées</span>
+                    <span>{totalPoints} pépites gagnées</span>
                 </div>
             </div>
 
@@ -233,9 +242,13 @@ export function WordProblemsExercise() {
                         <div className="relative">
                             <Input
                                 id="result"
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 value={result}
-                                onChange={(e) => setResult(e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9.,]/g, '');
+                                    setResult(val);
+                                }}
                                 disabled={!!feedback?.isCorrect || isCorrecting}
                                 className={cn(
                                     "text-xl p-6 font-numbers pl-12",
