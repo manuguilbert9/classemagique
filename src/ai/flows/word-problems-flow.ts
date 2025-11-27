@@ -2,6 +2,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { PROBLEM_STOCK } from '@/lib/word-problems-data';
 
 // --- Input/Output Schemas ---
 
@@ -135,6 +136,19 @@ const correctProblemFlow = ai.defineFlow(
 // --- Server Actions ---
 
 export async function generateProblem(category: ProblemCategory, difficulty: 'easy' | 'medium' | 'hard' = 'easy'): Promise<GeneratedProblem> {
+    // Try to pick from stock first (for diversity and speed)
+    // We can add a randomness factor to sometimes use AI if we want, but user asked for "stock" to ensure diversity.
+    // Let's pick from stock 80% of the time if available, or just always for now to guarantee the "stock" request is met.
+    // Actually, mixing is better. Let's say 50/50 or just random pick from stock if available.
+
+    const stock = PROBLEM_STOCK[category];
+    if (stock && stock.length > 0) {
+        // Simple random selection from stock
+        const randomIndex = Math.floor(Math.random() * stock.length);
+        return stock[randomIndex];
+    }
+
+    // Fallback to AI if no stock or empty
     return await generateProblemFlow({ category, difficulty });
 }
 
