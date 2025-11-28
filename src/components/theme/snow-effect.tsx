@@ -25,16 +25,20 @@ export function SnowEffect() {
         canvas.width = width;
         canvas.height = height;
 
-        const snowflakes: { x: number; y: number; radius: number; speed: number; wind: number }[] = [];
-        const count = 100;
+        const snowflakes: { x: number; y: number; radius: number; speed: number; wind: number; color: string; opacity: number; opacitySpeed: number }[] = [];
+        const count = 150;
+        const colors = ['#FFFFFF', '#FFD700', '#C0C0C0', '#F8B229']; // White, Gold, Silver, Warm Gold
 
         for (let i = 0; i < count; i++) {
             snowflakes.push({
                 x: Math.random() * width,
                 y: Math.random() * height,
-                radius: Math.random() * 3 + 1,
-                speed: Math.random() * 1 + 0.5,
+                radius: Math.random() * 2 + 0.5, // Smaller particles
+                speed: Math.random() * 0.5 + 0.2, // Slower fall
                 wind: Math.random() * 0.5 - 0.25,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                opacity: Math.random(),
+                opacitySpeed: Math.random() * 0.02 + 0.005
             });
         }
 
@@ -42,15 +46,22 @@ export function SnowEffect() {
 
         const draw = () => {
             ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.beginPath();
 
             for (const flake of snowflakes) {
-                ctx.moveTo(flake.x, flake.y);
+                ctx.beginPath();
+                ctx.fillStyle = flake.color;
+                ctx.globalAlpha = flake.opacity;
                 ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
-            }
+                ctx.fill();
 
-            ctx.fill();
+                // Twinkle effect
+                flake.opacity += flake.opacitySpeed;
+                if (flake.opacity > 1 || flake.opacity < 0.1) {
+                    flake.opacitySpeed = -flake.opacitySpeed;
+                }
+            }
+            ctx.globalAlpha = 1; // Reset alpha
+
             move();
             animationFrameId = requestAnimationFrame(draw);
         };
