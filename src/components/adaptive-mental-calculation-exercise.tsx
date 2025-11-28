@@ -22,6 +22,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescri
 import { analyzeMentalMathPerformance } from '@/ai/flows/mental-math-analysis-flow';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
+import { MentalMathHelp } from './mental-math-help';
 
 const NUM_QUESTIONS = 10;
 const REQUIRED_CONSECUTIVE_SUCCESSES = 4;
@@ -49,7 +50,7 @@ export function AdaptiveMentalCalculationExercise() {
 
   // For adaptive logic
   const [sessionPerformance, setSessionPerformance] = useState<StudentPerformance>({});
-  
+
   // For AI Analysis
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string>('');
@@ -61,17 +62,17 @@ export function AdaptiveMentalCalculationExercise() {
     const maxAttempts = 10; // To prevent infinite loops
 
     do {
-        nextQuestion = await generateAdaptiveMentalMathQuestion(perf);
-        attempts++;
+      nextQuestion = await generateAdaptiveMentalMathQuestion(perf);
+      attempts++;
     } while (
-        questions.length > 0 &&
-        nextQuestion.question === questions[questions.length - 1].question &&
-        attempts < maxAttempts
+      questions.length > 0 &&
+      nextQuestion.question === questions[questions.length - 1].question &&
+      attempts < maxAttempts
     );
 
     setQuestions(prev => [...prev, nextQuestion]);
   };
-  
+
   useEffect(() => {
     async function start() {
       setIsLoading(true);
@@ -82,7 +83,7 @@ export function AdaptiveMentalCalculationExercise() {
       setIsLoading(false);
     }
     if (student !== undefined) {
-        start();
+      start();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [student]);
@@ -109,21 +110,21 @@ export function AdaptiveMentalCalculationExercise() {
 
   const checkAnswer = () => {
     if (!currentQuestion || feedback || !currentQuestion.answer) return;
-    
+
     const userAnswer = userInput.replace(',', '.').trim().toLowerCase();
     const correctAnswer = String(currentQuestion.answer).toLowerCase();
     const isCorrect = userAnswer === correctAnswer;
-    
+
     const competencyId = currentQuestion.competencyId;
     if (competencyId) {
-        setSessionPerformance(prev => {
-            const newPerformance = { ...prev };
-            if (!newPerformance[competencyId]) {
-                newPerformance[competencyId] = { attempts: [] };
-            }
-            newPerformance[competencyId].attempts.push(isCorrect ? 'success' : 'failure');
-            return newPerformance;
-        });
+      setSessionPerformance(prev => {
+        const newPerformance = { ...prev };
+        if (!newPerformance[competencyId]) {
+          newPerformance[competencyId] = { attempts: [] };
+        }
+        newPerformance[competencyId].attempts.push(isCorrect ? 'success' : 'failure');
+        return newPerformance;
+      });
     }
 
     const detail: ScoreDetail = {
@@ -144,48 +145,48 @@ export function AdaptiveMentalCalculationExercise() {
     }
     setTimeout(handleNextQuestion, 1500);
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-        checkAnswer();
+      checkAnswer();
     }
   }
 
   useEffect(() => {
-      const saveFinalScore = async () => {
-           if (isFinished && student && !hasBeenSaved) {
-              setHasBeenSaved(true);
-              const score = (correctAnswers / NUM_QUESTIONS) * 100;
-              
-              const finalPerformance: StudentPerformance = JSON.parse(JSON.stringify(student.mentalMathPerformance || {}));
-              
-              Object.entries(sessionPerformance).forEach(([id, {attempts}]) => {
-                  if (!finalPerformance[id] || !Array.isArray(finalPerformance[id].attempts)) {
-                      finalPerformance[id] = { attempts: [] };
-                  }
-                  finalPerformance[id].attempts.push(...attempts);
-              });
+    const saveFinalScore = async () => {
+      if (isFinished && student && !hasBeenSaved) {
+        setHasBeenSaved(true);
+        const score = (correctAnswers / NUM_QUESTIONS) * 100;
 
-              if (isHomework && homeworkDate) {
-                  await saveHomeworkResult({
-                      userId: student.id,
-                      date: homeworkDate,
-                      skillSlug: 'adaptive-mental-calculation',
-                      score: score,
-                  });
-              } else {
-                  await addScore({
-                      userId: student.id,
-                      skill: 'adaptive-mental-calculation',
-                      score: score,
-                      details: sessionDetails,
-                  });
-              }
-              await updateStudent(student.id, { mentalMathPerformance: finalPerformance });
-              refreshStudent();
+        const finalPerformance: StudentPerformance = JSON.parse(JSON.stringify(student.mentalMathPerformance || {}));
+
+        Object.entries(sessionPerformance).forEach(([id, { attempts }]) => {
+          if (!finalPerformance[id] || !Array.isArray(finalPerformance[id].attempts)) {
+            finalPerformance[id] = { attempts: [] };
           }
+          finalPerformance[id].attempts.push(...attempts);
+        });
+
+        if (isHomework && homeworkDate) {
+          await saveHomeworkResult({
+            userId: student.id,
+            date: homeworkDate,
+            skillSlug: 'adaptive-mental-calculation',
+            score: score,
+          });
+        } else {
+          await addScore({
+            userId: student.id,
+            skill: 'adaptive-mental-calculation',
+            score: score,
+            details: sessionDetails,
+          });
+        }
+        await updateStudent(student.id, { mentalMathPerformance: finalPerformance });
+        refreshStudent();
       }
-      saveFinalScore();
+    }
+    saveFinalScore();
   }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate, sessionPerformance, refreshStudent]);
 
   const restartExercise = () => {
@@ -199,7 +200,7 @@ export function AdaptiveMentalCalculationExercise() {
     setSessionDetails([]);
     setSessionPerformance({});
     setAnalysisResult('');
-    
+
     async function start() {
       setIsLoading(true);
       const initialPerformance = student?.mentalMathPerformance || {};
@@ -223,7 +224,7 @@ export function AdaptiveMentalCalculationExercise() {
       }
       combinedPerformance[id].attempts.push(...attempts);
     });
-    
+
     const performanceData = Object.entries(combinedPerformance).map(([id, { attempts }]) => {
       const competency = allCompetencies.find(c => c.id === id);
       return {
@@ -261,14 +262,14 @@ export function AdaptiveMentalCalculationExercise() {
             Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
           </p>
           <ScoreTube score={score} />
-           {isHomework ? (
-                <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-            ) : (
-                <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                    <RefreshCw className="mr-2" />
-                    Recommencer
-                </Button>
-            )}
+          {isHomework ? (
+            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
+          ) : (
+            <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+              <RefreshCw className="mr-2" />
+              Recommencer
+            </Button>
+          )}
         </CardContent>
       </Card>
     );
@@ -276,132 +277,140 @@ export function AdaptiveMentalCalculationExercise() {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-       <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
-        <Card className="shadow-2xl text-center relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-                <Sheet>
-                    <SheetTrigger asChild>
-                         <Button variant="outline" size="sm">
-                            <ListTree className="mr-2 h-4 w-4" /> Voir mes compétences
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent className="w-[400px] sm:w-[540px]">
-                        <SheetHeader>
-                            <SheetTitle>Progression en Calcul Mental</SheetTitle>
-                            <SheetDescription>
-                                Une compétence est acquise après {REQUIRED_CONSECUTIVE_SUCCESSES} réussites consécutives après un échec, ou 4 réussites sans aucun échec.
-                            </SheetDescription>
-                        </SheetHeader>
-                        <ScrollArea className="h-[calc(100%-160px)] pr-4">
-                        <div className="space-y-4 py-4">
-                            {allCompetencies.map(competency => {
-                                const globalPerfData = student?.mentalMathPerformance?.[competency.id];
-                                const globalPerf = globalPerfData?.attempts || [];
-                                
-                                const sessionPerf = sessionPerformance[competency.id]?.attempts || [];
-                                const allAttempts = [...globalPerf, ...sessionPerf];
+      <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
+      <Card className="shadow-2xl text-center relative overflow-hidden">
+        <div className="absolute top-4 right-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm">
+                <ListTree className="mr-2 h-4 w-4" /> Voir mes compétences
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[400px] sm:w-[540px]">
+              <SheetHeader>
+                <SheetTitle>Progression en Calcul Mental</SheetTitle>
+                <SheetDescription>
+                  Une compétence est acquise après {REQUIRED_CONSECUTIVE_SUCCESSES} réussites consécutives après un échec, ou 4 réussites sans aucun échec.
+                </SheetDescription>
+              </SheetHeader>
+              <ScrollArea className="h-[calc(100%-160px)] pr-4">
+                <div className="space-y-4 py-4">
+                  {allCompetencies.map(competency => {
+                    const globalPerfData = student?.mentalMathPerformance?.[competency.id];
+                    const globalPerf = globalPerfData?.attempts || [];
 
-                                let status: 'acquired' | 'in-progress' | 'not-started' = 'not-started';
-                                
-                                if (allAttempts.length > 0) {
-                                    const lastFailureIndex = allAttempts.lastIndexOf('failure');
-                                    
-                                    if (lastFailureIndex === -1) {
-                                        if (allAttempts.length >= REQUIRED_CONSECUTIVE_SUCCESSES) {
-                                            status = 'acquired';
-                                        } else {
-                                            status = 'in-progress';
-                                        }
-                                    } else {
-                                        const successesAfterFailure = allAttempts.slice(lastFailureIndex + 1);
-                                        if (successesAfterFailure.length >= REQUIRED_CONSECUTIVE_SUCCESSES && successesAfterFailure.every(a => a === 'success')) {
-                                            status = 'acquired';
-                                        } else {
-                                            status = 'in-progress';
-                                        }
-                                    }
-                                }
+                    const sessionPerf = sessionPerformance[competency.id]?.attempts || [];
+                    const allAttempts = [...globalPerf, ...sessionPerf];
 
-                                const colorClass =
-                                  status === 'acquired' ? 'border-green-400' :
-                                  status === 'in-progress' ? 'border-yellow-400' :
-                                  'border-border';
+                    let status: 'acquired' | 'in-progress' | 'not-started' = 'not-started';
+
+                    if (allAttempts.length > 0) {
+                      const lastFailureIndex = allAttempts.lastIndexOf('failure');
+
+                      if (lastFailureIndex === -1) {
+                        if (allAttempts.length >= REQUIRED_CONSECUTIVE_SUCCESSES) {
+                          status = 'acquired';
+                        } else {
+                          status = 'in-progress';
+                        }
+                      } else {
+                        const successesAfterFailure = allAttempts.slice(lastFailureIndex + 1);
+                        if (successesAfterFailure.length >= REQUIRED_CONSECUTIVE_SUCCESSES && successesAfterFailure.every(a => a === 'success')) {
+                          status = 'acquired';
+                        } else {
+                          status = 'in-progress';
+                        }
+                      }
+                    }
+
+                    const colorClass =
+                      status === 'acquired' ? 'border-green-400' :
+                        status === 'in-progress' ? 'border-yellow-400' :
+                          'border-border';
 
 
-                                return (
-                                <div key={competency.id} className={cn("flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50", colorClass)}>
-                                    {status === 'acquired' && <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0"/>}
-                                    {status === 'in-progress' && <Hourglass className="h-5 w-5 text-yellow-500 flex-shrink-0"/>}
-                                    {status === 'not-started' && <BrainCircuit className="h-5 w-5 text-muted-foreground flex-shrink-0"/>}
-                                    <p className="text-sm font-medium flex-grow text-left">{competency.description}</p>
-                                    <Badge variant="outline">Niv. {competency.level}</Badge>
-                                </div>
-                                )
-                            })}
-                        </div>
-                        </ScrollArea>
-                        <SheetFooter className="pt-4 border-t">
-                            <div className="w-full space-y-3">
-                                {analysisResult && (
-                                    <Card className="bg-primary/10 border-primary/20">
-                                        <CardContent className="p-4 text-sm text-center">
-                                            {analysisResult}
-                                        </CardContent>
-                                    </Card>
-                                )}
-                                <Button onClick={handleAnalyzePerformance} disabled={isAnalyzing} className="w-full">
-                                    {isAnalyzing ? <Loader2 className="mr-2 animate-spin"/> : <Sparkles className="mr-2" />}
-                                    {analysisResult ? "Analyser à nouveau" : "Analyser mes progrès"}
-                                </Button>
-                            </div>
-                        </SheetFooter>
-                    </SheetContent>
-                </Sheet>
-            </div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-                <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3, width: "10px", height: "10px"}} />
-            </div>
-
-            <CardHeader>
-                <CardTitle className="font-headline text-2xl">Question {currentQuestionIndex + 1}</CardTitle>
-                <CardDescription>Niveau {currentQuestion.level}</CardDescription>
-            </CardHeader>
-            <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
-                <p className="font-body text-5xl sm:text-6xl font-bold tracking-wider">{currentQuestion.question}</p>
-                <div className="relative w-full max-w-sm flex flex-col gap-4">
-                    <Input
-                        ref={inputRef}
-                        type="text"
-                        inputMode="decimal"
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Ta réponse..."
-                        className={cn(
-                          "h-20 text-4xl text-center font-numbers",
-                          feedback === 'correct' && 'border-green-500 ring-green-500',
-                          feedback === 'incorrect' && 'border-red-500 ring-red-500 animate-shake'
-                        )}
-                        disabled={!!feedback}
-                        autoFocus
-                    />
-                     {feedback === 'correct' && <Check className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-green-500"/>}
-                     {feedback === 'incorrect' && <X className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-red-500"/>}
-
-                     <Button onClick={checkAnswer} disabled={!!feedback || !userInput} size="lg">
-                        Valider
-                    </Button>
+                    return (
+                      <div key={competency.id} className={cn("flex items-center gap-3 p-2 border-l-4 rounded-r-md bg-muted/50", colorClass)}>
+                        {status === 'acquired' && <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />}
+                        {status === 'in-progress' && <Hourglass className="h-5 w-5 text-yellow-500 flex-shrink-0" />}
+                        {status === 'not-started' && <BrainCircuit className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
+                        <p className="text-sm font-medium flex-grow text-left">{competency.description}</p>
+                        <Badge variant="outline">Niv. {competency.level}</Badge>
+                      </div>
+                    )
+                  })}
                 </div>
-            </CardContent>
-            <CardFooter className="h-24 flex items-center justify-center">
-                 {feedback === 'incorrect' && (
-                    <div className="text-xl font-bold text-red-600 animate-shake">
-                        La bonne réponse était {currentQuestion.answer}.
-                    </div>
-                )}
-            </CardFooter>
-        </Card>
-        <style jsx>{`
+              </ScrollArea>
+              <SheetFooter className="pt-4 border-t">
+                <div className="w-full space-y-3">
+                  {analysisResult && (
+                    <Card className="bg-primary/10 border-primary/20">
+                      <CardContent className="p-4 text-sm text-center">
+                        {analysisResult}
+                      </CardContent>
+                    </Card>
+                  )}
+                  <Button onClick={handleAnalyzePerformance} disabled={isAnalyzing} className="w-full">
+                    {isAnalyzing ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
+                    {analysisResult ? "Analyser à nouveau" : "Analyser mes progrès"}
+                  </Button>
+                </div>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+        </div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+          <Confetti active={showConfetti} config={{ angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3, width: "10px", height: "10px" }} />
+        </div>
+
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl">Question {currentQuestionIndex + 1}</CardTitle>
+          <CardDescription>Niveau {currentQuestion.level}</CardDescription>
+        </CardHeader>
+        <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
+          <p className="font-body text-5xl sm:text-6xl font-bold tracking-wider">{currentQuestion.question}</p>
+          <div className="relative w-full max-w-sm flex flex-col gap-4">
+            <Input
+              ref={inputRef}
+              type="text"
+              inputMode="decimal"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ta réponse..."
+              className={cn(
+                "h-20 text-4xl text-center font-numbers",
+                feedback === 'correct' && 'border-green-500 ring-green-500',
+                feedback === 'incorrect' && 'border-red-500 ring-red-500 animate-shake'
+              )}
+              disabled={!!feedback}
+              autoFocus
+            />
+            {feedback === 'correct' && <Check className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-green-500" />}
+            {feedback === 'incorrect' && <X className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-red-500" />}
+
+            <Button onClick={checkAnswer} disabled={!!feedback || !userInput} size="lg">
+              Valider
+            </Button>
+          </div>
+        </CardContent>
+        <CardFooter className="h-auto min-h-24 flex flex-col items-center justify-center gap-4 p-4">
+          {feedback === 'incorrect' && (
+            <div className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="text-xl font-bold text-red-600 animate-shake text-center">
+                Ce n'est pas tout à fait ça. Regarde :
+              </div>
+              {currentQuestion.help && (
+                <MentalMathHelp help={currentQuestion.help} />
+              )}
+              <div className="text-lg text-muted-foreground text-center">
+                La bonne réponse était <span className="font-bold text-foreground">{currentQuestion.answer}</span>.
+              </div>
+            </div>
+          )}
+        </CardFooter>
+      </Card>
+      <style jsx>{`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }

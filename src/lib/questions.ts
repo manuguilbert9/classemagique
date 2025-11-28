@@ -13,7 +13,7 @@ import { generateEcouteLesNombresQuestion } from './number-listening-questions';
 import { generateNombresComplexesQuestion } from './complex-number-questions';
 import { generateLireLesNombresQuestion } from './reading-number-questions';
 import { generateCurrencyQuestion } from './currency-questions';
-import { generateAdaptiveMentalMathQuestion } from './adaptive-mental-math';
+import { generateAdaptiveMentalMathQuestion, type HelpData } from './adaptive-mental-math';
 import { generateChangeMakingQuestions } from './change-making-questions';
 import { generateGnNiQuestions } from './gn-ni-questions';
 
@@ -25,6 +25,7 @@ export interface Question {
   question: string;
   // For adaptive mental math
   competencyId?: string;
+  help?: HelpData;
   // For QCM
   options?: string[];
   answer?: string;
@@ -88,15 +89,15 @@ export interface TimeSettings {
 }
 
 export interface CountSettings {
-    maxNumber: number;
+  maxNumber: number;
 }
 
 export interface NumberLevelSettings {
-    level: SkillLevel;
+  level: SkillLevel;
 }
 
 export interface CalendarSettings {
-    level: SkillLevel;
+  level: SkillLevel;
 }
 
 export interface ReadingRaceSettings {
@@ -119,81 +120,81 @@ export async function generateQuestions(
   settings?: AllSettings
 ): Promise<Question[]> {
   const questionPromises: Promise<Question>[] = [];
-  
+
   if (skill === 'time' && settings?.time) {
     for (let i = 0; i < count; i++) {
-        questionPromises.push(generateTimeQuestion(settings.time.difficulty as any));
+      questionPromises.push(generateTimeQuestion(settings.time.difficulty as any));
     }
     return Promise.all(questionPromises);
   }
-  
+
   if (skill === 'denombrement' && settings?.count) {
-      for (let i = 0; i < count; i++) {
-          questionPromises.push(generateDénombrementQuestion(settings.count!));
-      }
-      return Promise.all(questionPromises);
+    for (let i = 0; i < count; i++) {
+      questionPromises.push(generateDénombrementQuestion(settings.count!));
+    }
+    return Promise.all(questionPromises);
   }
 
   if (skill === 'keyboard-count') {
-      for (let i = 0; i < count; i++) {
-          questionPromises.push(generateKeyboardCountQuestion());
-      }
-      return Promise.all(questionPromises);
+    for (let i = 0; i < count; i++) {
+      questionPromises.push(generateKeyboardCountQuestion());
+    }
+    return Promise.all(questionPromises);
   }
 
   if (skill === 'ecoute-les-nombres') {
-      for (let i = 0; i < count; i++) {
-        questionPromises.push(generateEcouteLesNombresQuestion());
-      }
-      return Promise.all(questionPromises);
+    for (let i = 0; i < count; i++) {
+      questionPromises.push(generateEcouteLesNombresQuestion());
+    }
+    return Promise.all(questionPromises);
   }
 
   if (skill === 'nombres-complexes') {
-       for (let i = 0; i < count; i++) {
-        questionPromises.push(generateNombresComplexesQuestion());
-      }
-      return Promise.all(questionPromises);
+    for (let i = 0; i < count; i++) {
+      questionPromises.push(generateNombresComplexesQuestion());
+    }
+    return Promise.all(questionPromises);
   }
-  
+
   if (skill === 'lire-les-nombres' && settings?.numberLevel) {
-      for (let i = 0; i < count; i++) {
-        questionPromises.push(generateLireLesNombresQuestion(settings.numberLevel!));
-      }
-      return Promise.all(questionPromises);
+    for (let i = 0; i < count; i++) {
+      questionPromises.push(generateLireLesNombresQuestion(settings.numberLevel!));
+    }
+    return Promise.all(questionPromises);
   }
 
   if (skill === 'syllabe-attaque') {
-      for (let i = 0; i < count; i++) {
-          questionPromises.push(generateSyllabeAttaqueQuestion());
-      }
-      return Promise.all(questionPromises);
+    for (let i = 0; i < count; i++) {
+      questionPromises.push(generateSyllabeAttaqueQuestion());
+    }
+    return Promise.all(questionPromises);
   }
 
   if (skill === 'calendar' && settings?.calendar) {
-      return generateCalendarQuestions(settings.calendar.level, count);
+    return generateCalendarQuestions(settings.calendar.level, count);
   }
-  
+
   if (skill === 'mental-calculation' && settings?.numberLevel) {
-      return generateMentalMathQuestions(settings.numberLevel.level, count);
+    return generateMentalMathQuestions(settings.numberLevel.level, count);
   }
-  
+
   if (skill === 'currency' && settings?.currency) {
-      for (let i = 0; i < count; i++) {
-        questionPromises.push(generateCurrencyQuestion(settings.currency!));
-      }
-      return Promise.all(questionPromises);
+    for (let i = 0; i < count; i++) {
+      questionPromises.push(generateCurrencyQuestion(settings.currency!));
+    }
+    return Promise.all(questionPromises);
   }
   if (skill === 'change-making' && settings?.numberLevel) {
-      return Promise.resolve(generateChangeMakingQuestions(settings.numberLevel.level as 'B' | 'C' | 'D', count));
+    return Promise.resolve(generateChangeMakingQuestions(settings.numberLevel.level as 'B' | 'C' | 'D', count));
   }
-  
+
   if (skill === 'gn-ni') {
-      return Promise.resolve(generateGnNiQuestions());
+    return Promise.resolve(generateGnNiQuestions());
   }
-  
+
   if (skill === 'mystery-number') {
-      // This exercise manages its own state, so we just need a placeholder
-      return Promise.resolve([{ id: 1, level: 'B', type: 'mystery-number', question: '' }]);
+    // This exercise manages its own state, so we just need a placeholder
+    return Promise.resolve([{ id: 1, level: 'B', type: 'mystery-number', question: '' }]);
   }
 
   // Fallback
