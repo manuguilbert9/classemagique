@@ -46,6 +46,8 @@ export function AdaptiveMentalCalculationExercise() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
   const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
+  const [showingSolution, setShowingSolution] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // For adaptive logic
@@ -102,6 +104,8 @@ export function AdaptiveMentalCalculationExercise() {
 
       setUserInput('');
       setFeedback(null);
+      setShowingSolution(false);
+      setShowHelp(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       setIsFinished(true);
@@ -139,11 +143,23 @@ export function AdaptiveMentalCalculationExercise() {
       setFeedback('correct');
       setCorrectAnswers(prev => prev + 1);
       setShowConfetti(true);
+      setTimeout(handleNextQuestion, 1500);
     } else {
       setFeedback('incorrect');
-      setFeedback('incorrect');
+      setShowHelp(true);
+      // Do not auto-advance
     }
-    setTimeout(handleNextQuestion, 1500);
+  };
+
+  const handleRetry = () => {
+    setFeedback(null);
+    setUserInput('');
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const handleGiveUp = () => {
+    setShowingSolution(true);
+    setTimeout(handleNextQuestion, 2000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -200,6 +216,8 @@ export function AdaptiveMentalCalculationExercise() {
     setSessionDetails([]);
     setSessionPerformance({});
     setAnalysisResult('');
+    setShowingSolution(false);
+    setShowHelp(false);
 
     async function start() {
       setIsLoading(true);
@@ -395,17 +413,31 @@ export function AdaptiveMentalCalculationExercise() {
           </div>
         </CardContent>
         <CardFooter className="h-auto min-h-24 flex flex-col items-center justify-center gap-4 p-4">
-          {feedback === 'incorrect' && (
+          {(feedback === 'incorrect' || showHelp) && (
             <div className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="text-xl font-bold text-red-600 animate-shake text-center">
-                Ce n'est pas tout à fait ça. Regarde :
-              </div>
+              {feedback === 'incorrect' && (
+                <div className="text-xl font-bold text-red-600 animate-shake text-center">
+                  Ce n'est pas tout à fait ça. Regarde :
+                </div>
+              )}
               {currentQuestion.help && (
                 <MentalMathHelp help={currentQuestion.help} />
               )}
-              <div className="text-lg text-muted-foreground text-center">
-                La bonne réponse était <span className="font-bold text-foreground">{currentQuestion.answer}</span>.
-              </div>
+
+              {feedback === 'incorrect' && !showingSolution ? (
+                <div className="flex gap-4 justify-center mt-2">
+                  <Button onClick={handleRetry} size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <RefreshCw className="mr-2 h-4 w-4" /> Réessayer
+                  </Button>
+                  <Button onClick={handleGiveUp} variant="outline" size="lg">
+                    Je ne sais pas
+                  </Button>
+                </div>
+              ) : showingSolution ? (
+                <div className="text-lg text-muted-foreground text-center animate-in fade-in">
+                  La bonne réponse était <span className="font-bold text-foreground">{currentQuestion.answer}</span>.
+                </div>
+              ) : null}
             </div>
           )}
         </CardFooter>
