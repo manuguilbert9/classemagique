@@ -116,6 +116,46 @@ export function MentalMathHelp({ help }: MentalMathHelpProps) {
         )
     }
 
+    if (help.type === 'visual-array') {
+        const { rows, cols } = help;
+        return (
+            <div className="flex flex-col items-center gap-4 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+                <p className="font-bold text-indigo-700 mb-2">Regarde le tableau :</p>
+                <div className="flex flex-col gap-1">
+                    {Array.from({ length: rows }).map((_, i) => (
+                        <div key={i} className="flex gap-1">
+                            {Array.from({ length: cols }).map((_, j) => (
+                                <div key={j} className="w-6 h-6 bg-indigo-400 rounded-sm" />
+                            ))}
+                        </div>
+                    ))}
+                </div>
+                <p className="text-indigo-600 font-medium">{rows} rangées de {cols} = {rows * cols}</p>
+            </div>
+        )
+    }
+
+    if (help.type === 'visual-groups') {
+        const { total, groupSize } = help;
+        const numGroups = Math.floor(total / groupSize);
+
+        return (
+            <div className="flex flex-col items-center gap-4 p-4 bg-pink-50 rounded-xl border border-pink-200">
+                <p className="font-bold text-pink-700 mb-2">Fais des paquets de {groupSize} :</p>
+                <div className="flex flex-wrap gap-4 justify-center max-w-[300px]">
+                    {Array.from({ length: numGroups }).map((_, i) => (
+                        <div key={i} className="border-2 border-pink-400 p-1 rounded-lg flex flex-wrap gap-1 w-[60px] justify-center bg-white">
+                            {Array.from({ length: groupSize }).map((_, j) => (
+                                <div key={j} className="w-3 h-3 bg-pink-400 rounded-full" />
+                            ))}
+                        </div>
+                    ))}
+                </div>
+                <p className="text-pink-600 font-medium">{total} partagé en {groupSize} = {numGroups} paquets</p>
+            </div>
+        )
+    }
+
     if (help.type === 'text-hint') {
         return (
             <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 flex items-start gap-3">

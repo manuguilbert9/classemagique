@@ -21,7 +21,9 @@ export type HelpData =
     | { type: 'visual-dots'; count1: number; count2?: number; operation: 'add' | 'sub' | 'count'; label1?: string; label2?: string }
     | { type: 'visual-blocks'; hundreds?: number; tens: number; units: number }
     | { type: 'number-line'; start: number; end: number; highlight: number; jump?: number }
-    | { type: 'text-hint'; text: string };
+    | { type: 'text-hint'; text: string }
+    | { type: 'visual-array'; rows: number; cols: number }
+    | { type: 'visual-groups'; total: number; groupSize: number };
 
 export type DisplayableMentalMathCompetency = Omit<MentalMathCompetency, 'generate' | 'getHelp'>;
 
@@ -179,19 +181,81 @@ const allCompetencies: MentalMathCompetency[] = [
     { id: 'C7', level: 'C', description: 'Addition par compensation', generate: () => { const a = randInt(21, 88); const b = randInt(1, 9) + (choice([1, 2, 3, 4, 5, 6, 7, 8]) * 10); return { question: `${a} + ${b} = ?`, answer: String(a + b) }; } },
     { id: 'C8', level: 'C', description: 'Soustraction par jalonnement', generate: () => { const a = randInt(51, 99); const b = randInt(11, a - 20); return { question: `${a} - ${b} = ?`, answer: String(a - b) }; } },
     { id: 'C9', level: 'C', description: 'Compléter à la centaine/millier', generate: () => { const target = choice([100, 1000]); const a = randInt(Math.floor(target / 2), target - 1); return { question: `${a} + ? = ${target}`, answer: String(target - a) }; } },
-    { id: 'C10', level: 'C', description: 'Tables de multiplication (0-10)', generate: () => { const a = randInt(0, 10); const b = randInt(0, 10); return { question: `${a} × ${b} = ?`, answer: String(a * b) }; } },
-    { id: 'C11', level: 'C', description: 'Multiplier par 10, 100, 1000', generate: () => { const a = randInt(1, 500); const b = choice([10, 100, 1000]); return { question: `${a} × ${b} = ?`, answer: String(a * b) }; } },
-    { id: 'C12', level: 'C', description: 'Divisions exactes (tables)', generate: () => { const b = randInt(2, 10); const quotient = randInt(2, 10); const a = b * quotient; return { question: `${a} ÷ ${b} = ?`, answer: String(quotient) }; } },
+    {
+        id: 'C10',
+        level: 'C',
+        description: 'Tables de multiplication (0-10)',
+        generate: () => { const a = randInt(0, 10); const b = randInt(0, 10); return { question: `${a} × ${b} = ?`, answer: String(a * b) }; },
+        getHelp: (q) => {
+            const parts = q.question.match(/(\d+) (.) (\d+)/);
+            if (!parts) return { type: 'text-hint', text: 'C\'est une multiplication.' };
+            const [_, a, op, b] = parts;
+            return { type: 'visual-array', rows: parseInt(a), cols: parseInt(b) };
+        }
+    },
+    {
+        id: 'C11',
+        level: 'C',
+        description: 'Multiplier par 10, 100, 1000',
+        generate: () => { const a = randInt(1, 500); const b = choice([10, 100, 1000]); return { question: `${a} × ${b} = ?`, answer: String(a * b) }; },
+        getHelp: (q) => {
+            const parts = q.question.match(/(\d+) (.) (\d+)/);
+            const b = parts ? parts[3] : '10';
+            return { type: 'text-hint', text: `Pour multiplier par ${b}, il suffit d'ajouter ${b.length - 1} zéro(s) à la fin.` };
+        }
+    },
+    {
+        id: 'C12',
+        level: 'C',
+        description: 'Divisions exactes (tables)',
+        generate: () => { const b = randInt(2, 10); const quotient = randInt(2, 10); const a = b * quotient; return { question: `${a} ÷ ${b} = ?`, answer: String(quotient) }; },
+        getHelp: (q) => {
+            const parts = q.question.match(/(\d+) (.) (\d+)/);
+            if (!parts) return { type: 'text-hint', text: 'Combien de fois le petit nombre rentre dans le grand ?' };
+            const [_, a, op, b] = parts;
+            return { type: 'visual-groups', total: parseInt(a), groupSize: parseInt(b) };
+        }
+    },
 
     // --- Level D ---
-    { id: 'D1', level: 'D', description: 'Multiplier par 5, 25, 50', generate: () => { const b = choice([5, 25, 50]); const a = randInt(2, 40); return { question: `${a} × ${b} = ?`, answer: String(a * b) }; } },
+    {
+        id: 'D1',
+        level: 'D',
+        description: 'Multiplier par 5, 25, 50',
+        generate: () => { const b = choice([5, 25, 50]); const a = randInt(2, 40); return { question: `${a} × ${b} = ?`, answer: String(a * b) }; },
+        getHelp: (q) => {
+            const parts = q.question.match(/(\d+) (.) (\d+)/);
+            const b = parts ? parseInt(parts[3]) : 5;
+            let hint = '';
+            if (b === 5) hint = 'Multiplier par 5, c\'est multiplier par 10 puis diviser par 2.';
+            if (b === 50) hint = 'Multiplier par 50, c\'est multiplier par 100 puis diviser par 2.';
+            if (b === 25) hint = 'Multiplier par 25, c\'est multiplier par 100 puis diviser par 4.';
+            return { type: 'text-hint', text: hint };
+        }
+    },
     { id: 'D2', level: 'D', description: 'Calculer 10% d\'un nombre', generate: () => { const a = randInt(1, 100) * 10; return { question: `10% de ${a} ?`, answer: String(a * 0.1) }; } },
     { id: 'D3', level: 'D', description: 'Calculer 25%, 50%, 75% d\'un nombre', generate: () => { const a = randInt(1, 25) * 4; const p = choice([25, 50, 75]); return { question: `${p}% de ${a} ?`, answer: String(a * (p / 100)) }; } },
     { id: 'D4', level: 'D', description: 'Calculer une fraction simple d\'un nombre', generate: () => { const d = choice([2, 3, 4, 5]); const n = randInt(1, d - 1); const a = randInt(2, 10) * d; return { question: `${n}/${d} de ${a} ?`, answer: String(a * n / d) }; } },
     { id: 'D5', level: 'D', description: 'Addition/soustraction de décimaux simples', generate: () => { const a = randInt(1, 500) / 10; const b = randInt(1, 500) / 10; return Math.random() > 0.5 ? { question: `${String(a).replace('.', ',')} + ${String(b).replace('.', ',')} = ?`, answer: String(a + b) } : { question: `${String(Math.max(a, b)).replace('.', ',')} - ${String(Math.min(a, b)).replace('.', ',')} = ?`, answer: String(Math.max(a, b) - Math.min(a, b)) }; } },
     { id: 'D6', level: 'D', description: 'Carrés parfaits (1-12)', generate: () => { const a = randInt(1, 12); return { question: `${a}² = ?`, answer: String(a * a) }; } },
     { id: 'D7', level: 'D', description: 'Critères de divisibilité', generate: () => { const d = choice([2, 3, 5, 9, 10]); const isDivisible = Math.random() > 0.5; let n; if (isDivisible) { n = randInt(2, 100) * d; } else { n = randInt(10, 500); if (n % d === 0) n++; } return { question: `${n} est-il divisible par ${d} ?`, answer: isDivisible ? 'oui' : 'non' }; } },
-    { id: 'D8', level: 'D', description: 'Multiplier/diviser par 0.1, 0.5', generate: () => { const b = choice([0.1, 0.5]); const a = randInt(10, 200); return Math.random() > 0.5 ? { question: `${a} × ${b} = ?`, answer: String(a * b) } : { question: `${a} ÷ ${b} = ?`, answer: String(a / b) }; } },
+    {
+        id: 'D8',
+        level: 'D',
+        description: 'Multiplier/diviser par 0.1, 0.5',
+        generate: () => { const b = choice([0.1, 0.5]); const a = randInt(10, 200); return Math.random() > 0.5 ? { question: `${a} × ${b} = ?`, answer: String(a * b) } : { question: `${a} ÷ ${b} = ?`, answer: String(a / b) }; },
+        getHelp: (q) => {
+            const parts = q.question.match(/(\d+) (.) ([\d\.]+)/);
+            const b = parts ? parseFloat(parts[3]) : 0.1;
+            const op = parts ? parts[2] : '×';
+            let hint = '';
+            if (op === '×' && b === 0.1) hint = 'Multiplier par 0,1 revient à diviser par 10.';
+            if (op === '÷' && b === 0.1) hint = 'Diviser par 0,1 revient à multiplier par 10.';
+            if (op === '×' && b === 0.5) hint = 'Multiplier par 0,5 revient à diviser par 2.';
+            if (op === '÷' && b === 0.5) hint = 'Diviser par 0,5 revient à multiplier par 2.';
+            return { type: 'text-hint', text: hint };
+        }
+    },
 ];
 
 
