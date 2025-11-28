@@ -70,103 +70,88 @@
     --ring: 212.7 26.8% 83.9%;
   }
 
-  /* Thème Noël Glassmorphism */
+  /* Thème Noël Candy Cane (Kitsch) */
   .theme-christmas {
-    /* Fond argenté/blanc lumineux */
-    --background: 210 20% 98%;
-    /* Texte sombre pour contraste */
+    /* Fond blanc neige */
+    --background: 0 0% 98%;
+    /* Texte sombre */
     --foreground: 359 20% 20%;
 
-    /* Rouge Brillant (Candy Apple) */
-    --primary: 354 70% 54%;
+    /* Rouge Sucre d'Orge (Vif) */
+    --primary: 354 85% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Vert Sapin Profond mais lumineux */
-    --secondary: 142 76% 36%;
+    /* Vert Houx (Vif) */
+    --secondary: 142 70% 30%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Or Étincelant */
-    --accent: 43 96% 58%;
+    /* Or Jaune */
+    --accent: 48 90% 50%;
     --accent-foreground: 0 0% 100%;
 
-    /* Glassmorphism Card */
-    --card: 0 0% 100%; /* Fallback */
+    /* Carte blanche avec bordure */
+    --card: 0 0% 100%;
     --card-foreground: 359 20% 20%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 359 10% 40%;
 
-    --border: 43 50% 80%; /* Bordure dorée subtile */
-    --input: 210 20% 96%;
-    --ring: 43 96% 58%; /* Focus ring doré */
+    --border: 354 85% 50%;
+    /* Rouge */
+    --input: 0 0% 96%;
+    --ring: 354 85% 50%;
   }
 }
 
 @layer utilities {
+  .theme-christmas .candy-cane-border {
+    border: 8px solid transparent;
+    border-image: repeating-linear-gradient(45deg,
+        #ff0000,
+        #ff0000 10px,
+        #ffffff 10px,
+        #ffffff 20px,
+        #008000 20px,
+        #008000 30px,
+        #ffffff 30px,
+        #ffffff 40px) 1;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+  }
+
   .theme-christmas .glass {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    /* Fallback to simple white for kitsch theme */
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #ff0000;
+    box-shadow: 4px 4px 0px #008000;
   }
 
   .theme-christmas .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    /* Fallback to simple white for kitsch theme */
+    background: #ffffff;
+    border: 2px solid #ff0000;
+    box-shadow: 6px 6px 0px #008000;
   }
 
   .theme-christmas body {
-    background: radial-gradient(circle at 50% 0%, #fdfbf7 0%, #eef2f3 100%);
+    background-color: #f0f8ff;
+    /* AliceBlue for snowy feel */
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.8) 0%, transparent 20%),
+      radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.8) 0%, transparent 20%);
     background-attachment: fixed;
   }
 
-  /* Effet de brillance */
-  .shine-effect {
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .shine-effect::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.6) 50%,
-      rgba(255, 255, 255, 0) 100%
-    );
-    transform: skewX(-25deg);
-    animation: shine 6s infinite;
-  }
-
-  @keyframes shine {
-    0% { left: -100%; }
-    20% { left: 200%; }
-    100% { left: 200%; }
-  }
-
-  /* Texte doré métallique */
-  .text-gold {
-    background: linear-gradient(to bottom, #cfc09f 22%, #ffecb3 24%, #3a2c0f 26%, #998448 27%, #ffc400 40%, #ffecb3 78%); 
+  /* Texte festif */
+  .text-candy {
+    background: repeating-linear-gradient(45deg,
+        #ff0000,
+        #ff0000 5px,
+        #008000 5px,
+        #008000 10px);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    color: #d4af37; /* Fallback */
-  }
-  
-  /* Texte argenté métallique */
-  .text-silver {
-    background: linear-gradient(to bottom, #eee 0%, #333 50%, #eee 100%); 
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: #c0c0c0; /* Fallback */
+    font-weight: bold;
+    filter: drop-shadow(1px 1px 0px white);
   }
 }
 

@@ -25,18 +25,16 @@ export function SnowEffect() {
         canvas.width = width;
         canvas.height = height;
 
-        const snowflakes: { x: number; y: number; radius: number; speed: number; wind: number; color: string; opacity: number; opacitySpeed: number }[] = [];
+        const snowflakes: { x: number; y: number; radius: number; speed: number; wind: number; opacity: number; opacitySpeed: number }[] = [];
         const count = 150;
-        const colors = ['#FFFFFF', '#FFD700', '#C0C0C0', '#F8B229']; // White, Gold, Silver, Warm Gold
 
         for (let i = 0; i < count; i++) {
             snowflakes.push({
                 x: Math.random() * width,
                 y: Math.random() * height,
-                radius: Math.random() * 2 + 0.5, // Smaller particles
-                speed: Math.random() * 0.5 + 0.2, // Slower fall
+                radius: Math.random() * 3 + 1, // Back to slightly larger
+                speed: Math.random() * 1 + 0.5, // Back to normal speed
                 wind: Math.random() * 0.5 - 0.25,
-                color: colors[Math.floor(Math.random() * colors.length)],
                 opacity: Math.random(),
                 opacitySpeed: Math.random() * 0.02 + 0.005
             });
@@ -49,7 +47,7 @@ export function SnowEffect() {
 
             for (const flake of snowflakes) {
                 ctx.beginPath();
-                ctx.fillStyle = flake.color;
+                ctx.fillStyle = 'white';
                 ctx.globalAlpha = flake.opacity;
                 ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
                 ctx.fill();
