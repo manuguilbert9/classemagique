@@ -1,7 +1,7 @@
 
 import { HelpData } from "@/lib/adaptive-mental-math";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Box, Circle } from "lucide-react";
+import { ArrowRight, Box, Circle, X } from "lucide-react";
 
 interface MentalMathHelpProps {
     help: HelpData;
@@ -17,31 +17,54 @@ export function MentalMathHelp({ help }: MentalMathHelpProps) {
             <div className="flex flex-col items-center gap-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
                 <p className="font-bold text-blue-700 mb-2">Regarde bien :</p>
                 <div className="flex items-center gap-4 flex-wrap justify-center">
-                    <div className="flex flex-col items-center">
-                        <div className="flex flex-wrap gap-1 max-w-[150px] justify-center">
-                            {Array.from({ length: count1 }).map((_, i) => (
-                                <div key={`c1-${i}`} className="w-6 h-6 rounded-full bg-blue-500 shadow-sm" />
-                            ))}
-                        </div>
-                        {label1 && <span className="text-sm text-blue-600 mt-1">{label1} ({count1})</span>}
-                    </div>
-
-                    {count2 !== undefined && (
-                        <>
-                            <div className="text-2xl font-bold text-blue-400">
-                                {isAdd ? '+' : isSub ? '-' : ''}
+                    {isSub ? (
+                        <div className="flex flex-col items-center">
+                            <div className="flex flex-wrap gap-1 max-w-[200px] justify-center">
+                                {Array.from({ length: count1 }).map((_, i) => {
+                                    const isCrossed = count2 !== undefined && i >= count1 - count2;
+                                    return (
+                                        <div key={`c1-${i}`} className="relative w-6 h-6 flex items-center justify-center">
+                                            <div className={cn(
+                                                "w-full h-full rounded-full shadow-sm transition-all",
+                                                isCrossed ? "bg-blue-200" : "bg-blue-500"
+                                            )} />
+                                            {isCrossed && (
+                                                <X className="absolute w-5 h-5 text-red-600" strokeWidth={3} />
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
+                            <div className="mt-2 text-blue-700 font-medium">
+                                {count1} - {count2} = {count1 - (count2 || 0)}
+                            </div>
+                        </div>
+                    ) : (
+                        <>
                             <div className="flex flex-col items-center">
                                 <div className="flex flex-wrap gap-1 max-w-[150px] justify-center">
-                                    {Array.from({ length: count2 }).map((_, i) => (
-                                        <div key={`c2-${i}`} className={cn(
-                                            "w-6 h-6 rounded-full shadow-sm",
-                                            isSub ? "bg-red-200 border-2 border-red-400 opacity-50" : "bg-green-500"
-                                        )} />
+                                    {Array.from({ length: count1 }).map((_, i) => (
+                                        <div key={`c1-${i}`} className="w-6 h-6 rounded-full bg-blue-500 shadow-sm" />
                                     ))}
                                 </div>
-                                {label2 && <span className="text-sm text-blue-600 mt-1">{label2} ({count2})</span>}
+                                {label1 && <span className="text-sm text-blue-600 mt-1">{label1} ({count1})</span>}
                             </div>
+
+                            {count2 !== undefined && (
+                                <>
+                                    <div className="text-2xl font-bold text-blue-400">
+                                        {isAdd ? '+' : ''}
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <div className="flex flex-wrap gap-1 max-w-[150px] justify-center">
+                                            {Array.from({ length: count2 }).map((_, i) => (
+                                                <div key={`c2-${i}`} className="w-6 h-6 rounded-full bg-green-500 shadow-sm" />
+                                            ))}
+                                        </div>
+                                        {label2 && <span className="text-sm text-blue-600 mt-1">{label2} ({count2})</span>}
+                                    </div>
+                                </>
+                            )}
                         </>
                     )}
                 </div>
