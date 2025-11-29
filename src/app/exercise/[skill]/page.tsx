@@ -42,6 +42,7 @@ import { AdjectiveIdentificationExercise } from '@/components/adjective-identifi
 import { FleaMarketExercise } from '@/components/flea-market-exercise';
 import { SumCompositionExercise } from '@/components/sum-composition-exercise';
 import { WordProblemsExercise } from '@/components/word-problems-exercise';
+import { AddAdjectivesExercise } from '@/components/add-adjectives-exercise';
 import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
@@ -132,6 +133,9 @@ export default function ExercisePage() {
         break;
       case 'reperer-adjectif':
         exerciseComponent = <AdjectiveIdentificationExercise />;
+        break;
+      case 'add-adjectives':
+        exerciseComponent = <AddAdjectivesExercise />;
         break;
       case 'flea-market':
         exerciseComponent = <FleaMarketExercise />;

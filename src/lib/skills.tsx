@@ -30,6 +30,7 @@ import {
   Palette,
   ShoppingBag,
   Calculator,
+  Sparkles,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -427,6 +428,14 @@ export const skills: Skill[] = [
     slug: 'reperer-adjectif',
     description: "Clique sur les adjectifs dans la phrase.",
     icon: <Palette />,
+    category: 'Grammaire',
+    allowedLevels: ['B', 'C'],
+  },
+  {
+    name: 'Ajouter des adjectifs',
+    slug: 'add-adjectives',
+    description: "Enrichis la phrase en plaçant les adjectifs au bon endroit.",
+    icon: <Sparkles />,
     category: 'Grammaire',
     allowedLevels: ['B', 'C'],
   },
