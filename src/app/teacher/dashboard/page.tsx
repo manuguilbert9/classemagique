@@ -23,7 +23,7 @@ import { BuildInfo } from '@/components/teacher/build-info';
 import { getAllWritingEntries, WritingEntry } from '@/services/writing';
 import { getAllHomework, type Homework, getHomeworkResultsForUser, HomeworkResult } from '@/services/homework';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
 import { ThemeSettings } from '@/components/teacher/theme-settings';
 
 
@@ -39,6 +39,7 @@ export default function TeacherDashboardPage() {
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
   const [allHomework, setAllHomework] = useState<Homework[]>([]);
   const [allHomeworkResults, setAllHomeworkResults] = useState<HomeworkResult[]>([]);
+  const [archivedSkills, setArchivedSkills] = useState<Record<string, boolean>>({});
 
   const refreshAllData = useCallback(async () => {
     // This function can be used for a hard refresh if needed, but onSnapshot handles real-time updates.
@@ -86,6 +87,12 @@ export default function TeacherDashboardPage() {
           ...doc.data(),
           createdAt: (doc.data().createdAt as any)?.toDate().toISOString()
         } as HomeworkResult)));
+      }),
+      onSnapshot(doc(db, 'teacher', 'settings'), snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setArchivedSkills(data.archivedSkills || {});
+        }
       }),
     ];
 
@@ -137,7 +144,7 @@ export default function TeacherDashboardPage() {
                 <TabsTrigger value="database">Réglages</TabsTrigger>
               </TabsList>
               <TabsContent value="students" className="mt-6">
-                <StudentManager students={students} />
+                <StudentManager students={students} archivedSkills={archivedSkills} />
               </TabsContent>
               <TabsContent value="groups" className="mt-6">
                 <GroupManager initialStudents={students} initialGroups={groups} />
@@ -159,7 +166,7 @@ export default function TeacherDashboardPage() {
               </TabsContent>
               <TabsContent value="database" className="mt-6 space-y-6">
                 <ThemeSettings />
-                <DatabaseManager onDataRefresh={refreshAllData} />
+                <DatabaseManager onDataRefresh={refreshAllData} archivedSkills={archivedSkills} />
               </TabsContent>
             </Tabs>
           )}

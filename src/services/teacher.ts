@@ -22,6 +22,7 @@ export interface ChatSettings {
 
 interface TeacherSettings {
     enabledSkills?: Record<string, boolean>;
+    archivedSkills?: Record<string, boolean>;
     currentSchoolYear?: string; // e.g., "2024"
     chat?: ChatSettings;
 }
@@ -44,7 +45,7 @@ async function getSettingsDoc(): Promise<TeacherSettings | null> {
 
 export async function getGloballyEnabledSkills(): Promise<Record<string, boolean>> {
     const settings = await getSettingsDoc();
-    
+
     // If settings or enabledSkills are not defined, create a default where all skills are true
     if (!settings || !settings.enabledSkills) {
         const allEnabled: Record<string, boolean> = {};
@@ -53,17 +54,34 @@ export async function getGloballyEnabledSkills(): Promise<Record<string, boolean
         });
         return allEnabled;
     }
-    
+
     return settings.enabledSkills;
 }
 
 export async function setGloballyEnabledSkills(enabledSkills: Record<string, boolean>): Promise<{ success: boolean; error?: string }> {
-     try {
+    try {
         const settingsRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
         await setDoc(settingsRef, { enabledSkills }, { merge: true });
         return { success: true };
     } catch (e) {
         console.error("Error setting enabled skills:", e);
+        if (e instanceof Error) return { success: false, error: e.message };
+        return { success: false, error: "An unknown error occurred." };
+    }
+}
+
+export async function getArchivedSkills(): Promise<Record<string, boolean>> {
+    const settings = await getSettingsDoc();
+    return settings?.archivedSkills || {};
+}
+
+export async function setArchivedSkills(archivedSkills: Record<string, boolean>): Promise<{ success: boolean; error?: string }> {
+    try {
+        const settingsRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
+        await setDoc(settingsRef, { archivedSkills }, { merge: true });
+        return { success: true };
+    } catch (e) {
+        console.error("Error setting archived skills:", e);
         if (e instanceof Error) return { success: false, error: e.message };
         return { success: false, error: "An unknown error occurred." };
     }
@@ -166,7 +184,7 @@ export async function getCurrentHomeworkForStudent(student: Student): Promise<As
             const homeworkData = docSnap.data() as Omit<Homework, 'id'>;
             return homeworkData.assignments[student.groupId] || null;
         }
-        
+
         return null;
     } catch (error) {
         console.error("Error getting homework for student:", error);

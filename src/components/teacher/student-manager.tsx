@@ -6,7 +6,7 @@ import { useState, FormEvent, useMemo, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, UserPlus, Pencil, Trash2, Camera } from 'lucide-react';
+import { Loader2, UserPlus, Pencil, Trash2, Camera, Archive, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { createStudent, type Student, updateStudent, deleteStudent, uploadStudentPhoto } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -31,14 +31,15 @@ const skillLevels: { value: SkillLevel, label: string }[] = [
 
 interface StudentManagerProps {
     students: Student[];
+    archivedSkills?: Record<string, boolean>;
 }
 
-export function StudentManager({ students }: StudentManagerProps) {
+export function StudentManager({ students, archivedSkills = {} }: StudentManagerProps) {
     const { toast } = useToast();
     const [newStudentName, setNewStudentName] = useState('');
     const [newStudentCode, setNewStudentCode] = useState('');
     const [isCreatingStudent, setIsCreatingStudent] = useState(false);
-    
+
     // Editing states
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [editedName, setEditedName] = useState('');
@@ -49,9 +50,11 @@ export function StudentManager({ students }: StudentManagerProps) {
     const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
     const [editedEnabledSkills, setEditedEnabledSkills] = useState<Record<string, boolean>>({});
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
 
-     const handleCreateStudent = async (e: FormEvent) => {
+    const handleCreateStudent = async (e: FormEvent) => {
         e.preventDefault();
         if (!newStudentName.trim() || !newStudentCode.trim()) {
             toast({ variant: 'destructive', title: "Champs requis", description: "Le prénom et le code sont obligatoires." });
@@ -72,7 +75,7 @@ export function StudentManager({ students }: StudentManagerProps) {
             });
             setNewStudentName('');
             setNewStudentCode('');
-        } catch(error) {
+        } catch (error) {
             toast({
                 variant: 'destructive',
                 title: "Erreur",
@@ -82,7 +85,7 @@ export function StudentManager({ students }: StudentManagerProps) {
             setIsCreatingStudent(false);
         }
     }
-    
+
     const openEditModal = (student: Student) => {
         setEditingStudent(student);
         setEditedName(student.name);
@@ -92,7 +95,7 @@ export function StudentManager({ students }: StudentManagerProps) {
         setEditedLevels(student.levels || {});
 
         if (student.enabledSkills) {
-             setEditedEnabledSkills(student.enabledSkills);
+            setEditedEnabledSkills(student.enabledSkills);
         } else {
             const allEnabled: Record<string, boolean> = {};
             availableSkills.forEach(skill => allEnabled[skill.slug] = true);
@@ -109,7 +112,7 @@ export function StudentManager({ students }: StudentManagerProps) {
 
         const file = e.target.files[0];
         setIsUploading(true);
-        
+
         const result = await uploadStudentPhoto(editingStudent.id, file);
 
         if (result.success && result.url) {
@@ -121,13 +124,13 @@ export function StudentManager({ students }: StudentManagerProps) {
         setIsUploading(false);
     };
 
-    
-      const handleUpdateStudent = async () => {
+
+    const handleUpdateStudent = async () => {
         if (!editingStudent) return;
-        
+
         if (editedCode.length !== 4 || !/^\d{4}$/.test(editedCode)) {
-        toast({ variant: 'destructive', title: "Code invalide", description: "Le code secret doit être composé de 4 chiffres." });
-        return;
+            toast({ variant: 'destructive', title: "Code invalide", description: "Le code secret doit être composé de 4 chiffres." });
+            return;
         }
 
         setIsUpdating(true);
@@ -139,14 +142,14 @@ export function StudentManager({ students }: StudentManagerProps) {
             levels: editedLevels,
             enabledSkills: editedEnabledSkills,
         });
-        
+
         if (result.success) {
             toast({ title: "Élève mis à jour", description: `Les informations de ${editedName} ont été modifiées.` });
             closeEditModal();
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de mettre à jour les informations." });
         }
-         setIsUpdating(false);
+        setIsUpdating(false);
     };
 
     const handleDeleteStudent = async (studentId: string) => {
@@ -163,19 +166,35 @@ export function StudentManager({ students }: StudentManagerProps) {
     };
 
     const handleEnabledSkillChange = (skillSlug: string, isEnabled: boolean) => {
-        setEditedEnabledSkills(prev => ({...prev, [skillSlug]: isEnabled}));
+        setEditedEnabledSkills(prev => ({ ...prev, [skillSlug]: isEnabled }));
     };
-    
+
     const skillsByCategory = useMemo(() => {
         const grouped: Record<string, typeof availableSkills> = {};
-        allSkillCategories.forEach(cat => grouped[cat] = []);
+        const archivedGrouped: Record<string, typeof availableSkills> = {};
+
+        allSkillCategories.forEach(cat => {
+            grouped[cat] = [];
+            archivedGrouped[cat] = [];
+        });
+
         availableSkills.forEach(skill => {
-            if (grouped[skill.category]) {
-                grouped[skill.category].push(skill);
+            if (searchQuery && !skill.name.toLowerCase().includes(searchQuery.toLowerCase()) && !skill.category.toLowerCase().includes(searchQuery.toLowerCase())) {
+                return;
+            }
+
+            if (archivedSkills[skill.slug]) {
+                if (archivedGrouped[skill.category]) {
+                    archivedGrouped[skill.category].push(skill);
+                }
+            } else {
+                if (grouped[skill.category]) {
+                    grouped[skill.category].push(skill);
+                }
             }
         });
-        return grouped;
-    }, []);
+        return { active: grouped, archived: archivedGrouped };
+    }, [archivedSkills, searchQuery]);
 
     return (
         <>
@@ -188,14 +207,14 @@ export function StudentManager({ students }: StudentManagerProps) {
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={handleCreateStudent} className="space-y-4">
-                                <Input 
-                                    placeholder="Prénom de l'élève" 
+                                <Input
+                                    placeholder="Prénom de l'élève"
                                     value={newStudentName}
                                     onChange={e => setNewStudentName(e.target.value)}
                                     required
                                 />
-                                 <Input 
-                                    placeholder="Code à 4 chiffres" 
+                                <Input
+                                    placeholder="Code à 4 chiffres"
                                     value={newStudentCode}
                                     onChange={e => setNewStudentCode(e.target.value.replace(/[^0-9]/g, ''))}
                                     maxLength={4}
@@ -216,9 +235,9 @@ export function StudentManager({ students }: StudentManagerProps) {
                             <CardDescription>Consultez la liste des élèves, leurs codes et leurs niveaux.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                           {students.length === 0 ? (
-                               <p className="text-center text-muted-foreground py-8">Aucun élève n'a encore été créé.</p>
-                           ) : (
+                            {students.length === 0 ? (
+                                <p className="text-center text-muted-foreground py-8">Aucun élève n'a encore été créé.</p>
+                            ) : (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -235,33 +254,33 @@ export function StudentManager({ students }: StudentManagerProps) {
                                                 <TableCell>
                                                     <Avatar>
                                                         <AvatarImage src={student.photoURL} alt={student.name} />
-                                                        <AvatarFallback><User/></AvatarFallback>
+                                                        <AvatarFallback><User /></AvatarFallback>
                                                     </Avatar>
                                                 </TableCell>
                                                 <TableCell className="font-medium">{student.name}</TableCell>
                                                 <TableCell className="font-mono font-bold">{student.code}</TableCell>
                                                 <TableCell>
                                                     <div className="flex gap-1 flex-wrap">
-                                                    {(student.levels && Object.entries(student.levels).length > 0) ? (
-                                                        Object.entries(student.levels).map(([skillSlug, level]) => {
-                                                            const skillInfo = availableSkills.find(s => s.slug === skillSlug);
-                                                            if (skillInfo && !skillInfo.isFixedLevel) {
-                                                                return (
-                                                                     <Tooltip key={skillSlug}>
-                                                                        <TooltipTrigger asChild>
-                                                                            <Badge variant="secondary">{level}</Badge>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            <p>{skillInfo.name}</p>
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                )
-                                                            }
-                                                            return null;
-                                                        })
-                                                    ) : (
-                                                        <span className="text-muted-foreground text-xs">Aucun</span>
-                                                    )}
+                                                        {(student.levels && Object.entries(student.levels).length > 0) ? (
+                                                            Object.entries(student.levels).map(([skillSlug, level]) => {
+                                                                const skillInfo = availableSkills.find(s => s.slug === skillSlug);
+                                                                if (skillInfo && !skillInfo.isFixedLevel) {
+                                                                    return (
+                                                                        <Tooltip key={skillSlug}>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Badge variant="secondary">{level}</Badge>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>
+                                                                                <p>{skillInfo.name}</p>
+                                                                            </TooltipContent>
+                                                                        </Tooltip>
+                                                                    )
+                                                                }
+                                                                return null;
+                                                            })
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-xs">Aucun</span>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-right">
@@ -277,10 +296,10 @@ export function StudentManager({ students }: StudentManagerProps) {
                                                             </AlertDialogTrigger>
                                                             <AlertDialogContent>
                                                                 <AlertDialogHeader>
-                                                                <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    Cette action est irréversible. Toutes les données de l'élève {student.name}, y compris ses scores, seront définitivement supprimées.
-                                                                </AlertDialogDescription>
+                                                                    <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Cette action est irréversible. Toutes les données de l'élève {student.name}, y compris ses scores, seront définitivement supprimées.
+                                                                    </AlertDialogDescription>
                                                                 </AlertDialogHeader>
                                                                 <AlertDialogFooter>
                                                                     <AlertDialogCancel>Annuler</AlertDialogCancel>
@@ -307,20 +326,20 @@ export function StudentManager({ students }: StudentManagerProps) {
                     <DialogHeader>
                         <DialogTitle>Modifier les informations de {editingStudent?.name}</DialogTitle>
                     </DialogHeader>
-                     <ScrollArea className="h-[calc(80vh-150px)]">
+                    <ScrollArea className="h-[calc(80vh-150px)]">
                         <div className="space-y-6 py-4 pr-6">
                             <div className='grid grid-cols-1 sm:grid-cols-[150px,1fr] gap-6 items-start'>
                                 <div className="space-y-2">
-                                     <Label>Photo de profil</Label>
+                                    <Label>Photo de profil</Label>
                                     <div className="relative group w-32 h-32">
                                         <Avatar className="w-32 h-32 text-4xl">
                                             <AvatarImage src={editedPhotoURL} alt={editedName} />
-                                            <AvatarFallback className="text-4xl"><User/></AvatarFallback>
+                                            <AvatarFallback className="text-4xl"><User /></AvatarFallback>
                                         </Avatar>
                                         <label htmlFor="photo-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full">
-                                            {isUploading ? <Loader2 className="animate-spin" /> : <Camera/>}
+                                            {isUploading ? <Loader2 className="animate-spin" /> : <Camera />}
                                         </label>
-                                         <input id="photo-upload" type="file" accept="image/*" className="sr-only" onChange={handlePhotoUpload} disabled={isUploading}/>
+                                        <input id="photo-upload" type="file" accept="image/*" className="sr-only" onChange={handlePhotoUpload} disabled={isUploading} />
                                     </div>
                                 </div>
 
@@ -334,69 +353,162 @@ export function StudentManager({ students }: StudentManagerProps) {
                                         <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
                                     </div>
                                     <div className="flex items-center space-x-2 pt-2">
-                                        <Switch id="show-photo-switch" checked={editedShowPhoto} onCheckedChange={setEditedShowPhoto}/>
+                                        <Switch id="show-photo-switch" checked={editedShowPhoto} onCheckedChange={setEditedShowPhoto} />
                                         <Label htmlFor="show-photo-switch">Afficher la photo de profil côté élève</Label>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div className="space-y-4">
-                               <h3 className="font-semibold border-b pb-2 mb-4">Exercices et Niveaux</h3>
-                               {allSkillCategories.map(category => {
-                                   const skillsInCategory = skillsByCategory[category];
-                                   if (!skillsInCategory || skillsInCategory.length === 0) return null;
-                                   return (
-                                     <div key={category} className="space-y-2">
-                                         <h4 className="font-medium text-sm text-muted-foreground">{category}</h4>
-                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 rounded-lg bg-secondary/30 p-3">
-                                             {skillsInCategory.map(skill => {
-                                                 const isEnabled = editedEnabledSkills[skill.slug] ?? false;
-                                                 const currentLevel = editedLevels[skill.slug];
 
-                                                 return (
-                                                     <div key={skill.slug} className="flex flex-col gap-1.5 p-2 bg-card rounded-md shadow-sm">
-                                                         <Label className="text-xs font-medium leading-tight line-clamp-2" title={skill.name}>
-                                                             {skill.name}
-                                                         </Label>
-                                                         {!skill.isFixedLevel ? (
-                                                             <Select
-                                                                 value={isEnabled ? (currentLevel || 'B') : 'off'}
-                                                                 onValueChange={(value) => {
-                                                                     if (value === 'off') {
-                                                                         handleEnabledSkillChange(skill.slug, false);
-                                                                     } else {
-                                                                         handleEnabledSkillChange(skill.slug, true);
-                                                                         handleLevelChange(skill.slug, value as SkillLevel);
-                                                                     }
-                                                                 }}
-                                                             >
-                                                                 <SelectTrigger className="w-full h-8 text-xs">
-                                                                     <SelectValue placeholder="Désactivé" />
-                                                                 </SelectTrigger>
-                                                                 <SelectContent>
-                                                                     <SelectItem value="off" className="text-muted-foreground">Désactivé</SelectItem>
-                                                                     {(skill.allowedLevels || ['A', 'B', 'C', 'D']).map(level => (
-                                                                         <SelectItem key={level} value={level}>Niveau {level}</SelectItem>
-                                                                     ))}
-                                                                 </SelectContent>
-                                                             </Select>
-                                                         ) : (
-                                                             <div className="flex items-center gap-2">
-                                                                 <Badge variant="outline" className="flex-1 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
-                                                                 <Switch
-                                                                     checked={isEnabled}
-                                                                     onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
-                                                                     className="scale-75"
-                                                                 />
-                                                             </div>
-                                                         )}
-                                                     </div>
-                                                 );
-                                             })}
-                                         </div>
-                                     </div>
-                                   )
-                               })}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between border-b pb-2 mb-4">
+                                    <h3 className="font-semibold">Exercices et Niveaux</h3>
+                                    <div className="relative w-64">
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            type="search"
+                                            placeholder="Rechercher..."
+                                            className="pl-9 h-9"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                {allSkillCategories.map(category => {
+                                    const skillsInCategory = skillsByCategory.active[category];
+                                    if (!skillsInCategory || skillsInCategory.length === 0) return null;
+                                    return (
+                                        <div key={category} className="space-y-2">
+                                            <h4 className="font-medium text-sm text-muted-foreground">{category}</h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 rounded-lg bg-secondary/30 p-3">
+                                                {skillsInCategory.map(skill => {
+                                                    const isEnabled = editedEnabledSkills[skill.slug] ?? false;
+                                                    const currentLevel = editedLevels[skill.slug];
+
+                                                    return (
+                                                        <div key={skill.slug} className="flex flex-col gap-1.5 p-2 bg-card rounded-md shadow-sm">
+                                                            <Label className="text-xs font-medium leading-tight line-clamp-2" title={skill.name}>
+                                                                {skill.name}
+                                                            </Label>
+                                                            {!skill.isFixedLevel ? (
+                                                                <Select
+                                                                    value={isEnabled ? (currentLevel || 'B') : 'off'}
+                                                                    onValueChange={(value) => {
+                                                                        if (value === 'off') {
+                                                                            handleEnabledSkillChange(skill.slug, false);
+                                                                        } else {
+                                                                            handleEnabledSkillChange(skill.slug, true);
+                                                                            handleLevelChange(skill.slug, value as SkillLevel);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <SelectTrigger className="w-full h-8 text-xs">
+                                                                        <SelectValue placeholder="Désactivé" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="off" className="text-muted-foreground">Désactivé</SelectItem>
+                                                                        {(skill.allowedLevels || ['A', 'B', 'C', 'D']).map(level => (
+                                                                            <SelectItem key={level} value={level}>Niveau {level}</SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge variant="outline" className="flex-1 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
+                                                                    <Switch
+                                                                        checked={isEnabled}
+                                                                        onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
+                                                                        className="scale-75"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+
+                                {/* Archived Skills Drawer */}
+                                <div className="mt-8 border-t pt-4">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="w-full flex justify-between items-center text-muted-foreground hover:text-foreground"
+                                        onClick={() => setIsArchiveOpen(!isArchiveOpen)}
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <Archive className="h-4 w-4" />
+                                            Exercices Archivés
+                                        </span>
+                                        {isArchiveOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                    </Button>
+
+                                    {isArchiveOpen && (
+                                        <div className="mt-4 space-y-6 bg-muted/30 p-4 rounded-lg">
+                                            {allSkillCategories.map(category => {
+                                                const skillsInCategory = skillsByCategory.archived[category];
+                                                if (!skillsInCategory || skillsInCategory.length === 0) return null;
+                                                return (
+                                                    <div key={category} className="space-y-2">
+                                                        <h4 className="font-medium text-sm text-muted-foreground">{category}</h4>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 rounded-lg">
+                                                            {skillsInCategory.map(skill => {
+                                                                const isEnabled = editedEnabledSkills[skill.slug] ?? false;
+                                                                const currentLevel = editedLevels[skill.slug];
+
+                                                                return (
+                                                                    <div key={skill.slug} className="flex flex-col gap-1.5 p-2 bg-background/50 rounded-md shadow-sm opacity-75">
+                                                                        <Label className="text-xs font-medium leading-tight line-clamp-2 text-muted-foreground" title={skill.name}>
+                                                                            {skill.name}
+                                                                        </Label>
+                                                                        {!skill.isFixedLevel ? (
+                                                                            <Select
+                                                                                value={isEnabled ? (currentLevel || 'B') : 'off'}
+                                                                                onValueChange={(value) => {
+                                                                                    if (value === 'off') {
+                                                                                        handleEnabledSkillChange(skill.slug, false);
+                                                                                    } else {
+                                                                                        handleEnabledSkillChange(skill.slug, true);
+                                                                                        handleLevelChange(skill.slug, value as SkillLevel);
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                <SelectTrigger className="w-full h-8 text-xs">
+                                                                                    <SelectValue placeholder="Désactivé" />
+                                                                                </SelectTrigger>
+                                                                                <SelectContent>
+                                                                                    <SelectItem value="off" className="text-muted-foreground">Désactivé</SelectItem>
+                                                                                    {(skill.allowedLevels || ['A', 'B', 'C', 'D']).map(level => (
+                                                                                        <SelectItem key={level} value={level}>Niveau {level}</SelectItem>
+                                                                                    ))}
+                                                                                </SelectContent>
+                                                                            </Select>
+                                                                        ) : (
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Badge variant="outline" className="flex-1 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
+                                                                                <Switch
+                                                                                    checked={isEnabled}
+                                                                                    onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
+                                                                                    className="scale-75"
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                            {Object.values(skillsByCategory.archived).every(arr => arr.length === 0) && (
+                                                <p className="text-center text-sm text-muted-foreground py-2">
+                                                    Aucun exercice archivé.
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </ScrollArea>
