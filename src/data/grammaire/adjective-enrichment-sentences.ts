@@ -82,7 +82,7 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '13',
         baseSentence: "Les élèves écoutent le maître.",
         adjectives: ["attentifs"],
-        validSentences: ["Les élèves attentifs écoutent le maître."]
+        validSentences: ["Les élèves attentifs écoutent le maître.", "Les attentifs élèves écoutent le maître."]
     },
     {
         id: '14',
@@ -118,7 +118,7 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '19',
         baseSentence: "Le garçon porte un sac.",
         adjectives: ["lourd"],
-        validSentences: ["Le garçon porte un sac lourd."]
+        validSentences: ["Le garçon porte un sac lourd.", "Le garçon porte un lourd sac."]
     },
     {
         id: '20',
@@ -130,7 +130,7 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '21',
         baseSentence: "Un monstre vit dans la grotte.",
         adjectives: ["effrayant"],
-        validSentences: ["Un monstre effrayant vit dans la grotte."]
+        validSentences: ["Un monstre effrayant vit dans la grotte.", "Un effrayant monstre vit dans la grotte."]
     },
     {
         id: '22',
@@ -200,7 +200,7 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '32',
         baseSentence: "La rivière coule doucement.",
         adjectives: ["profonde"],
-        validSentences: ["La rivière profonde coule doucement."]
+        validSentences: ["La rivière profonde coule doucement.", "La profonde rivière coule doucement."]
     },
     {
         id: '33',
@@ -212,13 +212,13 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '34',
         baseSentence: "Le train entre en gare.",
         adjectives: ["rapide"],
-        validSentences: ["Le train rapide entre en gare."]
+        validSentences: ["Le train rapide entre en gare.", "Le rapide train entre en gare."]
     },
     {
         id: '35',
         baseSentence: "Une lettre est arrivée ce matin.",
         adjectives: ["importante"],
-        validSentences: ["Une lettre importante est arrivée ce matin."]
+        validSentences: ["Une lettre importante est arrivée ce matin.", "Une importante lettre est arrivée ce matin."]
     },
     {
         id: '36',
@@ -255,7 +255,7 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '41',
         baseSentence: "Le lion rugit dans la savane.",
         adjectives: ["féroce"],
-        validSentences: ["Le lion féroce rugit dans la savane."]
+        validSentences: ["Le lion féroce rugit dans la savane.", "Le féroce lion rugit dans la savane."]
     },
     {
         id: '42',
@@ -273,7 +273,7 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '44',
         baseSentence: "La neige tombe en silence.",
         adjectives: ["blanche"],
-        validSentences: ["La neige blanche tombe en silence."]
+        validSentences: ["La neige blanche tombe en silence.", "La blanche neige tombe en silence."]
     },
     {
         id: '45',
@@ -373,7 +373,7 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '58',
         baseSentence: "Un chemin mène à la maison.",
         adjectives: ["étroit"],
-        validSentences: ["Un chemin étroit mène à la maison."]
+        validSentences: ["Un chemin étroit mène à la maison.", "Un étroit chemin mène à la maison."]
     },
     {
         id: '59',
@@ -483,7 +483,7 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '74',
         baseSentence: "Le zèbre court vite.",
         adjectives: ["rapide"],
-        validSentences: ["Le zèbre rapide court vite."]
+        validSentences: ["Le zèbre rapide court vite.", "Le rapide zèbre court vite."]
     },
     {
         id: '75',
@@ -543,7 +543,7 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '82',
         baseSentence: "Un requin montre ses dents.",
         adjectives: ["dangereux"],
-        validSentences: ["Un requin dangereux montre ses dents."]
+        validSentences: ["Un requin dangereux montre ses dents.", "Un dangereux requin montre ses dents."]
     },
     {
         id: '83',
@@ -657,6 +657,6 @@ export const ADJECTIVE_ENRICHMENT_SENTENCES: AdjectiveEnrichmentSentence[] = [
         id: '100',
         baseSentence: "La nuit tombe sur la ville.",
         adjectives: ["noire"],
-        validSentences: ["La nuit noire tombe sur la ville."]
+        validSentences: ["La nuit noire tombe sur la ville.", "La noire nuit tombe sur la ville."]
     }
 ];
