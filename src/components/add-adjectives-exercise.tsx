@@ -106,7 +106,13 @@ export function AddAdjectivesExercise() {
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
-    const sensors = useSensors(useSensor(PointerSensor));
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    );
 
     const loadNewQuestion = useCallback(() => {
         const randomIndex = Math.floor(Math.random() * ADJECTIVE_ENRICHMENT_SENTENCES.length);
@@ -135,6 +141,22 @@ export function AddAdjectivesExercise() {
         loadNewQuestion();
     }, [loadNewQuestion]);
 
+    const findContainer = (id: string) => {
+        if (adjectives.find((item) => item.id === id)) {
+            return 'adjectives';
+        }
+        if (sentenceWords.find((item) => item.id === id)) {
+            return 'sentence';
+        }
+        if (id === 'adjectives-container') {
+            return 'adjectives';
+        }
+        if (id === 'sentence-container') {
+            return 'sentence';
+        }
+        return null;
+    };
+
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
         setActiveId(active.id as string);
@@ -150,15 +172,12 @@ export function AddAdjectivesExercise() {
         const { active, over } = event;
         if (!over) return;
 
-        const activeId = active.id;
-        const overId = over.id;
+        const activeId = active.id as string;
+        const overId = over.id as string;
 
         // Find containers
-        const activeContainer = adjectives.find(i => i.id === activeId) ? 'adjectives' : 'sentence';
-        const overContainer = adjectives.find(i => i.id === overId) ? 'adjectives' :
-            sentenceWords.find(i => i.id === overId) ? 'sentence' :
-                overId === 'sentence-container' ? 'sentence' :
-                    overId === 'adjectives-container' ? 'adjectives' : null;
+        const activeContainer = findContainer(activeId);
+        const overContainer = findContainer(overId);
 
         if (!activeContainer || !overContainer || activeContainer === overContainer) {
             return;
@@ -166,10 +185,12 @@ export function AddAdjectivesExercise() {
 
         // Moving between containers
         if (activeContainer === 'adjectives' && overContainer === 'sentence') {
+            const item = adjectives.find(i => i.id === activeId);
+            if (!item) return; // Safety check
+
             setAdjectives(items => items.filter(i => i.id !== activeId));
             setSentenceWords(items => {
                 const newItems = [...items];
-                const item = adjectives.find(i => i.id === activeId)!;
 
                 // If dropped on the container, append
                 if (overId === 'sentence-container') {
@@ -185,10 +206,12 @@ export function AddAdjectivesExercise() {
                 return newItems;
             });
         } else if (activeContainer === 'sentence' && overContainer === 'adjectives') {
+            const item = sentenceWords.find(i => i.id === activeId);
+            if (!item) return; // Safety check
+
             // Allow moving back to adjectives
             setSentenceWords(items => items.filter(i => i.id !== activeId));
             setAdjectives(items => {
-                const item = sentenceWords.find(i => i.id === activeId)!;
                 return [...items, item];
             });
         }
@@ -201,21 +224,23 @@ export function AddAdjectivesExercise() {
 
         if (!over) return;
 
-        const activeId = active.id;
-        const overId = over.id;
+        const activeId = active.id as string;
+        const overId = over.id as string;
 
-        const activeContainer = adjectives.find(i => i.id === activeId) ? 'adjectives' : 'sentence';
-        const overContainer = adjectives.find(i => i.id === overId) ? 'adjectives' :
-            sentenceWords.find(i => i.id === overId) ? 'sentence' :
-                overId === 'sentence-container' ? 'sentence' :
-                    overId === 'adjectives-container' ? 'adjectives' : null;
+        const activeContainer = findContainer(activeId);
+        const overContainer = findContainer(overId);
 
-        if (activeContainer === 'sentence' && overContainer === 'sentence') {
-            setSentenceWords((items) => {
-                const oldIndex = items.findIndex((item) => item.id === activeId);
-                const newIndex = items.findIndex((item) => item.id === overId);
-                return arrayMove(items, oldIndex, newIndex);
-            });
+        if (activeContainer && overContainer && activeContainer === overContainer) {
+            const activeIndex = (activeContainer === 'adjectives' ? adjectives : sentenceWords).findIndex(i => i.id === activeId);
+            const overIndex = (overContainer === 'adjectives' ? adjectives : sentenceWords).findIndex(i => i.id === overId);
+
+            if (activeIndex !== overIndex) {
+                if (activeContainer === 'adjectives') {
+                    setAdjectives((items) => arrayMove(items, activeIndex, overIndex));
+                } else {
+                    setSentenceWords((items) => arrayMove(items, activeIndex, overIndex));
+                }
+            }
         }
     };
 
