@@ -234,7 +234,7 @@ export function AddAdjectivesExercise() {
             const activeIndex = (activeContainer === 'adjectives' ? adjectives : sentenceWords).findIndex(i => i.id === activeId);
             const overIndex = (overContainer === 'adjectives' ? adjectives : sentenceWords).findIndex(i => i.id === overId);
 
-            if (activeIndex !== overIndex) {
+            if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
                 if (activeContainer === 'adjectives') {
                     setAdjectives((items) => arrayMove(items, activeIndex, overIndex));
                 } else {
