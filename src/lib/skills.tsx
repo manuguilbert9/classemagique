@@ -31,6 +31,7 @@ import {
   ShoppingBag,
   Calculator,
   Sparkles,
+  Puzzle,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -352,6 +353,13 @@ export const skills: Skill[] = [
     icon: <SoundBlendIcon label="GN" />,
     category: 'Orthographe',
     isFixedLevel: 'B',
+  },
+  {
+    name: 'Lettres dans le désordre',
+    slug: 'jumbled-words',
+    description: "Remets les lettres dans le bon ordre pour retrouver le mot.",
+    icon: <Puzzle />,
+    category: 'Orthographe',
   },
   {
     name: 'Sens de lecture',
