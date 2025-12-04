@@ -32,7 +32,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const NUM_QUESTIONS = 5;
+const NUM_QUESTIONS = 10;
 
 interface LetterItem {
     id: string;
