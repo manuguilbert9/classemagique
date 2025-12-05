@@ -1,11 +1,11 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { openai } from 'genkitx-openai';
+import { openAI } from 'genkitx-openai';
 
 export const ai = genkit({
   plugins: [
     googleAI(),
-    openai({
+    openAI({
       apiKey: process.env.DEEPSEEK_API_KEY,
       baseURL: 'https://api.deepseek.com',
     }),
