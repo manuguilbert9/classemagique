@@ -1,0 +1,8 @@
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  concurrency: 100
+
+env:
+  - variable: DEEPSEEK_API_KEY
+    secret: deepseek-api-key
