@@ -46,6 +46,7 @@
     "embla-carousel-react": "^8.6.0",
     "firebase": "^10.12.3",
     "genkit": "1.18.0",
+    "genkitx-openai": "^0.26.0",
     "input-otp": "^1.2.5",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",

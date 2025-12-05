@@ -20,10 +20,10 @@ const StoryInputSchema = z.object({
 export type StoryInput = z.infer<typeof StoryInputSchema>;
 
 const CharacterSchema = z.object({
-    name: z.string().describe("Le nom du personnage."),
-    appearance: z.string().describe("Une description de l'apparence du personnage (2-3 éléments visuels)."),
-    character: z.string().describe("Une description du caractère et du tempérament du personnage (2-3 traits de personnalité)."),
-    motivation: z.string().describe("Un secret, un objectif ou une motivation qui le rend intéressant."),
+  name: z.string().describe("Le nom du personnage."),
+  appearance: z.string().describe("Une description de l'apparence du personnage (2-3 éléments visuels)."),
+  character: z.string().describe("Une description du caractère et du tempérament du personnage (2-3 traits de personnalité)."),
+  motivation: z.string().describe("Un secret, un objectif ou une motivation qui le rend intéressant."),
 });
 
 const StoryOutputSchema = z.object({
@@ -36,22 +36,23 @@ export type StoryOutput = z.infer<typeof StoryOutputSchema>;
 
 
 const lengthInstructionMap = {
-    'extra-courte': 'moins de 60 mots au total, avec des phrases très courtes et simples. Idéal pour un enfant qui apprend à lire.',
-    courte: 'entre 6 et 10 phrases',
-    moyenne: 'entre 10 et 20 phrases',
-    longue: 'd\'environ une page A4, soit à peu près 400-500 mots',
+  'extra-courte': 'moins de 60 mots au total, avec des phrases très courtes et simples. Idéal pour un enfant qui apprend à lire.',
+  courte: 'entre 6 et 10 phrases',
+  moyenne: 'entre 10 et 20 phrases',
+  longue: 'd\'environ une page A4, soit à peu près 400-500 mots',
 };
 
 const toneInstructionMap = {
-    aventure: 'un ton d\'aventure, avec du suspense et de l\'action.',
-    comique: 'un ton comique et humoristique, avec des situations amusantes et des personnages rigolos.',
-    effrayante: "un ton qui mélange mystère et fantastique léger, adapté aux enfants (PEGI 7). L'étrange est bien réel : la magie existe, les fantômes peuvent apparaître, les objets peuvent être enchantés. L'objectif est de créer du suspense et de l'émerveillement, pas de la vraie peur. INTERDICTIONS : pas de violence, pas de gore, pas de mort explicite. Privilégie les événements surnaturels qui surprennent et questionnent.",
-    terrifiante: "un ton fantastique plus sombre, pour pré-ados (PEGI 12). Les événements surnaturels sont assumés et peuvent être menaçants. Fais intervenir des créatures (gentilles ou non), des lieux hantés, des sortilèges. L'histoire doit rester dans le domaine du conte ou de la légende urbaine, sans jamais tomber dans l'horreur réaliste ou le gore. INTERDICTIONS : pas de violence graphique, pas de scènes de mort détaillées, pas de torture.",
-    cauchemardesque: 'un ton cauchemardesque dans l\'esprit de Coraline (Neil Gaiman) ou des films de Tim Burton (Noces Funèbres, Frankenweenie, L\'Étrange Noël de Mr Jack). Crée une atmosphère gothique, macabre et surréaliste avec des éléments visuellement dérangeants mais poétiques. AUTORISÉ : personnages morts mais présentés de façon fantastique (squelettes qui parlent, fantômes attachants, créatures cousues), univers parallèles inquiétants, transformations corporelles étranges, ambiances sombres et mélancoliques, esthétique du grotesque poétique. INTERDIT : violence graphique réaliste, gore sanguin, torture, souffrance explicite. L\'horreur doit être esthétique, onirique et fascinante plutôt que dégoûtante. Pense "beau mais étrange", "mort mais charmant", "effrayant mais captivant".',
+  aventure: 'un ton d\'aventure, avec du suspense et de l\'action.',
+  comique: 'un ton comique et humoristique, avec des situations amusantes et des personnages rigolos.',
+  effrayante: "un ton qui mélange mystère et fantastique léger, adapté aux enfants (PEGI 7). L'étrange est bien réel : la magie existe, les fantômes peuvent apparaître, les objets peuvent être enchantés. L'objectif est de créer du suspense et de l'émerveillement, pas de la vraie peur. INTERDICTIONS : pas de violence, pas de gore, pas de mort explicite. Privilégie les événements surnaturels qui surprennent et questionnent.",
+  terrifiante: "un ton fantastique plus sombre, pour pré-ados (PEGI 12). Les événements surnaturels sont assumés et peuvent être menaçants. Fais intervenir des créatures (gentilles ou non), des lieux hantés, des sortilèges. L'histoire doit rester dans le domaine du conte ou de la légende urbaine, sans jamais tomber dans l'horreur réaliste ou le gore. INTERDICTIONS : pas de violence graphique, pas de scènes de mort détaillées, pas de torture.",
+  cauchemardesque: 'un ton cauchemardesque dans l\'esprit de Coraline (Neil Gaiman) ou des films de Tim Burton (Noces Funèbres, Frankenweenie, L\'Étrange Noël de Mr Jack). Crée une atmosphère gothique, macabre et surréaliste avec des éléments visuellement dérangeants mais poétiques. AUTORISÉ : personnages morts mais présentés de façon fantastique (squelettes qui parlent, fantômes attachants, créatures cousues), univers parallèles inquiétants, transformations corporelles étranges, ambiances sombres et mélancoliques, esthétique du grotesque poétique. INTERDIT : violence graphique réaliste, gore sanguin, torture, souffrance explicite. L\'horreur doit être esthétique, onirique et fascinante plutôt que dégoûtante. Pense "beau mais étrange", "mort mais charmant", "effrayant mais captivant".',
 }
 
 const promptForKids = ai.definePrompt({
   name: 'storyPromptForKids',
+  model: 'openai/deepseek-chat',
   input: { schema: StoryInputSchema },
   output: { schema: StoryOutputSchema },
   prompt: `Tu es un conteur pour enfants, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un jeune public (environ 8-12 ans). Tu es aussi un expert en création de personnages mémorables.
@@ -96,6 +97,7 @@ Réponds uniquement avec la structure de sortie demandée (titre, histoire, mora
 
 const promptForTeens = ai.definePrompt({
   name: 'storyPromptForTeens',
+  model: 'openai/deepseek-chat',
   input: { schema: StoryInputSchema },
   output: { schema: StoryOutputSchema },
   prompt: `Tu es un conteur pour ados, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un public jeune (pas de détails sordides). Tu es aussi un expert en création de personnages mémorables.
