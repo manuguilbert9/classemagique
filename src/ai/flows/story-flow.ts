@@ -52,7 +52,7 @@ const toneInstructionMap = {
 
 const promptForKids = ai.definePrompt({
   name: 'storyPromptForKids',
-  model: 'openai/deepseek-chat',
+  model: 'deepseek-chat',
   input: { schema: StoryInputSchema },
   output: { schema: StoryOutputSchema },
   prompt: `Tu es un conteur pour enfants, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un jeune public (environ 8-12 ans). Tu es aussi un expert en création de personnages mémorables.
@@ -97,7 +97,7 @@ Réponds uniquement avec la structure de sortie demandée (titre, histoire, mora
 
 const promptForTeens = ai.definePrompt({
   name: 'storyPromptForTeens',
-  model: 'openai/deepseek-chat',
+  model: 'deepseek-chat',
   input: { schema: StoryInputSchema },
   output: { schema: StoryOutputSchema },
   prompt: `Tu es un conteur pour ados, spécialisé dans l'écriture d'histoires créatives, engageantes et adaptées à un public jeune (pas de détails sordides). Tu es aussi un expert en création de personnages mémorables.
