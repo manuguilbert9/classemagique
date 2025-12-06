@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-// --- MOTEUR DE SYLLABATION AMÉLIORÉ V2 ---
+// --- MOTEUR DE SYLLABATION AMÉLIORÉ V3 avec lettres muettes ---
 
 // 1. LEXIQUE D'EXCEPTIONS
 const LEXIQUE_EXCEPTIONS: { [key: string]: string[] } = {
@@ -37,37 +37,43 @@ const LEXIQUE_EXCEPTIONS: { [key: string]: string[] } = {
 // Voyelles simples
 const VOYELLES_SIMPLES = 'aàâeéèêëiîïoôuùûüy';
 
-// Digrammes et trigrammes vocaliques (sons voyelles composés) - traités comme une seule unité
+// Digrammes et trigrammes vocaliques
 const VOYELLES_COMPOSEES = [
-  'eau', 'aux', 'eaux', // o
-  'oeu', 'œu', // eu
-  'aie', 'aient', // è
-  'oui', // wi
-  'ouï', // wi
-  'oin', // wɛ̃
-  'ien', // jɛ̃
-  'ion', // jɔ̃
-  'ieu', // jø
-  'ou', 'où', 'oû', // u
-  'au', // o
-  'ai', 'aî', // è
-  'ei', // è  
-  'eu', 'eû', // ø
-  'œ', // ø
-  'oi', 'oî', // wa
-  'an', 'am', 'en', 'em', // ɑ̃ (nasales devant consonne)
-  'in', 'im', 'yn', 'ym', // ɛ̃
-  'on', 'om', // ɔ̃
-  'un', 'um', // œ̃
+  'eau', 'aux', 'eaux',
+  'oeu', 'œu',
+  'aie', 'aient',
+  'oui', 'ouï',
+  'oin', 'ien', 'ion', 'ieu',
+  'ou', 'où', 'oû',
+  'au', 'ai', 'aî',
+  'ei', 'eu', 'eû',
+  'œ', 'oi', 'oî',
+  'an', 'am', 'en', 'em',
+  'in', 'im', 'yn', 'ym',
+  'on', 'om', 'un', 'um',
 ];
 
 const CONSONNES = 'bcçdfghjklmnpqrstvwxz';
 
-// Groupes de consonnes insécables (ne se séparent pas)
 const INSECABLES = new Set([
   'bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'gn',
   'ph', 'pl', 'pr', 'th', 'tr', 'vr', 'sc', 'sk', 'sp', 'st', 'sw',
   'sch', 'scr', 'spl', 'spr', 'str'
+]);
+
+// Lettres muettes finales courantes
+const LETTRES_MUETTES_FINALES = ['s', 't', 'd', 'x', 'z', 'p', 'g', 'c', 'b'];
+
+// Mots où la lettre finale N'EST PAS muette
+const EXCEPTIONS_NON_MUETTES = new Set([
+  'bus', 'mars', 'tennis', 'vis', 'os', 'as', 'plus', 'tous', 'sens', 'fils',
+  'net', 'mat', 'set', 'but', 'sept', 'est', 'ouest',
+  'sud', 'nord',
+  'index', 'latex', 'phoenix', 'sex',
+  'gaz', 'quiz',
+  'cap', 'stop', 'clip', 'top', 'hip', 'hop',
+  'lac', 'sac', 'bac', 'sec', 'avec', 'donc', 'chic', 'truc',
+  'club', 'snob', 'job', 'pub',
 ]);
 
 function isVoyelle(char: string): boolean {
@@ -78,18 +84,14 @@ function isConsonne(char: string): boolean {
   return !!char && CONSONNES.includes(char.toLowerCase());
 }
 
-// Vérifie si une séquence commence par une voyelle composée
 function getVoyelleComposee(str: string): string | null {
   const strLower = str.toLowerCase();
-  // Trier par longueur décroissante pour matcher les plus longs d'abord
   for (const vc of VOYELLES_COMPOSEES.sort((a, b) => b.length - a.length)) {
     if (strLower.startsWith(vc)) {
-      // Vérifier que ce n'est pas suivi d'une voyelle (pour éviter "ou" dans "ouvre")
       const nextChar = str[vc.length];
-      // Pour les nasales (an, en, in, on, un), vérifier qu'elles ne sont pas suivies d'une voyelle ou n/m
       if (['an', 'am', 'en', 'em', 'in', 'im', 'yn', 'ym', 'on', 'om', 'un', 'um'].includes(vc)) {
         if (nextChar && (isVoyelle(nextChar) || nextChar.toLowerCase() === 'n' || nextChar.toLowerCase() === 'm')) {
-          continue; // Ce n'est pas une vraie nasale
+          continue;
         }
       }
       return str.substring(0, vc.length);
@@ -98,7 +100,6 @@ function getVoyelleComposee(str: string): string | null {
   return null;
 }
 
-// Vérifie si un groupe de consonnes est insécable
 function isInsecable(consonnes: string): boolean {
   return INSECABLES.has(consonnes.toLowerCase());
 }
@@ -121,24 +122,74 @@ function reconstructCase(original: string, syllabes: string[]): string[] {
   return result;
 }
 
+// Détecte les lettres muettes à la fin d'un mot
+function detectSilentLetters(mot: string): number {
+  const motLower = mot.toLowerCase();
+
+  // Exceptions : mots où la finale se prononce
+  if (EXCEPTIONS_NON_MUETTES.has(motLower)) {
+    return 0;
+  }
+
+  // Cas spéciaux
+  // "ent" final (verbes conjugués) - 3 lettres muettes
+  if (motLower.endsWith('ent') && motLower.length > 4) {
+    // Vérifier si c'est une terminaison verbale (précédé d'une voyelle typique de verbe)
+    const beforeEnt = motLower.slice(0, -3);
+    if (beforeEnt.endsWith('ai') || beforeEnt.endsWith('i') || beforeEnt.endsWith('a') ||
+      beforeEnt.endsWith('ou') || beforeEnt.endsWith('u') || beforeEnt.endsWith('é')) {
+      return 3; // -ent muet des verbes
+    }
+  }
+
+  // "es" final (pluriel, conjugaison)
+  if (motLower.endsWith('es') && motLower.length > 3) {
+    return 2;
+  }
+
+  // "ent" pourrait être un suffixe nominal (différent, parent) - juste le 't' est muet
+  if (motLower.endsWith('ent') && motLower.length > 3) {
+    return 1;
+  }
+
+  // "e" final muet (sauf si précédé de certaines lettres)
+  if (motLower.endsWith('e') && motLower.length > 2) {
+    const avantE = motLower[motLower.length - 2];
+    // 'e' final après voyelle = généralement prononcé (idée, fée, mais "vie" non)
+    // On garde simple : 'e' après consonne ou 'u' = muet
+    if (isConsonne(avantE) || avantE === 'u' || avantE === 'i' || avantE === 'é') {
+      return 1;
+    }
+  }
+
+  // Consonnes finales muettes
+  const lastChar = motLower[motLower.length - 1];
+  if (LETTRES_MUETTES_FINALES.includes(lastChar)) {
+    // Vérifier les doubles lettres finales (ex: "ss" dans "bless" = pas muet)
+    const beforeLast = motLower[motLower.length - 2];
+    if (beforeLast === lastChar) {
+      return 0; // Double consonne = probablement prononcé
+    }
+    return 1;
+  }
+
+  return 0;
+}
+
 export function syllabify(mot: string): string[] {
   const motOriginal = mot;
   const motLower = mot.toLowerCase();
 
-  // Vérifier les exceptions
   if (LEXIQUE_EXCEPTIONS[motLower]) {
     return reconstructCase(motOriginal, LEXIQUE_EXCEPTIONS[motLower]);
   }
 
-  // Mots très courts
   if (mot.length <= 2) return [motOriginal];
 
-  // Tokeniser le mot en unités phonétiques (voyelles composées ou caractères simples)
   const tokens: { char: string, type: 'voyelle' | 'consonne' | 'autre' }[] = [];
   let i = 0;
 
   while (i < motLower.length) {
-    // Essayer de matcher une voyelle composée
     const voyelleComposee = getVoyelleComposee(motLower.substring(i));
     if (voyelleComposee) {
       tokens.push({ char: motLower.substring(i, i + voyelleComposee.length), type: 'voyelle' });
@@ -155,7 +206,6 @@ export function syllabify(mot: string): string[] {
     }
   }
 
-  // Maintenant, appliquer les règles de syllabation sur les tokens
   let syllabes: string[] = [];
   let syllabeCourante = '';
 
@@ -163,9 +213,7 @@ export function syllabify(mot: string): string[] {
     const token = tokens[t];
     syllabeCourante += token.char;
 
-    // Si on est sur une voyelle, regarder ce qui suit
     if (token.type === 'voyelle') {
-      // Compter les consonnes qui suivent
       let consonnesQuiSuivent: string[] = [];
       let j = t + 1;
       while (j < tokens.length && tokens[j].type === 'consonne') {
@@ -173,45 +221,36 @@ export function syllabify(mot: string): string[] {
         j++;
       }
 
-      // Vérifier s'il y a une voyelle après les consonnes
       const voyelleApres = j < tokens.length && tokens[j].type === 'voyelle';
 
       if (consonnesQuiSuivent.length === 0) {
-        // V suivi de V ou fin de mot -> couper après la voyelle actuelle
         if (t < tokens.length - 1 && tokens[t + 1].type === 'voyelle') {
           syllabes.push(syllabeCourante);
           syllabeCourante = '';
         }
       } else if (consonnesQuiSuivent.length === 1 && voyelleApres) {
-        // VCV -> V-CV (couper avant la consonne)
         syllabes.push(syllabeCourante);
         syllabeCourante = '';
       } else if (consonnesQuiSuivent.length >= 2 && voyelleApres) {
-        // VCCV ou plus
         const groupe = consonnesQuiSuivent.slice(0, 2).join('');
         const groupeTrois = consonnesQuiSuivent.slice(0, 3).join('');
 
         if (consonnesQuiSuivent.length >= 3 && isInsecable(groupeTrois)) {
-          // Groupe de 3 consonnes insécable -> couper avant
           syllabes.push(syllabeCourante);
           syllabeCourante = '';
         } else if (isInsecable(groupe)) {
-          // Groupe insécable -> VC-CCV ou V-CCV selon le contexte
           if (consonnesQuiSuivent.length > 2) {
-            // Prendre la première consonne et couper
             syllabeCourante += consonnesQuiSuivent[0];
-            t++; // Avancer le pointeur
+            t++;
             syllabes.push(syllabeCourante);
             syllabeCourante = '';
           } else {
-            // Juste 2 consonnes insécables -> couper avant
             syllabes.push(syllabeCourante);
             syllabeCourante = '';
           }
         } else {
-          // Groupe sécable -> VC-CV (prendre la première consonne)
           syllabeCourante += consonnesQuiSuivent[0];
-          t++; // Avancer le pointeur
+          t++;
           syllabes.push(syllabeCourante);
           syllabeCourante = '';
         }
@@ -219,12 +258,10 @@ export function syllabify(mot: string): string[] {
     }
   }
 
-  // Ajouter la dernière syllabe
   if (syllabeCourante) {
     syllabes.push(syllabeCourante);
   }
 
-  // Filtrer les syllabes vides et reconstruire avec la casse originale
   return reconstructCase(motOriginal, syllabes.filter(s => s.length > 0));
 }
 
@@ -235,8 +272,27 @@ interface SyllableTextProps {
   text: string;
 }
 
+// Rend une syllabe avec les lettres muettes en gris
+function renderSyllabeWithSilentLetters(
+  syllabe: string,
+  silentCount: number,
+  colorClass: string,
+  key: string
+): React.ReactNode {
+  if (silentCount > 0 && silentCount < syllabe.length) {
+    const pronounced = syllabe.slice(0, -silentCount);
+    const silent = syllabe.slice(-silentCount);
+    return (
+      <React.Fragment key={key}>
+        <span className={colorClass}>{pronounced}</span>
+        <span className="text-gray-400">{silent}</span>
+      </React.Fragment>
+    );
+  }
+  return <span key={key} className={colorClass}>{syllabe}</span>;
+}
+
 export function SyllableText({ text }: SyllableTextProps) {
-  // Séparer par espaces et ponctuation, en gardant les apostrophes avec le mot
   const elements = text.split(/(\s+|[.,;!?:\(\)"])/);
   let colorIndex = 0;
 
@@ -244,14 +300,14 @@ export function SyllableText({ text }: SyllableTextProps) {
     <span className="inline">
       {elements.map((element, i) => {
         if (element && !/^(\s+|[.,;!?:\(\)"])$/.test(element)) {
-          // Gérer les mots avec apostrophe (l', d', qu', etc.)
+          // Gérer les mots avec apostrophe
           const apostropheMatch = element.match(/^([ldjstnmcLDJSTNMC]')(.+)$/);
 
           if (apostropheMatch) {
-            // Mot avec apostrophe préfixe
             const prefix = apostropheMatch[1];
             const reste = apostropheMatch[2];
             const syllabesReste = syllabify(reste);
+            const silentCount = detectSilentLetters(reste);
 
             return (
               <React.Fragment key={i}>
@@ -261,34 +317,38 @@ export function SyllableText({ text }: SyllableTextProps) {
                 {(() => { colorIndex++; return null; })()}
                 {syllabesReste.map((syllabe, sIndex) => {
                   const currentColorIndex = colorIndex;
+                  const colorClass = currentColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600';
                   colorIndex++;
-                  return (
-                    <span key={`${syllabe}-${sIndex}`} className={currentColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
-                      {syllabe}
-                    </span>
-                  );
+
+                  // Appliquer les lettres muettes seulement à la dernière syllabe
+                  if (sIndex === syllabesReste.length - 1 && silentCount > 0) {
+                    return renderSyllabeWithSilentLetters(syllabe, silentCount, colorClass, `${syllabe}-${sIndex}`);
+                  }
+                  return <span key={`${syllabe}-${sIndex}`} className={colorClass}>{syllabe}</span>;
                 })}
               </React.Fragment>
             );
           }
 
           const syllabes = syllabify(element);
+          const silentCount = detectSilentLetters(element);
 
           return (
             <React.Fragment key={i}>
               {syllabes.map((syllabe, sIndex) => {
                 const currentColorIndex = colorIndex;
+                const colorClass = currentColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600';
                 colorIndex++;
-                return (
-                  <span key={`${syllabe}-${sIndex}`} className={currentColorIndex % 2 === 0 ? 'text-blue-600' : 'text-red-600'}>
-                    {syllabe}
-                  </span>
-                )
+
+                // Appliquer les lettres muettes seulement à la dernière syllabe
+                if (sIndex === syllabes.length - 1 && silentCount > 0) {
+                  return renderSyllabeWithSilentLetters(syllabe, silentCount, colorClass, `${syllabe}-${sIndex}`);
+                }
+                return <span key={`${syllabe}-${sIndex}`} className={colorClass}>{syllabe}</span>;
               })}
             </React.Fragment>
           );
         } else {
-          // Espace ou ponctuation
           return <React.Fragment key={i}>{element}</React.Fragment>;
         }
       })}
