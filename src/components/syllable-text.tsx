@@ -280,7 +280,14 @@ export function syllabify(mot: string): string[] {
         const groupe = consonnesQuiSuivent.slice(0, 2).join('');
         const groupeTrois = consonnesQuiSuivent.slice(0, 3).join('');
 
-        if (consonnesQuiSuivent.length >= 3 && isInsecable(groupeTrois)) {
+        // Double consonne (ss, tt, mm, rr, ll, nn, pp, ff, cc) -> couper entre les deux
+        // Ex: saucisson -> sau-cis-son, passer -> pas-ser
+        if (consonnesQuiSuivent[0] === consonnesQuiSuivent[1]) {
+          syllabeCourante += consonnesQuiSuivent[0];
+          t++;
+          syllabes.push(syllabeCourante);
+          syllabeCourante = '';
+        } else if (consonnesQuiSuivent.length >= 3 && isInsecable(groupeTrois)) {
           syllabes.push(syllabeCourante);
           syllabeCourante = '';
         } else if (isInsecable(groupe)) {
