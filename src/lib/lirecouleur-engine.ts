@@ -345,13 +345,30 @@ export function syllabifier(mot: string): SyllabeResult[] {
     const syllabes = extraireSyllabes(phonemes);
 
     return syllabes.map((syl, index) => {
+        // On doit garder l'ordre des lettres !
+        // Les lettres muettes peuvent être au début (h), au milieu ou à la fin
+        let result = '';
+        let lastMuetIndex = -1;
+
+        // Trouver la position de la dernière lettre muette (seulement à la fin)
+        for (let i = syl.phonemes.length - 1; i >= 0; i--) {
+            if (estMuet(syl.phonemes[i])) {
+                lastMuetIndex = i;
+            } else {
+                break; // On arrête dès qu'on trouve une lettre non-muette
+            }
+        }
+
         let syllabeText = '';
         let muetText = '';
 
-        for (const phon of syl.phonemes) {
-            if (estMuet(phon)) {
+        for (let i = 0; i < syl.phonemes.length; i++) {
+            const phon = syl.phonemes[i];
+            if (i >= lastMuetIndex && lastMuetIndex !== -1) {
+                // Lettres muettes finales
                 muetText += phon.lettres;
             } else {
+                // Lettres prononcées (y compris le h muet au début)
                 syllabeText += phon.lettres;
             }
         }
