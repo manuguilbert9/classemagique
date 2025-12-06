@@ -126,50 +126,95 @@ function reconstructCase(original: string, syllabes: string[]): string[] {
 function detectSilentLetters(mot: string): number {
   const motLower = mot.toLowerCase();
 
+  // Mots trop courts
+  if (motLower.length <= 2) return 0;
+
   // Exceptions : mots où la finale se prononce
   if (EXCEPTIONS_NON_MUETTES.has(motLower)) {
     return 0;
   }
 
-  // Cas spéciaux
-  // "ent" final (verbes conjugués) - 3 lettres muettes
-  if (motLower.endsWith('ent') && motLower.length > 4) {
-    // Vérifier si c'est une terminaison verbale (précédé d'une voyelle typique de verbe)
+  const lastChar = motLower[motLower.length - 1];
+  const beforeLast = motLower[motLower.length - 2];
+  const twoLast = motLower.slice(-2);
+  const threeLast = motLower.slice(-3);
+
+  // === Terminaisons verbales ===
+
+  // "-ent" des verbes (3ème personne pluriel) - 3 lettres muettes
+  // Ex: parlent, mangent, jouaient, finissent
+  if (threeLast === 'ent' && motLower.length > 4) {
     const beforeEnt = motLower.slice(0, -3);
-    if (beforeEnt.endsWith('ai') || beforeEnt.endsWith('i') || beforeEnt.endsWith('a') ||
-      beforeEnt.endsWith('ou') || beforeEnt.endsWith('u') || beforeEnt.endsWith('é')) {
-      return 3; // -ent muet des verbes
+    // Après voyelle ou groupe vocalique typique des verbes
+    if (beforeEnt.match(/(ai|i|a|ou|u|é|oi|ie|ue|ée)$/)) {
+      return 3;
     }
   }
 
-  // "es" final (pluriel, conjugaison)
-  if (motLower.endsWith('es') && motLower.length > 3) {
-    return 2;
+  // "-ait", "-aient" (imparfait) - 't' final muet
+  if (motLower.endsWith('ait') || motLower.endsWith('aient')) {
+    return motLower.endsWith('aient') ? 4 : 1;
   }
 
-  // "ent" pourrait être un suffixe nominal (différent, parent) - juste le 't' est muet
-  if (motLower.endsWith('ent') && motLower.length > 3) {
+  // "-aient" déjà traité ci-dessus
+
+  // === Terminaisons en -e ===
+
+  // "-ée" final : généralement le 2ème 'e' n'est pas muet (idée, réputée)
+  // mais parfois oui... On ne marque pas comme muet
+  if (twoLast === 'ée') {
+    return 0;
+  }
+
+  // "-es" final (pluriel, conjugaison) - 's' muet seulement
+  // Ex: exquises, étoiles, pâtisseries
+  if (twoLast === 'es' && motLower.length > 3) {
+    return 1; // juste le 's'
+  }
+
+  // "-e" final muet (très courant en français)
+  // Ex: jeune, idole, célèbre, tarte, boutique, forme, sucre, etc.
+  if (lastChar === 'e' && motLower.length > 2) {
+    // Exceptions où le 'e' n'est pas muet
+    // - après une autre voyelle (sauf 'u' dans '-ue', '-que')
+    const avantE = beforeLast;
+
+    // 'e' après 'é', 'è', 'ê' = souvent prononcé (lycée, idée) - non muet
+    if (['é', 'è', 'ê'].includes(avantE)) {
+      return 0;
+    }
+
+    // Sinon, 'e' final est généralement muet
     return 1;
   }
 
-  // "e" final muet (sauf si précédé de certaines lettres)
-  if (motLower.endsWith('e') && motLower.length > 2) {
-    const avantE = motLower[motLower.length - 2];
-    // 'e' final après voyelle = généralement prononcé (idée, fée, mais "vie" non)
-    // On garde simple : 'e' après consonne ou 'u' = muet
-    if (isConsonne(avantE) || avantE === 'u' || avantE === 'i' || avantE === 'é') {
-      return 1;
-    }
+  // === Consonnes finales muettes ===
+
+  // "-ts" final (pluriel de mots en -t) - 2 lettres muettes
+  // Ex: pétillants -> "ts" muet
+  if (twoLast === 'ts' || twoLast === 'ds' || twoLast === 'ps') {
+    return 2;
   }
 
-  // Consonnes finales muettes
-  const lastChar = motLower[motLower.length - 1];
+  // Double consonne finale = généralement prononcé
+  if (beforeLast === lastChar) {
+    return 0;
+  }
+
+  // Consonnes finales muettes simples
   if (LETTRES_MUETTES_FINALES.includes(lastChar)) {
-    // Vérifier les doubles lettres finales (ex: "ss" dans "bless" = pas muet)
-    const beforeLast = motLower[motLower.length - 2];
-    if (beforeLast === lastChar) {
-      return 0; // Double consonne = probablement prononcé
-    }
+    // Vérifications spéciales
+
+    // 'r' final est généralement prononcé
+    if (lastChar === 'r') return 0;
+
+    // 's' après consonne (sauf cas traités) = muet
+    // 't' après voyelle = muet (vivait, fait, haut, tabouret, etc.)
+    // 'd' final = muet (Gaspard, grand)
+    // 'x' final = muet (Curieux, heureux)
+    // 'z' final = muet (chez, nez)
+    // 'p' final = muet (trop, coup)
+
     return 1;
   }
 
