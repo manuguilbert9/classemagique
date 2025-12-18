@@ -306,8 +306,8 @@ export function NeonSkiGame({ onExit, onReplay, canReplay, gameCost, onGameEnd }
                     createParticles(player.x, player.y + 10, 2, '#00f3ff', 5);
                 }
             } else {
-                // Gliding/Friction
-                player.vx *= FRICTION;
+                // Gliding/Friction - Stronger friction to prevent acceleration from gravity when not pressing
+                player.vx *= 0.95;
             }
 
             // Translate velocity to slope direction to stick to ground
@@ -328,7 +328,7 @@ export function NeonSkiGame({ onExit, onReplay, canReplay, gameCost, onGameEnd }
             player.onGround = false;
             // Air rotation
             if (input.pressing) {
-                player.angle -= 0.15; // Backflip
+                player.angle -= 0.08; // Backflip (Slower)
                 // Trail particles
                 if (state.frameCount % 3 === 0) {
                     createParticles(player.x, player.y, 1, '#ff00ff', 2);
