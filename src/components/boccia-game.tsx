@@ -65,8 +65,11 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   const [nextStartingPlayer, setNextStartingPlayer] = React.useState<Player>('red');
   const [ballsLeft, setBallsLeft] = React.useState<Record<Player, number>>({ red: INITIAL_BALLS_PER_PLAYER, blue: INITIAL_BALLS_PER_PLAYER });
   const [roundScore, setRoundScore] = React.useState<Record<Player, number>>({ red: 0, blue: 0 });
+
   const [totalScore, setTotalScore] = React.useState<Record<Player, number>>({ red: 0, blue: 0 });
+  const [roundsWon, setRoundsWon] = React.useState<Record<Player, number>>({ red: 0, blue: 0 });
   const [roundWinner, setRoundWinner] = React.useState<Player | null>(null);
+  const [gameWinner, setGameWinner] = React.useState<Player | null>(null);
   const [jackNeedsPlacement, setJackNeedsPlacement] = React.useState(true);
 
   const [aimingPhase, setAimingPhase] = React.useState<AimingPhase>('idle');
@@ -91,19 +94,25 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
       } else {
         const jack = balls.find(b => b.color === 'white');
         if (!jack || !isBallInPlayableZone(jack)) {
-            toast({
-              title: "Lancer du Jack raté !",
-              description: "Le Jack doit s'arrêter dans la zone de jeu."
-            });
+          toast({
+            title: "Lancer du Jack raté !",
+            description: "Le Jack doit s'arrêter dans la zone de jeu."
+          });
         } else {
-            toast({
-              title: "Fin de la manche !",
-              description: "Égalité, aucun point marqué."
-            });
+          toast({
+            title: "Fin de la manche !",
+            description: "Égalité, aucun point marqué."
+          });
         }
       }
+    } else if (phase === 'gameOver') {
+      const winner = gameWinner;
+      toast({
+        title: "Partie terminée !",
+        description: `Le joueur ${winner === 'red' ? 'Rouge' : 'Bleu'} remporte la partie !`
+      });
     }
-  }, [phase, roundWinner, roundScore, toast, balls]);
+  }, [phase, roundWinner, roundScore, toast, balls, gameWinner]);
 
 
   const startNewRound = React.useCallback((forcedStarter?: Player) => {
@@ -123,7 +132,9 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
   const resetGame = React.useCallback(() => {
     setTotalScore({ red: 0, blue: 0 });
+    setRoundsWon({ red: 0, blue: 0 });
     setRoundWinner(null);
+    setGameWinner(null);
     setNextStartingPlayer('red');
     startNewRound('red');
   }, [startNewRound]);
@@ -131,7 +142,7 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
   React.useEffect(() => {
     resetGame();
   }, [resetGame]);
-  
+
   const determineNextPlayer = React.useCallback((stateBalls: Ball[], stateBallsLeft: Record<Player, number>, activePlayer: Player): Player => {
     const jack = stateBalls.find(b => b.color === 'white');
 
@@ -162,33 +173,33 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     }
     return nextPlayer === 'red' ? 'blue' : 'red';
   }, []);
-  
+
   const calculateRoundScore = React.useCallback((ballsInPlay: Ball[]) => {
     const jack = ballsInPlay.find(b => b.color === 'white');
     if (!jack || !isBallInPlayableZone(jack)) {
-        setRoundWinner(null);
-        setPhase('roundEnd');
-        return;
+      setRoundWinner(null);
+      setPhase('roundEnd');
+      return;
     }
 
     const redBallsInPlay = ballsInPlay.filter(b => b.color === 'red' && isBallInPlayableZone(b));
     const blueBallsInPlay = ballsInPlay.filter(b => b.color === 'blue' && isBallInPlayableZone(b));
 
-    if(redBallsInPlay.length === 0 && blueBallsInPlay.length === 0) {
-        setRoundWinner(null);
-        setPhase('roundEnd');
-        return;
+    if (redBallsInPlay.length === 0 && blueBallsInPlay.length === 0) {
+      setRoundWinner(null);
+      setPhase('roundEnd');
+      return;
     }
 
     const redDistances = redBallsInPlay.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
     const blueDistances = blueBallsInPlay.map(b => Math.hypot(b.x - jack.x, b.y - jack.y)).sort((a, b) => a - b);
-    
+
     let score = 0;
     let winner: Player | null = null;
-    
+
     const closestRed = redDistances[0] ?? Infinity;
     const closestBlue = blueDistances[0] ?? Infinity;
-    
+
     if (closestRed < closestBlue) {
       winner = 'red';
       for (const dist of redDistances) {
@@ -205,45 +216,56 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
     if (winner) {
       setRoundScore({ red: winner === 'red' ? score : 0, blue: winner === 'blue' ? score : 0 });
-      setTotalScore(prev => ({...prev, [winner!]: prev[winner!] + score}));
+      setTotalScore(prev => ({ ...prev, [winner!]: prev[winner!] + score }));
       setRoundWinner(winner);
       setNextStartingPlayer(winner);
+
+      const newRoundsWon = { ...roundsWon, [winner]: roundsWon[winner] + 1 };
+      setRoundsWon(newRoundsWon);
+
+      if (newRoundsWon[winner] >= 2) {
+        setGameWinner(winner);
+        setPhase('gameOver');
+      } else {
+        setPhase('roundEnd');
+      }
+
     } else {
       setRoundWinner(null);
       setNextStartingPlayer(roundStarterRef.current);
+      setPhase('roundEnd');
     }
-    setPhase('roundEnd');
-  }, []);
+  }, [roundsWon]);
 
   const getBallToPlay = React.useCallback(() => {
-     if (jackNeedsPlacement) {
-        return { id: 0, x: THROW_ORIGIN.white.x, y: THROW_ORIGIN.white.y, vx: 0, vy: 0, color: 'white' as const, enteredPlayArea: false };
-     }
+    if (jackNeedsPlacement) {
+      return { id: 0, x: THROW_ORIGIN.white.x, y: THROW_ORIGIN.white.y, vx: 0, vy: 0, color: 'white' as const, enteredPlayArea: false };
+    }
 
-     if (ballsLeft[currentPlayer] <= 0) return null;
+    if (ballsLeft[currentPlayer] <= 0) return null;
 
-     const newId = (currentPlayer === 'red' ? 100 : 200) + (INITIAL_BALLS_PER_PLAYER - ballsLeft[currentPlayer]);
-     const origin = THROW_ORIGIN[currentPlayer];
+    const newId = (currentPlayer === 'red' ? 100 : 200) + (INITIAL_BALLS_PER_PLAYER - ballsLeft[currentPlayer]);
+    const origin = THROW_ORIGIN[currentPlayer];
 
-     return { id: newId, x: origin.x, y: origin.y, vx: 0, vy: 0, color: currentPlayer, enteredPlayArea: false };
+    return { id: newId, x: origin.x, y: origin.y, vx: 0, vy: 0, color: currentPlayer, enteredPlayArea: false };
   }, [jackNeedsPlacement, ballsLeft, currentPlayer]);
-  
+
   React.useEffect(() => {
     if ((phase === 'newRound' || phase === 'turnEnd') && aimingPhase === 'idle') {
       const nextBall = getBallToPlay();
       setBallToPlay(nextBall);
-      if(nextBall) {
-          setPhase('aiming');
+      if (nextBall) {
+        setPhase('aiming');
       } else {
-          // No balls left to play for current player, but maybe for the other one?
-          if(ballsLeft.red > 0 || ballsLeft.blue > 0) {
-              // This can happen if a player has finished their balls
-              setCurrentPlayer(p => p === 'red' ? 'blue' : 'red');
-              setPhase('turnEnd');
-          } else {
-              // Both players have no balls left. End of round simulation.
-              calculateRoundScore(balls);
-          }
+        // No balls left to play for current player, but maybe for the other one?
+        if (ballsLeft.red > 0 || ballsLeft.blue > 0) {
+          // This can happen if a player has finished their balls
+          setCurrentPlayer(p => p === 'red' ? 'blue' : 'red');
+          setPhase('turnEnd');
+        } else {
+          // Both players have no balls left. End of round simulation.
+          calculateRoundScore(balls);
+        }
       }
     }
   }, [phase, aimingPhase, getBallToPlay, ballsLeft, calculateRoundScore, balls]);
@@ -494,9 +516,13 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     animationFrameId = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animationFrameId);
   }, [phase, determineNextPlayer, ballsLeft, jackNeedsPlacement, currentPlayer, calculateRoundScore, toast]);
-  
+
   const statusMessage = React.useMemo(() => {
     const playerLabel = currentPlayer === 'red' ? 'Rouge' : 'Bleu';
+
+    if (phase === 'gameOver') {
+      return 'Partie terminée !';
+    }
 
     if (phase === 'roundEnd') {
       return 'La manche est terminée.';
@@ -519,28 +545,28 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
 
   const cursorClass = (phase === 'aiming' && ballToPlay)
     ? (aimingPhase === 'idle'
-        ? (ballToPlay.color === 'white'
-            ? 'cursor-[url(/cursors/white.svg),_pointer]'
-            : (ballToPlay.color === 'red'
-                ? 'cursor-[url(/cursors/red.svg),_pointer]'
-                : 'cursor-[url(/cursors/blue.svg),_pointer]'))
-        : 'cursor-grabbing')
+      ? (ballToPlay.color === 'white'
+        ? 'cursor-[url(/cursors/white.svg),_pointer]'
+        : (ballToPlay.color === 'red'
+          ? 'cursor-[url(/cursors/red.svg),_pointer]'
+          : 'cursor-[url(/cursors/blue.svg),_pointer]'))
+      : 'cursor-grabbing')
     : 'cursor-default';
 
-    
-  const RemainingBalls = ({ player, count }: {player: Player, count: number}) => (
+
+  const RemainingBalls = ({ player, count }: { player: Player, count: number }) => (
     <div className="flex flex-col items-center">
-        <div className="flex gap-2 mt-2">
-            {Array.from({ length: count }).map((_, i) => (
-                 <div
-                    key={i}
-                    className={cn("w-6 h-6 rounded-full border-2", {
-                      'bg-red-600 border-red-800': player === 'red',
-                      'bg-blue-600 border-blue-800': player === 'blue',
-                    })}
-                  />
-            ))}
-        </div>
+      <div className="flex gap-2 mt-2">
+        {Array.from({ length: count }).map((_, i) => (
+          <div
+            key={i}
+            className={cn("w-6 h-6 rounded-full border-2", {
+              'bg-red-600 border-red-800': player === 'red',
+              'bg-blue-600 border-blue-800': player === 'blue',
+            })}
+          />
+        ))}
+      </div>
     </div>
   );
 
@@ -548,23 +574,29 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
     <main className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
       <Card className="w-auto shadow-2xl bg-zinc-800 text-white border-zinc-700">
         <CardHeader className="flex flex-row items-center justify-between">
-           <CardTitle className="font-headline text-3xl">Boccia</CardTitle>
-           <div className="flex gap-8 items-center">
-             <div className="text-center">
-                <p className={cn("text-lg font-bold text-red-500", (phase !== 'roundEnd' && currentPlayer === 'red') ? 'animate-pulse' : '')}>Joueur Rouge</p>
+          <CardTitle className="font-headline text-3xl">Boccia</CardTitle>
+          <div className="flex gap-8 items-center">
+            <div className="text-center">
+              <p className={cn("text-lg font-bold text-red-500", (phase !== 'roundEnd' && currentPlayer === 'red') ? 'animate-pulse' : '')}>Joueur Rouge</p>
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-semibold">Manches: {roundsWon.red}/2</span>
                 <div className="flex items-center gap-4">
                   <span>Score: {totalScore.red}</span>
                   <RemainingBalls player="red" count={ballsLeft.red} />
                 </div>
-             </div>
-              <div className="text-center">
-                <p className={cn("text-lg font-bold text-blue-500", (phase !== 'roundEnd' && currentPlayer === 'blue') ? 'animate-pulse' : '')}>Joueur Bleu</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className={cn("text-lg font-bold text-blue-500", (phase !== 'roundEnd' && currentPlayer === 'blue') ? 'animate-pulse' : '')}>Joueur Bleu</p>
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-semibold">Manches: {roundsWon.blue}/2</span>
                 <div className="flex items-center gap-4">
                   <span>Score: {totalScore.blue}</span>
-                   <RemainingBalls player="blue" count={ballsLeft.blue} />
+                  <RemainingBalls player="blue" count={ballsLeft.blue} />
                 </div>
-             </div>
-           </div>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <div className="px-6 -mt-3">
           <p className="text-center text-sm text-zinc-300">{statusMessage}</p>
@@ -608,62 +640,73 @@ export function BocciaGame({ onExit }: { onExit: () => void; }) {
                 }}
               />
             ))}
-            
+
             {ballToPlay && (
-                 <div
-                    key={ballToPlay.id}
-                    className={cn("absolute rounded-full border-2 shadow-lg", {
-                    'bg-white border-black': ballToPlay.color === 'white',
-                    'bg-red-600 border-red-800': ballToPlay.color === 'red',
-                    'bg-blue-600 border-blue-800': ballToPlay.color === 'blue',
-                    })}
-                    style={{
-                    width: BALL_RADIUS * 2,
-                    height: BALL_RADIUS * 2,
-                    transform: `translate(${ballToPlay.x - BALL_RADIUS}px, ${ballToPlay.y - BALL_RADIUS}px)`,
-                    }}
-                />
+              <div
+                key={ballToPlay.id}
+                className={cn("absolute rounded-full border-2 shadow-lg", {
+                  'bg-white border-black': ballToPlay.color === 'white',
+                  'bg-red-600 border-red-800': ballToPlay.color === 'red',
+                  'bg-blue-600 border-blue-800': ballToPlay.color === 'blue',
+                })}
+                style={{
+                  width: BALL_RADIUS * 2,
+                  height: BALL_RADIUS * 2,
+                  transform: `translate(${ballToPlay.x - BALL_RADIUS}px, ${ballToPlay.y - BALL_RADIUS}px)`,
+                }}
+              />
             )}
-            
-             {aimingPhase === 'arming' && aimingLine && (
-                 <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                    <defs>
-                        <linearGradient id="powerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" style={{stopColor: 'lightgreen', stopOpacity: 1}} />
-                            <stop offset="50%" style={{stopColor: 'yellow', stopOpacity: 1}} />
-                            <stop offset="100%" style={{stopColor: 'red', stopOpacity: 1}} />
-                        </linearGradient>
-                    </defs>
-                    <line x1={aimingLine.start.x} y1={aimingLine.start.y} x2={aimingLine.end.x} y2={aimingLine.end.y} stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeDasharray="5,5" />
-                 </svg>
+
+            {aimingPhase === 'arming' && aimingLine && (
+              <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                <defs>
+                  <linearGradient id="powerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style={{ stopColor: 'lightgreen', stopOpacity: 1 }} />
+                    <stop offset="50%" style={{ stopColor: 'yellow', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: 'red', stopOpacity: 1 }} />
+                  </linearGradient>
+                </defs>
+                <line x1={aimingLine.start.x} y1={aimingLine.start.y} x2={aimingLine.end.x} y2={aimingLine.end.y} stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeDasharray="5,5" />
+              </svg>
             )}
 
             {aimingPhase === 'arming' && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1/2">
-                    <p className="text-center text-sm mb-1">Puissance</p>
-                    <Progress value={ (power / MAX_POWER) * 100 } className="w-full h-4" />
-                </div>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1/2">
+                <p className="text-center text-sm mb-1">Puissance</p>
+                <Progress value={(power / MAX_POWER) * 100} className="w-full h-4" />
+              </div>
             )}
 
 
             {phase === 'roundEnd' && (
-                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10">
-                    <h3 className="text-3xl font-bold">Fin de la manche</h3>
-                     {roundWinner && <p className="text-xl mt-2">{`Le joueur ${roundWinner === 'red' ? 'Rouge' : 'Bleu'} marque ${roundScore[roundWinner]} point(s).`}</p>}
-                     {!roundWinner && <p className="text-xl mt-2">Aucun point marqué.</p>}
-                    <Button onClick={() => startNewRound()} className="mt-6">Manche Suivante</Button>
-                </div>
+              <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10">
+                <h3 className="text-3xl font-bold">Fin de la manche</h3>
+                {roundWinner && <p className="text-xl mt-2">{`Le joueur ${roundWinner === 'red' ? 'Rouge' : 'Bleu'} marque ${roundScore[roundWinner]} point(s).`}</p>}
+                {!roundWinner && <p className="text-xl mt-2">Aucun point marqué.</p>}
+                <Button onClick={() => startNewRound()} className="mt-6">Manche Suivante</Button>
+              </div>
             )}
-            
+
+            {phase === 'gameOver' && (
+              <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
+                <h3 className="text-4xl font-bold mb-4 text-yellow-500">VICTOIRE !</h3>
+                {gameWinner && (
+                  <div className="text-center">
+                    <p className={cn("text-2xl font-bold mb-2", gameWinner === 'red' ? "text-red-500" : "text-blue-500")}>
+                      Le joueur {gameWinner === 'red' ? 'Rouge' : 'Bleu'} remporte la partie !
+                    </p>
+                    <p className="text-lg text-zinc-300">Score final : {roundsWon.red} - {roundsWon.blue}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         </CardContent>
         <CardContent className="flex justify-between">
-             <Button onClick={onExit}>
-                <ArrowLeft className="mr-2" /> Quitter
-            </Button>
-            <Button onClick={resetGame} variant="secondary">
-                <RefreshCw className="mr-2" /> Recommencer la partie
-            </Button>
+          <Button onClick={onExit}>
+            <ArrowLeft className="mr-2" /> Quitter
+          </Button>
         </CardContent>
       </Card>
     </main>
