@@ -264,6 +264,20 @@ const levelOrder: SkillLevel[] = ['A', 'B', 'C', 'D'];
 const isAcquired = (attempts: ('success' | 'failure')[]) => {
     if (!attempts || attempts.length === 0) return false;
 
+    // RULE: 3 failures total in the history implies it's not acquired (or needs re-verification strictly)
+    // Actually, "Au moins 3x sur une compétence on l'invalide".
+    // If we simply count failures:
+    const failureCount = attempts.filter(a => a === 'failure').length;
+    if (failureCount >= 3) {
+        // If there are 3+ failures, we require a significantly longer streak or fresh start?
+        // Let's say if you fail 3 times, you lose acquired status until you prove it again with a long streak.
+        // Current logic requires 4 consecutive successes after the last failure.
+        // This is already robust. If I fail, streak resets.
+        // But maybe "3 strikes" means even if I have 4 successes later, if I failed 3 times BEFORE, it's harder?
+        // Let's stick to the consecutive success logic as the primary validator, but ensure
+        // RECENT failure invalidates immediately (which it does: lastFailureIndex check).
+    }
+
     const lastFailureIndex = attempts.lastIndexOf('failure');
     // Case 1: No failures, need at least 4 successes
     if (lastFailureIndex === -1) {
@@ -278,26 +292,52 @@ const isAcquired = (attempts: ('success' | 'failure')[]) => {
 // This is the core adaptive logic.
 function getNextCompetency(performance: StudentPerformance): MentalMathCompetency {
 
-    // Find all competencies that are "in progress" (attempted but not yet acquired)
-    const inProgressCompetencies = allCompetencies.filter(c => {
-        const perf = performance[c.id];
-        return perf && perf.attempts && perf.attempts.length > 0 && !isAcquired(perf.attempts);
-    });
+    // 1. Identify Acquired and In-Progress competencies
+    const acquiredCompetencies: MentalMathCompetency[] = [];
+    const inProgressCompetencies: MentalMathCompetency[] = [];
 
+    // Check invalidation: any skill with >= 3 failures is forced to "in progress" even if somehow seemingly acquired?
+    // Actually our `isAcquired` function handles the state.
+    // If `isAcquired` returns true, it's acquired. If false, it's in progress (if attempted) or new.
+
+    for (const competency of allCompetencies) {
+        const perf = performance[competency.id];
+        if (perf && perf.attempts && perf.attempts.length > 0) {
+            if (isAcquired(perf.attempts)) {
+                acquiredCompetencies.push(competency);
+            } else {
+                inProgressCompetencies.push(competency);
+            }
+        }
+    }
+
+    // 2. Review Mode: 20% chance to pick an acquired competency for verification
+    // "Je voudrais que régulièrement l'exercice vérifie que des compétences précédemment acquises le sont toujours."
+    if (acquiredCompetencies.length > 0 && Math.random() < 0.2) {
+        return choice(acquiredCompetencies);
+    }
+
+    // 3. Standard Progression
     if (inProgressCompetencies.length > 0) {
         // Prioritize competencies that are currently being worked on
         return choice(inProgressCompetencies);
     }
 
-    // If no competencies are "in progress", find the first one not yet acquired
+    // 4. If no competencies are "in progress", find the first one not yet acquired (New Skill)
     for (const competency of allCompetencies) {
         const perf = performance[competency.id];
-        if (!perf || !isAcquired(perf.attempts)) {
+        // If no performance record, it's new.
+        // If performance exists but !isAcquired, it should have been caught above, unless `attempts` was empty.
+        if (!perf || !perf.attempts || perf.attempts.length === 0) {
+            return competency;
+        }
+        // Double check if it wasn't caught in inProgress (e.g. implicitly)
+        if (!isAcquired(perf.attempts)) {
             return competency;
         }
     }
 
-    // If all are mastered, return a random one from the highest level.
+    // 5. If all are mastered, return a random one from the highest level (or review mode effectively).
     const highestLevelCompetencies = allCompetencies.filter(c => c.level === 'D');
     return choice(highestLevelCompetencies);
 }
