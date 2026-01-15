@@ -1,0 +1,10 @@
+## version 6.0.1
+
+Ajout de règles dans le moteur pour différencier les h muets des h aspirés.
+
+Ajout de la fonction de marquage d'un certain nombre de liaisons essentielles. Toutes les
+liaisons ne sont pas notées et certaines peuvent ne pas être correctes. Pour appliquer
+correctement les règles de marquage des liaisons obligatoires, il faudrait effectuer une
+analyse sémantique du texte pour identifier les classes grammaticales des mots.
+
+Intégration de l'écriture de alphabet phonétique international. Un nouveau modèle est disponible par défaut pour tester ce type d'écriture.

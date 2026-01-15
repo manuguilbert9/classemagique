@@ -1,0 +1,13 @@
+{
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+
+    "editor.tabSize": 4,
+    "prettier.tabWidth": 4,
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": true
+}

@@ -1,0 +1,65 @@
+#entetes-contenu {
+    background-color: var(--background);
+    padding-left: 0px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.entete-contenu {
+    display: none;
+    padding-left: 10px;
+}
+
+.entete-contenu > .icones-div {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+}
+
+/* iv de présentation d'un profil */
+.item_profil {
+    background-color: var(--background);
+    padding: 5px;
+}
+
+.item_profil {
+    padding-left: 10px;
+}
+
+.item_profil h3 {
+    margin: 5px 0;
+}
+
+.item_profil > .icones-div {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+/* pastille de menu */
+.pastille {
+    border-radius: 4px;
+    width: 50px;
+    height: var(--pastille);
+    background: var(--primary);
+
+    padding: 0;
+    text-align: center;
+    box-shadow: 1px 1px 2px var(--shadow);
+
+    display: block;
+}
+
+.pastille img {
+    height: 80%;
+}
+
+.pastille .actif {
+    background: var(--accent);
+}
+
+.pastille:hover {
+    background: var(--secondary);
+}

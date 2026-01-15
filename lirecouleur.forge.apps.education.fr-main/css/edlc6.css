@@ -1,0 +1,222 @@
+/**
+ * @license Copyright (c) 2023, Web LireCouleur 6 - Luc & Marie-Pierre Brungard. All rights reserved.
+ */
+
+:root {
+    --text: #200e07;
+    --background: #fdf8f5;
+    --primary: #d0653a;
+    --secondary: #e2e084;
+    --accent: #c7da63;
+
+    --shadow: #999;
+    /* ombrage */
+    --highlight: #8cffbc;
+    /* mise en évidence du mot lu */
+    --danger: #dc3545;
+
+    --menu: 40px;
+    --pastille: 30px;
+    --primary-icon-size: 30px;
+    --secondary-icon-size: 20px;
+
+    background-color: var(--background);
+    color: var(--text);
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    font-size: 16px;
+}
+
+@font-face {
+    font-family: Luciole;
+    src: local("Luciole"),
+        url("../fonts/Luciole-Regular.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: OpenDyslexic;
+    src: local("OpenDyslexic"),
+        url("../fonts/OpenDyslexic-Regular.woff") format("woff");
+}
+
+@font-face {
+    font-family: Andika;
+    src: local("Andika"), url("../fonts/Andika-Regular.woff") format("woff");
+}
+
+@font-face {
+    font-family: Accessible DfA;
+    src: local("Accessible DfA"),
+        url("../fonts/Accessible DfA Regular.ttf") format("truetype");
+}
+
+body {
+    margin: 0;
+}
+
+a {
+    color: var(--text);
+}
+
+hr {
+    border-color: var(--text);
+}
+
+h1 {
+    font-size: 1.1rem;
+    font-weight: 520;
+    text-align: center;
+    margin-left: 10px;
+    margin-top: 5px;
+    margin-bottom: auto;
+    max-height: 30px;
+}
+
+h2 {
+    margin-top: 10px;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+h4 {
+    margin-top: 10px;
+    font-size: 1.05rem;
+}
+
+h3,
+h4 {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#container {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+#blockly_l {
+    background-color: white;
+    position: relative;
+    float: left;
+    width: 60%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.blockly_l_title {
+    display: table-cell;
+    padding-left: 5px;
+    vertical-align: middle;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+#header {
+    position: absolute;
+    background-color: white;
+    width: 100%;
+}
+#btn_left {
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    z-index: 10;
+}
+#btn_center {
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    z-index: 10;
+    height: 45px;
+}
+#divBody {
+    background-color: white;
+    position: absolute;
+    top: 45px;
+    bottom: 0;
+    width: 100%;
+}
+#blocklyDiv {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    padding: 0 0 0 5px;
+    margin: 0;
+}
+#content_code {
+    font-size: 16px;
+    position: absolute;
+    border: 1px solid gray;
+    top: 5px;
+    right: 5px;
+    bottom: 5px;
+    left: 5px;
+}
+.demo_zone {
+    padding: 5px;
+    position: relative;
+    float: right;
+    width: 40%;
+}
+#texte-adapte {
+    width: 100%;
+    border: none;
+}
+#toolbox {
+    display: none;
+}
+.tooltip-inner {
+    background-color: gray;
+}
+.btn_color {
+    color: gray;
+}
+.btn_color img {
+    height: 22px;
+}
+.btn-minmaxgreen {
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    background-color: gray;
+    border-color: gray;
+    line-height: 0;
+    padding: 0;
+}
+.btn-quitgreen {
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    background-color: gray;
+    border-color: gray;
+    line-height: 0;
+    padding: 0;
+}
+.blocklyToolboxDiv {
+    background-color: white !important;
+    opacity: 0.8;
+}
+.blocklyTreeRow {
+    height: 30px !important;
+    line-height: 30px !important;
+}
+.blocklyScrollbarHandle {
+    fill: gray;
+}
+.blocklyScrollbarBackground:hover + .blocklyScrollbarHandle,
+.blocklyScrollbarHandle:hover {
+    fill: gray;
+}
+.blocklyFlyout .blocklyScrollbarHandle {
+    fill: gray;
+}
+.blocklyFlyout .blocklyScrollbarBackground:hover + .blocklyScrollbarHandle,
+.blocklyFlyout .blocklyScrollbarHandle:hover {
+    fill: gray;
+}

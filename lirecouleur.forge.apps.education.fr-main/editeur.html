@@ -1,0 +1,249 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <title>Editeur de profils LireCouleur 6</title>
+
+        <!-- LireCouleur -->
+        <script src="js/lirecouleur/module.js"></script>
+        <script src="js/lirecouleur/functionlc6.js"></script>
+        <script src="js/lirecouleur/processlc6.js"></script>
+        <script src="js/lirecouleur/userprofile.js"></script>
+
+        <!-- Blockly -->
+        <script src="libs/js/blockly/jquery.min.2.1.3.js"></script>
+        <script src="libs/js/blockly/bootstrap.min.3.3.6.js"></script>
+        <script src="libs/js/blockly/blockly.min.js"></script>
+        <script src="libs/js/blockly/plugins/colour-field.js"></script>
+        <script src="libs/js/blockly/plugins/slider-field.js"></script>
+        <script src="libs/js/blockly/plugins/multilineinput-field.js"></script>
+
+        <!-- Adaptation de Blockly pour l'éditeur -->
+        <script src="js/edlc6/json_generator.js"></script>
+        <script src="js/edlc6/blocs.js"></script>
+        <script src="js/edlc6/Blockly_fr.js"></script>
+        <script src="js/edlc6/module.js"></script>
+        <script src="js/edlc6/uicontrol.js"></script>
+
+        <!-- Librairies complémentaires -->
+        <script src="libs/js/showdown.min.js"></script>
+
+        <!-- CSS -->
+        <link rel="stylesheet" href="libs/css/bootstrap.min.3.3.6.css" />
+        <link rel="stylesheet" href="libs/css/fontawesome.css" />
+        <link rel="stylesheet" href="css/edlc6.css" />
+        <link rel="stylesheet" href="css/lirecouleur/page-lire.css" />
+
+        <link rel="shortcut icon" href="img/favicon.ico" />
+    </head>
+    <body>
+        <div id="container">
+            <div id="blockly_l">
+                <div id="header">
+                    <div id="btn_center" class="btn-toolbar">
+                        <input
+                            type="file"
+                            id="loadText"
+                            accept=".json"
+                            style="display: none"
+                        />
+                        <div class="btn-group">
+                            <button
+                                id="btn_new"
+                                class="btn btn-default"
+                                title="Nouveau profil"
+                            >
+                                <i class="fa fa-file-o fa-1_5x btn_color"></i>
+                            </button>
+                            <button
+                                id="btn_open"
+                                class="btn btn-default"
+                                title="Charger un profil"
+                            >
+                                <i
+                                    class="fa fa-folder-open-o fa-1_5x btn_color"
+                                ></i>
+                            </button>
+                            <div class="btn-group">
+                                <button
+                                    id="btn_undo"
+                                    class="btn btn-default"
+                                    title="Annuler"
+                                >
+                                    <i class="fa fa-undo fa-1_5x btn_color"></i>
+                                </button>
+                                <button id="btn_redo" class="btn btn-default">
+                                    <i
+                                        class="fa fa-repeat fa-1_5x btn_color"
+                                        title="Rétablir"
+                                    ></i>
+                                </button>
+                            </div>
+                                <div class="btn-group">
+                                <button
+                                    id="btn_example"
+                                    class="btn btn-default dropdown-toggle"
+                                    data-toggle="dropdown"
+                                    title="Profils disponibles"
+                                >
+                                    <i
+                                        class="fa fa-cubes fa-1_5x btn_color"
+                                    ></i>
+                                </button>
+                                <ul class="dropdown-menu" id="liste-profils">
+                                    <li class="dropdown-header">PROFILS</li>
+                                    <li class="divider"></li>
+                                </ul>
+                            </div>
+                            <div class="btn-group">
+                                <button
+                                    id="btn_save"
+                                    class="btn btn-default dropdown-toggle"
+                                    data-toggle="dropdown"
+                                    title="Enregistrer"
+                                >
+                                    <i
+                                        class="fa fa-floppy-o fa-1_5x btn_color"
+                                    ></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li class="dropdown-header">ENREGISTRER</li>
+                                    <li class="divider"></li>
+                                    <li><a href="#" onclick="edlc6.saveProfile()"><i class="fa fa-floppy-o fa-1_5x btn_color"></i> Enregistrer le profil</a</li>
+                                    <li><a href="#" onclick="edlc6.exportToLC6()"><i
+                                        class="fa btn_color"
+                                        title="Enregistrer le profil et ouvrir Web LireCouleur6"
+                                        ><img src="img/icon.png"/></i> Enregistrer le profil et ouvrir Web LireCouleur6</a
+                                    </li>
+                                    <li><a href="#" onclick="edlc6.downloadJSON()"><i class="fa fa-cloud-download fa-1_5x btn_color"></i> Télécharger le profil</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <button
+                            id="btn_delete"
+                            class="btn btn-default"
+                            title="Supprimer le profil"
+                        >
+                            <i class="fa fa-trash fa-1_5x btn_color"></i>
+                        </button>
+                        <button
+                            id="btn_doc"
+                            class="btn btn-default"
+                            title="Documentation"
+                        >
+                            <i class="fa fa-question fa-1_5x btn_color"></i>
+                        </button>
+                        <div class="blockly_l_title">
+                            <h1>Editeur de profils LireCouleur 6</h1>
+                        </div>
+                    </div>
+                </div>
+                <div id="divBody" class="tab-content">
+                    <div
+                        role="tabpanel"
+                        id="blocklyDiv"
+                        class="tab-pane fade in active"
+                    ></div>
+                    <div
+                        role="tabpanel"
+                        id="content_code"
+                        class="tab-pane fade"
+                        onChange="update()"
+                    ></div>
+                </div>
+            </div>
+            <div class="demo_zone">
+                <h2>Texte de démonstration</h2>
+                <div id="texte-adapte"></div>
+            </div>
+        </div>
+        <!-- toolbox config modal -->
+        <xml id="toolbox">
+            <category colour="#4a235a" name="Structure">
+                <block type="edlc6"></block>
+            </category>
+            <category colour="#cc66ff" name="Paramétrage">
+                <block type="interface"></block>
+                <block type="accueil"></block>
+                <block type="SYLLABES_ECRITES"></block>
+                <block type="novice_reader"></block>
+                <block type="SYLLABES_LC"></block>
+            </category>
+            <category colour="#804000" name="Format général">
+                <block type="page_width"></block>
+                <block type="font_name"></block>
+                <block type="font_size"></block>
+                <block type="line_spacing"></block>
+                <block type="scale_width"></block>
+            </category>
+            <category colour="#787746" name="Adaptations">
+                <block type="altern"
+                    ><field name="nature">alternsyllabes</field
+                    ><statement name="content"
+                        ><block type="typo"
+                            ><field name="fgcolor">#cc0000</field
+                            ><next
+                                ><block type="typo"
+                                    ><field name="fgcolor"
+                                        >#000099</field
+                                    ></block
+                                ></next
+                            ></block
+                        ></statement
+                    ></block
+                >
+                <block type="phonemes"
+                    ><statement name="content"
+                        ><block type="typo"
+                            ><field name="fgcolor">#AAAAAA</field
+                            ><value name="suite"
+                            ><block type="elemld"
+                                ><field name="content"
+                                    >#,#_h_muet,verb_3p</field
+                                ></block
+                            ></value
+                        ></block
+                        ></statement
+                    ></block
+                >
+                <block type="syllabes"></block>
+                <block type="syllarc"></block>
+                <block type="lettres"
+                    ><statement name="content"
+                        ><block type="typo"
+                            ><field name="fgcolor">#ff0000</field
+                            ><value name="suite"
+                                ><block type="elem"
+                                    ><field name="content">a</field></block
+                                ></value
+                            ></block
+                        ></statement
+                    ></block
+                >
+                <block type="reglelecture"></block>
+                <block type="lecteur"></block>
+                <block type="liaisons"></block>
+                <block type="typo"></block>
+                <block type="picto">
+                    <field name="fpicto">img/arc.png</field>
+                </block>
+                <block type="signeapi"></block>
+                <block type="typo_b"></block>
+                <block type="typo_i"></block>
+                <block type="typo_u"></block>
+                <block type="typo_o"></block>
+                <block type="typo_s"></block>
+                <!--<block type="lists_create_with" inline="true">
+					<mutation items="1"></mutation>
+				</block>-->
+                <block type="elemld">
+                    <field name="content">a</field>
+                </block>
+                <block type="elem">
+                    <field name="content">a</field>
+                </block>
+            </category>
+        </xml>
+    </body>
+</html>

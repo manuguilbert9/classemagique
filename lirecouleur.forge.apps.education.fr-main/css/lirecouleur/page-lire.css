@@ -1,0 +1,91 @@
+#texte-adapte h1 {
+    font-size: 2em;
+    font-weight: bolder;
+}
+
+#texte-adapte h2 {
+    font-size: 1.7em;
+    font-weight: bolder;
+}
+
+#texte-adapte h3 {
+    font-size: 1.4em;
+}
+
+#texte-adapte h4 {
+    font-size: 1.05em;
+}
+
+#texte-adapte img {
+    max-width: 100%;
+    max-height: 50%;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+#texte-adapte h1,
+h2,
+h3,
+h4 {
+    margin: initial;
+    color: initial;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    word-break: break-word;
+}
+
+#texte-adapte p {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#texte-adapte a {
+    color: rgb(117, 117, 117);
+    text-decoration-line: underline;
+    cursor: pointer;
+    word-break: break-word;
+}
+
+#texte-adapte h1 {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+#texte-adapte h1 img {
+    max-height: 10em;
+    display: inline;
+    padding: 0.3em;
+    margin-top: initial;
+    margin-bottom: initial;
+}
+
+#texte-adapte h2 {
+    padding: 8px;
+}
+
+#texte-adapte h3 {
+    padding: 8px;
+}
+
+#texte-adapte h4 {
+    padding: 8px;
+}
+
+.ligne:hover {
+    background-color: var(--highlight);
+}
+
+table, th, td {
+    border: 1px solid;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    text-align: center;
+}

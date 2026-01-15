@@ -1,0 +1,179 @@
+/* responsive - masque tous les liens sauf le premier si écran < 600 px */
+@media screen and (max-width: 600px) {
+    .menu a.icon {
+        float: right;
+        display: block;
+    }
+}
+
+/* responsive - ajouté au menu et réactif au clic sur l'icone
+Affiche les liens en vertical sur les petits écrans */
+@media screen and (max-width: 600px) {
+    .menu.responsive {
+        position: relative;
+    }
+
+    .menu.responsive a.icon {
+        position: absolute;
+        right: 0;
+        top: 0;
+    }
+
+    .menu.responsive a {
+        float: none;
+        display: block;
+        text-align: left;
+    }
+
+    .menu.responsive .menu-profil {
+        float: none;
+    }
+
+    .menu.responsive .sous-menu {
+        position: relative;
+    }
+
+    .menu.responsive .menu-profil .bouton-profil {
+        display: block;
+        width: 100%;
+        text-align: left;
+    }
+}
+
+.menu {
+    background-color: var(--primary);
+    width: 100%;
+    height: var(--menu);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.menu span {
+    height: 100%;
+}
+
+.menu-centre {
+    margin-left: auto;
+    margin-right: auto;
+    height: 100%;
+}
+
+/* style des liens dans la barre de menu */
+.menu a,
+.menu label, .menu div {
+    padding: 0px;
+    border: 0;
+    float: left;
+    display: block;
+    text-decoration: none;
+    text-align: center;
+    height: 100%;
+    width: auto;
+}
+
+.menu img {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.menu button {
+    border: 0px;
+    padding: 10px;
+    min-width: var(--primary-icon-size);
+}
+
+/* changer la couleur des liens au survol */
+.menu a:hover,
+.menu label:hover,
+.menu button:hover {
+    border: 0;
+    box-shadow: none;
+    background-color: var(--secondary);
+    color: var(--text);
+}
+
+/* ajouter une classe "actif" pour mettre en évidence l'onglet courant */
+.menu a.actif,
+.menu label.actif,
+.menu button.actif {
+    border: 0;
+    box-shadow: none;
+    background-color: var(--accent);
+    color: var(--text);
+}
+
+/* couleurs des liens visités */
+.menu a:visited {
+    color: var(--text);
+}
+
+/* masquer le input dans le menu */
+.menu input,
+.menu #menu-texte-lecture {
+    display: none;
+}
+
+#logo-lc6 {
+    margin-left: auto;
+    padding-right: 10px;
+}
+
+/* interface niveau 1 */
+.interface-niveau-1 #menu {
+    height: 80px;
+}
+
+.interface-niveau-1 #menu-texte-lecture {
+    display: block;
+}
+
+.interface-niveau-1 #entetes-contenu,
+.interface-niveau-1 #menu-hamburger,
+.interface-niveau-1 #menu-texte-brut,
+.interface-niveau-1 #menu-texte-en-ligne,
+.interface-niveau-1 #menu-texte-fichier
+{
+    display: none;
+}
+
+/* interface niveau 2 */
+.interface-niveau-2 #menu {
+    height: 60px;
+}
+
+.interface-niveau-2 #menu-texte-lecture {
+    display: block;
+}
+
+.interface-niveau-2 #entetes-contenu,
+.interface-niveau-2 #menu-hamburger,
+.interface-niveau-2 #menu-texte-brut,
+.interface-niveau-2 #menu-texte-en-ligne
+{
+    display: none;
+}
+
+/* interface niveau 3 */
+.interface-niveau-3 #menu-texte-lecture,
+.interface-niveau-3 #menu-texte-brut
+{
+    display: none;
+}
+
+
+/* interface niveau 4 */
+.interface-niveau-4 #menu-texte-lecture,
+.interface-niveau-4 #menu-texte-en-ligne,
+.interface-niveau-4 #menu-texte-fichier
+{
+    display: none;
+}

@@ -1,0 +1,92 @@
+/**
+ * @license Copyright (c) 2023, Web LireCouleur 6 - Luc & Marie-Pierre Brungard. All rights reserved.
+ */
+
+:root {
+    --text: #200e07;
+
+    --background: #fdf8f5;
+    --primary: #d0653a;
+    --secondary: #e2e084;
+    --accent: #c7da63;
+
+    --background-new: #fdf8f5;
+    --primary-new: #f8b66e;
+    --secondary-new: #fcecaf;
+    --accent-new: #a7d9e1;
+
+    --shadow-new: #363433; /* ombrage */
+    --highlight: #8cffbc; /* mise en évidence du mot lu */
+    --danger: #dc3545;
+
+    --menu: 40px;
+    --pastille: 30px;
+    --primary-icon-size: 30px;
+    --secondary-icon-size: 20px;
+
+    background-color: var(--background);
+    color: var(--text);
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    font-size: 16px;
+
+    --palette-primary : #f8b66e;
+    --palette-secondary : #fcecaf;
+    --palette-secondary-bis : #a7d9e1;
+    --palette-accent : #6b8e8f;
+    --palette-shadow : #2f3c69;
+    --palette-background : #f6f6f6;
+}
+*/
+
+body {
+    margin: 0;
+}
+
+a {
+    color: var(--text);
+}
+
+hr {
+    border-color: var(--text);
+}
+
+img {
+    margin-top: 5%;
+    margin-bottom: 5%;
+    height: 90%;
+    width: auto;
+}
+
+nav {
+    position: sticky;
+    top: 0;
+    background-color: var(--background);
+}
+
+h1 {
+    font-size: 1.3rem;
+}
+
+h2 {
+    font-size: 1.25rem;
+}
+
+h3 {
+    font-size: 1.2rem;
+}
+
+h4 {
+    font-size: 1.05rem;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--palette-shadow);
+}

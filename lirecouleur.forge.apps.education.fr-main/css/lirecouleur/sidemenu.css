@@ -1,0 +1,79 @@
+/* responsive - ajouté au menu et réactif au clic sur l'icone
+Affiche les liens en vertical sur les petits écrans */
+@media screen and (max-width: 600px) {
+    .sidenav {
+        padding-top: 15px;
+    }
+
+    .sidenav a {
+        font-size: medium;
+    }
+}
+
+#liste-profils-menu {
+    margin-left: 1%;
+}
+
+.sidenav {
+    height: 100%;
+    /* 100% Full-height */
+    width: 0;
+    /* 0 width - change this with JavaScript */
+    position: fixed;
+    /* Stay in place */
+    z-index: 1000;
+    /* Stay on top */
+    top: 0;
+    /* Stay at the top */
+    left: 0;
+    background-color: var(--primary);
+    overflow-x: hidden;
+    /* Disable horizontal scroll */
+    overflow-y: auto;
+    padding-top: 60px;
+    /* Place content 60px from the top */
+    transition: 0.5s;
+    /* 0.5 second transition effect to slide in the sidenav */
+    border-radius: 5px;
+    border: 1px solid var(--background);
+    box-shadow: 2px 2px 0px 0px var(--shadow);
+
+    font-size: medium;
+    font-weight: bold;
+}
+
+/* The navigation menu links */
+.sidenav a,
+p {
+    padding: 8px 8px 8px 8px;
+    text-decoration: none;
+    display: block;
+    transition: 0.3s;
+}
+
+/* The navigation menu links */
+.sidenav p {
+    font-weight: 100;
+}
+
+/* The navigation menu links */
+.sidenav .actif {
+    background-color: var(--accent);
+}
+
+.sidenav .actif:hover {
+    color: var(--text);
+}
+
+/* When you mouse over the navigation links, change their color */
+.sidenav a:hover {
+    color: var(--accent);
+}
+
+/* Position and style the close button (top right corner) */
+.sidenav .closebtn {
+    position: absolute;
+    top: 0;
+    right: 0px;
+    font-size: xx-large;
+}

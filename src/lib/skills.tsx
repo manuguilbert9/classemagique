@@ -567,6 +567,13 @@ export const skills: Skill[] = [
     category: 'Nombres et calcul',
   },
   {
+    name: 'Soustractions chronométrées',
+    slug: 'soustraction-mentale',
+    description: "Un maximum de soustractions en 2 minutes.",
+    icon: <div className="h-full w-full rounded-full border-4 border-current flex items-center justify-center text-4xl font-bold">-</div>,
+    category: 'Nombres et calcul',
+  },
+  {
     name: 'La Monnaie',
     slug: 'currency',
     description: 'Apprendre à utiliser les pièces et les billets en euros.',

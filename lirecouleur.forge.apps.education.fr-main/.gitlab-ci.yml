@@ -1,0 +1,18 @@
+# Définition des étapes du pipeline
+pages:
+    image: alpine:latest
+    before_script:
+        - apk update && apk add gzip brotli
+
+    script:
+        - mkdir .public
+        - cp -r * .public # Copiez tous les fichiers dans le répertoire .public
+        - mv .public public # Renommez le répertoire .public en public (facultatif)
+        - find public -type f -regex '.*\.\(htm\|html\|txt\|text\|js\|css\)$' -exec gzip -f -k {} \;
+        - find public -type f -regex '.*\.\(htm\|html\|txt\|text\|js\|css\)$' -exec brotli -f -k {} \;
+    artifacts:
+        paths:
+            - public
+    only:
+        - main # Déployez uniquement depuis la branche master (vous pouvez changer cela si nécessaire)
+

@@ -1,0 +1,37 @@
+#texte-brut {
+    textarea {
+        font: inherit;
+        width: 100%;
+        margin-left: 0%;
+        margin-right: auto;
+        height: 80vh;
+        overflow: auto;
+        color: var(--text);
+    }
+}
+
+.lc-editeur {
+    border-radius: 3px;
+    height: var(--pastille);
+    padding: 0;
+    text-align: center;
+    display: block;
+    border: 1px solid #f7f9fc;
+}
+
+.lc-editeur img {
+    max-height: 32px;
+}
+
+.lc-editeur:hover {
+    background-color: #fff;
+    border: 1px solid #e4e7ee;
+}
+
+.ProseMirror, .toastui-editor-contents {
+    font-size: large;
+}
+
+.toastui-editor-md-code.toastui-editor-md-marked-text {
+    color: #7d1831;
+}

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>LireCouleur 6</title>
+        <link rel="icon" type="image/x-icon" href="img/favicon.ico" />
+
+        <!-- éditeur -->
+        <script src="libs/js/toastui-editor-all.min.js"></script>
+        <link rel="stylesheet" href="libs/css/toastui-editor.min.css" />
+        <script src="libs/js/fr-fr.js"></script>
+
+        <script src="libs/js/html5-qrcode.min.js"></script>
+        <script src="libs/js/showdown.min.js"></script>
+        <script src="libs/js/pdf.min.js"></script>
+        <script src="libs/js/jszip.min.js"></script>
+        <script src="libs/js/html2odt.js"></script>
+
+        <script src="js/lirecouleur/module.js"></script>
+        <script src="js/lirecouleur/functionlc6.js"></script>
+        <script src="js/lirecouleur/processlc6.js"></script>
+        <script src="js/lirecouleur/userprofile.js"></script>
+        <script defer src="js/lirecouleur/uicontrol.js"></script>
+
+        <!-- bibliothèques extérieures - lecture pages HTML -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/readability/0.4.4/Readability.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.0.0/turndown.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.4/purify.min.js"></script>
+
+        <link href="css/lirecouleur.css" rel="stylesheet" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+    </head>
+
+    <body>
+        <div id="main">
+            <div id="sidemenu" class="sidenav">
+                <a
+                    href="javascript:void(0)"
+                    class="closebtn"
+                    onclick="closeNav()"
+                    >&times;</a
+                >
+                <h3>&nbsp;&nbsp;Changer de profil</h3>
+                <div id="liste-profils-menu"></div>
+                <hr />
+                <div id="divEditeurProfil" class="profil">
+                    <a
+                        id="menu-edit-profil-courant"
+                        title="Éditer le profil"
+                        href="editeur.html"
+                        target="_self"
+                        >Éditer le profil courant
+                    </a>
+                    <a
+                        title="Éditer le profil"
+                        href="editeur.html"
+                        target="_self"
+                        ><img src="img/gear.svg"
+                    /></a>
+                </div>
+                <hr />
+                <div class="profil">
+                    <a title="À propos" onclick='afficheModale("ABOUTBOX")'
+                        >À propos</a
+                    >
+                    <a title="À propos" onclick='afficheModale("ABOUTBOX")'
+                        ><img src="img/about.svg"
+                    /></a>
+                </div>
+                <div class="profil">
+                    <p>
+                        LireCouleur utilise des cookies pour conserver les
+                        profils. Aucune information nominative n'est mémorisée.
+                    </p>
+                </div>
+            </div>
+
+            <!-- section de menu -->
+            <nav>
+                <div id="menu" class="menu">
+                    <a
+                        href="#"
+                        id="menu-hamburger"
+                        class="item-menu"
+                        onclick="openNav(event);"
+                    >
+                        <img src="img/hamburger.svg" />
+                    </a>
+                    <a
+                        href="#"
+                        id="menu-texte-adapte"
+                        title="Lire"
+                        class="item-menu actif"
+                        onclick="affichePage('texte-adapte');"
+                    >
+                        <img src="img/preview_lc6.svg" alt="Lire" />
+                    </a>
+                    <a
+                        href="#"
+                        id="menu-texte-lecture"
+                        title="Lire"
+                        class="item-menu"
+                        onclick="litTexte();"
+                    >
+                        <img src="img/play.svg" alt="Lire" />
+                    </a>
+                    <a
+                        href="#"
+                        id="menu-texte-brut"
+                        title="Écrire"
+                        class="item-menu"
+                        onclick="affichePage('texte-brut');"
+                    >
+                        <img src="img/edit.svg" alt="Ecrire" />
+                    </a>
+                    <a
+                        href="#"
+                        id="menu-texte-qrcode"
+                        title="Scanner un QR code"
+                        class="item-menu"
+                        onclick="affichePage('texte-qrcode');"
+                    >
+                        <img src="img/qrcode.svg" alt="Scanner un QR code" />
+                    </a>
+                    <a
+                        href="#"
+                        id="menu-texte-en-ligne"
+                        title="Lire un texte en ligne"
+                        class="item-menu"
+                        onclick="afficheModaleWWW();"
+                    >
+                        <img src="img/www.svg" alt="Lire un texte en ligne" />
+                    </a>
+                    <div
+                        id="menu-texte-fichier"
+                        title="Ouvrir un fichier local"
+                    >
+                        <label for="fichier-texte">
+                            <img
+                                src="img/open.svg"
+                                alt="Ouvrir fichier local"
+                            />
+                        </label>
+                        <input
+                            type="file"
+                            id="fichier-texte"
+                            name="fichier-texte"
+                            accept="text/plain, .md, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.oasis.opendocument.text, application/json"
+                            onchange="ouvrirFichier();"
+                        />
+                    </div>
+                    <a href="#" id="logo-lc6" onclick="toggleHamburgerMenu();"
+                        ><img
+                            src="img/lc6.svg"
+                            title="LireCouleur 6"
+                            alt="LireCouleur 6"
+                        />
+                    </a>
+                </div>
+                <div id="entetes-contenu">
+                    <div
+                        class="entete-contenu"
+                        id="entete-contenu-texte-adapte"
+                    >
+                        <h1 id="titre-texte-adapte">Texte adapté</h1>
+                        <div class="icones-div">
+                            <a
+                                id="menu-lecteur"
+                                class="pastille"
+                                onclick="litTexte()"
+                                title="Lire le texte"
+                                ><img src="img/play.svg" alt="Lire le texte"
+                            /></a>
+                            <a
+                                href="#"
+                                id="menu-copy"
+                                class="pastille"
+                                title="Copier dans le presse-papier"
+                                onclick="copyToClipboard();"
+                                ><img src="img/copy.svg" alt="Copier le texte"
+                            /></a>
+                            <a
+                                href="#"
+                                id="menu-partage"
+                                class="pastille"
+                                title="Partager le lien"
+                                style="display: none"
+                                onclick="afficheModaleShare();"
+                                ><img
+                                    src="img/share.svg"
+                                    alt="Partager le lien"
+                                />
+                            </a>
+                            <a
+                                href="#"
+                                id="menu-plus"
+                                class="pastille"
+                                title="Agrandir"
+                                onclick="zoom();"
+                                ><img src="img/plus.svg" alt="Agrandir" />
+                            </a>
+                            <a
+                                href="#"
+                                id="menu-minus"
+                                class="pastille"
+                                title="Réduire"
+                                onclick="unzoom();"
+                                ><img src="img/minus.svg" alt="Réduire" />
+                            </a>
+                            <a
+                                href="#"
+                                id="menu-print"
+                                class="pastille"
+                                title="Imprimer ou exporter en PDF"
+                                onclick="printDocument();"
+                                ><img src="img/print.svg" alt="Imprimer ou exporter en PDF" />
+                            </a>
+                        </div>
+                    </div>
+                    <div class="entete-contenu" id="entete-contenu-texte-brut">
+                        <h1>Éditeur de texte</h1>
+                        <div class="icones-div">
+                            <a
+                                href="#"
+                                id="menu-clear"
+                                class="toastui-editor-defaultUI-toolbar lc-editeur"
+                                title="Effacer le texte"
+                                onclick="eraseText();"
+                                ><img
+                                    src="img/clear.svg"
+                                    alt="Effacer le texte"
+                                />
+                            </a>
+                            <a
+                                href="#"
+                                id="menu-open-file"
+                                class="toastui-editor-defaultUI-toolbar lc-editeur"
+                                onclick="ouvrirFichier();"
+                                ><img
+                                    src="img/open-dark.svg"
+                                    alt="Ouvrir un fichier local"
+                                />
+                            </a>
+                            <a
+                                href="#"
+                                id="menu-www"
+                                class="toastui-editor-defaultUI-toolbar lc-editeur"
+                                onclick="afficheModaleWWW();"
+                                ><img
+                                    src="img/www-dark.svg"
+                                    alt="Lire un texte en ligne"
+                                />
+                            </a>
+                            <a
+                                href="#"
+                                id="menu-paste"
+                                class="toastui-editor-defaultUI-toolbar lc-editeur"
+                                onclick="pasteFromClipboard();"
+                                ><img
+                                    src="img/paste-dark.svg"
+                                    alt="Coller depuis le presse-papier"
+                                />
+                            </a>
+                        </div>
+                        <div id="ed-texte-brut-cmd"></div>
+                    </div>
+                    <div
+                        class="entete-contenu"
+                        id="entete-contenu-texte-qrcode"
+                    ></div>
+                    <div
+                        class="entete-contenu"
+                        id="entete-contenu-activer-hors-ligne"
+                    >
+                        <h1>Activer hors-ligne</h1>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- prévisualisation du texte adapté -->
+            <div id="preview" class="preview">
+                <div id="text-preview"></div>
+            </div>
+
+            <!-- partage de lien-->
+            <div id="partage-url" class="modal-www">
+                <div class="modal-www-content">
+                    <span class="close-www" id="close-share-url">&times;</span>
+                    <h4>
+                        <a onclick="copyUrlToClipboard();" title="Copie l'url"
+                            ><img
+                                class="modal-www-img"
+                                src="img/copy-dark.svg"
+                                alt="Copier l'url"
+                        /></a>
+                        URL à copier :
+                    </h4>
+                    <div id="texte-url"></div>
+                </div>
+            </div>
+
+            <!-- Zone lire -->
+            <div id="texte-adapte" class="contenu">
+                <div id="zone-texte-adapte"></div>
+            </div>
+
+            <!-- Zone de scan de QR code -->
+            <div id="texte-qrcode" class="contenu">
+                <div id="reader"></div>
+            </div>
+
+            <!-- Zone d'ouverture d'URL -->
+            <div id="ouverture-url" class="modal-www">
+                <div class="modal-www-content">
+                    <span class="close-www" id="close-open-url">&times;</span>
+                    <h4>
+                        <a
+                            onclick="pasteUrlFromClipboard();"
+                            title="Colle l'url"
+                            ><img
+                                class="modal-www-img"
+                                src="img/paste-dark.svg"
+                                alt="Coller l'url" /></a
+                        >Adresse URL du texte à lire :
+                    </h4>
+                    <input
+                        type="text"
+                        id="urlInput"
+                        value="https://codimd.apps.education.fr/7vd2krDcSG-C9kKjk1vSgA"
+                        placeholder="Entrez l'URL "
+                    />
+                    <button id="submitUrl">Valider</button>
+                </div>
+            </div>
+
+            <!-- Zone ecrire  -->
+            <div
+                id="texte-brut"
+                class="contenu"
+                style="border: 1px solid #c0c0c0"
+            >
+                <div id="zone-texte-brut"></div>
+            </div>
+
+            <!-- A propos -->
+            <div id="ABOUTBOX" class="modal-www">
+                <div class="modal-www-content">
+                    <span class="close-www" id="close-open-ABOUTBOX"
+                        >&times;</span
+                    >
+                    <h4>
+                        <img
+                            class="modal-www-img"
+                            src="img/lc6.svg"
+                            alt="Coller l'url"
+                        />
+                        LireCouleur
+                    </h4>
+                    <p>
+                        LireCouleur adapte la présentation des textes écrits pour les rendre plus
+                        faciles à lire.
+                    </p>
+                    <p>
+                        C'est un outil libre et gratuit hébergé sur la
+                        <a href="https://forge.apps.education.fr/"
+                            >Forge des Communs Numériques Éducatifs</a
+                        >.
+                    </p>
+                    <hr />
+                    <p>Version : 6.1.0</p>
+                    <p>
+                        <a
+                            title="Page du projet"
+                            href="https://forge.apps.education.fr/lirecouleur/lirecouleur.forge.apps.education.fr"
+                            target="_blank"
+                            ><img
+                                class="modal-www-img"
+                                src="img/source-code.svg"
+                            />Page du projet</a
+                        >
+                    </p>
+                    <p>
+                        <a
+                            title="Aide et documentation"
+                            href="https://lirecouleur.forge.apps.education.fr/doc"
+                            target="_blank"
+                            ><img
+                                class="modal-www-img"
+                                src="img/help-dark.svg"
+                            />Aide et documentation</a
+                        >
+                    </p>
+                    <p>
+                        <img
+                                class="modal-www-img"
+                                src="img/bug-dark.svg"
+                            />Proposer une amélioration ou signaler un bug
+                            <ul>
+                                <li><a href="https://forge.apps.education.fr/lirecouleur/lirecouleur.forge.apps.education.fr/-/issues">en créant un ticket</a></li>
+                                <li><a href="forge-apps+guichet+lirecouleur-lirecouleur-forge-apps-education-fr-1817-issue-@phm.education.gouv.fr">par courrier</a
+                                    ></li>
+                            </ul>
+                    </p>
+                    <p>
+                        <a
+                            title="Activer l'utilisation hors ligne"
+                            href="#""
+                            onclick="activerHorsLigne()"
+                            ><img
+                                class="modal-www-img"
+                                src="img/offline-dark.svg"
+                            /><span id="btn-activation-hors-ligne">Activer l'utilisation hors ligne</span></a
+                        >
+                    </p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

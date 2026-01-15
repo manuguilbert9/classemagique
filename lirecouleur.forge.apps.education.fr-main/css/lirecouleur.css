@@ -1,0 +1,308 @@
+@import url("globals.css");
+@import url("navbar.css");
+@import url("lirecouleur/entete-contenu.css");
+@import url("lirecouleur/sidemenu.css");
+@import url("lirecouleur/page-lire.css");
+@import url("lirecouleur/page-ecrire.css");
+
+/**
+ * @LGPL3 2022, Web LireCouleur 6 - Marie-Pierre Brungard.
+ */
+@media print {
+    /* ------------------------------------------------------------------
+       Configuration de la taille et des marges de la page imprimée
+       ------------------------------------------------------------------ */
+    @page {
+        /* Format A4 */
+        size: 210mm 297mm;
+
+        /* Marges de 15 mm tout autour */
+        margin: 15mm;
+
+        /* Pied‑de‑page : affichage du numéro de page */
+        @bottom-center {
+            content: "Page " counter(page);
+            /* Style du texte du pied‑de‑page */
+            font-family: sans-serif;
+            font-size: 10pt;
+            color: #555;
+
+            /* Décalage supplémentaire depuis le bord inférieur de la page */
+            margin-bottom: 10mm;
+        }
+    }
+
+    /* ------------------------------------------------------------------
+       Styles généraux appliqués pendant l’impression
+       ------------------------------------------------------------------ */
+    body {
+        font-size: 12pt;
+        /* La marge du corps n’est plus nécessaire – la marge de @page suffit */
+        /* margin: 10mm;   <-- on peut la supprimer ou la laisser, elle sera ignorée */
+    }
+
+    /* Masquage des parties de l’interface qui ne doivent pas apparaître */
+    header,
+    nav,
+    .sidenav,
+    .menu,
+    .entete-contenu {
+        display: none !important;
+    }
+}
+
+@font-face {
+    font-family: Luciole;
+    src: local("Luciole"),
+        url("../fonts/Luciole-Regular.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: OpenDyslexic;
+    src: local("OpenDyslexic"),
+        url("../fonts/OpenDyslexic-Regular.woff") format("woff");
+}
+
+@font-face {
+    font-family: Andika;
+    src: local("Andika"), url("../fonts/Andika-Regular.woff") format("woff");
+}
+
+@font-face {
+    font-family: Accessible DfA;
+    src: local("Accessible DfA"),
+        url("../fonts/Accessible DfA Regular.ttf") format("truetype");
+}
+
+body {
+    font-size: 12pt;
+    margin: 0;
+}
+
+/* Style page content - use this if you want to push the page content to the right when you open the side navigation */
+#main {
+    transition: margin-right 0.5s;
+}
+
+.contenu {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.contenu > * {
+    margin-left: 5px;
+    margin-right: 5px;
+    max-width: 98%;
+}
+
+/* message d'avertissement de l'usage des cookies */
+.contenu .cookies {
+    width: 60%;
+    height: fit-content;
+    border-radius: 10px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 10px;
+    text-align: center;
+    font-size: 14px;
+    background-color: var(--text);
+    color: var(--background);
+}
+
+/* bouton de fermeture de l'information sur les cookies */
+.bouton-cookies {
+    margin-left: 15px;
+    color: var(--background);
+    font-weight: bold;
+    float: right;
+    font-size: 22px;
+    line-height: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.bouton-cookies:hover {
+    color: var(--danger);
+}
+
+#texte-qrcode {
+    max-width: 95%;
+    height: auto;
+}
+
+/* boutons d'accès aux fonctions de gestion des profils */
+.gestion-profil {
+    border-radius: 10%;
+    border: 5px solid var(--primary);
+    min-width: 50px;
+    text-align: center;
+    text-decoration: none;
+    background: var(--primary);
+    padding: 10px;
+    margin: 10px;
+    box-shadow: 0px 2px 2px 0px var(--shadow);
+    line-height: 200%;
+}
+
+.gestion-profil:hover {
+    background: var(--accent);
+}
+
+.gestion-profil img {
+    height: var(--secondary-icon-size);
+    width: var(--secondary-icon-size);
+}
+
+._t_ {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.mot-lu {
+    text-decoration-line: underline;
+    text-decoration-color: var(--primary);
+    text-decoration-thickness: 5px;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+#fichier-texte.hover {
+    background-color: var(--background);
+}
+
+#fichier-profil.hover {
+    background-color: var(--background);
+}
+
+.modal-www {
+    display: none; /* Masquer par défaut */
+    position: fixed; /* Rester en place */
+    z-index: 1000; /* Au-dessus des autres éléments */
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 100%; /* Hauteur complète */
+    overflow: auto; /* Activer le défilement si nécessaire */
+    background-color: rgb(0, 0, 0); /* Couleur de fond */
+    background-color: rgba(0, 0, 0, 0.4); /* Fond noir avec opacité */
+}
+
+.modal-www-content {
+    background-color: #fefefe;
+    margin: 10% auto; /* 15% du haut et centré */
+    padding: 20px;
+    border: 1px solid #888;
+    border-radius: 3px;
+    max-width: 40rem; /* Largeur de la fenêtre */
+    width:auto;
+    word-wrap: break-word;
+    color: #666;
+}
+
+.modal-www-content a {
+    text-decoration: none;
+    color: #666;
+}
+
+.modal-www-content a:hover {
+    color: black;
+}
+
+.modal-www-content p, .modal-www-content ul {
+    margin: 0;
+}
+
+.modal-www-content h4 {
+    margin-top: 0;
+}
+
+.modal-www-img {
+    border-radius: 3px;
+    max-width: 30px;
+    max-height: 30px;
+    margin: 0;
+    margin-right: 5px;
+    border: 3px solid #f7f9fc;
+}
+
+.modal-www-img:hover,
+.modal-www-img:focus {
+    border: 3px solid #e4e7ee;
+}
+
+.modal-www-content > input {
+    width: 80%;
+}
+
+.close-www {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-www:hover,
+.close-www:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* prévisualisation de texte adapté */
+.preview {
+    display: none;
+    height: fit-content;
+    border-radius: 10px;
+    position: absolute;
+    max-width: 80rem; /* Largeur de la fenêtre */
+    left: auto;
+    right: auto;
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #888;
+    background-color: var(--background);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.profil {
+    display: flex;
+    flex-direction: row;
+}
+
+.profil a.actif {
+    flex-grow: 1; /* Permet au lien de prendre tout l'espace disponible */
+}
+
+.profil img {
+    max-width: 20px;
+    max-height: 20px;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+.profil-preview,
+.profil img {
+    margin-left: auto; /* Alignement à droite */
+}
+
+.profil-preview {
+    display: block;
+    margin-right: 5px;
+}
+
+/* formulaire */
+input[type="file"] {
+    border: 1px solid var(--primary);
+    font-size: 16px;
+    background-color: var(--background);
+    padding: 12px;
+    border-radius: 4px;
+    width: 96%;
+    margin-right: 2%;
+    margin-left: auto;
+    cursor: pointer;
+    height: 50px;
+}

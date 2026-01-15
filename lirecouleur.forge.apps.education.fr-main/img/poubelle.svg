@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="600"
+   height="600"
+   version="1.1"
+   id="svg37"
+   sodipodi:docname="poubelle.svg"
+   inkscape:version="1.0.2 (e86c870879, 2021-01-15)"
+   inkscape:export-filename="/home/marie/Documents/EN/CloudAcademique/Projets/weblc6/img/poubelle.png"
+   inkscape:export-xdpi="20.48"
+   inkscape:export-ydpi="20.48">
+  <metadata
+     id="metadata17">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs41">
+    <defs
+       id="defs9">
+      <linearGradient
+         id="grad1"
+         x1="0%"
+         y1="0%"
+         x2="100%"
+         y2="100%">
+        <stop
+           offset="0%"
+           style="stop-color:#5b8805;stop-opacity:1"
+           id="stop4" />
+        <stop
+           offset="100%"
+           style="stop-color:#5b8805;stop-opacity:0"
+           id="stop6" />
+      </linearGradient>
+    </defs>
+  </defs>
+  <sodipodi:namedview
+     id="namedview39"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="0.97345036"
+     inkscape:cx="197.0104"
+     inkscape:cy="389.35922"
+     inkscape:window-width="1920"
+     inkscape:window-height="1021"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg37"
+     inkscape:document-rotation="0" />
+  <!-- Created with SVG-edit - http://svg-edit.googlecode.com/ -->
+  <line
+     stroke-linecap="round"
+     x1="120.03023"
+     y1="88.584267"
+     x2="477.63458"
+     y2="88.584267"
+     style="fill:#ffffff;stroke:#ffffff;stroke-width:59.6008;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1"
+     id="line20"
+     inkscape:export-filename="poubelle.png"
+     inkscape:export-xdpi="7.5408316"
+     inkscape:export-ydpi="7.5408316" />
+  <rect
+     x="224.33148"
+     y="43.883717"
+     rx="29.800364"
+     ry="29.800364"
+     width="149.00182"
+     height="44.700546"
+     style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:59.6008;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="rect22" />
+  <line
+     stroke-linecap="round"
+     x1="132.81345"
+     y1="168.45979"
+     x2="149.26578"
+     y2="547.69171"
+     style="fill:#ffffff;stroke:#ffffff;stroke-width:59.6008;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1"
+     id="line24" />
+  <line
+     id="bottom"
+     stroke-linecap="round"
+     x1="464.85132"
+     y1="168.45979"
+     x2="448.39902"
+     y2="547.69171"
+     style="fill:#ffffff;stroke:#ffffff;stroke-width:59.6008;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1" />
+  <line
+     stroke-linecap="square"
+     x1="133.44038"
+     y1="159.36012"
+     x2="464.22443"
+     y2="159.36012"
+     style="fill:#ffffff;stroke:#ffffff;stroke-width:59.6008;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1"
+     id="line27" />
+  <line
+     stroke-linecap="round"
+     x1="154.30064"
+     y1="552.72491"
+     x2="443.36417"
+     y2="552.72491"
+     style="fill:#ffffff;stroke:#ffffff;stroke-width:59.6008;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1"
+     id="line29" />
+  <line
+     stroke-linecap="round"
+     x1="239.00577"
+     y1="168.45979"
+     x2="246.48412"
+     y2="553.35181"
+     style="fill:#ffffff;stroke:#ffffff;stroke-width:59.6008;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1"
+     id="line31" />
+  <line
+     stroke-linecap="round"
+     x1="358.65903"
+     y1="168.45979"
+     x2="351.18073"
+     y2="553.35181"
+     style="fill:#ffffff;stroke:#ffffff;stroke-width:59.6008;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1"
+     id="line33" />
+</svg>
