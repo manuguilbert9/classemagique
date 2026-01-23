@@ -574,6 +574,13 @@ export const skills: Skill[] = [
     category: 'Nombres et calcul',
   },
   {
+    name: 'Tables de multiplication',
+    slug: 'tables-multiplication',
+    description: "Un maximum de multiplications en 1 minute.",
+    icon: <div className="h-full w-full rounded-full border-4 border-current flex items-center justify-center text-4xl font-bold">×</div>,
+    category: 'Nombres et calcul',
+  },
+  {
     name: 'La Monnaie',
     slug: 'currency',
     description: 'Apprendre à utiliser les pièces et les billets en euros.',
