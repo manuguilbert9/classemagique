@@ -27,7 +27,7 @@ interface HomeworkManagerProps {
 }
 
 const frenchSkills = skills.filter(s => ['Phonologie', 'Lecture / compréhension', 'Ecriture', 'Grammaire', 'Conjugaison', 'Vocabulaire', 'Orthographe'].includes(s.category));
-const mathSkills = skills.filter(s => ['Nombres et calcul', 'Grandeurs et mesures', 'Espace et géométrie', 'Problèmes'].includes(s.category));
+const mathSkills = skills.filter(s => ['Nombres et calcul', 'Grandeurs et mesures', 'Espace et géométrie', 'Problèmes', 'Organisation et gestion de données'].includes(s.category));
 
 
 export function HomeworkManager({ students, groups, allHomework, allHomeworkResults }: HomeworkManagerProps) {

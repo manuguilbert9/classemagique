@@ -651,6 +651,14 @@ export const skills: Skill[] = [
     category: 'Problèmes',
     allowedLevels: ['C', 'D'],
   },
+  {
+    name: 'Algorithmes de couleurs',
+    slug: 'color-algorithm',
+    description: "Reproduis l'algorithme de couleurs en cliquant sur les bons carrés.",
+    icon: <Palette />,
+    category: 'Organisation et gestion de données',
+    isFixedLevel: 'A',
+  },
 ];
 
 export function getSkillBySlug(slug: string): Skill | undefined {

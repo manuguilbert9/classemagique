@@ -46,6 +46,7 @@ import { AddAdjectivesExercise } from '@/components/add-adjectives-exercise';
 import { JumbledWordsExercise } from '@/components/jumbled-words-exercise';
 import { MentalSubtractionExercise } from '@/components/mental-subtraction-exercise';
 import { MultiplicationTablesExercise } from '@/components/multiplication-tables-exercise';
+import { ColorAlgorithmExercise } from '@/components/color-algorithm-exercise';
 import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
@@ -175,6 +176,9 @@ export default function ExercisePage() {
         break;
       case 'tables-multiplication':
         exerciseComponent = <MultiplicationTablesExercise />;
+        break;
+      case 'color-algorithm':
+        exerciseComponent = <ColorAlgorithmExercise />;
         break;
       case 'problemes-transformation':
       case 'problemes-composition':
