@@ -47,6 +47,7 @@ import { JumbledWordsExercise } from '@/components/jumbled-words-exercise';
 import { MentalSubtractionExercise } from '@/components/mental-subtraction-exercise';
 import { MultiplicationTablesExercise } from '@/components/multiplication-tables-exercise';
 import { ColorAlgorithmExercise } from '@/components/color-algorithm-exercise';
+import { CategorySortingExercise } from '@/components/category-sorting-exercise';
 import { cn } from '@/lib/utils';
 
 export default function ExercisePage() {
@@ -179,6 +180,9 @@ export default function ExercisePage() {
         break;
       case 'color-algorithm':
         exerciseComponent = <ColorAlgorithmExercise />;
+        break;
+      case 'category-sorting':
+        exerciseComponent = <CategorySortingExercise />;
         break;
       case 'problemes-transformation':
       case 'problemes-composition':

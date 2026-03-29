@@ -32,6 +32,7 @@ import {
   Calculator,
   Sparkles,
   Puzzle,
+  Layers,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -657,6 +658,14 @@ export const skills: Skill[] = [
     description: "Reproduis l'algorithme de couleurs en cliquant sur les bons carrés.",
     icon: <Palette />,
     category: 'Organisation et gestion de données',
+    isFixedLevel: 'A',
+  },
+  {
+    name: 'Trier par catégorie',
+    slug: 'category-sorting',
+    description: "Trie chaque image dans la bonne catégorie : animaux, véhicules, fruits, vêtements…",
+    icon: <Layers />,
+    category: 'Vocabulaire',
     isFixedLevel: 'A',
   },
 ];
