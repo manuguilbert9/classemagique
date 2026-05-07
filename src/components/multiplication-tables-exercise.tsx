@@ -4,13 +4,16 @@ import { useState, useEffect, useCallback, useContext, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
-import { Check, RefreshCw, X, Play } from 'lucide-react';
+import { Check, RefreshCw, X, Play, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
+import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
 
 const GAME_DURATION_S = 60; // 1 minute
+const UNTIMED_QUESTIONS_COUNT = 20;
 
 interface MultiplicationQuestion {
     id: string;
@@ -32,6 +35,8 @@ export function MultiplicationTablesExercise() {
     const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
+    const [timerEnabled, setTimerEnabled] = useState(true);
+    const [questionCount, setQuestionCount] = useState(0);
 
     // Track viewed questions to avoid immediate repetition if possible,
     // though with multiplication tables repetition is sometimes desired.
@@ -108,46 +113,49 @@ export function MultiplicationTablesExercise() {
         setScore(0);
         setHasBeenSaved(false);
         setSessionDetails([]);
+        setQuestionCount(0);
         lastQuestionRef.current = null;
 
-        const firstQ = generateQuestion(selectedTables, GAME_DURATION_S);
+        const firstQ = generateQuestion(selectedTables, timerEnabled ? GAME_DURATION_S : 0);
         setCurrentQuestion(firstQ);
     };
 
     useEffect(() => {
-        if (gameState === 'playing' && timeLeft > 0) {
+        if (gameState === 'playing' && timerEnabled && timeLeft > 0) {
             timerRef.current = setTimeout(() => {
                 setTimeLeft(prev => prev - 1);
             }, 1000);
-        } else if (gameState === 'playing' && timeLeft === 0) {
+        } else if (gameState === 'playing' && timerEnabled && timeLeft === 0) {
             setGameState('finished');
         }
         return () => clearTimeout(timerRef.current);
-    }, [gameState, timeLeft]);
+    }, [gameState, timeLeft, timerEnabled]);
 
     useEffect(() => {
         const saveResult = async () => {
             if (gameState === 'finished' && student && !hasBeenSaved) {
                 setHasBeenSaved(true);
+                const finalScore = timerEnabled ? score : Math.round((score / questionCount) * 100);
+                
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'tables-multiplication',
-                        score: score
+                        score: finalScore
                     });
                 } else {
                     await addScore({
                         userId: student.id,
                         skill: 'tables-multiplication',
-                        score: score,
+                        score: finalScore,
                         details: sessionDetails,
                     });
                 }
             }
         };
         saveResult();
-    }, [gameState, student, score, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
+    }, [gameState, student, score, hasBeenSaved, sessionDetails, isHomework, homeworkDate, timerEnabled, questionCount]);
 
     const [userInput, setUserInput] = useState('');
 
@@ -171,13 +179,21 @@ export function MultiplicationTablesExercise() {
             setFeedback('incorrect');
         }
 
+        setQuestionCount(prev => prev + 1);
+
         setTimeout(() => {
+            if (!timerEnabled && questionCount + 1 >= UNTIMED_QUESTIONS_COUNT) {
+                setGameState('finished');
+                return;
+            }
+
             setFeedback(null);
             setUserInput('');
             // Generate next question based on NEW timeLeft (approximate, since we are inside closure, better to use ref or just pass current decr)
             // Actually `timeLeft` in closure might be stale if we don't depend on it, 
             // but for "progressive difficulty" rough estimate is enough.
-            const nextQ = generateQuestion(selectedTables, timeLeft);
+            // Generate next question based on NEW timeLeft
+            const nextQ = generateQuestion(selectedTables, timerEnabled ? timeLeft : 0);
             setCurrentQuestion(nextQ);
             inputRef.current?.focus();
         }, 500); // Fast transition
@@ -240,14 +256,27 @@ export function MultiplicationTablesExercise() {
                             ))}
                         </div>
 
-                        <Button
-                            onClick={startGame}
-                            size="lg"
-                            className="text-xl px-12 py-6 rounded-xl animate-in zoom-in duration-300"
-                            disabled={selectedTables.length === 0}
-                        >
-                            C'est parti !
-                        </Button>
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="flex items-center space-x-2 bg-secondary/20 p-4 rounded-lg">
+                                <Checkbox 
+                                    id="timer-enabled" 
+                                    checked={timerEnabled} 
+                                    onCheckedChange={(checked) => setTimerEnabled(checked === true)}
+                                />
+                                <Label htmlFor="timer-enabled" className="text-lg cursor-pointer">
+                                    Chronomètre (1 minute)
+                                </Label>
+                            </div>
+
+                            <Button
+                                onClick={startGame}
+                                size="lg"
+                                className="text-xl px-12 py-6 rounded-xl animate-in zoom-in duration-300"
+                                disabled={selectedTables.length === 0}
+                            >
+                                C'est parti !
+                            </Button>
+                        </div>
                     </div>
                 );
 
@@ -255,13 +284,19 @@ export function MultiplicationTablesExercise() {
                 if (!currentQuestion) return null;
                 return (
                     <div className="relative flex flex-col items-center gap-6 w-full max-w-md mx-auto pt-8">
-                        {/* Timer */}
-                        <div className={cn(
-                            "absolute top-0 right-0 text-3xl font-mono font-bold transition-all",
-                            timeLeft <= 10 ? "text-red-500 scale-110 animate-pulse" : "text-muted-foreground"
-                        )}>
-                            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                        </div>
+                        {/* Timer or Progress */}
+                        {timerEnabled ? (
+                            <div className={cn(
+                                "absolute top-0 right-0 text-3xl font-mono font-bold transition-all",
+                                timeLeft <= 10 ? "text-red-500 scale-110 animate-pulse" : "text-muted-foreground"
+                            )}>
+                                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                            </div>
+                        ) : (
+                            <div className="absolute top-0 right-0 text-xl font-bold text-muted-foreground">
+                                Question {questionCount + 1} / {UNTIMED_QUESTIONS_COUNT}
+                            </div>
+                        )}
 
                         <div className="text-8xl font-bold p-12 rounded-2xl bg-secondary/30 min-w-[300px] text-center mb-4">
                             {currentQuestion.a} x {currentQuestion.b}
@@ -293,9 +328,23 @@ export function MultiplicationTablesExercise() {
                                     </div>
                                 )}
                             </div>
-                            <Button type="submit" size="lg" className="w-full max-w-[200px] text-lg" disabled={!userInput || !!feedback}>
-                                Valider
-                            </Button>
+                            <div className="flex gap-2 w-full max-w-[200px]">
+                                <Button type="submit" size="lg" className="flex-grow text-lg" disabled={!userInput || !!feedback}>
+                                    Valider
+                                </Button>
+                                {!timerEnabled && (
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        size="lg" 
+                                        onClick={() => setGameState('finished')}
+                                        className="px-3"
+                                        title="Terminer la session"
+                                    >
+                                        <Square className="h-5 w-5 fill-current" />
+                                    </Button>
+                                )}
+                            </div>
                         </form>
                     </div>
                 );
@@ -308,6 +357,9 @@ export function MultiplicationTablesExercise() {
                             <p className="text-2xl text-muted-foreground mb-2">Ton score</p>
                             <div className="flex items-baseline justify-center gap-2">
                                 <p className="text-8xl font-bold text-primary">{score}</p>
+                                {!timerEnabled && (
+                                    <p className="text-4xl text-muted-foreground">/ {UNTIMED_QUESTIONS_COUNT}</p>
+                                )}
                             </div>
                             <p className="text-lg text-muted-foreground mt-2">bonnes réponses</p>
                         </div>
