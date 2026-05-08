@@ -196,12 +196,12 @@ export default function DevoirsPage() {
       <div className="text-center mb-12">
         <Logo />
         <h1 className="font-headline text-5xl mt-4">Tes devoirs</h1>
-        <p className="text-muted-foreground text-xl mt-2">Voici le programme des jours à venir.</p>
+        <p className="text-muted-foreground text-xl mt-2">Voici tes prochains devoirs à faire.</p>
       </div>
 
       <div className="w-full max-w-4xl space-y-8">
         {futureHomework.length > 0 ? (
-          futureHomework.map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} completedHomework={completedHomework} />)
+          futureHomework.slice(0, 1).map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} completedHomework={completedHomework} />)
         ) : (
           <Card className="text-center p-8">
             <CardHeader>
