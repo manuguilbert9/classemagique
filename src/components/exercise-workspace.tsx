@@ -10,7 +10,7 @@ import { Button } from '../components/ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Keyboard, Gem } from 'lucide-react';
 import { AnalogClock } from '@/components/analog-clock';
-import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings } from '@/lib/questions';
+import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings, type PasseComposeSettings as PasseComposeSettingsType } from '@/lib/questions';
 import { currency as currencyData, formatCurrency } from '@/lib/currency';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +20,7 @@ import { CurrencySettings } from '@/components/currency-settings';
 import { ChangeMakingSettings } from '@/components/change-making-settings';
 import { TimeSettings } from '@/components/time-settings';
 import { CountSettings } from '@/components/count-settings';
+import { PasseComposeSettings } from '@/components/passe-compose-settings';
 import { PriceTag } from '@/components/price-tag';
 import { InteractiveClock } from '@/components/interactive-clock';
 import { UserContext } from '@/context/user-context';
@@ -28,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Label } from './ui/label';
 import { VirtualKeyboard } from './virtual-keyboard';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from './ui/input';
 
 
 const motivationalMessages = [
@@ -70,7 +72,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
   const [countSettings, setCountSettings] = useState<CountSettingsType | null>(null);
   const [numberLevelSettings, setNumberLevelSettings] = useState<NumberLevelSettings | null>(null);
+  const [passeComposeSettings, setPasseComposeSettings] = useState<PasseComposeSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   // State for compose-sum
   const [composedAmount, setComposedAmount] = useState(0);
@@ -88,7 +92,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   useEffect(() => {
     async function loadNonConfigurableQuestions() {
-        if (!['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count'].includes(skill.slug)) {
+        if (!['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count', 'passe-compose'].includes(skill.slug)) {
             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
             setQuestions(generatedQuestions);
             setIsReadyToStart(true);
@@ -143,6 +147,15 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setQuestions(generatedQuestions);
     setIsReadyToStart(true);
   }
+
+  const startPasseComposeExercise = async (settings: PasseComposeSettingsType) => {
+    setIsGenerating(true);
+    setPasseComposeSettings(settings);
+    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { passeCompose: settings });
+    setQuestions(generatedQuestions);
+    setIsGenerating(false);
+    setIsReadyToStart(true);
+  };
 
   const startCountExercise = async (settings: CountSettingsType) => {
     setCountSettings(settings);
@@ -406,9 +419,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setTimeSettings(null);
     setCountSettings(null);
     setNumberLevelSettings(null);
+    setPasseComposeSettings(null);
     resetInteractiveStates();
     
-    if (!['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count'].includes(skill.slug)) {
+    if (!['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count', 'passe-compose'].includes(skill.slug)) {
       const newQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
       setQuestions(newQuestions);
       setIsReadyToStart(true);
@@ -437,12 +451,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   };
 
   const hasConfigurableSettings = useMemo(() => 
-    ['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres'].includes(skill.slug), 
+    ['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres', 'passe-compose'].includes(skill.slug),
   [skill.slug]);
 
   if (!isReadyToStart && hasConfigurableSettings) {
       if (skill.slug === 'calculation') return <CalculationSettings onStart={startCalculationExercise} />;
       if (skill.slug === 'currency') return <CurrencySettings onStart={startCurrencyExercise} />;
+      if (skill.slug === 'passe-compose') return <PasseComposeSettings onStart={startPasseComposeExercise} isLoading={isGenerating} />;
       if (skill.slug === 'change-making') return <ChangeMakingSettings onStart={startNumberLevelExercise} />;
       if (skill.slug === 'time') {
           const initialDifficulty = student?.levels?.[skill.slug]
@@ -596,6 +611,55 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
          </div>
         <VirtualKeyboard onKeyPress={handleKeyboardCountKeystroke} numericOnly />
     </div>
+  );
+
+  const handleTextInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (feedback) return;
+    setUserKeyboardInput(e.target.value);
+  };
+
+  const handleTextInputSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (feedback) return;
+
+    if (userKeyboardInput.trim().toLowerCase() === exerciseData?.answer?.trim().toLowerCase()) {
+        processCorrectAnswer();
+    } else {
+        processIncorrectAnswer();
+    }
+  };
+
+  const renderTextInput = () => (
+    <form onSubmit={handleTextInputSubmit} className="flex flex-col items-center justify-center space-y-6 w-full max-w-md mx-auto">
+        <div className="relative w-full">
+            <Input
+                autoFocus
+                value={userKeyboardInput}
+                onChange={handleTextInputChange}
+                disabled={!!feedback}
+                className={cn(
+                    "text-center text-2xl h-16",
+                    feedback === 'correct' && 'border-green-500 bg-green-50 text-green-900',
+                    feedback === 'incorrect' && 'border-red-500 bg-red-50 text-red-900 animate-shake'
+                )}
+                placeholder="Tape ta réponse ici"
+            />
+            {feedback === 'correct' && <Check className="absolute right-4 top-1/2 -translate-y-1/2 h-6 w-6 text-green-500"/>}
+            {feedback === 'incorrect' && <X className="absolute right-4 top-1/2 -translate-y-1/2 h-6 w-6 text-red-500"/>}
+        </div>
+        {feedback === 'incorrect' && (
+            <div className="text-red-500 font-bold text-lg">
+                La bonne réponse était : {exerciseData.answer}
+            </div>
+        )}
+        <Button
+            type="submit"
+            disabled={!!feedback || userKeyboardInput.trim() === ''}
+            className="w-full h-12 text-lg"
+        >
+            Valider
+        </Button>
+    </form>
   );
 
   const renderQCM = () => (
@@ -881,6 +945,7 @@ const renderWrittenToAudioQCM = () => (
           {exerciseData.type === 'count' && renderCount()}
           {exerciseData.type === 'keyboard-count' && renderKeyboardCount()}
           {exerciseData.type === 'written-to-audio-qcm' && renderWrittenToAudioQCM()}
+          {exerciseData.type === 'text-input' && renderTextInput()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (

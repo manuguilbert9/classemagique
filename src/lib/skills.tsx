@@ -317,6 +317,14 @@ export const skills: Skill[] = [
     isFixedLevel: 'A',
   },
   {
+    name: 'Le Passé Composé',
+    slug: 'passe-compose',
+    description: 'Conjugue le verbe au passé composé.',
+    icon: <PenLine />,
+    category: 'Conjugaison',
+    allowedLevels: ['B', 'C', 'D'],
+  },
+  {
     name: 'Dictée de mots',
     slug: 'spelling',
     description: 'Écoute un mot et écris-le correctement.',
