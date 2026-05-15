@@ -151,10 +151,20 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const startPasseComposeExercise = async (settings: PasseComposeSettingsType) => {
     setIsGenerating(true);
     setPasseComposeSettings(settings);
-    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { passeCompose: settings });
-    setQuestions(generatedQuestions);
-    setIsGenerating(false);
-    setIsReadyToStart(true);
+    try {
+      const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { passeCompose: settings });
+      setQuestions(generatedQuestions);
+    } catch (error) {
+      console.error("Failed to generate passe compose questions", error);
+      toast({
+        title: "Erreur",
+        description: "Échec de la génération de l'exercice.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+      setIsReadyToStart(true);
+    }
   };
 
   const startCountExercise = async (settings: CountSettingsType) => {

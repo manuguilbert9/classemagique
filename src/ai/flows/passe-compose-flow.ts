@@ -48,7 +48,6 @@ export const passeComposeFlow = ai.defineFlow({
   `;
 
   const { output } = await ai.generate({
-    model: 'gemini-1.5-flash',
     prompt: prompt,
     output: {
       schema: PasseComposeOutputSchema,
