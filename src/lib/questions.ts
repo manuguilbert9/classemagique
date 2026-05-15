@@ -21,7 +21,7 @@ import { generateGnNiQuestions } from './gn-ni-questions';
 export interface Question {
   id: number;
   level: SkillLevel;
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple' | 'drag-and-drop-recognition' | 'qcm-image' | 'mystery-number';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple' | 'drag-and-drop-recognition' | 'qcm-image' | 'mystery-number' | 'text-input';
   question: string;
   // For adaptive mental math
   competencyId?: string;
@@ -69,6 +69,15 @@ export interface Question {
   correctValue?: number;
   boxLabel?: string;
   currencySettings?: CurrencySettings;
+  // For passe-compose
+  passeComposeSettings?: PasseComposeSettings;
+}
+
+export interface PasseComposeSettings {
+  auxiliaries: ('avoir' | 'etre')[];
+  groups: ('1er' | '2eme' | '3eme')[];
+  theme?: string;
+  answerMode: 'qcm' | 'text';
 }
 
 export interface CalculationSettings {
@@ -112,6 +121,7 @@ export interface AllSettings {
   readingRace?: ReadingRaceSettings;
   calculation?: CalculationSettings;
   currency?: CurrencySettings;
+  passeCompose?: PasseComposeSettings;
 }
 
 export async function generateQuestions(
@@ -195,6 +205,14 @@ export async function generateQuestions(
   if (skill === 'mystery-number') {
     // This exercise manages its own state, so we just need a placeholder
     return Promise.resolve([{ id: 1, level: 'B', type: 'mystery-number', question: '' }]);
+  }
+
+  if (skill === 'passe-compose' && settings?.passeCompose) {
+    // We will call the AI flow for generation. Need to import it or implement it here.
+    // However, since generateQuestions runs in a server action context, we can just call the flow here.
+    // For now, we will add the condition. The implementation will be linked when the flow is created.
+    const { generatePasseComposeQuestions } = await import('./passe-compose-questions');
+    return generatePasseComposeQuestions(settings.passeCompose, count);
   }
 
   // Fallback

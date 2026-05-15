@@ -196,6 +196,7 @@ export default function ExercisePage() {
       case 'ecoute-les-nombres':
       case 'syllabe-attaque':
       case 'currency':
+      case 'passe-compose':
       default:
         exerciseComponent = <ExerciseWorkspace skill={skill} />;
     }
