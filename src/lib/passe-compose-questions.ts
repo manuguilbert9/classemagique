@@ -22,7 +22,7 @@ export async function generatePasseComposeQuestions(
     level: 'B',
     type: settings.answerMode === 'qcm' ? 'qcm' : 'text-input',
     question: q.sentence,
-    options: settings.answerMode === 'qcm' ? q.options : undefined,
+    options: settings.answerMode === 'qcm' ? [...q.options].sort(() => Math.random() - 0.5) : undefined,
     answer: q.answer,
     verbHint: settings.answerMode === 'text' ? q.infinitive : undefined,
     passeComposeSettings: settings,

@@ -89,6 +89,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   // State for keyboard-count
   const [userKeyboardInput, setUserKeyboardInput] = useState('');
 
+  // State for passe-compose QCM hover preview
+  const [hoveredOption, setHoveredOption] = useState<string | null>(null);
+
+  // State for passe-compose retry mode (wrong options already tried)
+  const [triedOptions, setTriedOptions] = useState<string[]>([]);
+
 
   useEffect(() => {
     async function loadNonConfigurableQuestions() {
@@ -198,6 +204,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setSelectedCountIndices([]);
     setUserKeyboardInput('');
     setFeedback(null);
+    setHoveredOption(null);
+    setTriedOptions([]);
   }
 
   const handleNextQuestion = () => {
@@ -223,9 +231,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       setTimeout(handleNextQuestion, 2500);
   }
   
-  const processIncorrectAnswer = () => {
-      setFeedback('incorrect');
+  const processIncorrectAnswer = (wrongOption?: string) => {
+    setFeedback('incorrect');
+    if (exerciseData?.passeComposeSettings) {
+      if (wrongOption) setTriedOptions(prev => [...prev, wrongOption]);
+      setTimeout(() => setFeedback(null), 1500);
+    } else {
       setTimeout(handleNextQuestion, 1500);
+    }
   }
   
   const handleQcmAnswer = (option: string) => {
@@ -243,7 +256,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     if (isCorrect) {
       processCorrectAnswer();
     } else {
-      processIncorrectAnswer();
+      processIncorrectAnswer(option);
     }
   };
   
@@ -694,7 +707,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         />
       ) : null}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+      <div className={cn(
+        "grid gap-4 w-full",
+        exerciseData.passeComposeSettings ? "grid-cols-3 max-w-2xl" : "grid-cols-1 sm:grid-cols-2 max-w-lg"
+      )}>
         {exerciseData.options?.map((option: string, index: number) => {
           // Pour l'exercice GN/NI, appliquer des couleurs spéciales
           const isGnNiExercise = skill.slug === 'gn-ni';
@@ -702,23 +718,28 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             ? (option === 'gn' ? 'text-blue-600 font-bold' : option === 'ni' ? 'text-red-600 font-bold' : '')
             : '';
 
+          const alreadyTried = triedOptions.includes(option);
+          const isWrongFeedback = feedback === 'incorrect' && option === triedOptions[triedOptions.length - 1];
+
           return (
             <Button
               key={`${option}-${index}`}
               variant="outline"
               onClick={() => handleQcmAnswer(option)}
+              onMouseEnter={() => exerciseData.passeComposeSettings && !feedback && !alreadyTried && setHoveredOption(option)}
+              onMouseLeave={() => exerciseData.passeComposeSettings && setHoveredOption(null)}
               className={cn(
                 "text-xl h-20 p-4 justify-center transition-all duration-300 transform active:scale-95",
                 feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
-                feedback === 'incorrect' && 'bg-red-500/80 text-white border-red-600 animate-shake',
-                feedback && option !== exerciseData.answer && 'opacity-50',
-                feedback && option === exerciseData.answer && 'opacity-100'
+                isWrongFeedback && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                alreadyTried && !feedback && 'opacity-30 cursor-not-allowed',
+                feedback === 'correct' && option !== exerciseData.answer && 'opacity-50',
               )}
-              disabled={!!feedback}
+              disabled={!!feedback || alreadyTried}
             >
               <span className={cn("flex items-center gap-4", gnNiColorClass)}>
                 {feedback === 'correct' && option === exerciseData.answer && <Check />}
-                {feedback === 'incorrect' && <X />}
+                {isWrongFeedback && <X />}
                 {option}
               </span>
             </Button>
@@ -927,7 +948,18 @@ const renderWrittenToAudioQCM = () => (
             "text-center font-body text-xl sm:text-3xl",
             isTableauMode ? "text-5xl" : "text-3xl"
             )}>
-              {exerciseData.question}
+              {exerciseData.passeComposeSettings && exerciseData.question.includes('_____') ? (
+                <>
+                  {exerciseData.question.split('_____')[0]}
+                  <span className={cn(
+                    "transition-all duration-150 px-1 rounded",
+                    hoveredOption ? "text-primary font-bold underline underline-offset-4" : "text-muted-foreground"
+                  )}>
+                    {hoveredOption ?? '_____'}
+                  </span>
+                  {exerciseData.question.split('_____')[1]}
+                </>
+              ) : exerciseData.question}
               {exerciseData.textToSpeak && (
                 <Button variant="ghost" size="icon" onClick={() => handleSpeak(exerciseData.textToSpeak!)} className="ml-2">
                     <Volume2 />
