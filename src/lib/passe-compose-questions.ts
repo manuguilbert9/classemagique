@@ -24,6 +24,7 @@ export async function generatePasseComposeQuestions(
     question: q.sentence,
     options: settings.answerMode === 'qcm' ? q.options : undefined,
     answer: q.answer,
+    verbHint: settings.answerMode === 'text' ? q.infinitive : undefined,
     passeComposeSettings: settings,
   }));
 }

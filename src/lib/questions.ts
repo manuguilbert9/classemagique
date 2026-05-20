@@ -71,6 +71,7 @@ export interface Question {
   currencySettings?: CurrencySettings;
   // For passe-compose
   passeComposeSettings?: PasseComposeSettings;
+  verbHint?: string;
 }
 
 export interface PasseComposeSettings {

@@ -631,6 +631,11 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   const renderTextInput = () => (
     <form onSubmit={handleTextInputSubmit} className="flex flex-col items-center justify-center space-y-6 w-full max-w-md mx-auto">
+        {exerciseData.verbHint && (
+          <div className="text-lg font-semibold text-muted-foreground">
+            Verbe : <span className="text-primary font-bold">{exerciseData.verbHint}</span>
+          </div>
+        )}
         <div className="relative w-full">
             <Input
                 autoFocus
