@@ -11,6 +11,7 @@ import { Home, ArrowRight, BookOpen, BrainCircuit, Loader2, CheckCircle, Info } 
 import { getSkillBySlug } from '@/lib/skills';
 import { UserContext } from '@/context/user-context';
 import { getHomeworkForGroup, getHomeworkResultsForUser, type Assignment, type HomeworkResult } from '@/services/homework';
+import { getSemaine, libelleSession, parseSessionId } from '@/services/dictees';
 import { format, isBefore, startOfToday, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -23,7 +24,12 @@ interface DatedAssignment {
 function HomeworkCard({ date, assignment, completedHomework }: { date: string, assignment: Assignment, completedHomework: HomeworkResult[] }) {
   const frenchSkill = assignment.francais ? getSkillBySlug(assignment.francais) : null;
   const mathSkill = assignment.maths ? getSkillBySlug(assignment.maths) : null;
-  const spellingId = assignment.orthographe || null;
+  // Le champ « orthographe » porte l'identifiant d'une séance Dyna-Mots, ex. « S12-J4 ».
+  const dicteeId = assignment.orthographe || null;
+  const dicteeSeance = dicteeId ? parseSessionId(dicteeId) : null;
+  const dicteeSemaine = dicteeSeance ? getSemaine(dicteeSeance.semaine) : undefined;
+  const dicteeLabel =
+    dicteeSemaine && dicteeSeance ? libelleSession(dicteeSemaine, dicteeSeance.jour) : 'Dictée';
 
   const isCompleted = (skillSlug: string | null) => {
     if (!skillSlug) return false;
@@ -46,21 +52,24 @@ function HomeworkCard({ date, assignment, completedHomework }: { date: string, a
           </Alert>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {spellingId ? (
-           <Link href={`/spelling/${spellingId}?from=devoirs&date=${date}`} className="group">
+        {dicteeId && (
+           <Link href={`/dictee/${dicteeId}?from=devoirs&date=${date}`} className="group">
              <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">
-                {isCompleted(`orthographe-${spellingId}`) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 rounded-full" />}
+                {isCompleted(`orthographe-${dicteeId}`) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 rounded-full" />}
                 <div className="bg-yellow-100 p-3 rounded-full text-yellow-600 group-hover:scale-110 transition-transform">
                     <BrainCircuit />
                 </div>
                 <div>
-                  <p className="font-semibold text-lg">Dictée de mots</p>
-                  <p className="text-sm text-muted-foreground">Orthographe</p>
+                  <p className="font-semibold text-lg">{dicteeLabel}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {dicteeSemaine ? dicteeSemaine.notion.titre : 'Orthographe'}
+                  </p>
                 </div>
                 <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
             </Card>
           </Link>
-        ) : frenchSkill ? (
+        )}
+        {frenchSkill ? (
           <Link href={`/exercise/${frenchSkill.slug}?from=devoirs&date=${date}`} className="group">
             <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">
               {isCompleted(frenchSkill.slug) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 rounded-full" />}
@@ -74,9 +83,9 @@ function HomeworkCard({ date, assignment, completedHomework }: { date: string, a
               <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
             </Card>
           </Link>
-        ) : (
+        ) : !dicteeId ? (
           <Card className="p-4 flex items-center justify-center text-muted-foreground text-sm">Pas d'exercice de français.</Card>
-        )}
+        ) : null}
         {mathSkill ? (
           <Link href={`/exercise/${mathSkill.slug}?from=devoirs&date=${date}`} className="group">
             <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">

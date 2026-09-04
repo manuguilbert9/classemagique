@@ -325,11 +325,14 @@ export const skills: Skill[] = [
     allowedLevels: ['B', 'C', 'D'],
   },
   {
-    name: 'Dictée de mots',
+    name: 'Dictées Dyna-Mots',
     slug: 'spelling',
-    description: 'Écoute un mot et écris-le correctement.',
+    description: 'Écoute et écris les mots, les groupes de mots et les phrases de la semaine.',
     icon: <PenLine />,
     category: 'Orthographe',
+    // Niveau B : le socle de la méthode. C : on ajoute le contenu du niveau 2.
+    // D : on ajoute en plus la phrase bonus.
+    allowedLevels: ['B', 'C', 'D'],
   },
   {
     name: 'Le son [an]',

@@ -14,7 +14,7 @@ import { type Group } from '@/services/groups';
 import { type Student } from '@/services/students';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
 import { saveHomework, type Homework, type Assignment, HomeworkResult } from '@/services/homework';
-import { getSpellingLists, SpellingList } from '@/services/spelling';
+import { DICTEES_CE2, formatSessionId, libelleSession, parseSessionId } from '@/services/dictees';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, CheckCircle, XCircle, Users, BrainCircuit, Wand2, Calendar as CalendarIcon, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -38,8 +38,6 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
-  const [isLoadingLists, setIsLoadingLists] = useState(true);
 
   // Bulk mode states
   const [showBulkMode, setShowBulkMode] = useState(false);
@@ -49,28 +47,23 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
     days: number[];
     francais: string[];
     maths: string[];
-    orthographe: string;
-    weeksPerList: number;
+    /** Semaine Dyna-Mots de départ, ou 'none' pour ne pas programmer de dictée. */
+    dicteeSemaine: string;
+    /** Nombre de semaines de devoirs passées sur une même semaine de la méthode. */
+    semainesParDictee: number;
     notes: string;
     groupIds: string[];
   }>({
     startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
     weeks: 1,
-    days: [1, 2, 4, 5], // Lundi, Mardi, Jeudi, Vendredi
+    days: [1, 4], // Lundi (jour 1 de la méthode), jeudi (dictée bilan)
     francais: [],
     maths: [],
-    orthographe: 'none',
-    weeksPerList: 2,
+    dicteeSemaine: 'none',
+    semainesParDictee: 1,
     notes: '',
     groupIds: []
   });
-
-  useEffect(() => {
-    getSpellingLists().then(lists => {
-      setSpellingLists(lists);
-      setIsLoadingLists(false);
-    });
-  }, []);
 
   useEffect(() => {
     if (selectedDate) {
@@ -116,12 +109,10 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
 
     const start = new Date(bulkConfig.startDate);
     
-    // Find starting index for orthographe list
-    let startOrthoIndex = -1;
-    if (bulkConfig.orthographe !== 'none') {
-      startOrthoIndex = spellingLists.findIndex(l => l.id === bulkConfig.orthographe);
-    }
-    
+    // Semaine de la méthode Dyna-Mots par laquelle démarrer la programmation
+    const startDicteeSemaine =
+      bulkConfig.dicteeSemaine !== 'none' ? parseInt(bulkConfig.dicteeSemaine, 10) : null;
+
     let mathRotationIndex = 0;
     const validMaths = bulkConfig.maths.filter(m => m && m !== 'none');
 
@@ -133,29 +124,30 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
       // Find the Monday of that week
       const weekStart = addWeeks(startOfWeek(start, { weekStartsOn: 1 }), w);
       
-      // Determine the orthographe list for this week
-      let currentOrthoList = null;
-      if (startOrthoIndex !== -1) {
-        const listIndex = startOrthoIndex + Math.floor(w / bulkConfig.weeksPerList);
-        if (listIndex < spellingLists.length) {
-          currentOrthoList = spellingLists[listIndex];
+      // Semaine de la méthode travaillée cette semaine-là
+      let currentDicteeSemaine: number | null = null;
+      if (startDicteeSemaine !== null) {
+        const semaine = startDicteeSemaine + Math.floor(w / bulkConfig.semainesParDictee);
+        if (DICTEES_CE2.some(s => s.semaine === semaine)) {
+          currentDicteeSemaine = semaine;
         }
       }
-      
+
       // For each selected day (1=Mon, 2=Tue, 4=Thu, 5=Fri)
       for (const dayIndex of bulkConfig.days) {
         const targetDate = addDays(weekStart, dayIndex - 1);
         const dateId = format(targetDate, 'yyyy-MM-dd');
-        
+
+        // Début de semaine : le jour 1 de la méthode. Fin de semaine : la dictée bilan.
         let orthoAssignment = null;
-        if (currentOrthoList) {
+        if (currentDicteeSemaine !== null) {
            if (dayIndex === 1 || dayIndex === 2) {
-             orthoAssignment = `${currentOrthoList.id}-lundi`;
+             orthoAssignment = formatSessionId(currentDicteeSemaine, 1);
            } else if (dayIndex === 4 || dayIndex === 5) {
-             orthoAssignment = `${currentOrthoList.id}-jeudi`;
+             orthoAssignment = formatSessionId(currentDicteeSemaine, 4);
            }
         }
-        
+
         let mathAssignment = null;
         if (validMaths.length > 0) {
           mathAssignment = validMaths[mathRotationIndex % validMaths.length];
@@ -177,7 +169,7 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
             francais: francaisAssignment,
             maths: mathAssignment,
             notes: bulkConfig.notes || null,
-            ...(bulkConfig.orthographe !== 'none' ? { orthographe: orthoAssignment } : {})
+            ...(bulkConfig.dicteeSemaine !== 'none' ? { orthographe: orthoAssignment } : {})
           };
         });
 
@@ -206,12 +198,12 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
     const dateId = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
     if (!dateId) return { status: 'not-assigned' };
 
-    const isOrtho = assignedSkillSlug.startsWith('D'); // e.g. D1-lundi
+    const isDictee = parseSessionId(assignedSkillSlug) !== null; // ex. S12-J4
 
     const result = allHomeworkResults.find(res => {
       if (res.userId !== studentId || res.date !== dateId) return false;
-      if (isOrtho) {
-        return res.skillSlug.includes(assignedSkillSlug);
+      if (isDictee) {
+        return res.skillSlug === `orthographe-${assignedSkillSlug}`;
       }
       return res.skillSlug === assignedSkillSlug;
     });
@@ -236,8 +228,8 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
           maths: current.maths && current.maths !== 'none' ? [current.maths] : [],
           notes: current.notes || '',
           groupIds: groups.map(g => g.id),
-          days: [1, 4], // Default to Lundi, Jeudi 
-          weeksPerList: 2
+          days: [1, 4], // Lundi (jour 1), jeudi (bilan)
+          semainesParDictee: 1
         }));
       } else {
         setBulkConfig(prev => ({
@@ -245,8 +237,8 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
           francais: [],
           maths: [],
           groupIds: groups.map(g => g.id),
-          days: [1, 4], // Default to Lundi, Jeudi
-          weeksPerList: 2
+          days: [1, 4], // Lundi (jour 1), jeudi (bilan)
+          semainesParDictee: 1
         }));
       }
       if (selectedDate) {
@@ -467,36 +459,40 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Dictée / Orthographe</Label>
+                  <Label>Dictées Dyna-Mots</Label>
                   <div className="flex gap-2">
                     <Select
-                      value={bulkConfig.orthographe}
-                      onValueChange={(v) => setBulkConfig({...bulkConfig, orthographe: v})}
+                      value={bulkConfig.dicteeSemaine}
+                      onValueChange={(v) => setBulkConfig({...bulkConfig, dicteeSemaine: v})}
                     >
-                      <SelectTrigger className="flex-1"><SelectValue placeholder="Choisir une liste de départ..." /></SelectTrigger>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Choisir la semaine de départ..." /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">Aucune</SelectItem>
-                        {spellingLists.map(list => (
-                          <SelectItem key={list.id} value={list.id}>{list.id} - {list.title}</SelectItem>
+                        {DICTEES_CE2.map(s => (
+                          <SelectItem key={s.semaine} value={String(s.semaine)}>
+                            Semaine {s.semaine} (P{s.periode}) — {s.notion.titre}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    
+
                     <Select
-                      value={String(bulkConfig.weeksPerList)}
-                      onValueChange={(v) => setBulkConfig({...bulkConfig, weeksPerList: parseInt(v)})}
-                      disabled={bulkConfig.orthographe === 'none'}
+                      value={String(bulkConfig.semainesParDictee)}
+                      onValueChange={(v) => setBulkConfig({...bulkConfig, semainesParDictee: parseInt(v)})}
+                      disabled={bulkConfig.dicteeSemaine === 'none'}
                     >
-                      <SelectTrigger className="w-[140px]"><SelectValue placeholder="Durée..." /></SelectTrigger>
+                      <SelectTrigger className="w-[150px]"><SelectValue placeholder="Rythme..." /></SelectTrigger>
                       <SelectContent>
                         {[1, 2, 3, 4].map(n => (
-                          <SelectItem key={n} value={String(n)}>{n} sem. / liste</SelectItem>
+                          <SelectItem key={n} value={String(n)}>{n} sem. / dictée</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <p className="text-[10.5px] text-muted-foreground mt-1">
-                    La liste avancera d'un cran selon le rythme choisi (ex: toutes les 2 semaines).
+                    En début de semaine (lundi, mardi) : le jour 1 de la méthode. En fin de semaine
+                    (jeudi, vendredi) : la dictée bilan. La semaine de la méthode avance selon le
+                    rythme choisi.
                   </p>
                 </div>
 
@@ -630,20 +626,24 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                           </div>
 
                           <div className="space-y-2 sm:col-span-2">
-                            <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Dictée / Orthographe</Label>
+                            <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Dictée Dyna-Mots</Label>
                             <Select
                               value={groupAssignment.orthographe || 'none'}
                               onValueChange={(value) => handleAssignmentChange(group.id, 'orthographe', value)}
                             >
                               <SelectTrigger className="bg-background">
-                                <SelectValue placeholder="Choisir une liste et une session..." />
+                                <SelectValue placeholder="Choisir une semaine et un jour..." />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="none">Aucune</SelectItem>
-                                {spellingLists.map(list => (
-                                  <Fragment key={list.id}>
-                                    <SelectItem value={`${list.id}-lundi`}>{list.id} (Lundi) - {list.title}</SelectItem>
-                                    <SelectItem value={`${list.id}-jeudi`}>{list.id} (Jeudi) - {list.title}</SelectItem>
+                                {DICTEES_CE2.map(s => (
+                                  <Fragment key={s.semaine}>
+                                    <SelectItem value={formatSessionId(s.semaine, 1)}>
+                                      {libelleSession(s, 1)} — {s.corpusTheme}
+                                    </SelectItem>
+                                    <SelectItem value={formatSessionId(s.semaine, 4)}>
+                                      {libelleSession(s, 4)} — {s.corpusTheme}
+                                    </SelectItem>
                                   </Fragment>
                                 ))}
                               </SelectContent>

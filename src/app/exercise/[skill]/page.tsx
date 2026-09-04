@@ -29,7 +29,7 @@ import { PhraseConstructionExercise } from '@/components/phrase-construction-exe
 import { CodedPathExercise } from '@/components/coded-path-exercise';
 import { LabelGameExercise } from '@/components/label-game-exercise';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
-import { SpellingExercise } from '@/components/spelling-exercise';
+import { DicteeExercise } from '@/components/dictee-exercise';
 import { AdaptiveMentalCalculationExercise } from '@/components/adaptive-mental-calculation-exercise';
 import { SyllableTableExercise } from '@/components/syllable-table-exercise';
 import { DecodingExercise } from '@/components/decoding-exercise';
@@ -124,8 +124,8 @@ export default function ExercisePage() {
         exerciseComponent = <LettresEtSonsExercise />;
         break;
       case 'spelling':
-        // The /spelling/[id] page handles specific exercises, but this renders the selector.
-        exerciseComponent = <SpellingExercise exerciseId="" onFinish={() => { }} />;
+        // La page /dictee/[sessionId] joue une séance précise ; ici, l'élève choisit la sienne.
+        exerciseComponent = <DicteeExercise />;
         break;
       case 'phrase-construction':
         exerciseComponent = <PhraseConstructionExercise />;
