@@ -9,13 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Images, Keyboard, ListChecks, Loader2, PenLine, RefreshCw, Volume2 } from 'lucide-react';
+import { ArrowLeft, Images, Keyboard, ListChecks, Loader2, PenLine, RefreshCw, Users, Volume2 } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { cn } from '@/lib/utils';
 import { UserContext } from '@/context/user-context';
 import { addScore, type ScoreDetail } from '@/services/scores';
 import { getHomeworkForGroup, saveHomeworkResult } from '@/services/homework';
-import { updateStudent } from '@/services/students';
+import { getStudents, updateStudent } from '@/services/students';
 import { ScoreTube } from '@/components/score-tube';
 import { VirtualKeyboard } from '@/components/virtual-keyboard';
 import {
@@ -37,7 +37,10 @@ const MOTS_PAR_SEANCE = 10;
 /** Un mot à recopier, éventuellement illustré par un pictogramme ARASAAC. */
 interface MotACopier {
   mot: string;
+  /** Pictogramme ARASAAC illustrant le mot. */
   picto?: number;
+  /** Image déjà résolue (photo d'élève), prioritaire sur le pictogramme. */
+  image?: string;
 }
 
 /** Une lettre au sens de l'exercice : ce que l'élève doit effectivement frapper. */
@@ -114,7 +117,8 @@ export function CopieCapitalesExercise() {
   const [clavierVisible, setClavierVisible] = useState(false);
 
   const motCourant = mots?.[index]?.mot ?? '';
-  const pictoCourant = mots?.[index]?.picto;
+  const courant = mots?.[index];
+  const imageCourante = courant?.image ?? (courant?.picto ? urlPictogramme(courant.picto) : undefined);
 
   useEffect(() => {
     if (motCourant) setPosition(prochaineLettre(motCourant, 0));
@@ -305,10 +309,10 @@ export function CopieCapitalesExercise() {
         <CardContent className="min-h-[280px] flex flex-col items-center justify-center gap-8 p-6">
           {/* Le modèle à recopier, illustré lorsque le mot a un pictogramme */}
           <div className="flex items-center justify-center gap-6 flex-wrap">
-            {pictoCourant && (
+            {imageCourante && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={urlPictogramme(pictoCourant)}
+                src={imageCourante}
                 alt={motCourant.toLowerCase()}
                 className="h-28 w-28 sm:h-36 sm:w-36 object-contain"
               />
@@ -379,6 +383,8 @@ function ChoixDeLaListe({
 }) {
   const { student } = useContext(UserContext);
 
+  const [choixPrenoms, setChoixPrenoms] = useState<string>('moi');
+  const [camarades, setCamarades] = useState<MotACopier[]>([]);
   const [semaineChoisie, setSemaineChoisie] = useState<string>('suivie');
   const [semaineSuivie, setSemaineSuivie] = useState<number | null>(null);
   const [themeChoisi, setThemeChoisi] = useState<string>(THEMES_ILLUSTRES[0].cle);
@@ -411,6 +417,45 @@ function ChoixDeLaListe({
 
   const numeroSemaine = semaineChoisie === 'suivie' ? semaineSuivie ?? 1 : Number(semaineChoisie);
   const semaine = useMemo(() => getSemaine(numeroSemaine), [numeroSemaine]);
+
+  // Les prénoms du groupe, l'élève en tête : son propre prénom est l'objectif prioritaire.
+  useEffect(() => {
+    let annule = false;
+    async function chargerLesPrenoms() {
+      if (!student) return;
+      try {
+        const tous = await getStudents();
+        const duGroupe = tous.filter((e) => e.groupId === student.groupId);
+        const ordonnes = [
+          ...duGroupe.filter((e) => e.id === student.id),
+          ...duGroupe.filter((e) => e.id !== student.id),
+        ];
+        if (!annule) {
+          setCamarades(
+            ordonnes.map((e) => ({ mot: e.name.trim().toUpperCase(), image: e.photoURL }))
+          );
+        }
+      } catch (error) {
+        console.error('Impossible de charger les prénoms de la classe :', error);
+      }
+    }
+    chargerLesPrenoms();
+    return () => {
+      annule = true;
+    };
+  }, [student]);
+
+  const lancerPrenoms = () => {
+    if (camarades.length === 0) return;
+    if (choixPrenoms === 'moi') {
+      const moi = camarades[0];
+      onStart([moi, moi, moi], 'Mon prénom');
+      return;
+    }
+    // L'élève d'abord, puis quelques camarades, sans dépasser la longueur d'une séance.
+    const [moi, ...autres] = camarades;
+    onStart([moi, ...melanger(autres).slice(0, MOTS_PAR_SEANCE - 1)], 'Les prénoms de la classe');
+  };
 
   const lancerDynaMots = () => {
     if (!semaine) return;
@@ -462,7 +507,43 @@ function ChoixDeLaListe({
         </CardHeader>
       </Card>
 
-      {/* 1. Les mots de la semaine de la classe */}
+      {/* 1. Les prénoms de la classe, illustrés par les photos des élèves */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Les prénoms
+          </CardTitle>
+          <CardDescription>
+            Son prénom et ceux de ses camarades, en capitales, avec leur photo quand elle est
+            renseignée dans le tableau de bord.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Select value={choixPrenoms} onValueChange={setChoixPrenoms}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="moi">Mon prénom, trois fois</SelectItem>
+              <SelectItem value="classe">Mon prénom et ceux de la classe</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={lancerPrenoms}
+            className="w-full"
+            size="lg"
+            disabled={camarades.length === 0}
+          >
+            Commencer
+          </Button>
+          {camarades.length === 0 && (
+            <p className="text-sm text-muted-foreground">Chargement de la classe...</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 2. Les mots de la semaine de la classe */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">

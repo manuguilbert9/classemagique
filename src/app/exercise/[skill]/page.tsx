@@ -31,6 +31,8 @@ import { LabelGameExercise } from '@/components/label-game-exercise';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { DicteeExercise } from '@/components/dictee-exercise';
 import { CopieCapitalesExercise } from '@/components/copie-capitales-exercise';
+import { MotImageExercise } from '@/components/mot-image-exercise';
+import { MontreImageExercise } from '@/components/montre-image-exercise';
 import { ComptagePointageExercise } from '@/components/comptage-pointage-exercise';
 import { AdaptiveMentalCalculationExercise } from '@/components/adaptive-mental-calculation-exercise';
 import { SyllableTableExercise } from '@/components/syllable-table-exercise';
@@ -131,6 +133,12 @@ export default function ExercisePage() {
         break;
       case 'copie-capitales':
         exerciseComponent = <CopieCapitalesExercise />;
+        break;
+      case 'mot-image':
+        exerciseComponent = <MotImageExercise />;
+        break;
+      case 'montre-image':
+        exerciseComponent = <MontreImageExercise />;
         break;
       case 'comptage-pointage':
         exerciseComponent = <ComptagePointageExercise />;

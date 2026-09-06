@@ -420,6 +420,24 @@ export const skills: Skill[] = [
     isFixedLevel: 'A',
   },
   {
+    // Lecture globale : associer un mot écrit en capitales à son image, dans les deux sens.
+    name: 'Le mot et son image',
+    slug: 'mot-image',
+    description: "Retrouve le mot qui va avec l'image, et l'image qui va avec le mot.",
+    icon: <Tags />,
+    category: 'Lecture / compréhension',
+    isFixedLevel: 'A',
+  },
+  {
+    // Lexique réceptif : la réponse se donne par désignation, jamais à l'oral.
+    name: "Écoute et montre l'image",
+    slug: 'montre-image',
+    description: 'Un mot est dit à voix haute : montre la bonne image.',
+    icon: <Ear />,
+    category: 'Vocabulaire',
+    isFixedLevel: 'A',
+  },
+  {
     // Adaptation de la dictée : les mots de la semaine sont recopiés en capitales.
     name: 'Copie des mots en capitales',
     slug: 'copie-capitales',
