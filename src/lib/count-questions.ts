@@ -2,6 +2,7 @@
 'use server';
 
 import type { Question, CountSettings } from './questions';
+import { avecDe } from './elision';
 
 export async function generateDénombrementQuestion(settings: CountSettings): Promise<Question> {
   const items = [
@@ -22,7 +23,7 @@ export async function generateDénombrementQuestion(settings: CountSettings): Pr
     id: Date.now(),
     level: 'A',
     type: 'count',
-    question: `Combien y a-t-il de ${selectedItem.name} ?`,
+    question: `Combien y a-t-il ${avecDe(selectedItem.name)} ?`,
     countEmoji: selectedItem.emoji,
     countNumber: count,
     answer: String(count),

@@ -2,6 +2,7 @@
 'use server';
 
 import type { Question } from './questions';
+import { avecDe } from './elision';
 
 export async function generateKeyboardCountQuestion(): Promise<Question> {
   const items = [
@@ -21,7 +22,7 @@ export async function generateKeyboardCountQuestion(): Promise<Question> {
     id: Date.now(),
     level: 'A',
     type: 'keyboard-count',
-    question: `Combien y a-t-il de ${selectedItem.name} ?`,
+    question: `Combien y a-t-il ${avecDe(selectedItem.name)} ?`,
     countEmoji: selectedItem.emoji,
     countNumber: count,
     answer: String(count),

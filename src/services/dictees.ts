@@ -209,3 +209,49 @@ export function comparer(
 
   return { correct, mots, motsCorrects, totalMots: motsAttendus.length || 1 };
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Adaptations : copie des mots de la semaine                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Les mots du corpus lexical de la semaine, prêts à être recopiés.
+ *
+ * On retire les précisions de conjugaison (« au présent ») et on sépare les
+ * variantes que le cahier de rituels regroupe sur une même ligne
+ * (« les grains, les graines », « lumineux/lumineuse ») pour n'avoir qu'un mot
+ * ou groupe de mots par étiquette.
+ */
+export function getMotsACopier(semaine: DicteeSemaine): string[] {
+  const mots = semaine.corpus.niveau1
+    .flatMap((entree) => entree.mot.split(/[,/]/))
+    .map((mot) => mot.trim())
+    .filter(Boolean);
+  return Array.from(new Set(mots));
+}
+
+/**
+ * La semaine de la méthode actuellement travaillée par un groupe, déduite des
+ * dictées programmées dans ses devoirs : la dernière déjà passée, sinon la
+ * prochaine à venir. Renvoie null si le groupe n'a aucune dictée programmée.
+ */
+export function semaineCouranteDepuisDevoirs(
+  devoirs: { date: string; assignment: { orthographe?: string | null } }[],
+  aujourdhui: Date = new Date()
+): number | null {
+  const jour = aujourdhui.toISOString().slice(0, 10);
+
+  const programmees = devoirs
+    .map((d) => {
+      const seance = d.assignment.orthographe ? parseSessionId(d.assignment.orthographe) : null;
+      return seance ? { date: d.date, semaine: seance.semaine } : null;
+    })
+    .filter((d): d is { date: string; semaine: number } => d !== null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (programmees.length === 0) return null;
+
+  const passees = programmees.filter((d) => d.date <= jour);
+  if (passees.length > 0) return passees[passees.length - 1].semaine;
+  return programmees[0].semaine;
+}

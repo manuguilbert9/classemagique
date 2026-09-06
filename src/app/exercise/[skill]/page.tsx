@@ -30,6 +30,8 @@ import { CodedPathExercise } from '@/components/coded-path-exercise';
 import { LabelGameExercise } from '@/components/label-game-exercise';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { DicteeExercise } from '@/components/dictee-exercise';
+import { CopieCapitalesExercise } from '@/components/copie-capitales-exercise';
+import { ComptagePointageExercise } from '@/components/comptage-pointage-exercise';
 import { AdaptiveMentalCalculationExercise } from '@/components/adaptive-mental-calculation-exercise';
 import { SyllableTableExercise } from '@/components/syllable-table-exercise';
 import { DecodingExercise } from '@/components/decoding-exercise';
@@ -126,6 +128,12 @@ export default function ExercisePage() {
       case 'spelling':
         // La page /dictee/[sessionId] joue une séance précise ; ici, l'élève choisit la sienne.
         exerciseComponent = <DicteeExercise />;
+        break;
+      case 'copie-capitales':
+        exerciseComponent = <CopieCapitalesExercise />;
+        break;
+      case 'comptage-pointage':
+        exerciseComponent = <ComptagePointageExercise />;
         break;
       case 'phrase-construction':
         exerciseComponent = <PhraseConstructionExercise />;

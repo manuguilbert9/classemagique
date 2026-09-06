@@ -420,6 +420,15 @@ export const skills: Skill[] = [
     isFixedLevel: 'A',
   },
   {
+    // Adaptation de la dictée : les mots de la semaine sont recopiés en capitales.
+    name: 'Copie des mots en capitales',
+    slug: 'copie-capitales',
+    description: 'Recopie en capitales les mots de la semaine, lettre après lettre.',
+    icon: <Type />,
+    category: 'Ecriture',
+    isFixedLevel: 'A',
+  },
+  {
     name: 'Construction de phrases',
     slug: 'phrase-construction',
     description: "Utilise les mots fournis pour construire une phrase grammaticalement correcte.",
@@ -512,6 +521,16 @@ export const skills: Skill[] = [
     slug: 'keyboard-count',
     description: "Compter les objets et taper la réponse directement sur le clavier.",
     icon: <Keyboard />,
+    category: 'Nombres et calcul',
+    isFixedLevel: 'A',
+  },
+  {
+    // Comptage soutenu par le pointage : chaque objet touché porte son rang,
+    // pour installer la correspondance terme à terme et le principe cardinal.
+    name: 'Compter en pointant',
+    slug: 'comptage-pointage',
+    description: 'Touche chaque objet pour le compter, puis dis combien il y en a en tout.',
+    icon: <ListOrdered />,
     category: 'Nombres et calcul',
     isFixedLevel: 'A',
   },

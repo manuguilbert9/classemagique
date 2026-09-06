@@ -45,6 +45,8 @@ export interface Student {
     isOnline?: boolean;
     lastSeenAt?: Date;
     accordProgressionIndex?: number; // Progression dans les 300 phrases du chemin des accords
+    /** Liste de mots saisie par l enseignant pour l exercice de copie en capitales. */
+    motsCopiePersonnalises?: string[];
 }
 
 
@@ -170,6 +172,7 @@ export async function getStudents(): Promise<Student[]> {
                 isOnline: Boolean(data.isOnline),
                 lastSeenAt: typeof data.lastSeenAt?.toDate === 'function' ? data.lastSeenAt.toDate() : undefined,
                 accordProgressionIndex: data.accordProgressionIndex || 0,
+                motsCopiePersonnalises: data.motsCopiePersonnalises || [],
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -218,6 +221,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     isOnline: Boolean(studentData.isOnline),
                     lastSeenAt: typeof studentData.lastSeenAt?.toDate === 'function' ? studentData.lastSeenAt.toDate() : undefined,
                     accordProgressionIndex: studentData.accordProgressionIndex || 0,
+                    motsCopiePersonnalises: studentData.motsCopiePersonnalises || [],
                 };
             }
         }
@@ -257,6 +261,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 mentalMathPerformance: data.mentalMathPerformance || {},
                 nuggets: data.nuggets || 0,
                 accordProgressionIndex: data.accordProgressionIndex || 0,
+                motsCopiePersonnalises: data.motsCopiePersonnalises || [],
             };
         }
         return null;
