@@ -51,6 +51,11 @@ export interface Student {
     motsCopiePersonnalises?: string[];
     /** Niveau scolaire de l eleve dans chaque domaine, ex. { "Nombres et calcul": "CE1-milieu" }. */
     niveauxParDomaine?: Partial<Record<SkillCategory, NiveauScolaire>>;
+    /**
+     * Les exercices mis en avant pour cet eleve : ceux qui s affichent d emblee
+     * sur sa page En classe. Tous les autres restent accessibles dans le tiroir.
+     */
+    misEnAvant?: string[];
 }
 
 
@@ -178,6 +183,7 @@ export async function getStudents(): Promise<Student[]> {
                 accordProgressionIndex: data.accordProgressionIndex || 0,
                 motsCopiePersonnalises: data.motsCopiePersonnalises || [],
                 niveauxParDomaine: data.niveauxParDomaine || {},
+                misEnAvant: data.misEnAvant,
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -228,6 +234,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     accordProgressionIndex: studentData.accordProgressionIndex || 0,
                     motsCopiePersonnalises: studentData.motsCopiePersonnalises || [],
                     niveauxParDomaine: studentData.niveauxParDomaine || {},
+                    misEnAvant: studentData.misEnAvant,
                 };
             }
         }
@@ -269,6 +276,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 accordProgressionIndex: data.accordProgressionIndex || 0,
                 motsCopiePersonnalises: data.motsCopiePersonnalises || [],
                 niveauxParDomaine: data.niveauxParDomaine || {},
+                misEnAvant: data.misEnAvant,
             };
         }
         return null;

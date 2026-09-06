@@ -14,10 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { allSkillCategories, getSkillBySlug, skills, type SkillCategory } from '@/lib/skills';
-import { libelleNiveauScolaire } from '@/lib/niveaux-scolaires';
+import { competencePertinente, libelleNiveauScolaire } from '@/lib/niveaux-scolaires';
 import {
   OPTIONS_PAR_DEFAUT,
-  competencesAActiver,
   diagnostiquerEleve,
   genererPourEleves,
   listerSeances,
@@ -130,38 +129,51 @@ export function GrilleDeClasse({
   );
 
   /**
-   * Active, pour les élèves laissés de côté, les exercices qui tombent dans leur
-   * plage de niveau. C'est la cause la plus fréquente d'un devoir vide.
+   * Ce qui est mis en avant pour un élève. Les fiches d'avant ce réglage
+   * retombent sur leurs anciennes activations, le temps de la transition.
    */
-  const activerLesExercicesAdaptes = async () => {
-    setIsSaving(true);
-    let succes = 0;
-    let sansEffet = 0;
+  const misEnAvantDe = (eleve: Student): string[] =>
+    eleve.misEnAvant ??
+    Object.entries(eleve.enabledSkills || {})
+      .filter(([, actif]) => actif)
+      .map(([slug]) => slug);
 
-    for (const diag of laisses) {
-      const eleve = students.find((e) => e.id === diag.eleveId);
-      if (!eleve) continue;
-      const aActiver = competencesAActiver(eleve);
-      if (aActiver.length === 0) {
-        sansEffet++;
-        continue;
-      }
-      const enabledSkills = { ...(eleve.enabledSkills || {}) };
-      aActiver.forEach((slug) => {
-        enabledSkills[slug] = true;
-      });
-      const res = await updateStudent(eleve.id, { enabledSkills });
-      if (res.success) succes++;
+  const enregistrerMiseEnAvant = async (eleve: Student, slugs: string[]) => {
+    const res = await updateStudent(eleve.id, { misEnAvant: slugs });
+    if (res.success) {
+      setEleveOuvert({ ...eleve, misEnAvant: slugs });
+      onDataRefresh();
+    } else {
+      toast({ variant: 'destructive', title: 'Erreur', description: res.error });
     }
+  };
 
-    toast({
-      title: 'Exercices activés',
-      description:
-        `${succes} élève(s) mis à jour d'après leurs niveaux.` +
-        (sansEffet > 0 ? ` ${sansEffet} sans exercice disponible : renseigne d'abord ses niveaux.` : ''),
-    });
-    setIsSaving(false);
-    onDataRefresh();
+  const basculerMiseEnAvant = (eleve: Student, slug: string) => {
+    const actuels = misEnAvantDe(eleve);
+    enregistrerMiseEnAvant(
+      eleve,
+      actuels.includes(slug) ? actuels.filter((s) => s !== slug) : [...actuels, slug]
+    );
+  };
+
+  /** Met en avant tous les exercices qui correspondent aux niveaux de l'élève. */
+  const mettreEnAvantSonNiveau = (eleve: Student) => {
+    const slugs = new Set<string>();
+    for (const [domaine, niveau] of Object.entries(eleve.niveauxParDomaine || {})) {
+      for (const skill of skills) {
+        if (skill.category === domaine && competencePertinente(skill, niveau as never)) {
+          slugs.add(skill.slug);
+        }
+      }
+    }
+    if (slugs.size === 0) {
+      toast({
+        title: 'Aucun niveau renseigné',
+        description: `Situe d'abord ${eleve.name} dans l'onglet Niveaux.`,
+      });
+      return;
+    }
+    enregistrerMiseEnAvant(eleve, [...slugs]);
   };
 
   const voirLaProposition = () => {
@@ -462,7 +474,7 @@ export function GrilleDeClasse({
               </div>
 
               {laisses.length > 0 && (
-                <div className="space-y-3 rounded-xl border border-amber-400 bg-amber-50 p-4 text-sm dark:bg-amber-950/40">
+                <div className="space-y-2 rounded-xl border border-amber-400 bg-amber-50 p-4 text-sm dark:bg-amber-950/40">
                   <p className="font-semibold">
                     {laisses.length} élève(s) ne recevraient aucun devoir
                   </p>
@@ -471,27 +483,20 @@ export function GrilleDeClasse({
                       <li key={d.eleveId}>
                         <span className="font-medium">{d.nom}</span>{' '}
                         {!d.niveauxRenseignes ? (
-                          <span className="text-muted-foreground">— aucun niveau renseigné.</span>
-                        ) : d.domainesADebloquer.length > 0 ? (
                           <span className="text-muted-foreground">
-                            — des exercices conviennent à son niveau mais aucun n&apos;est activé :{' '}
-                            {d.domainesADebloquer
-                              .map((x) => `${x.domaine} (${x.dansLaPlage})`)
-                              .join(', ')}
-                            .
+                            — aucun niveau renseigné. Va le situer dans l&apos;onglet Niveaux.
+                          </span>
+                        ) : d.domainesSansExercice.length > 0 ? (
+                          <span className="text-muted-foreground">
+                            — aucun exercice de la plateforme ne couvre son niveau en{' '}
+                            {d.domainesSansExercice.join(', ')}.
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">
-                            — aucun exercice ne correspond à son niveau dans ces domaines.
-                          </span>
+                          <span className="text-muted-foreground">— rien à lui proposer ces jours-là.</span>
                         )}
                       </li>
                     ))}
                   </ul>
-                  <Button size="sm" onClick={activerLesExercicesAdaptes} disabled={isSaving}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Activer les exercices adaptés à leur niveau
-                  </Button>
                 </div>
               )}
 
@@ -662,23 +667,57 @@ export function GrilleDeClasse({
               </div>
 
               <div>
-                <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Exercices actifs
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {skills
-                    .filter((s) => eleveOuvert.enabledSkills?.[s.slug])
-                    .map((s) => (
-                      <span key={s.slug} className="rounded-md bg-muted px-2 py-1 text-xs">
-                        {s.name}
-                        <span className="ml-1 font-mono text-[10px] text-muted-foreground">
-                          {eleveOuvert.levels?.[s.slug] ?? ''}
-                        </span>
-                      </span>
-                    ))}
-                  {skills.filter((s) => eleveOuvert.enabledSkills?.[s.slug]).length === 0 && (
-                    <span className="text-sm text-muted-foreground">Aucun exercice actif.</span>
-                  )}
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Mis en avant sur sa page
+                  </h4>
+                  <Button size="sm" variant="ghost" onClick={() => mettreEnAvantSonNiveau(eleveOuvert)}>
+                    Ceux de son niveau
+                  </Button>
+                </div>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Ces exercices s&apos;affichent d&apos;emblée. Tous les autres restent accessibles dans
+                  son tiroir, et n&apos;importe lequel peut lui être donné en devoirs si son niveau
+                  le permet.
+                </p>
+                <div className="space-y-3">
+                  {allSkillCategories.map((domaine) => {
+                    const duDomaine = skills.filter((s) => s.category === domaine);
+                    if (duDomaine.length === 0) return null;
+                    const niveau = eleveOuvert.niveauxParDomaine?.[domaine as SkillCategory];
+                    return (
+                      <div key={domaine}>
+                        <p className="mb-1 text-xs font-semibold">{domaine}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {duDomaine.map((s) => {
+                            const enAvant = misEnAvantDe(eleveOuvert).includes(s.slug);
+                            const dansSaPlage = niveau ? competencePertinente(s, niveau) : true;
+                            return (
+                              <button
+                                key={s.slug}
+                                type="button"
+                                onClick={() => basculerMiseEnAvant(eleveOuvert, s.slug)}
+                                className={cn(
+                                  'rounded-md border px-2 py-1 text-xs transition-colors',
+                                  enAvant
+                                    ? 'border-primary bg-primary/10 font-semibold text-primary'
+                                    : 'border-transparent bg-muted text-muted-foreground hover:bg-muted/70',
+                                  !dansSaPlage && !enAvant && 'opacity-50'
+                                )}
+                                title={
+                                  dansSaPlage
+                                    ? 'Dans sa plage de niveau'
+                                    : 'Hors de sa plage de niveau — jamais donné en devoirs'
+                                }
+                              >
+                                {s.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

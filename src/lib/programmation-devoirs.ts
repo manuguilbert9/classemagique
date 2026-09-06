@@ -52,15 +52,16 @@ const DOMAINES_MATHS = ['Nombres et calcul', 'Problèmes'] as const;
 /** Les domaines de repli pour le devoir de français quand la dictée ne convient pas. */
 const DOMAINES_ECRIT = ['Orthographe', 'Ecriture'] as const;
 
-function estActive(eleve: Student, slug: string): boolean {
-  // Sans réglage explicite, une compétence est considérée comme disponible.
-  return eleve.enabledSkills ? eleve.enabledSkills[slug] !== false : true;
-}
+/**
+ * Le niveau est le seul filtre : tout exercice dont la plage scolaire recouvre
+ * le niveau de l'élève dans son domaine peut lui être donné en devoirs. La mise
+ * en avant sur la page « En classe » ne restreint rien ici.
+ */
 
 /**
- * Les exercices d'un domaine que l'élève peut faire : activés sur sa fiche et
- * situés dans sa plage de niveau. Sans niveau renseigné, on ne filtre que sur
- * l'activation — mieux vaut un exercice approximatif que pas de devoirs.
+ * Les exercices d'un domaine qui conviennent à l'élève, d'après son niveau.
+ * Sans niveau renseigné, on prend tout le domaine : mieux vaut un exercice
+ * approximatif que pas de devoirs du tout.
  */
 function exercicesDisponibles(
   eleve: Student,
@@ -70,12 +71,20 @@ function exercicesDisponibles(
   const candidats = niveau
     ? competencesPourNiveau(domaine, niveau)
     : skills.filter((s) => s.category === domaine);
-  return candidats.filter((s) => estActive(eleve, s.slug));
+
+  // Les exercices mis en avant passent devant : quand plusieurs conviennent au
+  // même niveau, on donne celui que l'enseignant a choisi de mettre en avant —
+  // c'est là que se joue l'adaptation d'un élève à qui l'on a taillé un exercice.
+  const misEnAvant = new Set(eleve.misEnAvant ?? []);
+  if (misEnAvant.size === 0) return candidats;
+  return [
+    ...candidats.filter((s) => misEnAvant.has(s.slug)),
+    ...candidats.filter((s) => !misEnAvant.has(s.slug)),
+  ];
 }
 
 /** L'élève suit-il les dictées de la méthode ? */
 function suitLesDictees(eleve: Student): boolean {
-  if (!estActive(eleve, 'spelling')) return false;
   const niveau = eleve.niveauxParDomaine?.['Orthographe'];
   const dictee = getSkillBySlug('spelling');
   if (!niveau || !dictee) return true;
@@ -201,24 +210,24 @@ export function listerSeances(options: OptionsProgrammation): Seance[] {
   return seances;
 }
 
-/** Ce qu'un élève a de disponible, domaine par domaine, pour comprendre un vide. */
+/** Pourquoi un élève repart les mains vides. */
 export interface DiagnosticEleve {
   eleveId: string;
   nom: string;
-  /** Aucun devoir ne peut être produit pour cet élève. */
   sansDevoir: boolean;
-  /** Domaines où des exercices conviendraient mais ne sont pas activés. */
-  domainesADebloquer: { domaine: string; dansLaPlage: number; actives: number }[];
   niveauxRenseignes: boolean;
+  /** Domaines où aucun exercice ne correspond à son niveau. */
+  domainesSansExercice: string[];
 }
 
 const DOMAINES_SUIVIS = ['Orthographe', 'Ecriture', 'Nombres et calcul', 'Problèmes'] as const;
 
 /**
- * Explique pourquoi un élève repart les mains vides.
+ * Explique pourquoi un élève ne reçoit rien.
  *
- * Le cas courant : des exercices conviendraient à son niveau, mais aucun n'est
- * activé sur sa fiche — c'est l'activation qu'il faut corriger, pas le niveau.
+ * Depuis que le niveau est le seul filtre, il n'y a plus que deux causes : ses
+ * niveaux ne sont pas renseignés, ou aucun exercice de la plateforme ne couvre
+ * son niveau dans ces domaines.
  */
 export function diagnostiquerEleve(eleve: Student, options: OptionsProgrammation): DiagnosticEleve {
   const devoirs = genererPourEleve(eleve, options);
@@ -226,34 +235,17 @@ export function diagnostiquerEleve(eleve: Student, options: OptionsProgrammation
     (d) => !d.assignment.orthographe && !d.assignment.francais && !d.assignment.maths
   );
 
-  const domainesADebloquer = DOMAINES_SUIVIS.map((domaine) => {
+  const domainesSansExercice = DOMAINES_SUIVIS.filter((domaine) => {
     const niveau = eleve.niveauxParDomaine?.[domaine];
-    const dansLaPlage = niveau
-      ? competencesPourNiveau(domaine, niveau)
-      : skills.filter((s) => s.category === domaine);
-    const actives = dansLaPlage.filter((s) => estActive(eleve, s.slug));
-    return { domaine, dansLaPlage: dansLaPlage.length, actives: actives.length };
-  }).filter((d) => d.dansLaPlage > 0 && d.actives === 0);
+    if (!niveau) return false;
+    return competencesPourNiveau(domaine, niveau).length === 0;
+  });
 
   return {
     eleveId: eleve.id,
     nom: eleve.name,
     sansDevoir,
-    domainesADebloquer,
     niveauxRenseignes: Object.keys(eleve.niveauxParDomaine || {}).length > 0,
+    domainesSansExercice,
   };
-}
-
-/**
- * Les compétences à activer pour un élève d'après ses niveaux : celles qui
- * tombent dans sa plage, dans tous les domaines où un niveau est renseigné.
- */
-export function competencesAActiver(eleve: Student): string[] {
-  const aActiver: string[] = [];
-  for (const [domaine, niveau] of Object.entries(eleve.niveauxParDomaine || {})) {
-    for (const skill of competencesPourNiveau(domaine as never, niveau as never)) {
-      if (!estActive(eleve, skill.slug)) aActiver.push(skill.slug);
-    }
-  }
-  return Array.from(new Set(aActiver));
 }

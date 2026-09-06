@@ -24,6 +24,7 @@ import {
   motsDuTheme,
   urlPictogramme,
 } from '@/data/copie/liste-imagee';
+import { pictogrammeDuMot } from '@/data/dictees/pictogrammes-corpus';
 import {
   DICTEES_CE2,
   getMotsACopier,
@@ -459,7 +460,12 @@ function ChoixDeLaListe({
 
   const lancerDynaMots = () => {
     if (!semaine) return;
-    const mots = getMotsACopier(semaine).map((m) => ({ mot: m.toUpperCase() }));
+    // Le corpus de la semaine est illustré chaque fois qu'un pictogramme existe :
+    // les mots concrets ont leur image, les mots abstraits s'affichent seuls.
+    const mots = getMotsACopier(semaine).map((m) => ({
+      mot: m.toUpperCase(),
+      picto: pictogrammeDuMot(m),
+    }));
     onStart(mots, `Semaine ${semaine.semaine} — ${semaine.corpusTheme}`);
   };
 

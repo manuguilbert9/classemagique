@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { skills as allSkills, type Skill, allSkillCategories, categoryStyles } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { Home, BarChart3, CheckCircle, ListChecks, Gem, MessageSquare } from 'lucide-react';
+import { Home, BarChart3, CheckCircle, ListChecks, Gem, MessageSquare, Boxes, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
@@ -18,9 +19,49 @@ import { cn } from '@/lib/utils';
 import { ChatManager } from '@/components/chat/chat-manager';
 import { ChatContext } from '@/context/chat-context';
 
+/** Une carte d'exercice, la même en mise en avant et dans le tiroir. */
+function CarteExercice({ skill, fait }: { skill: Skill; fait: boolean }) {
+  const style = categoryStyles[skill.category] || { bg: 'bg-gray-200', text: 'text-gray-800' };
+  return (
+    <Link href={`/exercise/${skill.slug}`} className="group" aria-label={`Pratiquer ${skill.name}`}>
+      <Card
+        className={cn(
+          'flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative',
+          style.bg,
+          style.text
+        )}
+      >
+        {fait && (
+          <div className="absolute top-3 right-3 h-7 w-7 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
+            <CheckCircle className="h-6 w-6 text-white" />
+          </div>
+        )}
+        <div
+          className={cn(
+            'mb-4 transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20',
+            style.text
+          )}
+        >
+          {skill.icon}
+        </div>
+        <h3 className="font-exercise text-2xl sm:text-3xl mb-2 drop-shadow-sm">{skill.name}</h3>
+        <p
+          className={cn(
+            'opacity-80 text-sm sm:text-base',
+            style.text === 'text-white' ? 'text-white/80' : 'text-black/80'
+          )}
+        >
+          {skill.description}
+        </p>
+      </Card>
+    </Link>
+  );
+}
+
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [enabledSkillsList, setEnabledSkillsList] = useState<Skill[] | null>(null);
+  const [tiroirOuvert, setTiroirOuvert] = useState(false);
   const [skillsCompletedToday, setSkillsCompletedToday] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -47,18 +88,13 @@ export default function EnClassePage() {
         });
         setSkillsCompletedToday(completedToday);
 
-        const studentSkills = student.enabledSkills;
+        // Les exercices mis en avant par l'enseignant. Tout le reste demeure
+        // accessible dans le tiroir : plus rien n'est hors de portée de l'élève.
+        const misEnAvant = student.misEnAvant
+          ? allSkills.filter(skill => student.misEnAvant!.includes(skill.slug))
+          : allSkills.filter(skill => student.enabledSkills?.[skill.slug]);
 
-        const defaultAllEnabled: Record<string, boolean> = {};
-        allSkills.forEach(skill => defaultAllEnabled[skill.slug] = true);
-        
-        const effectiveEnabledSkills = studentSkills ?? defaultAllEnabled;
-
-        const filteredSkills = allSkills.filter(skill => {
-           return effectiveEnabledSkills[skill.slug] ?? false;
-        });
-        
-        setEnabledSkillsList(filteredSkills);
+        setEnabledSkillsList(misEnAvant);
         setIsLoading(false);
       }
 
@@ -161,46 +197,61 @@ export default function EnClassePage() {
         </div>
       </header>
       
+      {/* Ce que l'enseignant met en avant aujourd'hui */}
       {enabledSkillsList && enabledSkillsList.length > 0 ? (
-        <div className="space-y-12">
-          {allSkillCategories.map(category => {
-            const categorySkills = skillsByCategory[category] || [];
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
+          {enabledSkillsList.map((skill) => (
+            <CarteExercice
+              key={skill.slug}
+              skill={skill}
+              fait={skillsCompletedToday.has(skill.slug)}
+            />
+          ))}
+        </div>
+      ) : (
+        <Card className="w-full max-w-2xl mx-auto p-8 text-center">
+          <h3 className="font-headline text-2xl">Rien de particulier aujourd&apos;hui</h3>
+          <p className="text-muted-foreground mt-2">
+            Ouvre le tiroir ci-dessous : tous les exercices t&apos;attendent.
+          </p>
+        </Card>
+      )}
+
+      {/* Le tiroir : tous les exercices, rangés par domaine, toujours accessibles */}
+      <Collapsible open={tiroirOuvert} onOpenChange={setTiroirOuvert} className="mt-12">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-3 rounded-2xl border-2 border-dashed py-5 font-headline text-2xl transition-colors hover:bg-muted"
+          >
+            <Boxes className="h-7 w-7 text-primary" />
+            Tous les exercices
+            <ChevronDown
+              className={cn('h-6 w-6 transition-transform', tiroirOuvert && 'rotate-180')}
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-8 space-y-12">
+          {allSkillCategories.map((category) => {
+            const categorySkills = allSkills.filter((s) => s.category === category);
             if (categorySkills.length === 0) return null;
-            
             return (
               <div key={category}>
                 <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
-                  {categorySkills.map((skill) => {
-                    const style = categoryStyles[skill.category] || { bg: 'bg-gray-200', text: 'text-gray-800' };
-                    return (
-                      <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
-                        <Card className={cn("flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative", style.bg, style.text)}>
-                          {skillsCompletedToday.has(skill.slug) && (
-                              <div className="absolute top-3 right-3 h-7 w-7 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                <CheckCircle className="h-6 w-6 text-white" />
-                              </div>
-                          )}
-                          <div className={cn("mb-4 transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20", style.text)}>
-                            {skill.icon}
-                          </div>
-                          <h3 className="font-exercise text-2xl sm:text-3xl mb-2 drop-shadow-sm">{skill.name}</h3>
-                          <p className={cn("opacity-80 text-sm sm:text-base", style.text === 'text-white' ? 'text-white/80' : 'text-black/80')}>{skill.description}</p>
-                        </Card>
-                      </Link>
-                    )
-                  })}
+                  {categorySkills.map((skill) => (
+                    <CarteExercice
+                      key={skill.slug}
+                      skill={skill}
+                      fait={skillsCompletedToday.has(skill.slug)}
+                    />
+                  ))}
                 </div>
               </div>
             );
           })}
-        </div>
-      ) : (
-        <Card className="w-full max-w-2xl mx-auto p-8 text-center">
-            <h3 className="font-headline text-2xl">Aucun exercice n'est disponible</h3>
-            <p className="text-muted-foreground mt-2">Ton enseignant n'a pas encore activé d'exercices pour le mode "En classe".</p>
-        </Card>
-      )}
+        </CollapsibleContent>
+      </Collapsible>
     </main>
     {isChatOpen && student && <ChatManager student={student} onClose={() => setIsChatOpen(false)} />}
     </>
