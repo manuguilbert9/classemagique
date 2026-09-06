@@ -15,6 +15,7 @@ import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
 import { GroupManager } from '@/components/teacher/group-manager';
 import { HomeworkManager } from '@/components/teacher/homework-manager';
+import { GrilleDeClasse } from '@/components/teacher/grille-de-classe';
 import { getStudents, Student } from '@/services/students';
 import { getGroups, type Group } from '@/services/groups';
 import { getAllScores, Score } from '@/services/scores';
@@ -135,14 +136,24 @@ export default function TeacherDashboardPage() {
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
           ) : (
-            <Tabs defaultValue="students" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+            <Tabs defaultValue="grille" className="w-full">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="grille">Grille de classe</TabsTrigger>
                 <TabsTrigger value="students">Élèves</TabsTrigger>
                 <TabsTrigger value="groups">Groupes</TabsTrigger>
                 <TabsTrigger value="homework">Devoirs</TabsTrigger>
                 <TabsTrigger value="results">Résultats</TabsTrigger>
                 <TabsTrigger value="database">Réglages</TabsTrigger>
               </TabsList>
+              <TabsContent value="grille" className="mt-6">
+                <GrilleDeClasse
+                  students={students}
+                  groups={groups}
+                  allHomework={allHomework}
+                  allHomeworkResults={allHomeworkResults}
+                  onDataRefresh={refreshAllData}
+                />
+              </TabsContent>
               <TabsContent value="students" className="mt-6">
                 <StudentManager students={students} archivedSkills={archivedSkills} />
               </TabsContent>

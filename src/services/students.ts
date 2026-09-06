@@ -6,6 +6,8 @@ import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, runTransaction } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { skills } from '@/lib/skills';
+import type { SkillCategory } from '@/lib/skills';
+import type { NiveauScolaire } from '@/lib/niveaux-scolaires';
 import { getGloballyEnabledSkills } from './teacher';
 
 export type StudentPerformance = Record<string, {
@@ -47,6 +49,8 @@ export interface Student {
     accordProgressionIndex?: number; // Progression dans les 300 phrases du chemin des accords
     /** Liste de mots saisie par l enseignant pour l exercice de copie en capitales. */
     motsCopiePersonnalises?: string[];
+    /** Niveau scolaire de l eleve dans chaque domaine, ex. { "Nombres et calcul": "CE1-milieu" }. */
+    niveauxParDomaine?: Partial<Record<SkillCategory, NiveauScolaire>>;
 }
 
 
@@ -173,6 +177,7 @@ export async function getStudents(): Promise<Student[]> {
                 lastSeenAt: typeof data.lastSeenAt?.toDate === 'function' ? data.lastSeenAt.toDate() : undefined,
                 accordProgressionIndex: data.accordProgressionIndex || 0,
                 motsCopiePersonnalises: data.motsCopiePersonnalises || [],
+                niveauxParDomaine: data.niveauxParDomaine || {},
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -222,6 +227,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     lastSeenAt: typeof studentData.lastSeenAt?.toDate === 'function' ? studentData.lastSeenAt.toDate() : undefined,
                     accordProgressionIndex: studentData.accordProgressionIndex || 0,
                     motsCopiePersonnalises: studentData.motsCopiePersonnalises || [],
+                    niveauxParDomaine: studentData.niveauxParDomaine || {},
                 };
             }
         }
@@ -262,6 +268,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 nuggets: data.nuggets || 0,
                 accordProgressionIndex: data.accordProgressionIndex || 0,
                 motsCopiePersonnalises: data.motsCopiePersonnalises || [],
+                niveauxParDomaine: data.niveauxParDomaine || {},
             };
         }
         return null;

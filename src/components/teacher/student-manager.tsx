@@ -16,7 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { skills as availableSkills, type SkillLevel, allSkillCategories } from '@/lib/skills';
+import { skills as availableSkills, type SkillLevel, type SkillCategory, allSkillCategories } from '@/lib/skills';
+import { ECHELLE_SCOLAIRE, difficultesDuDomaine, libelleNiveauScolaire, type NiveauScolaire } from '@/lib/niveaux-scolaires';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -48,6 +49,7 @@ export function StudentManager({ students, archivedSkills = {} }: StudentManager
     const [editedShowPhoto, setEditedShowPhoto] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
+    const [editedNiveaux, setEditedNiveaux] = useState<Partial<Record<SkillCategory, NiveauScolaire>>>({});
     const [editedEnabledSkills, setEditedEnabledSkills] = useState<Record<string, boolean>>({});
     const [isUpdating, setIsUpdating] = useState(false);
     const [isArchiveOpen, setIsArchiveOpen] = useState(false);
@@ -93,6 +95,7 @@ export function StudentManager({ students, archivedSkills = {} }: StudentManager
         setEditedPhotoURL(student.photoURL);
         setEditedShowPhoto(student.showPhoto ?? true);
         setEditedLevels(student.levels || {});
+        setEditedNiveaux(student.niveauxParDomaine || {});
 
         if (student.enabledSkills) {
             setEditedEnabledSkills(student.enabledSkills);
@@ -160,6 +163,15 @@ export function StudentManager({ students, archivedSkills = {} }: StudentManager
             toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de supprimer l'élève." });
         }
     }
+
+    /**
+     * Renseigner le niveau d'un domaine règle d'un coup la difficulté de tous ses
+     * exercices. Chaque exercice reste modifiable ensuite, pour déroger au cas par cas.
+     */
+    const handleNiveauDomaineChange = (domaine: SkillCategory, niveau: NiveauScolaire) => {
+        setEditedNiveaux(prev => ({ ...prev, [domaine]: niveau }));
+        setEditedLevels(prev => ({ ...prev, ...difficultesDuDomaine(domaine, niveau) }));
+    };
 
     const handleLevelChange = (skillSlug: string, level: SkillLevel) => {
         setEditedLevels(prev => ({ ...prev, [skillSlug]: level }));
@@ -356,6 +368,45 @@ export function StudentManager({ students, archivedSkills = {} }: StudentManager
                                         <Switch id="show-photo-switch" checked={editedShowPhoto} onCheckedChange={setEditedShowPhoto} />
                                         <Label htmlFor="show-photo-switch">Afficher la photo de profil côté élève</Label>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="border-b pb-2 mb-4">
+                                    <h3 className="font-semibold">Niveau scolaire par domaine</h3>
+                                    <p className="text-xs text-muted-foreground">
+                                        Renseigner un domaine règle d&apos;un coup la difficulté de tous ses exercices,
+                                        et sert à programmer les devoirs. Chaque exercice reste modifiable ci-dessous.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {allSkillCategories.map(domaine => (
+                                        <div key={domaine} className="flex items-center gap-2">
+                                            <Label className="flex-1 text-xs">{domaine}</Label>
+                                            <Select
+                                                value={editedNiveaux[domaine] || 'non-renseigne'}
+                                                onValueChange={(valeur) => {
+                                                    if (valeur !== 'non-renseigne') {
+                                                        handleNiveauDomaineChange(domaine, valeur as NiveauScolaire);
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-40 h-8 text-xs">
+                                                    <SelectValue placeholder="Non renseigné" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="non-renseigne" className="text-muted-foreground">
+                                                        Non renseigné
+                                                    </SelectItem>
+                                                    {ECHELLE_SCOLAIRE.map(niveau => (
+                                                        <SelectItem key={niveau} value={niveau}>
+                                                            {libelleNiveauScolaire(niveau)}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 

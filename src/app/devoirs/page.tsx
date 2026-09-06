@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Home, ArrowRight, BookOpen, BrainCircuit, Loader2, CheckCircle, Info } from 'lucide-react';
 import { getSkillBySlug } from '@/lib/skills';
 import { UserContext } from '@/context/user-context';
-import { getHomeworkForGroup, getHomeworkResultsForUser, type Assignment, type HomeworkResult } from '@/services/homework';
+import { getHomeworkForStudent, getHomeworkResultsForUser, type Assignment, type HomeworkResult } from '@/services/homework';
 import { getSemaine, libelleSession, parseSessionId } from '@/services/dictees';
 import { format, isBefore, startOfToday, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -121,7 +121,7 @@ export default function DevoirsPage() {
       if (student?.groupId) {
         setIsLoadingHomework(true);
         const [allAssignments, completedResults] = await Promise.all([
-            getHomeworkForGroup(student.groupId),
+            getHomeworkForStudent(student.id, student.groupId),
             getHomeworkResultsForUser(student.id),
         ]);
         

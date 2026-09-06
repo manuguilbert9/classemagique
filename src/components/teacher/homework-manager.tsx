@@ -13,10 +13,11 @@ import { fr } from 'date-fns/locale';
 import { type Group } from '@/services/groups';
 import { type Student } from '@/services/students';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
-import { saveHomework, type Homework, type Assignment, HomeworkResult } from '@/services/homework';
+import { saveHomework, saveHomeworkForStudents, type Homework, type Assignment, HomeworkResult } from '@/services/homework';
 import { DICTEES_CE2, formatSessionId, libelleSession, parseSessionId } from '@/services/dictees';
+import { OPTIONS_PAR_DEFAUT, genererPourEleve, genererPourEleves, resumerAssignment, type OptionsProgrammation } from '@/lib/programmation-devoirs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, CheckCircle, XCircle, Users, BrainCircuit, Wand2, Calendar as CalendarIcon, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Save, CheckCircle, XCircle, Users, BrainCircuit, Wand2, Sparkles, Calendar as CalendarIcon, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,62 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
   const [isSaving, setIsSaving] = useState(false);
+
+  // Programmation automatique, élève par élève
+  const [showAutoMode, setShowAutoMode] = useState(false);
+  const [autoConfig, setAutoConfig] = useState<OptionsProgrammation & { groupIds: string[] }>({
+    dateDebut: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+    ...OPTIONS_PAR_DEFAUT,
+    groupIds: [],
+  });
+
+  const elevesConcernes = useMemo(
+    () => students.filter((e) => e.groupId && autoConfig.groupIds.includes(e.groupId)),
+    [students, autoConfig.groupIds]
+  );
+
+  const nombreDeSeances = autoConfig.nombreDeSemaines * autoConfig.jours.length;
+
+  const apercu = useMemo(
+    () =>
+      elevesConcernes.slice(0, 20).map((eleve) => {
+        const devoirs = genererPourEleve(eleve, autoConfig);
+        return {
+          eleve,
+          resume: devoirs.length > 0 ? resumerAssignment(devoirs[0].assignment) : 'rien',
+          sansNiveau: Object.keys(eleve.niveauxParDomaine || {}).length === 0,
+        };
+      }),
+    [elevesConcernes, autoConfig]
+  );
+
+  const handleAutoSave = async () => {
+    setIsSaving(true);
+    const parDate = genererPourEleves(elevesConcernes, autoConfig);
+    let succes = 0;
+    let echecs = 0;
+
+    for (const [date, assignments] of parDate) {
+      const res = await saveHomeworkForStudents(date, assignments);
+      if (res.success) succes++;
+      else echecs++;
+    }
+
+    if (echecs === 0) {
+      toast({
+        title: 'Devoirs programmés',
+        description: `${succes} journées programmées pour ${elevesConcernes.length} élève(s).`,
+      });
+      setShowAutoMode(false);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur partielle',
+        description: `${succes} journées écrites, ${echecs} en échec.`,
+      });
+    }
+    setIsSaving(false);
+  };
 
   // Bulk mode states
   const [showBulkMode, setShowBulkMode] = useState(false);
@@ -258,19 +315,140 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
           </h2>
           <p className="text-sm text-muted-foreground">Planifiez les activités et suivez les résultats en un clin d'œil.</p>
         </div>
-        <Button 
-          variant={showBulkMode ? "default" : "outline"} 
-          onClick={toggleBulkMode}
-          className={cn("gap-2 shadow-sm h-12 px-6 rounded-xl transition-all", !showBulkMode && "hover:bg-primary/5")}
-        >
-          <Wand2 className={cn("h-5 w-5", showBulkMode ? "animate-pulse" : "text-primary")} />
-          <span className="font-semibold">
-            {showBulkMode ? "Retour au calendrier" : "Programmation Rapide"}
-          </span>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={showAutoMode ? 'default' : 'outline'}
+            onClick={() => { setShowAutoMode(!showAutoMode); setShowBulkMode(false); }}
+            className="gap-2 shadow-sm h-12 px-6 rounded-xl"
+          >
+            <Sparkles className={cn('h-5 w-5', showAutoMode ? 'animate-pulse' : 'text-primary')} />
+            <span className="font-semibold">
+              {showAutoMode ? 'Retour au calendrier' : 'Programmation automatique'}
+            </span>
+          </Button>
+          <Button
+            variant={showBulkMode ? "default" : "outline"}
+            onClick={() => { toggleBulkMode(); setShowAutoMode(false); }}
+            className={cn("gap-2 shadow-sm h-12 px-6 rounded-xl transition-all", !showBulkMode && "hover:bg-primary/5")}
+          >
+            <Wand2 className={cn("h-5 w-5", showBulkMode ? "animate-pulse" : "text-primary")} />
+            <span className="font-semibold">
+              {showBulkMode ? "Retour au calendrier" : "Programmation Rapide"}
+            </span>
+          </Button>
+        </div>
       </div>
 
-      {showBulkMode ? (
+      {showAutoMode ? (
+        <Card className="border-primary/30 shadow-lg animate-in fade-in slide-in-from-top-4 duration-300">
+          <CardHeader className="bg-primary/5">
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Programmer les devoirs élève par élève
+            </CardTitle>
+            <CardDescription>
+              Chaque lundi et chaque jeudi : les mots de dictée et un exercice de mathématiques,
+              choisis d&apos;après le niveau scolaire de chaque élève. Les exercices de
+              mathématiques tournent d&apos;une séance à l&apos;autre.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Semaine de début</Label>
+                <Input
+                  type="date"
+                  value={autoConfig.dateDebut}
+                  onChange={(e) => setAutoConfig({ ...autoConfig, dateDebut: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Nombre de semaines</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={36}
+                  value={autoConfig.nombreDeSemaines}
+                  onChange={(e) =>
+                    setAutoConfig({ ...autoConfig, nombreDeSemaines: Math.max(1, parseInt(e.target.value) || 1) })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Dictée : semaine de départ</Label>
+                <Select
+                  value={String(autoConfig.semaineDicteeDepart)}
+                  onValueChange={(v) => setAutoConfig({ ...autoConfig, semaineDicteeDepart: parseInt(v) })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DICTEES_CE2.map((s) => (
+                      <SelectItem key={s.semaine} value={String(s.semaine)}>
+                        Semaine {s.semaine} — {s.corpusTheme}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Élèves concernés</Label>
+              <div className="flex flex-wrap gap-2">
+                {groups.map((groupe) => {
+                  const choisi = autoConfig.groupIds.includes(groupe.id);
+                  return (
+                    <Button
+                      key={groupe.id}
+                      type="button"
+                      variant={choisi ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() =>
+                        setAutoConfig({
+                          ...autoConfig,
+                          groupIds: choisi
+                            ? autoConfig.groupIds.filter((id) => id !== groupe.id)
+                            : [...autoConfig.groupIds, groupe.id],
+                        })
+                      }
+                    >
+                      {groupe.name}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Aperçu de la première séance, pour vérifier avant d'écrire */}
+            {elevesConcernes.length > 0 && (
+              <div className="rounded-xl border bg-muted/30 p-4 space-y-1">
+                <p className="text-sm font-semibold mb-2">
+                  Aperçu du premier lundi — {elevesConcernes.length} élève(s), {nombreDeSeances} séances chacun
+                </p>
+                {apercu.map(({ eleve, resume, sansNiveau }) => (
+                  <p key={eleve.id} className="text-sm">
+                    <span className="font-medium">{eleve.name}</span> : {resume}
+                    {sansNiveau && (
+                      <span className="text-amber-600"> — niveaux non renseignés</span>
+                    )}
+                  </p>
+                ))}
+              </div>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button
+              onClick={handleAutoSave}
+              disabled={isSaving || elevesConcernes.length === 0}
+              size="lg"
+              className="w-full"
+            >
+              {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
+              Programmer {nombreDeSeances * elevesConcernes.length} devoirs
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : showBulkMode ? (
         <Card className="border-primary/30 shadow-lg animate-in fade-in slide-in-from-top-4 duration-300">
           <CardHeader className="bg-primary/5">
             <CardTitle className="flex items-center gap-2">

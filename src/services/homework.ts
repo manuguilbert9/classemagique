@@ -15,6 +15,12 @@ export interface Assignment {
 export interface Homework {
   id: string; // The ID will be the ISO date of the assignment, e.g., "2024-09-16"
   assignments: Record<string, Assignment>; // Key is groupId
+  /**
+   * Devoirs propres à un élève, prioritaires sur ceux de son groupe.
+   * Clé : identifiant de l'élève. C'est ce que produit la programmation
+   * automatique, qui adapte le travail au niveau de chacun.
+   */
+  assignmentsByStudent?: Record<string, Assignment>;
 }
 
 export interface HomeworkResult {
@@ -115,6 +121,7 @@ export async function getAllHomework(): Promise<Homework[]> {
         homeworks.push({
             id: doc.id,
             assignments: doc.data().assignments || {},
+            assignmentsByStudent: doc.data().assignmentsByStudent || {},
         });
     });
     return homeworks.sort((a, b) => b.id.localeCompare(a.id));
@@ -154,4 +161,57 @@ export async function getHomeworkForGroup(groupId: string): Promise<{ date: stri
         console.error("Error loading homework for group from Firestore:", error);
         return [];
     }
+}
+
+/**
+ * Enregistre les devoirs propres à des élèves pour une date, sans toucher à ceux
+ * des groupes déjà présents sur cette date.
+ */
+export async function saveHomeworkForStudents(
+  dateId: string,
+  assignmentsByStudent: Record<string, Assignment>
+): Promise<{ success: boolean; error?: string }> {
+  if (!dateId) {
+    return { success: false, error: 'Date ID is required.' };
+  }
+  try {
+    const homeworkDocRef = doc(db, 'homework', dateId);
+    await setDoc(homeworkDocRef, { assignmentsByStudent }, { merge: true });
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving per-student homework to Firestore:', error);
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: 'An unknown error occurred.' };
+  }
+}
+
+/**
+ * Les devoirs d'un élève : ceux de son groupe, complétés et surchargés par ceux
+ * qui lui sont propres. Un devoir individuel l'emporte toujours sur celui du groupe.
+ */
+export async function getHomeworkForStudent(
+  studentId: string,
+  groupId: string | undefined
+): Promise<{ date: string; assignment: Assignment }[]> {
+  if (!studentId) return [];
+
+  try {
+    const querySnapshot = await getDocs(collection(db, 'homework'));
+    const resultat: { date: string; assignment: Assignment }[] = [];
+
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const duGroupe = groupId ? data.assignments?.[groupId] : undefined;
+      const propre = data.assignmentsByStudent?.[studentId];
+      if (!duGroupe && !propre) return;
+      resultat.push({ date: docSnap.id, assignment: { ...(duGroupe || {}), ...(propre || {}) } });
+    });
+
+    return resultat;
+  } catch (error) {
+    console.error('Error loading homework for student from Firestore:', error);
+    return [];
+  }
 }
