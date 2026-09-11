@@ -220,9 +220,11 @@ export default function ExercisePage() {
     return <div className={cn("rounded-lg p-0.5", style.bg, style.text === 'text-white' ? 'text-white' : 'text-gray-800')}><div className="bg-background rounded-md">{exerciseComponent}</div></div>;
   };
 
+  const isWideTool = skill.slug === 'writing-notebook';
+
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-8">
-      <div className="w-full max-w-4xl">
+      <div className={cn("w-full", isWideTool ? "max-w-6xl" : "max-w-4xl")}>
         <header className="relative flex items-center justify-between mb-8">
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link href={returnHref}>

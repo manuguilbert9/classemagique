@@ -2,6 +2,7 @@
 import type { Student } from "./students";
 import type { Score } from "./scores";
 import type { WritingEntry } from "./writing";
+import type { FsNode } from "./writing-fs";
 import type { Homework, HomeworkResult } from './homework';
 
 // This defines the structure of the data in Firestore collections.
@@ -11,6 +12,7 @@ export interface DatabaseBackup {
     students: { [id: string]: Omit<Student, 'id'> };
     scores: { [id: string]: Omit<Score, 'id'> };
     writingEntries: { [id: string]: Omit<WritingEntry, 'id'> };
+    writingFsNodes: { [id: string]: Omit<FsNode, 'id'> };
     teacher: { [id: string]: any }; // General purpose for teacher settings
     homework: { [id: string]: Omit<Homework, 'id'> };
     homeworkResults: { [id: string]: Omit<HomeworkResult, 'id'|'createdAt'> };

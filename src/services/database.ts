@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, writeBatch, doc } from "firebase/firestore";
 import type { DatabaseBackup } from './database.types';
 
-const collectionsToBackup: (keyof DatabaseBackup)[] = ['students', 'scores', 'teacher', 'writingEntries', 'homework', 'homeworkResults'];
+const collectionsToBackup: (keyof DatabaseBackup)[] = ['students', 'scores', 'teacher', 'writingEntries', 'writingFsNodes', 'homework', 'homeworkResults'];
 
 /**
  * Exports all data from the specified Firestore collections.

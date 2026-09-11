@@ -17,16 +17,19 @@ import { fr } from 'date-fns/locale';
 import { ReportGenerator } from './report-generator';
 import { cn } from '@/lib/utils';
 import type { WritingEntry } from '@/services/writing';
+import type { FsNode } from '@/services/writing-fs';
 import { SkillProgressChart } from './skill-progress-chart';
+import { WritingFilesViewer } from './writing-files-viewer';
 
 
 interface ResultsManagerProps {
     students: Student[];
     allScores: Score[];
     allWritingEntries: WritingEntry[];
+    allWritingFsNodes: FsNode[];
 }
 
-export function ResultsManager({ students, allScores, allWritingEntries }: ResultsManagerProps) {
+export function ResultsManager({ students, allScores, allWritingEntries, allWritingFsNodes }: ResultsManagerProps) {
     const { toast } = useToast();
 
     const sortedStudents = useMemo(() => {
@@ -43,17 +46,23 @@ export function ResultsManager({ students, allScores, allWritingEntries }: Resul
                 studentLastActivity[entry.userId] = timestamp;
             }
         });
+        allWritingFsNodes.forEach(node => {
+            const timestamp = new Date(node.updatedAt).getTime();
+            if (!studentLastActivity[node.userId] || timestamp > studentLastActivity[node.userId]) {
+                studentLastActivity[node.userId] = timestamp;
+            }
+        });
 
         return students
             .filter(student => studentLastActivity[student.id]) // Only show students with activity
             .sort((a, b) => (studentLastActivity[b.id] || 0) - (studentLastActivity[a.id] || 0));
-    }, [students, allScores, allWritingEntries]);
+    }, [students, allScores, allWritingEntries, allWritingFsNodes]);
 
 
     const studentData = useMemo(() => {
-        const data: Record<string, { scores: Score[], writings: WritingEntry[] }> = {};
+        const data: Record<string, { scores: Score[], writings: WritingEntry[], fsNodes: FsNode[] }> = {};
         students.forEach(student => {
-            data[student.id] = { scores: [], writings: [] };
+            data[student.id] = { scores: [], writings: [], fsNodes: [] };
         });
         allScores.forEach(score => {
             if (data[score.userId]) {
@@ -65,8 +74,13 @@ export function ResultsManager({ students, allScores, allWritingEntries }: Resul
                 data[entry.userId].writings.push(entry);
             }
         });
+        allWritingFsNodes.forEach(node => {
+            if (data[node.userId]) {
+                data[node.userId].fsNodes.push(node);
+            }
+        });
         return data;
-    }, [students, allScores, allWritingEntries]);
+    }, [students, allScores, allWritingEntries, allWritingFsNodes]);
 
 
     const handleDeleteScore = async (scoreId: string) => {
@@ -91,7 +105,7 @@ export function ResultsManager({ students, allScores, allWritingEntries }: Resul
                     {sortedStudents.length > 0 ? (
                     <Accordion type="multiple" className="w-full space-y-4">
                         {sortedStudents.map(student => {
-                            const { scores, writings } = studentData[student.id];
+                            const { scores, writings, fsNodes } = studentData[student.id];
 
                             const scoresBySkill = scores.reduce((acc, score) => {
                                 (acc[score.skill] = acc[score.skill] || []).push(score);
@@ -154,9 +168,16 @@ export function ResultsManager({ students, allScores, allWritingEntries }: Resul
                                          <p className="text-center text-sm text-muted-foreground py-4">Aucun score d'exercice pour cet élève.</p>
                                     )}
 
-                                    {writings.length > 0 && (
+                                    {fsNodes.length > 0 && (
                                         <div>
                                             <h4 className="text-md font-semibold mb-2 mt-4">Cahier d'écriture</h4>
+                                            <WritingFilesViewer nodes={fsNodes} />
+                                        </div>
+                                    )}
+
+                                    {writings.length > 0 && (
+                                        <div>
+                                            <h4 className="text-md font-semibold mb-2 mt-4">Anciens textes du jour (ancien outil)</h4>
                                             <Accordion type="single" collapsible className="w-full">
                                                 {writings.map(entry => (
                                                     <AccordionItem value={entry.id} key={entry.id}>

@@ -22,6 +22,7 @@ import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { BuildInfo } from '@/components/teacher/build-info';
 import { getAllWritingEntries, WritingEntry } from '@/services/writing';
+import type { FsNode } from '@/services/writing-fs';
 import { getAllHomework, type Homework, getHomeworkResultsForUser, HomeworkResult } from '@/services/homework';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
@@ -38,6 +39,7 @@ export default function TeacherDashboardPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [allScores, setAllScores] = useState<Score[]>([]);
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
+  const [allWritingFsNodes, setAllWritingFsNodes] = useState<FsNode[]>([]);
   const [allHomework, setAllHomework] = useState<Homework[]>([]);
   const [allHomeworkResults, setAllHomeworkResults] = useState<HomeworkResult[]>([]);
   const [archivedSkills, setArchivedSkills] = useState<Record<string, boolean>>({});
@@ -78,6 +80,17 @@ export default function TeacherDashboardPage() {
           ...doc.data(),
           createdAt: (doc.data().createdAt as any).toDate().toISOString()
         } as WritingEntry)));
+      }),
+      onSnapshot(query(collection(db, 'writingFsNodes'), orderBy('updatedAt', 'desc')), snapshot => {
+        setAllWritingFsNodes(snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: (data.createdAt as any)?.toDate().toISOString(),
+            updatedAt: (data.updatedAt as any)?.toDate().toISOString(),
+          } as FsNode;
+        }));
       }),
       onSnapshot(query(collection(db, 'homework')), snapshot => {
         setAllHomework(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Homework)));
@@ -173,6 +186,7 @@ export default function TeacherDashboardPage() {
                   students={students}
                   allScores={allScores}
                   allWritingEntries={allWritingEntries}
+                  allWritingFsNodes={allWritingFsNodes}
                 />
               </TabsContent>
               <TabsContent value="database" className="mt-6 space-y-6">
