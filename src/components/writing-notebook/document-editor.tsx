@@ -11,7 +11,7 @@ import { Image } from '@tiptap/extension-image';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
 import { updateFileContent } from '@/services/writing-fs';
 import { WritingToolbar } from './toolbar';
 import { cn } from '@/lib/utils';
@@ -93,31 +93,36 @@ export function DocumentEditor({ fileId, fileName, initialContent, onBack, onRen
     };
 
     return (
-        <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5">
+        <div className="flex flex-col overflow-hidden rounded-md border shadow-sm">
+            {/* Barre de titre façon Word */}
+            <div className="flex items-center gap-2 bg-[#2b579a] px-2 py-1.5 text-white">
+                <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8 shrink-0 text-white hover:bg-white/15 hover:text-white" title="Retour à mes fichiers">
                     <ArrowLeft className="h-4 w-4" />
-                    Mes fichiers
                 </Button>
+                <FileText className="h-4 w-4 shrink-0 opacity-90" />
                 <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     onBlur={handleNameBlur}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    className="h-9 max-w-xs text-center font-semibold"
+                    className="h-7 max-w-xs border-none bg-white/10 text-center font-medium text-white placeholder:text-white/70 focus-visible:bg-white/20 focus-visible:ring-1 focus-visible:ring-white/60"
                 />
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-[110px] justify-end">
+                <div className="ml-auto flex items-center gap-1.5 whitespace-nowrap text-xs text-white/90">
                     {saveStatus === 'saving' && <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Enregistrement...</>}
-                    {saveStatus === 'saved' && <><CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> Enregistré</>}
+                    {saveStatus === 'saved' && <><CheckCircle2 className="h-3.5 w-3.5" /> Enregistré</>}
                     {saveStatus === 'unsaved' && <>Modifications non enregistrées</>}
-                    {saveStatus === 'error' && <><AlertCircle className="h-3.5 w-3.5 text-destructive" /> Erreur d'enregistrement</>}
+                    {saveStatus === 'error' && <><AlertCircle className="h-3.5 w-3.5" /> Erreur d'enregistrement</>}
                 </div>
             </div>
 
-            <div className="rounded-md border bg-card shadow-sm">
-                <WritingToolbar editor={editor} />
+            <WritingToolbar editor={editor} />
+
+            {/* Zone de la page, façon Word */}
+            <div className="max-h-[70vh] overflow-y-auto bg-[#e5e5e5] px-3 py-6 sm:px-8">
                 <div
-                    className={cn('max-h-[65vh] min-h-[50vh] overflow-y-auto bg-white p-6')}
+                    className={cn(
+                        'mx-auto min-h-[65vh] max-w-[850px] bg-white px-6 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.2),0_6px_20px_rgba(0,0,0,0.12)] sm:px-16 sm:py-12'
+                    )}
                     onClick={() => editor?.chain().focus().run()}
                 >
                     <EditorContent editor={editor} />
