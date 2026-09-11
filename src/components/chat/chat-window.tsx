@@ -22,6 +22,7 @@ import { useSpellSuggestions } from '@/hooks/use-spell-suggestions';
 import { SyllableText } from '../syllable-text';
 import { ChatMessageContent, EXERCISE_URL_REGEX } from './chat-message-content';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { HowToWriteDialog } from './how-to-write-dialog';
 
 interface MessageBubbleProps extends React.HTMLAttributes<HTMLDivElement> {
     msg: Message;
@@ -283,6 +284,14 @@ export function ChatWindow({
         }
     }, [handleSendMessage]);
 
+    const handleInsertFromDictation = useCallback((text: string) => {
+        setNewMessage((prev) => {
+            const base = prev.trimEnd();
+            return base ? `${base} ${text}` : text;
+        });
+        textareaRef.current?.focus();
+    }, []);
+
 
     if (isCreatingNew) {
         return (
@@ -453,6 +462,10 @@ export function ChatWindow({
                 </ScrollArea>
                 <div className="border-t p-4 flex-shrink-0">
                     <div className="space-y-3">
+                        <div className="flex justify-center">
+                            <HowToWriteDialog onInsert={handleInsertFromDictation} />
+                        </div>
+
                         {/* Suggestions de mots au-dessus du champ de saisie */}
                         {hasSuggestions && !isLoadingSuggestions && (
                             <div className="flex flex-wrap gap-1.5 px-1">
