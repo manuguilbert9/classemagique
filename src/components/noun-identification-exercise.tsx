@@ -11,8 +11,16 @@ import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
-import { NOUN_SENTENCES } from '@/data/grammaire/nouns-sentences';
-import { NOUN_PHRASES } from '@/data/grammaire/nouns-phrases';
+import type { PhraseAReperer } from '@/lib/exercise-content/grammaire';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    DELAI_NOUVEL_ESSAI,
+  AnswerFeedback,
+    ExerciseFinished,
+    ExerciseProgress,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 import { cn } from '@/lib/utils';
 import { SkillLevel } from '@/lib/skills';
 
@@ -39,7 +47,8 @@ export function NounIdentificationExercise() {
     // Game state
     const [questions, setQuestions] = useState<string[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    const secondChance = useSecondChance();
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -52,13 +61,19 @@ export function NounIdentificationExercise() {
         }
     }, [student]);
 
-    // Initialize questions
+    // Les phrases viennent du stock partagé : à niveau égal, toute la classe
+    // travaille sur les mêmes.
+    const loadQuestions = useCallback(async () => {
+        const phrases = await getPooledContent<PhraseAReperer>('reperer-nom', NUM_QUESTIONS, {
+            settings: { level },
+            studentId: student?.id ?? null,
+        });
+        setQuestions(phrases.map((p) => p.phrase));
+    }, [level, student?.id]);
+
     useEffect(() => {
-        // Shuffle and pick NUM_QUESTIONS
-        const sourceData = level === 'B' ? NOUN_PHRASES : NOUN_SENTENCES;
-        const shuffled = [...sourceData].sort(() => 0.5 - Math.random());
-        setQuestions(shuffled.slice(0, NUM_QUESTIONS));
-    }, [level]);
+        loadQuestions();
+    }, [loadQuestions]);
 
     // Parse sentence into tokens
     const parseSentence = useCallback((sentence: string) => {
@@ -202,29 +217,37 @@ export function NounIdentificationExercise() {
         const currentSentenceClean = sentenceTokens.map(t => t.text).join(' ');
         const nouns = sentenceTokens.filter(t => t.isNoun).map(t => t.text).join(', ');
 
+        const issue = secondChance.resultOnSuccess();
         const detail: ScoreDetail = {
             question: `Trouve les noms : "${currentSentenceClean}"`,
             userAnswer: sentenceTokens.filter(t => selectedTokenIds.has(t.id)).map(t => t.text).join(', '),
             correctAnswer: nouns,
-            status: isCorrect ? 'correct' : 'incorrect',
+            status: issue,
         };
-        setSessionDetails(prev => [...prev, detail]);
 
-        if (isCorrect) {
-            setCorrectAnswers(prev => prev + 1);
-            setFeedback('correct');
-            setShowConfetti(true);
-        } else {
-            setFeedback('incorrect');
-            // Auto-select correct answers to show them
-            setSelectedTokenIds(nounIds);
+        // Faux : la sélection de l'élève reste à l'écran, il la corrige
+        // lui-même. Rien n'est enregistré tant qu'il n'a pas trouvé.
+        if (!isCorrect) {
+            secondChance.registerError();
+            setFeedback('retry');
+            setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
+            return;
         }
+
+        setSessionDetails(prev => [...prev, detail]);
+        // Seule une réussite du premier coup rapporte un point.
+        if (issue === 'correct') {
+            setCorrectAnswers(prev => prev + 1);
+            setShowConfetti(true);
+        }
+        setFeedback(issue);
 
         setTimeout(handleNextQuestion, 2500);
     };
 
     const handleNextQuestion = () => {
         setShowConfetti(false);
+        secondChance.reset();
         if (currentQuestionIndex < NUM_QUESTIONS - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
             setFeedback(null);
@@ -233,9 +256,8 @@ export function NounIdentificationExercise() {
         }
     };
 
-    const restartExercise = () => {
-        const shuffled = [...NOUN_SENTENCES].sort(() => 0.5 - Math.random());
-        setQuestions(shuffled.slice(0, NUM_QUESTIONS));
+    const restartExercise = async () => {
+        await loadQuestions();
         setCurrentQuestionIndex(0);
         setFeedback(null);
         setIsFinished(false);
@@ -281,18 +303,15 @@ export function NounIdentificationExercise() {
     }
 
     if (isFinished) {
-        const score = (correctAnswers / NUM_QUESTIONS) * 100;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-                <CardHeader><CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle></CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as trouvé les noms dans <span className="font-bold text-primary">{correctAnswers}</span> phrases sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4"><RefreshCw className="mr-2" />Recommencer</Button>
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={NUM_QUESTIONS}
+                canRestart={!isHomework}
+                onRestart={restartExercise}
+                returnHref={isHomework ? '/devoirs' : '/en-classe'}
+                returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+            />
         );
     }
 
@@ -306,7 +325,7 @@ export function NounIdentificationExercise() {
                 <CardDescription className="text-center text-lg">
                     Clique sur tous les <span className="font-bold text-primary">noms</span> dans la phrase.
                 </CardDescription>
-                <Progress value={((currentQuestionIndex) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
+                <ExerciseProgress current={currentQuestionIndex} total={NUM_QUESTIONS} results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')} className="mt-4" />
             </CardHeader>
             <CardContent className="min-h-[200px] flex flex-col items-center justify-center gap-8 p-6">
 
@@ -323,11 +342,11 @@ export function NounIdentificationExercise() {
                                 // Selected state
                                 selectedTokenIds.has(token.id) && !feedback && "bg-primary/10 border-primary text-primary font-bold transform scale-105",
                                 // Correct feedback (for correct nouns)
-                                feedback === 'correct' && token.isNoun && "bg-green-100 border-green-500 text-green-700 font-bold",
+                                (feedback === 'correct' || feedback === 'corrected') && token.isNoun && "bg-green-100 border-green-500 text-green-700 font-bold",
                                 // Incorrect feedback (missed nouns)
-                                feedback === 'incorrect' && token.isNoun && !selectedTokenIds.has(token.id) && "bg-green-100 border-green-500 text-green-700 font-bold border-dashed",
+                                secondChance.showHint && token.isNoun && !selectedTokenIds.has(token.id) && "bg-green-100 border-green-500 text-green-700 font-bold border-dashed",
                                 // Incorrect feedback (wrongly selected)
-                                feedback === 'incorrect' && !token.isNoun && selectedTokenIds.has(token.id) && "bg-red-100 border-red-500 text-red-700 line-through",
+                                feedback === 'retry' && !token.isNoun && selectedTokenIds.has(token.id) && "bg-red-100 border-red-500 text-red-700 line-through",
                                 // Punctuation (non-interactive look)
                                 /^[.,!?;:]+$/.test(token.text) && "cursor-default hover:bg-transparent border-transparent px-0"
                             )}
@@ -343,16 +362,11 @@ export function NounIdentificationExercise() {
                     <Check className="mr-2 h-6 w-6" /> Valider
                 </Button>
 
-                {feedback === 'correct' && (
-                    <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse">
-                        <ThumbsUp className="h-6 w-6" /> Bravo !
-                    </div>
-                )}
-                {feedback === 'incorrect' && (
-                    <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake">
-                        <Info className="h-6 w-6" /> Regarde la correction.
-                    </div>
-                )}
+                <AnswerFeedback status={feedback} hinted={secondChance.showHint} className="w-full">
+                    {feedback === 'correct'
+                        ? 'Bravo, tu les as tous trouvés !'
+                        : 'Regarde la correction : en vert ce qu\u2019il fallait cliquer, en rouge ce qui est en trop.'}
+                </AnswerFeedback>
             </CardFooter>
             <style jsx>{`
                 @keyframes shake {

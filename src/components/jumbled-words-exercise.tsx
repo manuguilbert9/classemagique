@@ -10,6 +10,16 @@ import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { ScoreTube } from './score-tube';
 import { getSpellingLists, type SpellingList } from '@/services/spelling';
+import type { MotMelange } from '@/lib/exercise-content/phrases';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    AnswerFeedback,
+    DELAI_NOUVEL_ESSAI,
+    ExerciseFinished,
+    ExerciseProgress,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 import {
     DndContext,
     closestCenter,
@@ -91,7 +101,9 @@ export function JumbledWordsExercise() {
     const [questionIndex, setQuestionIndex] = useState(0);
 
     const [activeId, setActiveId] = useState<string | null>(null);
-    const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    // Le droit à l'erreur : l'élève continue de déplacer ses lettres.
+    const secondChance = useSecondChance();
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -123,7 +135,7 @@ export function JumbledWordsExercise() {
         loadLists();
     }, []);
 
-    const startExercise = (listData: SpellingList, session: 'lundi' | 'jeudi' | 'all') => {
+    const startExercise = async (listData: SpellingList, session: 'lundi' | 'jeudi' | 'all') => {
         setSelectedList(listData);
         let sessionWords: string[] = [];
 
@@ -134,9 +146,13 @@ export function JumbledWordsExercise() {
             sessionWords = session === 'lundi' ? listData.words.slice(0, half) : listData.words.slice(half);
         }
 
-        // Shuffle and pick words
-        const shuffled = sessionWords.sort(() => 0.5 - Math.random()).slice(0, NUM_QUESTIONS);
-        setWords(shuffled);
+        // Le tirage vient du stock partagé : à liste et séance égales, tous les
+        // élèves travaillent les mêmes mots.
+        const lot = await getPooledContent<MotMelange>('jumbled-words', NUM_QUESTIONS, {
+            settings: { listId: listData.id, session, words: sessionWords },
+            studentId: student?.id ?? null,
+        });
+        setWords(lot.map((m) => m.mot));
         setQuestionIndex(0);
         setCorrectAnswers(0);
         setIsFinished(false);
@@ -202,23 +218,31 @@ export function JumbledWordsExercise() {
         const proposedWord = currentLetters.map(l => l.letter).join('');
         const isCorrect = proposedWord === currentWord;
 
-        const detail: ScoreDetail = {
+        // Faux : les lettres restent en place, l'élève poursuit sa recherche.
+        if (!isCorrect) {
+            secondChance.registerError();
+            setFeedback('retry');
+            setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
+            return;
+        }
+
+        const issue = secondChance.resultOnSuccess();
+        setSessionDetails(prev => [...prev, {
             question: `Remettre en ordre : ${currentWord}`,
             userAnswer: proposedWord,
             correctAnswer: currentWord,
-            status: isCorrect ? 'correct' : 'incorrect',
-        };
-        setSessionDetails(prev => [...prev, detail]);
+            status: issue,
+        }]);
 
-        if (isCorrect) {
+        // Seul un mot reconstitué du premier coup rapporte un point.
+        if (issue === 'correct') {
             setCorrectAnswers(prev => prev + 1);
-            setFeedback('correct');
             setShowConfetti(true);
-        } else {
-            setFeedback('incorrect');
         }
+        setFeedback(issue);
 
         setTimeout(() => {
+            secondChance.reset();
             if (questionIndex < NUM_QUESTIONS - 1) {
                 setQuestionIndex(prev => prev + 1);
                 loadQuestion(questionIndex + 1);
@@ -280,18 +304,14 @@ export function JumbledWordsExercise() {
     if (words.length === 0) return <Loader2 className="animate-spin" />;
 
     if (isFinished) {
-        const score = (correctAnswers / NUM_QUESTIONS) * 100;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-8">
-                <CardHeader><CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle></CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as réussi <span className="font-bold text-primary">{correctAnswers}</span> mots sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4"><RefreshCw className="mr-2" />Choisir une autre liste</Button>
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={NUM_QUESTIONS}
+                canRestart
+                onRestart={restartExercise}
+                returnHref="/en-classe"
+            />
         );
     }
 
@@ -316,7 +336,12 @@ export function JumbledWordsExercise() {
                 </Button>
                 <CardTitle className="font-headline text-2xl text-center pt-6">Lettres dans le désordre</CardTitle>
                 <CardDescription className="text-center">Remets les lettres dans le bon ordre pour former le mot.</CardDescription>
-                <Progress value={((questionIndex) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
+                <ExerciseProgress
+                    current={questionIndex}
+                    total={NUM_QUESTIONS}
+                    results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')}
+                    className="mt-4"
+                />
             </CardHeader>
             <CardContent className="min-h-[300px] flex flex-col items-center justify-center gap-8 p-6">
 
@@ -349,17 +374,16 @@ export function JumbledWordsExercise() {
                     <Check className="mr-2" /> Valider
                 </Button>
 
-                {feedback === 'correct' && (
-                    <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse">
-                        <ThumbsUp /> Bravo ! C'est bien "{currentWord}".
-                    </div>
-                )}
-
-                {feedback === 'incorrect' && (
-                    <div className="text-xl font-bold text-red-600 flex flex-col items-center gap-2 animate-shake text-center">
-                        <div className="flex items-center gap-2"><X /> Ce n'est pas ça.</div>
-                        <div className="text-base font-normal text-foreground">La réponse était : <span className="font-bold">{currentWord}</span></div>
-                    </div>
+                <AnswerFeedback status={feedback} hinted={secondChance.showHint} className="w-full">
+                    {feedback === 'correct' || feedback === 'corrected'
+                        ? `C'est bien « ${currentWord} ».`
+                        : undefined}
+                </AnswerFeedback>
+                {/* Après deux essais, on montre le mot : l'élève le compose quand même. */}
+                {secondChance.showHint && !feedback && (
+                    <p className="rounded-[16px] border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2 text-xl font-bold uppercase tracking-wide text-amber-700">
+                        {currentWord}
+                    </p>
                 )}
             </CardFooter>
             <style jsx>{`

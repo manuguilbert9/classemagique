@@ -23,6 +23,13 @@ import { analyzeMentalMathPerformance } from '@/ai/flows/mental-math-analysis-fl
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { MentalMathHelp } from './mental-math-help';
+import {
+  AnswerFeedback,
+  ExerciseFinished,
+  ExerciseProgress,
+  useSecondChance,
+  type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const NUM_QUESTIONS = 10;
 const REQUIRED_CONSECUTIVE_SUCCESSES = 4;
@@ -40,7 +47,10 @@ export function AdaptiveMentalCalculationExercise() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [userInput, setUserInput] = useState('');
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+  // Cet exercice laissait déjà réessayer ; il manquait de ne plus compter le
+  // point et de distinguer la réponse corrigée dans les résultats.
+  const secondChance = useSecondChance();
   const [isFinished, setIsFinished] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -96,6 +106,7 @@ export function AdaptiveMentalCalculationExercise() {
 
   const handleNextQuestion = async () => {
     setShowConfetti(false);
+    secondChance.reset();
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       const studentPerformance = student?.mentalMathPerformance || {};
@@ -131,24 +142,30 @@ export function AdaptiveMentalCalculationExercise() {
       });
     }
 
-    const detail: ScoreDetail = {
+    // Faux : on affiche l'aide et on attend que l'élève reprenne. Rien n'est
+    // consigné tant qu'il n'a pas trouvé.
+    if (!isCorrect) {
+      secondChance.registerError();
+      setFeedback('retry');
+      setShowHelp(true);
+      return;
+    }
+
+    const issue = secondChance.resultOnSuccess();
+    setSessionDetails(prev => [...prev, {
       question: currentQuestion.question,
       userAnswer: userAnswer || "vide",
       correctAnswer: String(currentQuestion.answer),
-      status: isCorrect ? 'correct' : 'incorrect',
-    };
-    setSessionDetails(prev => [...prev, detail]);
+      status: issue,
+    }]);
 
-    if (isCorrect) {
-      setFeedback('correct');
+    // Seule une réponse juste du premier coup rapporte un point.
+    if (issue === 'correct') {
       setCorrectAnswers(prev => prev + 1);
       setShowConfetti(true);
-      setTimeout(handleNextQuestion, 1500);
-    } else {
-      setFeedback('incorrect');
-      setShowHelp(true);
-      // Do not auto-advance
     }
+    setFeedback(issue);
+    setTimeout(handleNextQuestion, 1500);
   };
 
   const handleRetry = () => {
@@ -157,7 +174,16 @@ export function AdaptiveMentalCalculationExercise() {
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
+  /** L'élève renonce : la question est consignée comme ratée, sans détour. */
   const handleGiveUp = () => {
+    if (currentQuestion) {
+      setSessionDetails(prev => [...prev, {
+        question: currentQuestion.question,
+        userAnswer: 'abandon',
+        correctAnswer: String(currentQuestion.answer),
+        status: 'incorrect',
+      }]);
+    }
     setShowingSolution(true);
     setTimeout(handleNextQuestion, 2000);
   };
@@ -269,33 +295,26 @@ export function AdaptiveMentalCalculationExercise() {
   }
 
   if (isFinished) {
-    const score = (correctAnswers / NUM_QUESTIONS) * 100;
     return (
-      <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-        <CardHeader>
-          <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-2xl">
-            Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-          </p>
-          <ScoreTube score={score} />
-          {isHomework ? (
-            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-          ) : (
-            <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-              <RefreshCw className="mr-2" />
-              Recommencer
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      <ExerciseFinished
+        correct={correctAnswers}
+        total={NUM_QUESTIONS}
+        canRestart={!isHomework}
+        onRestart={restartExercise}
+        returnHref={isHomework ? '/devoirs' : '/en-classe'}
+        returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+      />
     );
   }
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
+      <ExerciseProgress
+        current={currentQuestionIndex}
+        total={NUM_QUESTIONS}
+        results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')}
+        className="mb-4"
+      />
       <Card className="shadow-2xl text-center relative overflow-hidden">
         <div className="absolute top-4 right-4">
           <Sheet>
@@ -398,14 +417,14 @@ export function AdaptiveMentalCalculationExercise() {
               placeholder="Ta réponse..."
               className={cn(
                 "h-20 text-4xl text-center font-numbers",
-                feedback === 'correct' && 'border-green-500 ring-green-500',
-                feedback === 'incorrect' && 'border-red-500 ring-red-500 animate-shake'
+                (feedback === 'correct' || feedback === 'corrected') && 'border-green-500 ring-green-500',
+                feedback === 'retry' && 'border-red-500 ring-red-500 animate-shake'
               )}
               disabled={!!feedback}
               autoFocus
             />
-            {feedback === 'correct' && <Check className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-green-500" />}
-            {feedback === 'incorrect' && <X className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-red-500" />}
+            {(feedback === 'correct' || feedback === 'corrected') && <Check className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-green-500" />}
+            {feedback === 'retry' && <X className="absolute right-4 top-8 -translate-y-1/2 h-8 w-8 text-red-500" />}
 
             <Button onClick={checkAnswer} disabled={!!feedback || !userInput} size="lg">
               Valider
@@ -413,9 +432,9 @@ export function AdaptiveMentalCalculationExercise() {
           </div>
         </CardContent>
         <CardFooter className="h-auto min-h-24 flex flex-col items-center justify-center gap-4 p-4">
-          {(feedback === 'incorrect' || showHelp) && (
+          {(feedback === 'retry' || showHelp) && (
             <div className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {feedback === 'incorrect' && (
+              {feedback === 'retry' && (
                 <div className="text-xl font-bold text-red-600 animate-shake text-center">
                   Ce n'est pas tout à fait ça. Regarde :
                 </div>
@@ -424,7 +443,7 @@ export function AdaptiveMentalCalculationExercise() {
                 <MentalMathHelp help={currentQuestion.help} />
               )}
 
-              {feedback === 'incorrect' && !showingSolution ? (
+              {feedback === 'retry' && !showingSolution ? (
                 <div className="flex gap-4 justify-center mt-2">
                   <Button onClick={handleRetry} size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">
                     <RefreshCw className="mr-2 h-4 w-4" /> Réessayer

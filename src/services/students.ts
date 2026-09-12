@@ -3,7 +3,7 @@
 'use server';
 
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, runTransaction } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, runTransaction, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { skills } from '@/lib/skills';
 import type { SkillCategory } from '@/lib/skills';
@@ -56,6 +56,10 @@ export interface Student {
      * sur sa page En classe. Tous les autres restent accessibles dans le tiroir.
      */
     misEnAvant?: string[];
+    /** Date (yyyy-MM-dd, fuseau local) du dernier reglage de misEnAvant. */
+    misEnAvantUpdatedAt?: string;
+    /** D ou vient la selection actuelle : choisie a la main, appliquee a un groupe, ou generee faute de mise a jour avant 17h. */
+    misEnAvantSource?: 'manuel' | 'groupe' | 'auto';
 }
 
 
@@ -129,6 +133,40 @@ export async function updateStudent(studentId: string, data: Partial<Omit<Studen
 }
 
 /**
+ * Applique la meme mise en avant ("Aujourd'hui") a plusieurs eleves d'un coup,
+ * typiquement tous les eleves d'un ou plusieurs groupes.
+ * @param studentIds Les eleves concernes.
+ * @param slugs Les exercices a mettre en avant.
+ * @param updatedAt La date du jour (yyyy-MM-dd), calculee cote appelant pour rester au fuseau local.
+ * @param source D'ou vient ce reglage (par defaut : applique via un groupe).
+ */
+export async function applyMiseEnAvantToStudents(
+    studentIds: string[],
+    slugs: string[],
+    updatedAt: string,
+    source: Student['misEnAvantSource'] = 'groupe'
+): Promise<{ success: boolean; error?: string }> {
+    if (studentIds.length === 0) {
+        return { success: false, error: 'Aucun élève sélectionné.' };
+    }
+    try {
+        const batch = writeBatch(db);
+        studentIds.forEach((studentId) => {
+            batch.update(doc(db, 'students', studentId), {
+                misEnAvant: slugs,
+                misEnAvantUpdatedAt: updatedAt,
+                misEnAvantSource: source,
+            });
+        });
+        await batch.commit();
+        return { success: true };
+    } catch (error) {
+        console.error('Error applying mise en avant to students:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Une erreur inconnue est survenue.' };
+    }
+}
+
+/**
  * Deletes a student from the database.
  * @param studentId The ID of the student to delete.
  * @returns A promise that resolves to an object indicating success or failure.
@@ -184,6 +222,8 @@ export async function getStudents(): Promise<Student[]> {
                 motsCopiePersonnalises: data.motsCopiePersonnalises || [],
                 niveauxParDomaine: data.niveauxParDomaine || {},
                 misEnAvant: data.misEnAvant,
+                misEnAvantUpdatedAt: data.misEnAvantUpdatedAt,
+                misEnAvantSource: data.misEnAvantSource,
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -235,6 +275,8 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     motsCopiePersonnalises: studentData.motsCopiePersonnalises || [],
                     niveauxParDomaine: studentData.niveauxParDomaine || {},
                     misEnAvant: studentData.misEnAvant,
+                    misEnAvantUpdatedAt: studentData.misEnAvantUpdatedAt,
+                    misEnAvantSource: studentData.misEnAvantSource,
                 };
             }
         }
@@ -277,6 +319,8 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 motsCopiePersonnalises: data.motsCopiePersonnalises || [],
                 niveauxParDomaine: data.niveauxParDomaine || {},
                 misEnAvant: data.misEnAvant,
+                misEnAvantUpdatedAt: data.misEnAvantUpdatedAt,
+                misEnAvantSource: data.misEnAvantSource,
             };
         }
         return null;

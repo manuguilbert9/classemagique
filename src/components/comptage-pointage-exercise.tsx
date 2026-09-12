@@ -14,56 +14,18 @@ import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from '@/components/score-tube';
 import { VirtualKeyboard } from '@/components/virtual-keyboard';
 import { avecDe } from '@/lib/elision';
+import type { Manche } from '@/lib/exercise-content/comptage';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+  AnswerFeedback,
+  DELAI_NOUVEL_ESSAI,
+  ExerciseFinished,
+  ExerciseProgress,
+  useSecondChance,
+  type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const NOMBRE_DE_MANCHES = 10;
-
-/** Les collections à dénombrer, reprises de l'exercice de dénombrement existant. */
-const COLLECTIONS = [
-  { emoji: '🍎', nom: 'pommes' },
-  { emoji: '🍌', nom: 'bananes' },
-  { emoji: '🚗', nom: 'voitures' },
-  { emoji: '🚜', nom: 'tracteurs' },
-  { emoji: '🍓', nom: 'fraises' },
-  { emoji: '🍊', nom: 'oranges' },
-  { emoji: '🐟', nom: 'poissons' },
-  { emoji: '🐢', nom: 'tortues' },
-  { emoji: '⭐', nom: 'étoiles' },
-  { emoji: '🎈', nom: 'ballons' },
-];
-
-interface Manche {
-  quantite: number;
-  emoji: string;
-  nom: string;
-  /** Position de chaque objet, en pourcentage du cadre de comptage. */
-  positions: { x: number; y: number }[];
-}
-
-/**
- * Répartit les objets dans une grille 3×3 avec un léger décalage aléatoire :
- * la disposition n'est jamais deux fois la même, sans que les objets se chevauchent.
- */
-function placerLesObjets(quantite: number): { x: number; y: number }[] {
-  const cases = Array.from({ length: 9 }, (_, i) => i);
-  for (let i = cases.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cases[i], cases[j]] = [cases[j], cases[i]];
-  }
-  return cases.slice(0, quantite).map((c) => {
-    const colonne = c % 3;
-    const ligne = Math.floor(c / 3);
-    return {
-      x: 16 + colonne * 34 + (Math.random() * 12 - 6),
-      y: 16 + ligne * 34 + (Math.random() * 12 - 6),
-    };
-  });
-}
-
-function tirerUneManche(): Manche {
-  const collection = COLLECTIONS[Math.floor(Math.random() * COLLECTIONS.length)];
-  const quantite = Math.floor(Math.random() * 9) + 1; // 1 à 9 : toujours inférieur à 10
-  return { quantite, emoji: collection.emoji, nom: collection.nom, positions: placerLesObjets(quantite) };
-}
 
 export function ComptagePointageExercise() {
   const { student } = useContext(UserContext);
@@ -74,7 +36,10 @@ export function ComptagePointageExercise() {
   const [manches, setManches] = useState<Manche[]>([]);
   const [index, setIndex] = useState(0);
   const [pointes, setPointes] = useState<number[]>([]);
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+  // Le droit à l'erreur : l'élève recompte jusqu'à trouver, et seule la
+  // première tentative compte pour le score.
+  const secondChance = useSecondChance();
   const [reponseSaisie, setReponseSaisie] = useState<string | null>(null);
   const [bonnesReponses, setBonnesReponses] = useState(0);
   const [details, setDetails] = useState<ScoreDetail[]>([]);
@@ -82,8 +47,13 @@ export function ComptagePointageExercise() {
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   useEffect(() => {
-    setManches(Array.from({ length: NOMBRE_DE_MANCHES }, tirerUneManche));
-  }, []);
+    const loadManches = async () => {
+      setManches(await getPooledContent<Manche>('comptage-pointage', NOMBRE_DE_MANCHES, {
+        studentId: student?.id ?? null,
+      }));
+    };
+    loadManches();
+  }, [student?.id]);
 
   const manche = manches[index];
 
@@ -116,10 +86,24 @@ export function ComptagePointageExercise() {
   const repondre = useCallback(
     (chiffre: string) => {
       if (!manche || feedback) return;
-      const juste = Number(chiffre) === manche.quantite;
       setReponseSaisie(chiffre);
-      setFeedback(juste ? 'correct' : 'incorrect');
-      if (juste) setBonnesReponses((n) => n + 1);
+
+      // Faux : on efface la saisie et l'élève recompte. Les pointages restent
+      // à l'écran, ils sont justement là pour l'aider à recompter.
+      if (Number(chiffre) !== manche.quantite) {
+        secondChance.registerError(chiffre);
+        setFeedback('retry');
+        setTimeout(() => {
+          setFeedback(null);
+          setReponseSaisie(null);
+        }, DELAI_NOUVEL_ESSAI);
+        return;
+      }
+
+      const issue = secondChance.resultOnSuccess();
+      setFeedback(issue);
+      // Seule une réussite du premier coup rapporte un point.
+      if (issue === 'correct') setBonnesReponses((n) => n + 1);
 
       setDetails((prev) => [
         ...prev,
@@ -127,7 +111,7 @@ export function ComptagePointageExercise() {
           question: `Combien y a-t-il ${avecDe(manche.nom)} ? (${manche.quantite} ${manche.emoji})`,
           userAnswer: chiffre,
           correctAnswer: String(manche.quantite),
-          status: juste ? 'correct' : 'incorrect',
+          status: issue,
         },
       ]);
 
@@ -135,13 +119,15 @@ export function ComptagePointageExercise() {
         setFeedback(null);
         setReponseSaisie(null);
         setPointes([]);
+        secondChance.reset();
         if (index < NOMBRE_DE_MANCHES - 1) {
           setIndex((i) => i + 1);
         } else {
           setIsFinished(true);
         }
-      }, juste ? 1500 : 2500);
+      }, 1500);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [manche, feedback, index]
   );
 
@@ -179,8 +165,10 @@ export function ComptagePointageExercise() {
     enregistrer();
   }, [isFinished, student, hasBeenSaved, score, details, isHomework, homeworkDate]);
 
-  const recommencer = () => {
-    setManches(Array.from({ length: NOMBRE_DE_MANCHES }, tirerUneManche));
+  const recommencer = async () => {
+    setManches(await getPooledContent<Manche>('comptage-pointage', NOMBRE_DE_MANCHES, {
+      studentId: student?.id ?? null,
+    }));
     setIndex(0);
     setPointes([]);
     setFeedback(null);
@@ -195,26 +183,14 @@ export function ComptagePointageExercise() {
 
   if (isFinished) {
     return (
-      <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-        <CardHeader>
-          <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-2xl">
-            Tu as trouvé <span className="font-bold text-primary">{bonnesReponses}</span> bonnes
-            réponses sur <span className="font-bold">{NOMBRE_DE_MANCHES}</span>.
-          </p>
-          <ScoreTube score={score} />
-          {isHomework ? (
-            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-          ) : (
-            <Button onClick={recommencer} variant="outline" size="lg" className="mt-4">
-              <RefreshCw className="mr-2" />
-              Recommencer
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      <ExerciseFinished
+        correct={bonnesReponses}
+        total={NOMBRE_DE_MANCHES}
+        canRestart={!isHomework}
+        onRestart={recommencer}
+        returnHref={isHomework ? '/devoirs' : '/en-classe'}
+        returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+      />
     );
   }
 
@@ -228,12 +204,16 @@ export function ComptagePointageExercise() {
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4">
-      <Progress value={(index / NOMBRE_DE_MANCHES) * 100} className="w-full h-3" />
+      <ExerciseProgress
+        current={index}
+        total={NOMBRE_DE_MANCHES}
+        results={details.map((d) => d.status as 'correct' | 'corrected' | 'incorrect')}
+      />
 
       <Card className="shadow-2xl relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
           <Confetti
-            active={feedback === 'correct'}
+            active={(feedback === 'correct' || feedback === 'corrected')}
             config={{
               angle: 90,
               spread: 360,
@@ -292,15 +272,15 @@ export function ComptagePointageExercise() {
             <div
               className={cn(
                 'relative w-40 h-20 border-2 rounded-lg flex items-center justify-center',
-                feedback === 'correct' && 'border-green-500 bg-green-50',
-                feedback === 'incorrect' && 'border-red-500 bg-red-50'
+                (feedback === 'correct' || feedback === 'corrected') && 'border-green-500 bg-green-50',
+                feedback === 'retry' && 'border-red-500 bg-red-50'
               )}
             >
               <span className="font-bold text-5xl font-numbers">{reponseSaisie ?? ''}</span>
-              {feedback === 'correct' && (
+              {(feedback === 'correct' || feedback === 'corrected') && (
                 <Check className="absolute right-2 top-2 h-6 w-6 text-green-500" />
               )}
-              {feedback === 'incorrect' && (
+              {feedback === 'retry' && (
                 <X className="absolute right-2 top-2 h-6 w-6 text-red-500" />
               )}
               {!feedback && (
@@ -309,8 +289,10 @@ export function ComptagePointageExercise() {
                 </span>
               )}
             </div>
-            {feedback === 'incorrect' && (
-              <p className="text-lg font-semibold text-destructive">
+            <AnswerFeedback status={feedback} hinted={secondChance.showHint} className="w-full" />
+            {/* On ne donne la quantité qu'au bout de deux comptages ratés. */}
+            {secondChance.showHint && !feedback && (
+              <p className="rounded-[16px] border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2 text-lg font-bold text-amber-700">
                 Il y a {manche.quantite} {manche.nom}.
               </p>
             )}

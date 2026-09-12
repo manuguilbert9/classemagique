@@ -4,10 +4,13 @@
 import { useContext, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserContext } from '@/context/user-context';
-import { Logo } from '@/components/logo';
-import { Home, Gem, Gamepad2, ArrowLeft, Shield, Disc3, Car, Camera, Zap } from 'lucide-react';
+import { Home, Gem, Gamepad2, Shield, Disc3, Car, Camera, Zap, Sparkles } from 'lucide-react';
+import { FullscreenToggle } from '@/components/fullscreen-toggle';
+import { PageBanner, PillLink, PillSlot } from '@/components/layout/page-banner';
+import { PageShell, SectionLabel } from '@/components/layout/section';
+import { NotConnected } from '@/components/layout/states';
+import { RewardCard } from '@/components/rewards/reward-card';
 import { SnakeGame } from '@/components/snake-game';
 import { spendNuggets, addNuggets, unlockProfilePhoto } from '@/services/students';
 import { useToast } from '@/hooks/use-toast';
@@ -138,17 +141,7 @@ export default function RewardsPage() {
   };
 
   if (!student) {
-    return (
-      <main className="container mx-auto px-4 py-8">
-        <header className="mb-12 text-center space-y-4">
-          <Logo />
-          <h2 className="font-headline text-4xl sm:text-5xl">Veuillez vous connecter</h2>
-          <Button asChild>
-            <Link href="/">Retour à l'accueil</Link>
-          </Button>
-        </header>
-      </main>
-    );
+    return <NotConnected>Connecte-toi pour dépenser tes pépites.</NotConnected>;
   }
 
   if (gameState === 'playing_snake') {
@@ -229,167 +222,94 @@ export default function RewardsPage() {
     );
   }
 
-  return (
-    <main className="container mx-auto px-4 py-8">
-      <header className="mb-12 text-center space-y-4 relative">
-        <div className="absolute top-0 left-0">
-          <Button asChild variant="outline">
-            <Link href="/en-classe">
-              <ArrowLeft className="mr-2" /> Retour
-            </Link>
-          </Button>
-        </div>
-        <Logo />
-        <h2 className="font-headline text-4xl sm:text-5xl">Salle des récompenses</h2>
-        <div className="flex items-center justify-center gap-2 bg-amber-100 border border-amber-300 rounded-full px-4 py-2 text-amber-800 font-bold text-xl w-fit mx-auto">
-          <Gem className="h-6 w-6" />
-          <span>{student.nuggets || 0} pépites</span>
-        </div>
-      </header>
+  const nuggets = student.nuggets || 0;
 
-      <div className="flex justify-center gap-8 flex-wrap">
-        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">Ma Photo de Profil</CardTitle>
-            <CardDescription className="text-lg">Affiche ta photo en classe !</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {student.showPhoto && student.photoURL ? (
-              <img
-                src={student.photoURL}
-                alt={student.name}
-                className="h-32 w-32 mx-auto rounded-full object-cover border-4 border-primary"
-              />
-            ) : (
-              <Camera className="h-32 w-32 mx-auto text-primary" />
-            )}
-          </CardContent>
-          <CardContent>
-            {student.showPhoto ? (
-              <div className="text-center">
-                <p className="text-green-600 font-bold text-lg mb-2">✓ Déjà activée !</p>
-                <p className="text-sm text-muted-foreground">Ta photo est visible en classe</p>
-              </div>
-            ) : (
-              <>
-                <Button onClick={handleUnlockPhoto} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < PHOTO_UNLOCK_COST}>
-                  Débloquer pour {PHOTO_UNLOCK_COST} <Gem className="ml-2 h-5 w-5" />
-                </Button>
-                {(student.nuggets || 0) < PHOTO_UNLOCK_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
-              </>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">Snake</CardTitle>
-            <CardDescription className="text-lg">Un classique indémodable !</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Gamepad2 className="h-32 w-32 mx-auto text-primary" />
-          </CardContent>
-          <CardContent>
-            <Button onClick={() => handlePlay('snake')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
-              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
-            </Button>
-            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
-          </CardContent>
-        </Card>
-        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">Défense Aérienne</CardTitle>
-            <CardDescription className="text-lg">Détruisez les envahisseurs !</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Shield className="h-32 w-32 mx-auto text-primary" />
-          </CardContent>
-          <CardContent>
-            <Button onClick={() => handlePlay('air_defense')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
-              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
-            </Button>
-            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
-          </CardContent>
-        </Card>
-        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">Boccia</CardTitle>
-            <CardDescription className="text-lg">Précision et stratégie !</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Disc3 className="h-32 w-32 mx-auto text-primary" />
-          </CardContent>
-          <CardContent>
-            <Button onClick={() => handlePlay('boccia')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
-              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
-            </Button>
-            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
-          </CardContent>
-        </Card>
-        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">Rallye des Rouages</CardTitle>
-            <CardDescription className="text-lg">Glisse et attrape les pièces dorées !</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Car className="h-32 w-32 mx-auto text-primary" />
-          </CardContent>
-          <CardContent>
-            <Button onClick={() => handlePlay('gear_racer')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
-              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
-            </Button>
-            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
-          </CardContent>
-        </Card>
-        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">Chasse aux Fantômes</CardTitle>
-            <CardDescription className="text-lg">Attrape les fantômes ! N&apos;éclaire pas les dormeurs !</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Zap className="h-32 w-32 mx-auto text-primary" />
-          </CardContent>
-          <CardContent>
-            <Button onClick={() => handlePlay('ghost_hunt')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GHOST_HUNT_COST}>
-              Jouer pour {GHOST_HUNT_COST} <Gem className="ml-2 h-5 w-5" />
-            </Button>
-            {(student.nuggets || 0) < GHOST_HUNT_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
-          </CardContent>
-        </Card>
-        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">Livraison de Cadeaux</CardTitle>
-            <CardDescription className="text-lg">Aide le Père Noël à distribuer les cadeaux !</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-32 w-32 mx-auto text-primary flex items-center justify-center text-6xl">
-              🎅
-            </div>
-          </CardContent>
-          <CardContent>
-            <Button onClick={() => handlePlay('santa_sleigh')} size="lg" className="w-full text-lg" disabled={(student.nuggets || 0) < GAME_COST}>
-              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
-            </Button>
-            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
-          </CardContent>
-        </Card>
-        <Card className="w-full max-w-sm text-center transform transition-transform hover:scale-105 hover:shadow-xl border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl text-cyan-600">Ski on Neon</CardTitle>
-            <CardDescription className="text-lg">Glisse sur les ondes lumineuses !</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-32 w-32 mx-auto text-primary flex items-center justify-center text-6xl bg-slate-900 rounded-full border-2 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]">
-              ⛷️
-            </div>
-          </CardContent>
-          <CardContent>
-            <Button onClick={() => handlePlay('neon_ski')} size="lg" className="w-full text-lg bg-cyan-600 hover:bg-cyan-500" disabled={(student.nuggets || 0) < GAME_COST}>
-              Jouer pour {GAME_COST} <Gem className="ml-2 h-5 w-5" />
-            </Button>
-            {(student.nuggets || 0) < GAME_COST && <p className="text-xs text-destructive mt-2">Tu n'as pas assez de pépites.</p>}
-          </CardContent>
-        </Card>
-      </div>
-    </main >
+  /** Le catalogue : ajouter un jeu, c'est ajouter une ligne ici. */
+  const jeux = [
+    { id: 'snake' as const, title: 'Snake', description: 'Un classique indémodable !', visual: <Gamepad2 />, cost: GAME_COST },
+    { id: 'air_defense' as const, title: 'Défense aérienne', description: 'Détruis les envahisseurs !', visual: <Shield />, cost: GAME_COST },
+    { id: 'boccia' as const, title: 'Boccia', description: 'Précision et stratégie !', visual: <Disc3 />, cost: GAME_COST },
+    { id: 'gear_racer' as const, title: 'Rallye des rouages', description: 'Glisse et attrape les pièces dorées !', visual: <Car />, cost: GAME_COST },
+    { id: 'ghost_hunt' as const, title: 'Chasse aux fantômes', description: "Attrape les fantômes, n'éclaire pas les dormeurs !", visual: <Zap />, cost: GHOST_HUNT_COST },
+    { id: 'santa_sleigh' as const, title: 'Livraison de cadeaux', description: 'Aide le Père Noël à distribuer les cadeaux !', visual: '🎅', cost: GAME_COST },
+    {
+      id: 'neon_ski' as const,
+      title: 'Ski on Neon',
+      description: 'Glisse sur les ondes lumineuses !',
+      visual: '⛷️',
+      cost: GAME_COST,
+      className: 'border-cyan-500/50',
+      visualClassName: 'bg-slate-900',
+      buttonClassName: 'bg-cyan-600 hover:bg-cyan-500',
+    },
+  ];
+
+  return (
+    <PageShell>
+      <PageBanner
+        icon={<Gem />}
+        title="Salle des récompenses"
+        subtitle="Tes pépites se dépensent ici."
+        actions={
+          <>
+            <PillLink href="/en-classe" icon={Sparkles}>En classe</PillLink>
+            <PillLink href="/" icon={Home}>Accueil</PillLink>
+            <PillSlot>
+              <FullscreenToggle />
+            </PillSlot>
+          </>
+        }
+      >
+        {/* Le compteur de pépites, gros et lisible : c'est l'information que
+            l'élève vient chercher en arrivant sur cette page. */}
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-200/40 bg-amber-400/25 px-4 py-2 text-xl font-extrabold">
+          <Gem className="h-6 w-6" />
+          {nuggets} pépite{nuggets > 1 ? 's' : ''}
+        </div>
+      </PageBanner>
+
+      <section>
+        <SectionLabel icon={<Camera />}>À débloquer une fois pour toutes</SectionLabel>
+        <div className="flex flex-wrap justify-center gap-6">
+          <RewardCard
+            title="Ma photo de profil"
+            description="Affiche ta photo en classe !"
+            visual={
+              student.showPhoto && student.photoURL ? (
+                <img src={student.photoURL} alt={student.name} className="h-28 w-28 rounded-full border-4 border-primary object-cover" />
+              ) : (
+                <Camera />
+              )
+            }
+            cost={PHOTO_UNLOCK_COST}
+            nuggets={nuggets}
+            actionLabel="Débloquer"
+            onAction={handleUnlockPhoto}
+            owned={student.showPhoto}
+            ownedLabel="Ta photo est visible en classe"
+          />
+        </div>
+      </section>
+
+      <section>
+        <SectionLabel icon={<Gamepad2 />}>Les jeux</SectionLabel>
+        <div className="flex flex-wrap justify-center gap-6">
+          {jeux.map((jeu) => (
+            <RewardCard
+              key={jeu.id}
+              title={jeu.title}
+              description={jeu.description}
+              visual={jeu.visual}
+              cost={jeu.cost}
+              nuggets={nuggets}
+              onAction={() => handlePlay(jeu.id)}
+              className={jeu.className}
+              visualClassName={jeu.visualClassName}
+              buttonClassName={jeu.buttonClassName}
+            />
+          ))}
+        </div>
+      </section>
+    </PageShell>
   );
 }

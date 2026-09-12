@@ -14,7 +14,9 @@ import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail, saveHomeworkResult as saveHomeworkResultWithNuggets } from '@/services/scores';
 import { validateConstructedPhrase, type ValidatePhraseOutput } from '@/ai/flows/phrase-construction-flow';
-import { PHRASE_CONSTRUCTION_SENTENCES } from '@/data/grammaire/phrase-construction-sentences';
+import type { PhraseEtiquettes } from '@/lib/exercise-content/phrases';
+import { getPooledContent } from '@/services/exercise-pool';
+import { ExerciseProgress, useSecondChance } from '@/components/exercise/exercise-kit';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { Progress } from './ui/progress';
@@ -55,6 +57,8 @@ export function PhraseConstructionExercise() {
 
   const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
+  // Le droit à l'erreur : l'élève peut réécrire sa phrase après la correction.
+  const secondChance = useSecondChance();
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
@@ -65,57 +69,32 @@ export function PhraseConstructionExercise() {
     }
   }, [student]);
 
-  const generateNewExercise = useCallback(async () => {
+  // Les phrases de la séance viennent du stock partagé : à niveau égal, toute
+  // la classe reconstruit les mêmes.
+  const [phrases, setPhrases] = useState<string[]>([]);
+
+  const loadPhrases = useCallback(async () => {
     setGameState('generating');
-    setUserSentence('');
-    setValidationResult(null);
-
-    // Simulate a small delay for better UX (so it doesn't feel instant/glitchy)
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    try {
-      // Filter sentences based on level (approximate logic based on word count)
-      let pool = PHRASE_CONSTRUCTION_SENTENCES;
-
-      if (level === 'B' || level === 'A' || level === 'A+' || level === 'A++') {
-        // Short sentences (approx < 6 words)
-        pool = PHRASE_CONSTRUCTION_SENTENCES.filter(s => s.split(' ').length <= 6);
-      } else if (level === 'C') {
-        // Medium sentences (6-10 words)
-        pool = PHRASE_CONSTRUCTION_SENTENCES.filter(s => {
-          const len = s.split(' ').length;
-          return len > 6 && len <= 10;
-        });
-      } else {
-        // Long sentences (> 10 words)
-        pool = PHRASE_CONSTRUCTION_SENTENCES.filter(s => s.split(' ').length > 10);
-      }
-
-      // Fallback if pool is empty
-      if (pool.length === 0) pool = PHRASE_CONSTRUCTION_SENTENCES;
-
-      const randomSentence = pool[Math.floor(Math.random() * pool.length)];
-
-      // Split into words and shuffle
-      // Remove punctuation for the word list to make it a bit harder/cleaner, or keep it?
-      // Usually for construction, we might want to keep punctuation or let the user add it.
-      // The previous AI flow returned words. Let's just split by space and keep punctuation attached for now, 
-      // or better: clean punctuation from words to force user to think about order, 
-      // BUT the validation AI expects a full sentence.
-      // Let's stick to: split by space, shuffle.
-      const words = randomSentence.split(' ');
-      setWordsToUse(shuffleArray(words));
-
-      setGameState('playing');
-    } catch (error) {
-      console.error("Failed to generate words:", error);
-      setGameState('playing');
-    }
-  }, [level]);
+    const lot = await getPooledContent<PhraseEtiquettes>('phrase-construction', NUM_SENTENCES_PER_SESSION, {
+      settings: { level },
+      studentId: student?.id ?? null,
+    });
+    setPhrases(lot.map((p) => p.phrase));
+  }, [level, student?.id]);
 
   useEffect(() => {
-    generateNewExercise();
-  }, [generateNewExercise]);
+    loadPhrases();
+  }, [loadPhrases]);
+
+  // Prépare la phrase courante : les mots sont mélangés à l'affichage.
+  useEffect(() => {
+    const phrase = phrases[currentSentenceIndex];
+    if (!phrase) return;
+    setUserSentence('');
+    setValidationResult(null);
+    setWordsToUse(shuffleArray(phrase.split(' ')));
+    setGameState('playing');
+  }, [phrases, currentSentenceIndex]);
 
   const handleSubmit = async () => {
     if (!userSentence.trim() || gameState !== 'playing') return;
@@ -131,20 +110,24 @@ export function PhraseConstructionExercise() {
       });
       setValidationResult(result);
 
-      const detail: ScoreDetail = {
-        question: `Mots: ${wordsToUse.join(', ')}`,
-        userAnswer: userSentence,
-        correctAnswer: result.isCorrect ? userSentence : (result.correctedSentence || 'N/A'),
-        status: result.isCorrect ? 'correct' : 'incorrect',
-        // Let's store the score in the detail object
-        score: result.score,
-      };
-      setSessionDetails(prev => [...prev, detail]);
-
-      if (result.isCorrect) {
-        setShowConfetti(true);
+      // Phrase refusée : on ne consigne rien encore, l'élève va la reprendre.
+      if (!result.isCorrect) {
+        secondChance.registerError();
+        setGameState('feedback');
+        return;
       }
 
+      const issue = secondChance.resultOnSuccess();
+      setSessionDetails(prev => [...prev, {
+        question: `Mots: ${wordsToUse.join(', ')}`,
+        userAnswer: userSentence,
+        correctAnswer: userSentence,
+        status: issue,
+        // Une phrase réécrite après correction ne rapporte pas de points.
+        score: issue === 'correct' ? result.score : 0,
+      }]);
+
+      setShowConfetti(true);
       setGameState('feedback');
     } catch (error) {
       console.error("Failed to validate sentence:", error);
@@ -154,9 +137,9 @@ export function PhraseConstructionExercise() {
 
   const handleNext = () => {
     setShowConfetti(false);
+    secondChance.reset();
     if (currentSentenceIndex < NUM_SENTENCES_PER_SESSION - 1) {
       setCurrentSentenceIndex(prev => prev + 1);
-      generateNewExercise();
     } else {
       setGameState('finished');
     }
@@ -219,12 +202,12 @@ export function PhraseConstructionExercise() {
     saveFinalScore();
   }, [gameState, student, hasBeenSaved, sessionDetails, level, isHomework, homeworkDate, toast]);
 
-  const restartExercise = () => {
+  const restartExercise = async () => {
     setGameState('generating');
     setCurrentSentenceIndex(0);
     setSessionDetails([]);
     setHasBeenSaved(false);
-    generateNewExercise();
+    await loadPhrases();
   };
 
   if (gameState === 'generating') {
@@ -340,7 +323,9 @@ export function PhraseConstructionExercise() {
                   <p className="font-semibold">{validationResult.feedback}</p>
                   <Badge variant={validationResult.isCorrect ? "default" : "destructive"}>{validationResult.score}/100</Badge>
                 </div>
-                {!validationResult.isCorrect && validationResult.correctedSentence && (
+                {/* On ne montre un modèle qu'au bout de deux essais : avant, on
+                    laisse l'élève chercher avec le seul retour de la correction. */}
+                {!validationResult.isCorrect && validationResult.correctedSentence && secondChance.showHint && (
                   <p className="text-sm text-muted-foreground">Exemple correct : <em className="font-medium">"{validationResult.correctedSentence}"</em></p>
                 )}
               </div>
@@ -349,14 +334,17 @@ export function PhraseConstructionExercise() {
         )}
       </CardContent>
 
-      <CardFooter className="flex justify-center">
-        {gameState === 'feedback' && (
-          <Button
-            onClick={handleNext}
-            variant="secondary"
-          >
+      <CardFooter className="flex flex-wrap justify-center gap-3">
+        {gameState === 'feedback' && validationResult && !validationResult.isCorrect && (
+          // La phrase reste dans le champ : l'élève la retouche au lieu de la subir.
+          <Button onClick={() => setGameState('playing')} size="lg">
             <Wand2 className="mr-2 h-4 w-4" />
-            {currentSentenceIndex < NUM_SENTENCES_PER_SESSION - 1 ? "Exercice Suivant" : "Terminer la session"}
+            Je corrige ma phrase
+          </Button>
+        )}
+        {gameState === 'feedback' && (
+          <Button onClick={handleNext} variant="secondary" size="lg">
+            {currentSentenceIndex < NUM_SENTENCES_PER_SESSION - 1 ? 'Phrase suivante' : 'Terminer la séance'}
           </Button>
         )}
       </CardFooter>

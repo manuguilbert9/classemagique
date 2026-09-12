@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, RefreshCw, Check, X, ArrowRight } from 'lucide-react';
 import { getSpellingLists, SpellingList } from '@/services/spelling';
-import { generateWordFamilies } from '@/ai/flows/generate-word-families-flow';
+import { getPooledContent } from '@/services/exercise-pool';
 import Confetti from 'react-dom-confetti';
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
@@ -139,9 +139,16 @@ export function WordFamiliesExercise() {
     setHasBeenSaved(false);
     
     try {
-      const result = await generateWordFamilies({ words: list.words });
-      if (result && result.pairs) {
-        const validPairs = result.pairs.filter(p => p.familyMember && p.familyMember.trim() !== '' && p.original.trim() !== p.familyMember.trim());
+      // Les familles de mots découlent de la liste choisie : elles sont
+      // calculées une fois pour la journée, puis partagées. Repasser
+      // l'exercice ne relance donc aucune génération.
+      const [famille] = await getPooledContent<{ pairs: WordPair[] }>('word-families', 1, {
+        settings: { listId: list.id, words: list.words },
+        studentId: student?.id ?? null,
+        reuseFromStart: true,
+      });
+      if (famille && famille.pairs) {
+        const validPairs = famille.pairs.filter(p => p.familyMember && p.familyMember.trim() !== '' && p.original.trim() !== p.familyMember.trim());
         setAllPairs(validPairs);
         
         const shuffledPairs = shuffleArray(validPairs);

@@ -49,7 +49,7 @@ export function ConversationList({
 
     return (
         <ScrollArea className="h-full">
-            <div className="p-2 space-y-1">
+            <div className="space-y-2 p-3">
                 {conversations.map(convo => {
                     const otherParticipantId = convo.participants.find(p => p !== currentStudentId);
                     const otherParticipantName = otherParticipantId ? convo.participantNames[otherParticipantId] : "Inconnu";
@@ -73,54 +73,56 @@ export function ConversationList({
                             key={convo.id}
                             onClick={() => onSelectConversation(convo.id)}
                             className={cn(
-                                "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors",
-                                selectedConversationId === convo.id ? "bg-primary/20" : "hover:bg-accent/50",
+                                "flex items-center gap-3 rounded-2xl p-2.5 cursor-pointer transition-all border",
+                                selectedConversationId === convo.id
+                                    ? "border-transparent bg-gradient-to-r from-primary/15 to-accent/15 shadow-sm ring-1 ring-primary/30"
+                                    : "border-transparent hover:border-border hover:bg-white hover:shadow-sm",
                                 isUnread && "font-bold"
                             )}
                         >
-                            <div className="relative">
-                                <Avatar>
+                            <div className="relative shrink-0">
+                                <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm">
                                     <AvatarImage src={otherParticipantShowPhoto ? otherParticipantPhotoURL : undefined} alt={otherParticipantName} />
-                                    <AvatarFallback>{otherParticipantName.charAt(0)}</AvatarFallback>
+                                    <AvatarFallback className="bg-primary/10 font-semibold text-primary">{otherParticipantName.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <span
                                     className={cn(
-                                        'absolute -top-1 -right-1 block h-3 w-3 rounded-full border-2 border-muted/40',
+                                        'absolute -top-0.5 -right-0.5 block h-3.5 w-3.5 rounded-full border-2 border-white',
                                         isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
                                     )}
                                     title={presenceDescription}
                                     aria-label={`Statut : ${presenceDescription}`}
                                 />
                                 {isUnread && (
-                                    <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-muted/30" />
+                                    <span className="absolute -bottom-0.5 -right-0.5 block h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-white" />
                                 )}
                             </div>
                             <div className="flex-grow overflow-hidden">
                                 <div className="flex justify-between items-center gap-2">
-                                    <p className="truncate">{otherParticipantName}</p>
-                                    <div className="flex items-center gap-2">
+                                    <p className="truncate text-[15px]">{otherParticipantName}</p>
+                                    <p className="text-xs text-muted-foreground flex-shrink-0">{lastMessageDate}</p>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className={cn("text-sm truncate", isUnread ? "text-foreground" : "text-muted-foreground")}>
+                                        {lastMessageText}
+                                    </p>
+                                    <span
+                                        className={cn(
+                                            'flex shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-wide',
+                                            isOnline ? 'text-emerald-600' : 'text-muted-foreground/70'
+                                        )}
+                                        title={presenceDescription}
+                                    >
                                         <span
                                             className={cn(
-                                                'flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide',
-                                                isOnline ? 'text-emerald-600' : 'text-muted-foreground'
+                                                'h-2 w-2 rounded-full',
+                                                isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
                                             )}
-                                            title={presenceDescription}
-                                        >
-                                            <span
-                                                className={cn(
-                                                    'h-2.5 w-2.5 rounded-full',
-                                                    isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
-                                                )}
-                                                aria-hidden="true"
-                                            />
-                                            {presenceLabel}
-                                        </span>
-                                        <p className="text-xs text-muted-foreground flex-shrink-0">{lastMessageDate}</p>
-                                    </div>
+                                            aria-hidden="true"
+                                        />
+                                        {presenceLabel}
+                                    </span>
                                 </div>
-                                <p className={cn("text-sm truncate", isUnread ? "text-foreground" : "text-muted-foreground")}>
-                                    {lastMessageText}
-                                </p>
                             </div>
                         </div>
                     )

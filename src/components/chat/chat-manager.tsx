@@ -109,16 +109,20 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col bg-background overflow-hidden">
+        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#f3f0fb]">
             <Card className="flex h-full flex-col rounded-none border-0 shadow-none">
-                <header className="bg-primary text-primary-foreground border-b p-4 sm:p-3">
-                    <div className="grid gap-3 md:grid-cols-[auto,1fr,auto] md:items-center">
-                        <div className="flex items-center gap-2">
-                            <MessageSquare />
-                            <h2 className="text-lg font-semibold">Messagerie</h2>
+                <header className="relative overflow-hidden bg-gradient-to-r from-[hsl(340,85%,62%)] via-[hsl(340,85%,58%)] to-[hsl(12,76%,61%)] p-4 text-white sm:p-3">
+                    <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/10" />
+                    <div className="pointer-events-none absolute -bottom-12 left-16 h-24 w-24 rounded-full bg-white/10" />
+                    <div className="relative grid gap-3 md:grid-cols-[auto,1fr,auto] md:items-center">
+                        <div className="flex items-center gap-2.5">
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 shadow-inner">
+                                <MessageSquare className="h-5 w-5" />
+                            </span>
+                            <h2 className="text-lg font-bold tracking-tight">Messagerie</h2>
                         </div>
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium sm:text-sm md:justify-center">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5">
                                 <Switch
                                     id="chat-toggle-syllables"
                                     checked={colorizeSyllables}
@@ -129,7 +133,7 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
                                     Coloriser les syllabes
                                 </Label>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 rounded-full bg-white/15 px-3 py-1.5">
                                 <Label htmlFor="chat-message-size" className="whitespace-nowrap">
                                     Taille du texte
                                 </Label>
@@ -153,20 +157,24 @@ export function ChatManager({ student, onClose }: ChatManagerProps) {
                         </div>
                         <button
                             onClick={onClose}
-                            className="justify-self-start p-1 rounded-full transition hover:bg-primary/80 md:justify-self-end"
+                            className="justify-self-start rounded-full bg-white/15 p-1.5 transition hover:bg-white/30 md:justify-self-end"
+                            aria-label="Fermer la messagerie"
                         >
                             <X className="h-5 w-5" />
                         </button>
                     </div>
                 </header>
                 <div className="flex flex-1 flex-col overflow-hidden md:flex-row min-h-0">
-                    <div className="flex flex-col bg-muted/30 border-b md:w-1/3 md:max-w-sm md:border-b-0 md:border-r md:flex-none min-h-0">
-                        <header className="p-3 border-b sm:p-2 flex-shrink-0">
-                            <Button onClick={handleStartNewConversation} className="w-full">
-                                <Users className="mr-2 h-4 w-4"/> Nouvelle discussion
+                    <div className="flex flex-col border-b bg-white md:w-1/3 md:max-w-sm md:border-b-0 md:border-r md:flex-none min-h-0">
+                        <header className="flex-shrink-0 border-b p-3 sm:p-2">
+                            <Button
+                                onClick={handleStartNewConversation}
+                                className="w-full gap-2 rounded-full bg-gradient-to-r from-[hsl(340,85%,62%)] to-[hsl(12,76%,61%)] font-semibold shadow-sm hover:opacity-90"
+                            >
+                                <Users className="h-4 w-4" /> Nouvelle discussion
                             </Button>
                         </header>
-                        <div className="flex-1 min-h-0 overflow-hidden">
+                        <div className="flex-1 min-h-0 overflow-hidden bg-[#faf9fd]">
                             <ConversationList
                                 conversations={conversations}
                                 currentStudentId={student.id}

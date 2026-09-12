@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Check, X, Play, RefreshCw, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserContext } from '@/context/user-context';
+import type { TirageDeCouleurs } from '@/lib/exercise-content/algorithme-couleurs';
+import { getPooledContent } from '@/services/exercise-pool';
+import { ExerciseFinished } from '@/components/exercise/exercise-kit';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { Label } from '@/components/ui/label';
@@ -74,11 +77,6 @@ function shuffleArray<T>(array: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
-}
-
-function pickRandomColors(count: number): string[] {
-  const shuffled = shuffleArray(COLOR_KEYS);
-  return shuffled.slice(0, count);
 }
 
 // ========================
@@ -151,9 +149,15 @@ export function ColorAlgorithmExercise() {
   );
 
   // Start the game
-  const startGame = useCallback(() => {
+  const startGame = useCallback(async () => {
     const algo = ALGORITHMS.find((a) => a.id === selectedAlgorithm) || ALGORITHMS[0];
-    const colors = pickRandomColors(algo.letters.length);
+    // L'association lettre → couleur vient du stock partagé : à algorithme
+    // égal, les élèves travaillent sur le même codage.
+    const [tirage] = await getPooledContent<TirageDeCouleurs>('color-algorithm', 1, {
+      settings: { cles: COLOR_KEYS, combien: algo.letters.length },
+      studentId: student?.id ?? null,
+    });
+    const colors = tirage?.couleurs ?? COLOR_KEYS.slice(0, algo.letters.length);
     const mapping: Record<string, string> = {};
     algo.letters.forEach((letter, index) => {
       mapping[letter] = colors[index];
@@ -171,7 +175,7 @@ export function ColorAlgorithmExercise() {
     setHasBeenSaved(false);
     setSessionDetails([]);
     setGameState('playing');
-  }, [selectedAlgorithm, repetitions, generateTargetSequence]);
+  }, [selectedAlgorithm, repetitions, generateTargetSequence, student?.id]);
 
   // Handle color click
   const handleColorClick = useCallback(
@@ -467,34 +471,32 @@ export function ColorAlgorithmExercise() {
   };
 
   const renderFinished = () => (
-    <div className="text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <h2 className="text-4xl font-bold text-primary">Bravo !</h2>
-      <p className="text-xl text-muted-foreground">Tu as complété l&apos;algorithme {currentAlgorithm.label}</p>
-
-      <div className="py-8 bg-muted/20 rounded-xl max-w-sm mx-auto space-y-4">
+    // La série se termine toujours complète : l'élève reprend jusqu'à trouver
+    // la bonne couleur. Ce qui se mesure ici, c'est le nombre d'erreurs.
+    <ExerciseFinished
+      correct={Math.max(0, targetSequence.length - errors)}
+      total={targetSequence.length}
+      canRestart
+      onRestart={startGame}
+      returnHref="/en-classe"
+    >
+      <div className="mx-auto max-w-sm space-y-4 rounded-[20px] bg-muted/30 py-6">
         <div>
-          <p className="text-lg text-muted-foreground">Temps</p>
-          <p className="text-4xl font-bold text-primary">
+          <p className="text-muted-foreground">Temps</p>
+          <p className="text-3xl font-bold text-primary">
             {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
           </p>
         </div>
         <div>
-          <p className="text-lg text-muted-foreground">Erreurs</p>
-          <p className={cn('text-4xl font-bold', errors === 0 ? 'text-green-600' : 'text-orange-500')}>{errors}</p>
+          <p className="text-muted-foreground">Erreurs</p>
+          <p className={cn('text-3xl font-bold', errors === 0 ? 'text-emerald-600' : 'text-amber-500')}>{errors}</p>
         </div>
       </div>
-
-      <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
-        <Button onClick={() => setGameState('setup')} size="lg" variant="outline" className="text-lg px-8 h-16">
-          <RefreshCw className="mr-2 h-5 w-5" />
-          Changer les options
-        </Button>
-        <Button onClick={startGame} size="lg" className="text-lg px-8 h-16">
-          <Play className="mr-2 h-5 w-5" />
-          Rejouer
-        </Button>
-      </div>
-    </div>
+      <Button onClick={() => setGameState('setup')} size="lg" variant="secondary" className="mt-4 text-lg">
+        <RefreshCw className="mr-2 h-5 w-5" />
+        Changer les options
+      </Button>
+    </ExerciseFinished>
   );
 
   return (

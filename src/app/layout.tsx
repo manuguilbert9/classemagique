@@ -1,6 +1,7 @@
 import './globals.css';
 import { ClientProviders } from '@/components/client-providers';
 import localFont from 'next/font/local';
+import { Pangolin } from 'next/font/google';
 import type { Metadata } from 'next';
 
 // Chargement des polices personnalisées
@@ -16,9 +17,12 @@ const monof = localFont({
   display: 'swap',
 });
 
-const scolarPaper = localFont({
-  src: '../../public/fonts/scolarpaper.ttf',
-  variable: '--font-scolar-paper',
+// Police des titres d'exercices : ronde et manuscrite, mais bien plus lisible
+// que l'ancienne cursive attachée (lettres détachées, pas de jambages fondus).
+const pangolin = Pangolin({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-pangolin',
   display: 'swap',
 });
 
@@ -33,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${andika.variable} ${monof.variable} ${scolarPaper.variable}`}>
+    <html lang="fr" className={`${andika.variable} ${monof.variable} ${pangolin.variable}`}>
       <body className="font-body antialiased">
         <ClientProviders>
           {children}

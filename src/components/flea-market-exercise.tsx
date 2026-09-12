@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import type { SkillLevel } from '@/lib/skills';
 import Image from 'next/image';
 import { fleaMarketFlow } from '@/ai/flows/flea-market-flow';
+import { ExerciseFinished } from '@/components/exercise/exercise-kit';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -245,18 +246,15 @@ export function FleaMarketExercise() {
     }, [level]);
 
     if (isFinished) {
-        const score = (correctAnswers / NUM_QUESTIONS) * 100;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-                <CardHeader><CardTitle className="text-4xl font-headline mb-4">Brocante terminée !</CardTitle></CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as rendu la bonne monnaie <span className="font-bold text-primary">{correctAnswers}</span> fois sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4"><RefreshCw className="mr-2" />Recommencer</Button>
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={NUM_QUESTIONS}
+                canRestart={!isHomework}
+                onRestart={restartExercise}
+                returnHref={isHomework ? '/devoirs' : '/en-classe'}
+                returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+            />
         );
     }
 

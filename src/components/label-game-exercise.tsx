@@ -16,7 +16,16 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { SkillLevel } from '@/lib/skills';
-import { PHRASE_CONSTRUCTION_SENTENCES } from '@/data/grammaire/phrase-construction-sentences';
+import type { PhraseEtiquettes } from '@/lib/exercise-content/phrases';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    AnswerFeedback,
+    DELAI_NOUVEL_ESSAI,
+    ExerciseFinished,
+    ExerciseProgress,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const NUM_QUESTIONS = 5;
 
@@ -68,14 +77,16 @@ export function LabelGameExercise() {
     const homeworkDate = searchParams.get('date');
 
     const [level, setLevel] = useState<SkillLevel>('B');
-    const [allPhrases] = useState<string[]>(() => {
-        return PHRASE_CONSTRUCTION_SENTENCES;
-    });
+    // Les phrases de la séance viennent du stock partagé, calibrées sur le niveau.
+    const [allPhrases, setAllPhrases] = useState<string[]>([]);
 
     const [currentSentence, setCurrentSentence] = useState('');
     const [orderedLabels, setOrderedLabels] = useState<LabelItem[]>([]);
 
-    const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    // Le droit à l'erreur : l'élève continue de déplacer ses étiquettes
+    // jusqu'à reconstituer la phrase.
+    const secondChance = useSecondChance();
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -103,52 +114,27 @@ export function LabelGameExercise() {
         }
     }, [student]);
 
-    const fetchNewSentence = useCallback(() => {
-        if (!level || allPhrases.length === 0) return;
+    const loadPhrases = useCallback(async () => {
+        const lot = await getPooledContent<PhraseEtiquettes>('label-game', NUM_QUESTIONS, {
+            settings: { level },
+            studentId: student?.id ?? null,
+        });
+        setAllPhrases(lot.map((p) => p.phrase));
+    }, [level, student?.id]);
 
-        let phrasePool: string[] = [];
-
-        // Filter phrases based on word count for each level
-        if (level === 'B') { // 2 to 4 words
-            phrasePool = allPhrases.filter(p => {
-                const wordCount = p.split(/\s+/).length;
-                return wordCount >= 2 && wordCount <= 4;
-            });
-        } else if (level === 'C') { // 4 to 6 words
-            phrasePool = allPhrases.filter(p => {
-                const wordCount = p.split(/\s+/).length;
-                return wordCount > 4 && wordCount <= 6;
-            });
-        } else if (level === 'D') { // 7+ words
-            phrasePool = allPhrases.filter(p => {
-                const wordCount = p.split(/\s+/).length;
-                return wordCount > 6;
-            });
-        }
-
-        if (phrasePool.length > 0) {
-            const sentence = phrasePool[Math.floor(Math.random() * phrasePool.length)];
-            const words = sentence.split(/\s+/).filter(Boolean);
-            const shuffledLabels = shuffleArray(words.map((word, i) => ({ id: `${currentQuestionIndex}-${i}-${word}`, word })));
-
-            setCurrentSentence(sentence);
-            setOrderedLabels(shuffledLabels);
-        } else {
-            // Fallback if no phrases match the criteria for a level
-            const sentence = allPhrases[Math.floor(Math.random() * allPhrases.length)];
-            const words = sentence.split(/\s+/).filter(Boolean);
-            const shuffledLabels = shuffleArray(words.map((word, i) => ({ id: `${currentQuestionIndex}-${i}-${word}`, word })));
-            setCurrentSentence(sentence);
-            setOrderedLabels(shuffledLabels);
-        }
-    }, [level, allPhrases, currentQuestionIndex]);
-
-    // Setup exercise on mount and for each new question
     useEffect(() => {
-        if (allPhrases.length > 0) {
-            fetchNewSentence();
-        }
-    }, [currentQuestionIndex, allPhrases, fetchNewSentence]);
+        loadPhrases();
+    }, [loadPhrases]);
+
+    // Met en place la phrase courante : les étiquettes sont mélangées à
+    // l'affichage, la phrase à reconstituer reste la même pour tous.
+    useEffect(() => {
+        const sentence = allPhrases[currentQuestionIndex];
+        if (!sentence) return;
+        const words = sentence.split(/\s+/).filter(Boolean);
+        setCurrentSentence(sentence);
+        setOrderedLabels(shuffleArray(words.map((word, i) => ({ id: `${currentQuestionIndex}-${i}-${word}`, word }))));
+    }, [allPhrases, currentQuestionIndex]);
 
     const handleNextQuestion = () => {
         setShowConfetti(false);
@@ -166,21 +152,28 @@ export function LabelGameExercise() {
         const reconstructedSentence = orderedLabels.map(label => label.word).join(' ');
         const isCorrect = reconstructedSentence === currentSentence;
 
-        const detail: ScoreDetail = {
+        // Faux : les étiquettes restent où elles sont, l'élève les réordonne.
+        if (!isCorrect) {
+            secondChance.registerError();
+            setFeedback('retry');
+            setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
+            return;
+        }
+
+        const issue = secondChance.resultOnSuccess();
+        setSessionDetails(prev => [...prev, {
             question: `Remettre en ordre : "${currentSentence}"`,
             userAnswer: reconstructedSentence,
             correctAnswer: currentSentence,
-            status: isCorrect ? 'correct' : 'incorrect',
-        };
-        setSessionDetails(prev => [...prev, detail]);
+            status: issue,
+        }]);
 
-        if (isCorrect) {
+        // Seule une phrase reconstruite du premier coup rapporte un point.
+        if (issue === 'correct') {
             setCorrectAnswers(prev => prev + 1);
-            setFeedback('correct');
             setShowConfetti(true);
-        } else {
-            setFeedback('incorrect');
         }
+        setFeedback(issue);
 
         setTimeout(handleNextQuestion, 2000);
     };
@@ -222,9 +215,9 @@ export function LabelGameExercise() {
         saveResult();
     }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate, level]);
 
-    const restartExercise = () => {
+    const restartExercise = async () => {
         resetExerciseState();
-        fetchNewSentence();
+        await loadPhrases();
     };
 
     if (allPhrases.length === 0) {
@@ -241,18 +234,15 @@ export function LabelGameExercise() {
     }
 
     if (isFinished) {
-        const score = (correctAnswers / NUM_QUESTIONS) * 100;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-                <CardHeader><CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle></CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as reconstruit <span className="font-bold text-primary">{correctAnswers}</span> phrases sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4"><RefreshCw className="mr-2" />Recommencer</Button>
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={NUM_QUESTIONS}
+                canRestart={!isHomework}
+                onRestart={restartExercise}
+                returnHref={isHomework ? '/devoirs' : '/en-classe'}
+                returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+            />
         );
     }
 
@@ -264,7 +254,12 @@ export function LabelGameExercise() {
             <CardHeader>
                 <CardTitle className="font-headline text-2xl text-center">Le jeu des étiquettes</CardTitle>
                 <CardDescription className="text-center">Fais glisser les mots pour remettre la phrase dans le bon ordre.</CardDescription>
-                <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
+                <ExerciseProgress
+                    current={currentQuestionIndex}
+                    total={NUM_QUESTIONS}
+                    results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')}
+                    className="mt-4"
+                />
             </CardHeader>
             <CardContent className="min-h-[300px] flex flex-col items-center justify-center gap-6 p-6">
 
@@ -284,8 +279,15 @@ export function LabelGameExercise() {
                 <Button size="lg" onClick={checkAnswer} disabled={!!feedback}>
                     <Check className="mr-2" /> Valider
                 </Button>
-                {feedback === 'correct' && <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse"><ThumbsUp /> Parfait !</div>}
-                {feedback === 'incorrect' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X /> Oups, ce n'est pas le bon ordre. La bonne phrase était : "{currentSentence}"</div>}
+                <AnswerFeedback status={feedback} hinted={secondChance.showHint} className="w-full">
+                    {feedback === 'retry' ? "Ce n'est pas encore le bon ordre. Relis ta phrase à voix basse." : undefined}
+                </AnswerFeedback>
+                {/* Après deux essais, on donne la phrase : l'élève la remet quand même en ordre. */}
+                {secondChance.showHint && !feedback && (
+                    <p className="rounded-[16px] border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2 text-center font-bold text-amber-700">
+                        {currentSentence}
+                    </p>
+                )}
             </CardFooter>
             <style jsx>{`
                 @keyframes shake {

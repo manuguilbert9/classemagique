@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Loader2, Home, LogOut } from 'lucide-react';
+import { Loader2, Home, LogOut, GraduationCap } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +20,7 @@ import { getStudents, Student } from '@/services/students';
 import { getGroups, type Group } from '@/services/groups';
 import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
+import { PageBanner, PillButton, PillLink, PillSlot } from '@/components/layout/page-banner';
 import { BuildInfo } from '@/components/teacher/build-info';
 import { getAllWritingEntries, WritingEntry } from '@/services/writing';
 import type { FsNode } from '@/services/writing-fs';
@@ -129,28 +130,34 @@ export default function TeacherDashboardPage() {
 
   return (
     <TooltipProvider>
-      <main className="min-h-screen bg-background p-4 sm:p-8 flex flex-col">
-        <header className="flex items-center justify-between mb-8 max-w-7xl mx-auto w-full">
-          <Logo />
-          <div className="flex items-center gap-4">
-            <FullscreenToggle />
-            <Button asChild variant="outline">
-              <Link href="/"><Home className="mr-2" /> Accueil Principal</Link>
-            </Button>
-            <Button onClick={handleLogout} variant="destructive">
-              <LogOut className="mr-2" /> Déconnexion
-            </Button>
-          </div>
-        </header>
+      <main className="flex min-h-screen flex-col bg-background p-4 sm:p-8">
+        <div className="mx-auto w-full max-w-7xl">
+          <PageBanner
+            icon={<GraduationCap />}
+            title="Tableau de bord"
+            subtitle="La classe, les devoirs et les résultats."
+            actions={
+              <>
+                <PillLink href="/" icon={Home}>Accueil</PillLink>
+                <PillButton icon={LogOut} onClick={handleLogout} className="border-white/40 bg-white/25">
+                  Déconnexion
+                </PillButton>
+                <PillSlot>
+                  <FullscreenToggle />
+                </PillSlot>
+              </>
+            }
+          />
+        </div>
 
-        <div className="max-w-7xl mx-auto mt-4 w-full flex-grow">
+        <div className="mx-auto mt-8 w-full max-w-7xl flex-grow">
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
           ) : (
             <Tabs defaultValue="grille" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-[20px] p-1.5 sm:grid-cols-6 [&>button]:rounded-[14px] [&>button]:py-2">
                 <TabsTrigger value="grille">Grille de classe</TabsTrigger>
                 <TabsTrigger value="students">Élèves</TabsTrigger>
                 <TabsTrigger value="groups">Groupes</TabsTrigger>

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useContext, useCallback } from 'react';
+import { useState, useMemo, useEffect, useContext, useCallback, Fragment } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,24 +14,22 @@ import { Progress } from './ui/progress';
 import { ScoreTube } from './score-tube';
 import { cn } from '@/lib/utils';
 import { VirtualKeyboard } from './virtual-keyboard';
+import type { ProblemeSommeDix } from '@/lib/exercise-content/calcul-simple';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    DELAI_NOUVEL_ESSAI,
+  AnswerFeedback,
+    ExerciseFinished,
+    ExerciseProgress,
+    QuestionCard,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
-type Problem = {
-    id: number;
-    operands: number[];
-    answer: number;
-    emoji: string;
-};
+type Problem = ProblemeSommeDix;
 type Feedback = 'correct' | 'incorrect' | null;
 
 const NUM_PROBLEMS = 5;
-const emojiPool = ['🧱', '🍎', '🚗', '⭐', '🧸', '⚽', '🍓', '🍌', '🔵', '🟢'];
-
-const generateProblem = (): Problem => {
-    const op1 = Math.floor(Math.random() * 8) + 1; // 1-8
-    const op2 = Math.floor(Math.random() * (9 - op1)) + 1; // ensure total is < 10
-    const emoji = emojiPool[Math.floor(Math.random() * emojiPool.length)];
-    return { id: Date.now() + Math.random(), operands: [op1, op2], answer: op1 + op2, emoji };
-}
 
 export function SommeDixExercise() {
     const { student } = useContext(UserContext);
@@ -42,7 +40,8 @@ export function SommeDixExercise() {
     const [problems, setProblems] = useState<Problem[]>([]);
     const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
     const [userAnswer, setUserAnswer] = useState('');
-    const [feedback, setFeedback] = useState<Feedback>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    const secondChance = useSecondChance();
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
@@ -52,15 +51,14 @@ export function SommeDixExercise() {
     
     useEffect(() => {
         generateNewProblems();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [student?.id]);
 
-    const generateNewProblems = () => {
+    const generateNewProblems = async () => {
         setIsLoading(true);
-        const newProblems: Problem[] = [];
-        for (let i = 0; i < NUM_PROBLEMS; i++) {
-            newProblems.push(generateProblem());
-        }
-        setProblems(newProblems);
+        setProblems(await getPooledContent<Problem>('somme-dix', NUM_PROBLEMS, {
+            studentId: student?.id ?? null,
+        }));
         setIsLoading(false);
     };
 
@@ -72,6 +70,7 @@ export function SommeDixExercise() {
     }, [problems, currentProblemIndex]);
 
     const handleNextProblem = useCallback(() => {
+        secondChance.reset();
         if (currentProblemIndex < NUM_PROBLEMS - 1) {
             setCurrentProblemIndex(prev => prev + 1);
             setUserAnswer('');
@@ -79,27 +78,36 @@ export function SommeDixExercise() {
         } else {
             setIsFinished(true);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentProblemIndex]);
     
     const checkAnswer = (answer: string) => {
         if (!currentProblem || feedback) return;
 
-        const isCorrect = parseInt(answer, 10) === currentProblem.answer;
+        // Faux : on efface la saisie et l'élève recompte. Il finira par taper
+        // lui-même le bon total, ce qui est tout l'intérêt de l'exercice.
+        if (parseInt(answer, 10) !== currentProblem.answer) {
+            secondChance.registerError(answer);
+            setFeedback('retry');
+            setTimeout(() => {
+                setFeedback(null);
+                setUserAnswer('');
+            }, DELAI_NOUVEL_ESSAI);
+            return;
+        }
 
+        const issue = secondChance.resultOnSuccess();
         const detail: ScoreDetail = {
             question: `${currentProblem.operands[0]} + ${currentProblem.operands[1]}`,
             userAnswer: answer,
             correctAnswer: String(currentProblem.answer),
-            status: isCorrect ? 'correct' : 'incorrect',
+            status: issue,
         };
         setSessionDetails(prev => [...prev, detail]);
 
-        if (isCorrect) {
-            setFeedback('correct');
-            setCorrectAnswers(prev => prev + 1);
-        } else {
-            setFeedback('incorrect');
-        }
+        // Seule une réussite du premier coup rapporte un point.
+        if (issue === 'correct') setCorrectAnswers(prev => prev + 1);
+        setFeedback(issue);
 
         setTimeout(handleNextProblem, 1500);
     }
@@ -115,9 +123,8 @@ export function SommeDixExercise() {
         }
         setUserAnswer(newAnswer);
 
-        if (newAnswer.length > 0 && newAnswer.length === String(currentProblem?.answer).length) {
-            setTimeout(() => checkAnswer(newAnswer), 100);
-        }
+        // La reponse ne part plus des la bonne longueur atteinte : l'eleve
+        // valide lui-meme, et peut donc corriger une frappe malheureuse.
     };
     
     const handlePhysicalKeystroke = (e: KeyboardEvent) => {
@@ -125,6 +132,8 @@ export function SommeDixExercise() {
             handleKeystroke(e.key);
         } else if (e.key === 'Backspace') {
             handleKeystroke('⌫');
+        } else if (e.key === 'Enter' && userAnswer.length > 0) {
+            checkAnswer(userAnswer);
         }
     }
 
@@ -174,94 +183,88 @@ export function SommeDixExercise() {
         setSessionDetails([]);
     };
     
-     if (isLoading) {
-        return (
-            <div className="w-full max-w-lg mx-auto flex flex-col items-center justify-center gap-6 h-96">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            </div>
-        );
+    if (isLoading) {
+        return <p className="p-8 text-center text-muted-foreground">Je prépare les calculs…</p>;
     }
 
     if (isFinished) {
-        const score = (correctAnswers / NUM_PROBLEMS) * 100;
         return (
-             <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-                <CardHeader>
-                    <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_PROBLEMS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                    {isHomework ? (
-                        <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-                     ) : (
-                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                            <RefreshCw className="mr-2" />
-                            Recommencer
-                        </Button>
-                     )}
-                </CardContent>
-            </Card>
-        )
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={NUM_PROBLEMS}
+                canRestart={!isHomework}
+                onRestart={restartExercise}
+                returnHref={isHomework ? '/devoirs' : '/en-classe'}
+                returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+            />
+        );
     }
 
     if (!currentProblem) {
-        return <p>Erreur lors de la génération du problème.</p>;
+        return <p className="p-8 text-center text-muted-foreground">Je prépare les calculs…</p>;
     }
-    
+
+    const resultats = sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect');
+
     return (
-        <div className="w-full max-w-xl mx-auto flex flex-col items-center gap-6">
-            <Progress value={((currentProblemIndex + 1) / NUM_PROBLEMS) * 100} className="w-full" />
-            <Card className="w-full">
-                <CardHeader>
-                     <CardTitle className="text-center font-body text-2xl sm:text-3xl">
-                        Combien y a-t-il d'objets en tout ?
-                    </CardTitle>
-                </CardHeader>
-                 <CardContent className="flex flex-col items-center gap-6">
-                    <div className="flex items-center justify-center gap-4 sm:gap-8">
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="text-4xl flex flex-wrap gap-1 justify-center max-w-[150px]">
-                                {Array.from({ length: currentProblem.operands[0] }).map((_, i) => <span key={i}>{currentProblem.emoji}</span>)}
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-5 p-1">
+            <ExerciseProgress current={currentProblemIndex} total={NUM_PROBLEMS} results={resultats} />
+
+            <QuestionCard instruction="Combien y a-t-il d'objets en tout ?">
+                {/* Les deux collections, chacune avec son cardinal écrit dessous :
+                    l'élève peut compter les objets ou lire le nombre. */}
+                <div className="flex items-center justify-center gap-4 sm:gap-8">
+                    {[0, 1].map((rang) => (
+                        <Fragment key={rang}>
+                            {rang === 1 && <span className="text-5xl font-bold text-primary">+</span>}
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="flex max-w-[150px] flex-wrap justify-center gap-1 text-4xl">
+                                    {Array.from({ length: currentProblem.operands[rang] }).map((_, i) => (
+                                        <span key={i}>{currentProblem.emoji}</span>
+                                    ))}
+                                </div>
+                                <p className="text-3xl font-bold">{currentProblem.operands[rang]}</p>
                             </div>
-                            <p className="text-3xl font-bold">{currentProblem.operands[0]}</p>
-                        </div>
-                        <span className="text-5xl font-bold text-primary">+</span>
-                         <div className="flex flex-col items-center gap-2">
-                           <div className="text-4xl flex flex-wrap gap-1 justify-center max-w-[150px]">
-                                {Array.from({ length: currentProblem.operands[1] }).map((_, i) => <span key={i}>{currentProblem.emoji}</span>)}
-                            </div>
-                            <p className="text-3xl font-bold">{currentProblem.operands[1]}</p>
-                        </div>
+                        </Fragment>
+                    ))}
+                </div>
+
+                <div className="mt-8 flex flex-col items-center gap-4">
+                    <div
+                        className={cn(
+                            'relative flex h-24 w-48 items-center justify-center rounded-[18px] border-2 transition-colors',
+                            (feedback === 'correct' || feedback === 'corrected') && 'border-emerald-500 bg-emerald-50',
+                            feedback === 'retry' && 'border-red-500 bg-red-50',
+                            !feedback && 'border-dashed'
+                        )}
+                    >
+                        <span className="text-6xl font-bold">{userAnswer}</span>
+                        {!feedback && !userAnswer && (
+                            <span className="absolute bottom-2 text-xs text-muted-foreground">Tape ta réponse</span>
+                        )}
+                        {/* Après deux essais, on donne le total : l'élève le tape quand même. */}
+                        {secondChance.showHint && !feedback && (
+                            <span className="absolute bottom-2 text-xs font-bold text-amber-600">
+                                Réponse : {currentProblem.answer}
+                            </span>
+                        )}
                     </div>
-                     <div className={cn("relative w-48 h-24 border-2 rounded-lg flex items-center justify-center",
-                        feedback === 'correct' && 'border-green-500',
-                        feedback === 'incorrect' && 'border-red-500 animate-shake'
-                     )}>
-                        <span className="font-bold text-6xl">{userAnswer}</span>
-                         {feedback === 'correct' && <Check className="absolute right-2 top-2 h-6 w-6 text-green-500"/>}
-                         {feedback === 'incorrect' && <X className="absolute right-2 top-2 h-6 w-6 text-red-500"/>}
-                         {!feedback && <span className="absolute bottom-2 text-muted-foreground text-xs">Tape ta réponse</span>}
-                         {feedback === 'incorrect' && <span className="absolute bottom-2 text-red-500 text-xs font-bold">Réponse: {currentProblem.answer}</span>}
 
-                     </div>
-                </CardContent>
-            </Card>
-            
+                    {/* La validation est explicite : on peut se relire avant d'envoyer. */}
+                    <Button
+                        size="lg"
+                        className="w-48 text-xl"
+                        disabled={!userAnswer || !!feedback}
+                        onClick={() => checkAnswer(userAnswer)}
+                    >
+                        Valider
+                    </Button>
+                </div>
+            </QuestionCard>
+
+            <AnswerFeedback status={feedback} hinted={secondChance.showHint} correctAnswer={currentProblem.answer} />
+
             <VirtualKeyboard onKeyPress={handleKeystroke} numericOnly />
-
-            <style jsx>{`
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                    20%, 40%, 60%, 80% { transform: translateX(5px); }
-                }
-                .animate-shake {
-                    animation: shake 0.5s ease-in-out;
-                }
-            `}</style>
         </div>
     )
 }

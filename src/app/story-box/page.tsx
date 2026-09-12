@@ -8,8 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart, Trash2, Settings2, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Home, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2, FileQuestion, Image as ImageIcon, Users, BookHeart, Trash2, Settings2, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PageBanner, PillLink, PillButton } from '@/components/layout/page-banner';
+import { EmptyState, PageShell, SectionLabel } from '@/components/layout/section';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
@@ -524,16 +526,25 @@ export default function StoryBoxPage() {
 
   if(viewState === 'library') {
     return (
-      <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
-        <div className="w-full max-w-4xl">
-            <Button onClick={() => setViewState('menu')} variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Retour
-            </Button>
-            <h2 className="font-headline text-4xl text-center my-8">Bibliothèque d'histoires</h2>
+      <PageShell>
+        <PageBanner
+            icon={<BookOpen />}
+            title="Ma bibliothèque"
+            subtitle="Toutes les histoires que tu as gardées."
+            actions={
+                <>
+                    <PillButton icon={ArrowLeft} onClick={() => setViewState('menu')}>Retour</PillButton>
+                    <PillButton icon={Wand2} onClick={() => setViewState('creation')}>Nouvelle histoire</PillButton>
+                </>
+            }
+        />
+        <div className="w-full">
             {isLoadingLibrary ? (
-                <Loader2 className="mx-auto h-12 w-12 animate-spin"/>
+                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary"/>
             ) : savedStories.length === 0 ? (
-                <p className="text-center text-muted-foreground">Aucune histoire n'a encore été sauvegardée.</p>
+                <EmptyState icon={<BookHeart />} title="Ta bibliothèque est vide">
+                    Crée ta première histoire, elle viendra se ranger ici.
+                </EmptyState>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {savedStories.map(s => (
@@ -602,46 +613,57 @@ export default function StoryBoxPage() {
                 </div>
             )}
         </div>
-      </main>
+      </PageShell>
     );
   }
 
   // Fallback to menu view
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background">
-      <div className="w-full max-w-3xl">
-         <Button asChild variant="outline" className="absolute top-8 left-8">
-            <Link href="/">
-             <ArrowLeft className="mr-2 h-4 w-4" /> Retour à l'accueil
-            </Link>
-         </Button>
-
+    <PageShell>
+      <PageBanner
+        icon={<BookHeart />}
+        title="La boîte à histoires"
+        subtitle="Invente des histoires avec des emojis ou avec ta voix."
+        actions={
+            <>
+                {viewState === 'creation' && <PillButton icon={ArrowLeft} onClick={() => setViewState('menu')}>Retour</PillButton>}
+                <PillLink href="/en-classe" icon={Sparkles}>En classe</PillLink>
+                <PillLink href="/" icon={Home}>Accueil</PillLink>
+            </>
+        }
+      />
+      <div className="mx-auto w-full max-w-3xl">
         {viewState === 'menu' ? (
-             <Card className="mt-8 shadow-xl">
-                <CardHeader className="text-center">
-                    <div className="mx-auto bg-primary/20 text-primary p-3 rounded-full w-fit mb-4">
-                        <BookHeart className="h-8 w-8"/>
-                    </div>
-                    <CardTitle className="font-headline text-4xl">La Boîte à Histoires</CardTitle>
-                    <CardDescription className="text-lg">
-                        Crée des histoires magiques en choisissant des emojis ou en décrivant ton imagination !
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
-                     <Button variant="outline" className="h-32 flex-col gap-2 text-xl" onClick={() => setViewState('creation')}>
-                        <Wand2 className="h-10 w-10 text-primary"/>
-                        Créer une histoire
-                    </Button>
-                     <Button variant="outline" className="h-32 flex-col gap-2 text-xl" onClick={handleOpenLibrary}>
-                        <BookOpen className="h-10 w-10 text-primary"/>
-                        Histoires sauvegardées
-                    </Button>
-                </CardContent>
-            </Card>
+             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {/* Deux portes d'entrée, aussi grosses l'une que l'autre :
+                    créer, ou relire ce qu'on a déjà écrit. */}
+                <button
+                    type="button"
+                    onClick={() => setViewState('creation')}
+                    className="group flex flex-col items-center gap-3 rounded-[22px] border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-accent/10 p-8 transition-all hover:-translate-y-1 hover:shadow-lg"
+                >
+                    <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-md transition-transform group-hover:scale-110">
+                        <Wand2 className="h-8 w-8"/>
+                    </span>
+                    <span className="font-headline text-2xl">Créer une histoire</span>
+                    <span className="text-sm text-muted-foreground">Avec des emojis ou avec ta voix</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={handleOpenLibrary}
+                    className="group flex flex-col items-center gap-3 rounded-[22px] border-2 border-dashed bg-card p-8 transition-all hover:-translate-y-1 hover:shadow-lg"
+                >
+                    <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-primary transition-transform group-hover:scale-110">
+                        <BookOpen className="h-8 w-8"/>
+                    </span>
+                    <span className="font-headline text-2xl">Ma bibliothèque</span>
+                    <span className="text-sm text-muted-foreground">Relire mes histoires gardées</span>
+                </button>
+            </div>
         ) : ( // viewState === 'creation'
-            <Card className="mt-8 shadow-xl">
+            <Card className="rounded-[22px] shadow-lg">
             <CardHeader className="text-center">
-                <CardTitle className="font-headline text-4xl">Nouvelle Histoire</CardTitle>
+                <CardTitle className="font-headline text-4xl">Nouvelle histoire</CardTitle>
                 <CardDescription className="text-lg">
                     Choisis tes ingrédients et crée une histoire unique !
                 </CardDescription>
@@ -774,6 +796,6 @@ export default function StoryBoxPage() {
             </Card>
         )}
       </div>
-    </main>
+    </PageShell>
   );
 }

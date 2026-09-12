@@ -13,64 +13,20 @@ import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
-import { MBP_WORDS } from '@/data/orthographe/mbp-words';
+import type { MbpQuestion } from '@/lib/exercise-content/regle-mbp';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    DELAI_NOUVEL_ESSAI,
+  AnswerFeedback,
+    ExerciseFinished,
+    ExerciseProgress,
+    HINT_CLASSES,
+    QuestionCard,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const NUM_QUESTIONS = 10;
-
-interface MbpQuestion {
-    word: string;
-    missingPart: string;
-    correctLetter: 'n' | 'm';
-}
-
-const findMbpPattern = (word: string): { base: string, missing: string, correct: 'n' | 'm' } | null => {
-    const lowerWord = word.toLowerCase();
-    
-    // Find 'm' before m, b, p
-    let match = lowerWord.match(/(.*)m([mbp].*)/);
-    if (match) {
-        return { base: match[1], missing: match[2], correct: 'm' };
-    }
-    
-    // Find 'n' not before m, b, p
-    match = lowerWord.match(/(.*)n([^mbp\s].*)/);
-    if (match) {
-        return { base: match[1], missing: match[2], correct: 'n' };
-    }
-
-    // Find 'om' 'am' 'em' 'im' not followed by m,b,p (should be n) - less common but good for traps
-    match = lowerWord.match(/(.*)(a|e|o|i)m([^mbp\s].*)/);
-     if (match) {
-         // This is a trap, the rule would say 'n'. This logic is complex.
-         // Let's stick to simpler cases for now.
-    }
-
-    return null;
-}
-
-const generateQuestion = (): MbpQuestion => {
-    let question: MbpQuestion | null = null;
-    let attempts = 0;
-    while (!question && attempts < 50) {
-        const randomWord = MBP_WORDS[Math.floor(Math.random() * MBP_WORDS.length)];
-        const pattern = findMbpPattern(randomWord);
-        if (pattern) {
-            question = {
-                word: randomWord,
-                missingPart: pattern.base + '___' + pattern.missing,
-                correctLetter: pattern.correct
-            };
-        }
-        attempts++;
-    }
-    
-    // Fallback if no suitable word found
-    if (!question) {
-        return { word: "CHAMBRE", missingPart: "cha___bre", correctLetter: 'm' };
-    }
-    
-    return question;
-};
 
 export function MbpRuleExercise() {
     const { student } = useContext(UserContext);
@@ -80,7 +36,9 @@ export function MbpRuleExercise() {
 
     const [questions, setQuestions] = useState<MbpQuestion[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    const secondChance = useSecondChance();
+    const [choix, setChoix] = useState<'n' | 'm' | null>(null);
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -88,17 +46,23 @@ export function MbpRuleExercise() {
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     
     useEffect(() => {
-        const newQuestions = Array.from({ length: NUM_QUESTIONS }, generateQuestion);
-        setQuestions(newQuestions);
-    }, []);
+        const loadQuestions = async () => {
+            setQuestions(await getPooledContent<MbpQuestion>('regle-mbp', NUM_QUESTIONS, {
+                studentId: student?.id ?? null,
+            }));
+        };
+        loadQuestions();
+    }, [student?.id]);
 
     const currentQuestion = useMemo(() => questions[currentQuestionIndex], [questions, currentQuestionIndex]);
 
     const handleNextQuestion = () => {
         setShowConfetti(false);
+        setFeedback(null);
+        setChoix(null);
+        secondChance.reset();
         if (currentQuestionIndex < NUM_QUESTIONS - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
-            setFeedback(null);
         } else {
             setIsFinished(true);
         }
@@ -106,23 +70,34 @@ export function MbpRuleExercise() {
     
     const checkAnswer = (selectedLetter: 'n' | 'm') => {
         if (feedback) return;
+        setChoix(selectedLetter);
 
-        const isCorrect = selectedLetter === currentQuestion.correctLetter;
+        // Faux : l'élève garde la main et finit par écrire la bonne lettre.
+        if (selectedLetter !== currentQuestion.correctLetter) {
+            secondChance.registerError(selectedLetter);
+            setFeedback('retry');
+            setTimeout(() => {
+                setFeedback(null);
+                setChoix(null);
+            }, DELAI_NOUVEL_ESSAI);
+            return;
+        }
+
+        const issue = secondChance.resultOnSuccess();
         const detail: ScoreDetail = {
             question: `Compléter: ${currentQuestion.missingPart}`,
             userAnswer: selectedLetter,
             correctAnswer: currentQuestion.correctLetter,
-            status: isCorrect ? 'correct' : 'incorrect',
+            status: issue,
         };
         setSessionDetails(prev => [...prev, detail]);
 
-        if (isCorrect) {
-            setFeedback('correct');
+        // Seule une réussite du premier coup rapporte un point.
+        if (issue === 'correct') {
             setCorrectAnswers(prev => prev + 1);
             setShowConfetti(true);
-        } else {
-            setFeedback('incorrect');
         }
+        setFeedback(issue);
         setTimeout(handleNextQuestion, 1500);
     };
 
@@ -151,8 +126,10 @@ export function MbpRuleExercise() {
       saveFinalScore();
     }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
 
-    const restartExercise = () => {
-        setQuestions(Array.from({ length: NUM_QUESTIONS }, generateQuestion));
+    const restartExercise = async () => {
+        setQuestions(await getPooledContent<MbpQuestion>('regle-mbp', NUM_QUESTIONS, {
+            studentId: student?.id ?? null,
+        }));
         setIsFinished(false);
         setCorrectAnswers(0);
         setCurrentQuestionIndex(0);
@@ -161,91 +138,79 @@ export function MbpRuleExercise() {
         setSessionDetails([]);
     };
     
-    if (questions.length === 0) {
-        return <div>Chargement...</div>
+    if (questions.length === 0 || !currentQuestion) {
+        return <p className="p-8 text-center text-muted-foreground">Je prépare les mots…</p>;
     }
 
     if (isFinished) {
-        const score = (correctAnswers / NUM_QUESTIONS) * 100;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-                <CardHeader>
-                    <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                    {isHomework ? (
-                        <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-                    ) : (
-                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                            <RefreshCw className="mr-2" /> Recommencer
-                        </Button>
-                    )}
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={NUM_QUESTIONS}
+                canRestart={!isHomework}
+                onRestart={restartExercise}
+                returnHref={isHomework ? '/devoirs' : '/en-classe'}
+                returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+            />
         );
     }
-    
+
     const wordParts = currentQuestion.missingPart.split('___');
+    const resultats = sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect');
 
     return (
-        <div className="w-full max-w-2xl mx-auto">
-            <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
-            <Card className="shadow-2xl text-center relative overflow-hidden">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 p-1">
+            <ExerciseProgress current={currentQuestionIndex} total={NUM_QUESTIONS} results={resultats} />
+
+            <QuestionCard instruction="Complète le mot avec n ou m">
+                <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
                     <Confetti active={showConfetti} config={{ angle: 90, spread: 360, startVelocity: 40, elementCount: 100 }} />
                 </div>
-                <CardHeader>
-                    <CardTitle className="font-headline text-2xl">Complète avec n ou m :</CardTitle>
-                </CardHeader>
-                <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
-                    <div className="font-body text-6xl font-bold tracking-wider">
-                        <span>{wordParts[0]}</span>
-                        <span className="inline-block w-24 border-b-4 border-dashed border-muted-foreground align-bottom text-center">
-                            {feedback && (
-                                <span className={cn('animate-in fade-in', feedback === 'correct' ? 'text-green-600' : 'text-red-500')}>
-                                    {currentQuestion.correctLetter}
-                                </span>
-                            )}
-                        </span>
-                        <span>{wordParts[1]}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6 w-full max-w-xs">
-                        {(['m', 'n'] as const).map(option => (
-                             <Button
+
+                <p className="text-center font-body text-5xl font-bold tracking-wider sm:text-6xl">
+                    <span>{wordParts[0]}</span>
+                    <span className="inline-block min-w-[4rem] border-b-4 border-dashed border-muted-foreground text-center align-bottom">
+                        {(feedback === 'correct' || feedback === 'corrected') && (
+                            <span className="animate-in fade-in text-emerald-600">{currentQuestion.correctLetter}</span>
+                        )}
+                    </span>
+                    <span>{wordParts[1]}</span>
+                </p>
+
+                <div className="mx-auto mt-8 grid w-full max-w-xs grid-cols-2 gap-6">
+                    {(['m', 'n'] as const).map(option => {
+                        const estLaBonne = option === currentQuestion.correctLetter;
+                        const estMonChoix = option === choix;
+                        return (
+                            <Button
                                 key={option}
                                 variant="outline"
                                 onClick={() => checkAnswer(option)}
-                                className={cn(
-                                "text-4xl h-24 p-4 justify-center transition-all duration-300 transform active:scale-95 font-mono",
-                                feedback === 'correct' && option === currentQuestion.correctLetter && 'bg-green-500/80 text-white border-green-600 scale-105',
-                                feedback === 'incorrect' && 'bg-red-500/80 text-white border-red-600 animate-shake'
-                                )}
                                 disabled={!!feedback}
+                                className={cn(
+                                    'h-24 justify-center p-4 font-mono text-4xl transition-all duration-300 active:scale-95 disabled:opacity-100',
+                                    (feedback === 'correct' || feedback === 'corrected') && estLaBonne && 'border-emerald-600 bg-emerald-500 text-white',
+                                    feedback === 'retry' && estMonChoix && 'border-red-600 bg-red-500 text-white',
+                                    secondChance.showHint && !feedback && estLaBonne && HINT_CLASSES
+                                )}
                             >
                                 {option}
                             </Button>
-                        ))}
-                    </div>
-                </CardContent>
-                <CardFooter className="h-16 flex items-center justify-center">
-                    {feedback === 'correct' && <div className="text-2xl font-bold text-green-600 animate-pulse flex items-center gap-2"><ThumbsUp/> C'est juste !</div>}
-                    {feedback === 'incorrect' && <div className="text-xl font-bold text-red-600 animate-shake">Oups ! La bonne réponse était "{currentQuestion.correctLetter}".</div>}
-                </CardFooter>
-                 <style jsx>{`
-                    @keyframes shake {
-                        0%, 100% { transform: translateX(0); }
-                        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                        20%, 40%, 60%, 80% { transform: translateX(5px); }
-                    }
-                    .animate-shake {
-                        animation: shake 0.5s ease-in-out;
-                    }
-                `}</style>
-            </Card>
+                        );
+                    })}
+                </div>
+
+                {/* La règle sous les yeux : c'est un exercice de règle, pas un
+                    exercice de mémoire. On la rappelle, sans donner la réponse. */}
+                <p className="mt-6 rounded-[16px] border border-dashed bg-muted/40 p-3 text-center text-sm font-semibold text-muted-foreground">
+                    On écrit <span className="font-mono text-base text-foreground">m</span> devant{' '}
+                    <span className="font-mono text-base text-foreground">m</span>,{' '}
+                    <span className="font-mono text-base text-foreground">b</span> et{' '}
+                    <span className="font-mono text-base text-foreground">p</span>.
+                </p>
+            </QuestionCard>
+
+            <AnswerFeedback status={feedback} hinted={secondChance.showHint} correctAnswer={currentQuestion.correctLetter} />
         </div>
     );
 }

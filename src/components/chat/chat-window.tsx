@@ -40,8 +40,10 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(
             <div
                 ref={ref}
                 className={cn(
-                    'max-w-xs md:max-w-md p-3 rounded-2xl',
-                    isCurrentUser ? 'bg-blue-100 text-blue-950 rounded-br-none' : 'bg-secondary rounded-bl-none',
+                    'max-w-xs md:max-w-md p-3.5 rounded-3xl shadow-sm',
+                    isCurrentUser
+                        ? 'bg-gradient-to-br from-[hsl(340,85%,64%)] to-[hsl(340,80%,56%)] text-white rounded-br-lg'
+                        : 'bg-white border text-foreground rounded-bl-lg',
                     !containsExerciseLink && 'cursor-pointer',
                     className
                 )}
@@ -54,9 +56,9 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(
                     <ChatMessageContent text={msg.text} colorizeSyllables={colorizeSyllables} />
                 </div>
                 {msg.correctedText && (
-                    <div className="border-t border-blue-300 mt-2 pt-2">
+                    <div className={cn('mt-2 border-t pt-2', isCurrentUser ? 'border-white/30' : 'border-emerald-200')}>
                         <div
-                            className="whitespace-pre-wrap font-medium text-emerald-700"
+                            className={cn('whitespace-pre-wrap font-medium', isCurrentUser ? 'text-white' : 'text-emerald-700')}
                             style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
                         >
                             <ChatMessageContent text={msg.correctedText} colorizeSyllables={colorizeSyllables} />
@@ -64,7 +66,7 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(
                     </div>
                 )}
                 <p
-                    className="text-right mt-1 opacity-70"
+                    className={cn('text-right mt-1', isCurrentUser ? 'text-white/80' : 'text-muted-foreground')}
                     style={{ fontSize: `${messageMetaFontSize}px` }}
                 >
                     {format(msg.createdAt.toDate(), 'HH:mm')}
@@ -117,8 +119,8 @@ export function ChatWindow({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const lastReadConversationId = useRef<string | null>(null);
 
-    const messageFontSize = useMemo(() => Number((14 * messageScale).toFixed(2)), [messageScale]);
-    const messageMetaFontSize = useMemo(() => Number((11 * messageScale).toFixed(2)), [messageScale]);
+    const messageFontSize = useMemo(() => Number((28 * messageScale).toFixed(2)), [messageScale]);
+    const messageMetaFontSize = useMemo(() => Number((22 * messageScale).toFixed(2)), [messageScale]);
 
     const trimmedMessageLength = useMemo(() => newMessage.trim().length, [newMessage]);
 
@@ -295,12 +297,15 @@ export function ChatWindow({
 
     if (isCreatingNew) {
         return (
-            <div className="flex flex-col h-full">
-                <header className="p-4 border-b">
-                    <h3 className="font-semibold text-lg flex items-center gap-2"><Users/> Démarrer une nouvelle discussion</h3>
+            <div className="flex flex-col h-full bg-[#faf9fd]">
+                <header className="border-b bg-white p-4">
+                    <h3 className="flex items-center gap-2 text-lg font-bold">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-4 w-4" /></span>
+                        Démarrer une nouvelle discussion
+                    </h3>
                 </header>
                 <ScrollArea className="flex-grow">
-                    <div className="p-2 space-y-1">
+                    <div className="space-y-2 p-3">
                         {allStudents.map((student) => {
                             const presence = presenceByStudentId[student.id];
                             const isOnline = presence?.isOnline ?? false;
@@ -313,16 +318,16 @@ export function ChatWindow({
                                 <div
                                     key={student.id}
                                     onClick={() => handleStartConversation(student)}
-                                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-accent/50"
+                                    className="flex items-center gap-3 rounded-2xl border border-transparent p-2.5 cursor-pointer transition-all hover:border-border hover:bg-white hover:shadow-sm"
                                 >
-                                    <div className="relative">
-                                        <Avatar>
+                                    <div className="relative shrink-0">
+                                        <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm">
                                             <AvatarImage src={student.showPhoto ? student.photoURL : ''} alt={student.name} />
-                                            <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                                            <AvatarFallback className="bg-primary/10 font-semibold text-primary">{student.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <span
                                             className={cn(
-                                                'absolute -top-1 -right-1 block h-3 w-3 rounded-full border-2 border-muted/40',
+                                                'absolute -top-0.5 -right-0.5 block h-3.5 w-3.5 rounded-full border-2 border-white',
                                                 isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/60'
                                             )}
                                             aria-label={`Statut : ${presenceText}`}
@@ -358,8 +363,10 @@ export function ChatWindow({
 
     if (!conversationId) {
         return (
-            <div className="flex flex-col h-full items-center justify-center text-center p-4 bg-muted/20">
-                <MessageSquare className="h-16 w-16 text-muted-foreground" />
+            <div className="flex h-full flex-col items-center justify-center bg-[#faf9fd] p-4 text-center">
+                <span className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-accent/15">
+                    <MessageSquare className="h-10 w-10 text-primary" />
+                </span>
                 <h3 className="mt-4 text-lg font-semibold">Sélectionne une discussion</h3>
                 <p className="text-sm text-muted-foreground">Ou commence une nouvelle conversation.</p>
             </div>
@@ -374,16 +381,16 @@ export function ChatWindow({
 
     return (
         <div className="flex h-full flex-col min-h-0">
-            <header className="border-b p-4 flex items-center gap-3 flex-shrink-0">
-                     <Avatar>
+            <header className="flex flex-shrink-0 items-center gap-3 border-b bg-white p-4 shadow-sm">
+                     <Avatar className="h-11 w-11 ring-2 ring-primary/10">
                         <AvatarImage src={otherStudentInfo.showPhoto ? otherStudentInfo.photoURL : undefined} alt={otherStudentInfo.name} />
-                        <AvatarFallback>{otherStudentInfo.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="bg-primary/10 font-semibold text-primary">{otherStudentInfo.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                        <h3 className="text-lg font-semibold">{otherStudentInfo.name}</h3>
+                        <h3 className="text-lg font-bold">{otherStudentInfo.name}</h3>
                         <span
                             className={cn(
-                                'mt-1 flex items-center gap-2 text-sm font-medium',
+                                'mt-0.5 flex items-center gap-2 text-sm font-medium',
                                 isOtherStudentOnline ? 'text-emerald-600' : 'text-muted-foreground'
                             )}
                             title={otherStudentPresenceText}
@@ -399,8 +406,8 @@ export function ChatWindow({
                         </span>
                     </div>
                 </header>
-                <ScrollArea className="flex-1 bg-muted/10 p-4 min-h-0" viewportRef={scrollAreaRef}>
-                    <div className="space-y-4">
+                <ScrollArea className="flex-1 bg-[#f3f0fb] p-4 min-h-0" viewportRef={scrollAreaRef}>
+                    <div className="space-y-3">
                         {messages.map((msg, index) => {
                             const isCurrentUser = msg.senderId === currentStudent.id;
                             const showDate = index === 0 || (new Date(msg.createdAt.toDate()).getDate() !== new Date(messages[index - 1].createdAt.toDate()).getDate());
@@ -409,11 +416,19 @@ export function ChatWindow({
                             return (
                                <React.Fragment key={msg.id}>
                                 {showDate && (
-                                    <div className="text-center text-xs text-muted-foreground my-4">
-                                        {format(msg.createdAt.toDate(), 'd MMMM yyyy', { locale: fr })}
+                                    <div className="my-4 flex items-center justify-center">
+                                        <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+                                            {format(msg.createdAt.toDate(), 'd MMMM yyyy', { locale: fr })}
+                                        </span>
                                     </div>
                                 )}
                                 <div className={cn('flex items-end gap-2', isCurrentUser ? 'justify-end' : 'justify-start')}>
+                                    {!isCurrentUser && (
+                                        <Avatar className="h-7 w-7 shrink-0">
+                                            <AvatarImage src={otherStudentInfo.showPhoto ? otherStudentInfo.photoURL : undefined} alt={otherStudentInfo.name} />
+                                            <AvatarFallback className="bg-primary/10 text-[11px] font-semibold text-primary">{otherStudentInfo.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                    )}
                                     {containsExerciseLink ? (
                                         <MessageBubble
                                             msg={msg}
@@ -460,7 +475,7 @@ export function ChatWindow({
                         })}
                     </div>
                 </ScrollArea>
-                <div className="border-t p-4 flex-shrink-0">
+                <div className="flex-shrink-0 border-t bg-white p-4">
                     <div className="space-y-3">
                         <div className="flex justify-center">
                             <HowToWriteDialog onInsert={handleInsertFromDictation} />
@@ -468,14 +483,14 @@ export function ChatWindow({
 
                         {/* Suggestions de mots au-dessus du champ de saisie */}
                         {hasSuggestions && !isLoadingSuggestions && (
-                            <div className="flex flex-wrap gap-1.5 px-1">
-                                <span className="text-xs text-muted-foreground self-center mr-1">Suggestions :</span>
+                            <div className="flex flex-wrap items-center gap-1.5 px-1">
+                                <span className="mr-1 self-center text-xs text-muted-foreground">Suggestions :</span>
                                 {displayedSuggestions.map((suggestion, i) => (
                                     <Button
                                         key={`${suggestion}-${i}`}
                                         size="sm"
                                         variant="secondary"
-                                        className="h-7 px-3 text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+                                        className="h-7 rounded-full px-3 text-xs font-medium transition-colors hover:bg-primary hover:text-primary-foreground"
                                         onMouseDown={() => handleApplySuggestion(suggestion)}
                                     >
                                         {suggestion}
@@ -485,7 +500,7 @@ export function ChatWindow({
                                     <Button
                                         size="sm"
                                         variant="ghost"
-                                        className="h-7 px-2 text-xs"
+                                        className="h-7 rounded-full px-2 text-xs"
                                         onClick={refreshSuggestions}
                                     >
                                         <RefreshCw className="h-3 w-3" />
@@ -495,7 +510,7 @@ export function ChatWindow({
                         )}
 
                         {/* Zone de saisie */}
-                        <div className="relative rounded-xl border bg-background/90 p-3 shadow-sm">
+                        <div className="relative rounded-2xl border bg-[#faf9fd] p-2 shadow-sm focus-within:ring-2 focus-within:ring-primary/30">
                             <Textarea
                                 ref={textareaRef}
                                 id="chat-input"
@@ -503,13 +518,14 @@ export function ChatWindow({
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyDown={handleInputKeyDown}
                                 placeholder="Écris ton message..."
-                                className="min-h-[44px] h-20 resize-none pr-12"
+                                className="min-h-[52px] h-24 resize-none border-none bg-transparent pr-14 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                                style={{ fontSize: `${messageFontSize}px`, lineHeight: 1.4 }}
                                 disabled={isSending}
                                 spellCheck
                             />
                             <Button
                                 size="icon"
-                                className="absolute bottom-1 right-1 h-9 w-9"
+                                className="absolute bottom-2 right-2 h-10 w-10 rounded-full bg-gradient-to-br from-[hsl(340,85%,62%)] to-[hsl(12,76%,61%)] shadow-md hover:opacity-90"
                                 onClick={handleSendMessage}
                                 disabled={isSending || trimmedMessageLength === 0}
                             >

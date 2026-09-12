@@ -22,7 +22,7 @@ export default {
       fontFamily: {
         body: ['var(--font-andika)', 'sans-serif'],
         headline: ['var(--font-monof)', 'sans-serif'],
-        exercise: ['var(--font-scolar-paper)', 'cursive'],
+        exercise: ['var(--font-pangolin)', 'cursive'],
         code: ['monospace'],
         numbers: ['var(--font-andika)', 'sans-serif'],
       },

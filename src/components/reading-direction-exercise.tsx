@@ -1,37 +1,38 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useContext } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
 import { cn } from '@/lib/utils';
 import { ArrowRight, RefreshCw, Star } from 'lucide-react';
+import Link from 'next/link';
 import Confetti from 'react-dom-confetti';
+import { UserContext } from '@/context/user-context';
+import type { GrilleDeLecture } from '@/lib/exercise-content/lettres-et-grilles';
+import { getPooledContent } from '@/services/exercise-pool';
 
 const GRID_SIZE = 5;
 const TOTAL_ITEMS = GRID_SIZE * GRID_SIZE;
 
-const vehicleEmojis = ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🚚', '🚛', '🚜', '🚀', '🚁', '🚂', '🛸', '⛵️', '🚤'];
-const fruitEmojis = ['🍎', '🍌', '🍇', '🍓', '🥝', '🍍', '🍑', '🍒', '🍈', '🍉', '🥭', '🥥', '🍅', '🍆', '🥑', '🌽', '🥕', '🥬', '🥦'];
-
-const generateGrid = (): string[] => {
-    const emojiSet = Math.random() > 0.5 ? vehicleEmojis : fruitEmojis;
-    const grid: string[] = [];
-    for (let i = 0; i < TOTAL_ITEMS; i++) {
-        grid.push(emojiSet[Math.floor(Math.random() * emojiSet.length)]);
-    }
-    return grid;
-};
-
 export function ReadingDirectionExercise() {
+    const { student } = useContext(UserContext);
     const [grid, setGrid] = useState<string[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [errorIndex, setErrorIndex] = useState<number | null>(null);
     const [isFinished, setIsFinished] = useState(false);
     
+    const loadGrid = useCallback(async () => {
+        const [grille] = await getPooledContent<GrilleDeLecture>('reading-direction', 1, {
+            settings: { taille: TOTAL_ITEMS },
+            studentId: student?.id ?? null,
+        });
+        setGrid(grille?.cases ?? []);
+    }, [student?.id]);
+
     useEffect(() => {
-        setGrid(generateGrid());
-    }, []);
+        loadGrid();
+    }, [loadGrid]);
 
     const handleClick = (index: number) => {
         if (index === currentIndex) {
@@ -46,8 +47,8 @@ export function ReadingDirectionExercise() {
         }
     };
 
-    const restartExercise = () => {
-        setGrid(generateGrid());
+    const restartExercise = async () => {
+        await loadGrid();
         setCurrentIndex(0);
         setErrorIndex(null);
         setIsFinished(false);
@@ -55,17 +56,23 @@ export function ReadingDirectionExercise() {
     
     if (isFinished) {
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-8 relative">
+            <Card className="relative mx-auto w-full max-w-lg rounded-[26px] p-8 text-center shadow-lg">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                     <Confetti active={true} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 3000, stagger: 3}} />
                 </div>
                 <Star className="h-20 w-20 text-yellow-400 mx-auto mb-4" />
                 <h1 className="font-headline text-4xl mb-4">Bravo !</h1>
                 <p className="text-lg text-muted-foreground mb-6">Tu as terminé l'exercice.</p>
-                <Button onClick={restartExercise} size="lg">
-                    <RefreshCw className="mr-2" />
-                    Recommencer
-                </Button>
+                <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                    <Button onClick={restartExercise} size="lg">
+                        <RefreshCw className="mr-2" />
+                        Recommencer
+                    </Button>
+                    {/* Aucun écran de fin ne doit être une impasse. */}
+                    <Button asChild size="lg" variant="outline">
+                        <Link href="/en-classe">Retour en classe</Link>
+                    </Button>
+                </div>
             </Card>
         )
     }

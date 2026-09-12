@@ -15,7 +15,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
-import { Trash2, ChevronDown, ChevronUp, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { RotateCcw, Trash2, ChevronDown, ChevronUp, CheckCircle, XCircle, FileText } from 'lucide-react';
 import type { Score } from '@/services/scores';
 import { type Skill, difficultyLevelToString } from '@/lib/skills';
 import { format } from 'date-fns';
@@ -176,7 +176,16 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
                                             <TableCell className="text-xs font-mono max-w-xs truncate">{detail.question}</TableCell>
                                             <TableCell className="text-xs font-mono max-w-xs truncate">{detail.userAnswer}</TableCell>
                                             <TableCell className="text-right">
-                                                {detail.status === 'correct' ? <CheckCircle className="h-4 w-4 text-green-500 inline"/> : <XCircle className="h-4 w-4 text-red-500 inline"/>}
+                                                {/* Trois états : juste, corrigé par l'élève, ou raté. */}
+                                                {detail.status === 'correct' ? (
+                                                    <CheckCircle className="inline h-4 w-4 text-green-500" />
+                                                ) : detail.status === 'corrected' ? (
+                                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600">
+                                                        <RotateCcw className="h-4 w-4" /> corrigé
+                                                    </span>
+                                                ) : (
+                                                    <XCircle className="inline h-4 w-4 text-red-500" />
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))}

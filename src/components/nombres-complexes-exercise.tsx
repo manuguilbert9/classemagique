@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useContext, useRef, useCallback } from 'react';
 import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
-import { generateNombresComplexesQuestion } from '@/lib/complex-number-questions';
+import { getExerciseQuestions } from '@/services/exercise-pool';
 import type { Question } from '@/lib/questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
@@ -19,6 +19,14 @@ import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { Label } from './ui/label';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import {
+  AnswerFeedback,
+  DELAI_NOUVEL_ESSAI,
+  ExerciseFinished,
+  ExerciseProgress,
+  useSecondChance,
+  type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const NUM_QUESTIONS = 10;
 
@@ -35,7 +43,10 @@ export function NombresComplexesExercise() {
   const [userInput, setUserInput] = useState('');
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+  // Le droit à l'erreur : l'élève rejoue jusqu'à trouver, et seule la
+  // première tentative compte pour le score.
+  const secondChance = useSecondChance();
   const [isFinished, setIsFinished] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -46,15 +57,14 @@ export function NombresComplexesExercise() {
   useEffect(() => {
     async function fetchQuestions() {
         setIsLoading(true);
-        const newQuestions: Question[] = [];
-        for (let i = 0; i < NUM_QUESTIONS; i++) {
-            newQuestions.push(await generateNombresComplexesQuestion());
-        }
+        const newQuestions = await getExerciseQuestions('nombres-complexes', NUM_QUESTIONS, {
+            studentId: student?.id ?? null,
+        });
         setQuestions(newQuestions);
         setIsLoading(false);
     }
     fetchQuestions();
-  }, []);
+  }, [student?.id]);
 
   const currentQuestion = useMemo(() => {
     if (questions.length > 0) {
@@ -84,6 +94,7 @@ export function NombresComplexesExercise() {
   }, [currentQuestion, feedback, handleSpeak]);
 
   const handleNextQuestion = () => {
+    secondChance.reset();
     setShowConfetti(false);
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
@@ -110,21 +121,35 @@ export function NombresComplexesExercise() {
         isCorrect = userAnswer === currentQuestion.answer;
     }
 
+    const issue = secondChance.resultOnSuccess();
     const detail: ScoreDetail = {
       question: currentQuestion.question,
       userAnswer: userAnswer,
       correctAnswer: currentQuestion.answer || 'N/A',
-      status: isCorrect ? 'correct' : 'incorrect',
+      status: issue,
     };
+
+    // Faux : on ne passe pas à la suite. L'élève reprend la main
+    // jusqu'à donner lui-même la bonne réponse — c'est ainsi qu'il la retient.
+    if (!isCorrect) {
+      secondChance.registerError();
+      setFeedback('retry');
+      setTimeout(() => {
+        setFeedback(null);
+        setUserInput('');
+        setSelectedOption(null);
+      }, DELAI_NOUVEL_ESSAI);
+      return;
+    }
+
     setSessionDetails(prev => [...prev, detail]);
 
-    if (isCorrect) {
-      setFeedback('correct');
+    // Seule une réussite du premier coup rapporte un point.
+    if (issue === 'correct') {
       setCorrectAnswers(prev => prev + 1);
       setShowConfetti(true);
-    } else {
-      setFeedback('incorrect');
     }
+    setFeedback(issue);
     setTimeout(handleNextQuestion, 1500);
   };
   
@@ -157,11 +182,9 @@ export function NombresComplexesExercise() {
   const restartExercise = () => {
     // Re-generate questions
     setIsLoading(true);
-    const newQuestions: Promise<Question>[] = [];
-    for (let i = 0; i < NUM_QUESTIONS; i++) {
-        newQuestions.push(generateNombresComplexesQuestion());
-    }
-    Promise.all(newQuestions).then(qs => {
+    getExerciseQuestions('nombres-complexes', NUM_QUESTIONS, {
+        studentId: student?.id ?? null,
+    }).then(qs => {
         setQuestions(qs);
         setIsLoading(false);
         setIsFinished(false);
@@ -247,32 +270,26 @@ export function NombresComplexesExercise() {
   }
 
   if (isFinished) {
-    const score = (correctAnswers / NUM_QUESTIONS) * 100;
     return (
-      <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-        <CardHeader>
-          <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-2xl">
-            Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-          </p>
-          <ScoreTube score={score} />
-          {isHomework ? (
-            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-          ) : (
-            <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-              <RefreshCw className="mr-2" /> Recommencer
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      <ExerciseFinished
+        correct={correctAnswers}
+        total={NUM_QUESTIONS}
+        canRestart={!isHomework}
+        onRestart={restartExercise}
+        returnHref={isHomework ? '/devoirs' : '/en-classe'}
+        returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+      />
     );
   }
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
+      <ExerciseProgress
+        current={currentQuestionIndex}
+        total={NUM_QUESTIONS}
+        results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')}
+        className="mb-4"
+      />
       <Card className="shadow-2xl text-center relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
             <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3, width: "10px", height: "10px"}} />
@@ -296,10 +313,11 @@ export function NombresComplexesExercise() {
               Valider
             </Button>
             <div className="pt-4">
-              {feedback === 'correct' && (
+              {(feedback === 'correct' || feedback === 'corrected') && (
                 <div className="text-2xl font-bold text-green-600 animate-pulse flex items-center gap-2"><Check/> Correct !</div>
               )}
-              {feedback === 'incorrect' && (
+              {/* On ne dévoile la réponse qu'après deux essais infructueux. */}
+{secondChance.showHint && !feedback && (
                 <div className="text-xl font-bold text-red-600 animate-shake">
                   Oups ! La bonne réponse était {currentQuestion.answer}.
                 </div>

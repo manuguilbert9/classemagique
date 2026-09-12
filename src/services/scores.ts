@@ -18,7 +18,15 @@ export interface ScoreDetail {
     question: string;
     userAnswer: string;
     correctAnswer: string;
-    status: 'correct' | 'incorrect' | 'completed'; // Added 'completed' for non-binary results like reading race
+    /**
+     * 'correct'   : juste du premier coup, la question rapporte son point.
+     * 'corrected' : faux d'abord, puis l'élève a trouvé la bonne réponse par
+     *               lui-même. Ne rapporte aucun point, mais mérite d'être
+     *               distingué d'une question ratée.
+     * 'incorrect' : faux, sans correction.
+     * 'completed' : résultat non binaire (course de lecture, par exemple).
+     */
+    status: 'correct' | 'corrected' | 'incorrect' | 'completed';
     calculationState?: CalculationState;
     mistakes?: string[]; // For storing reading or spelling mistakes
     options?: string[]; // For QCM questions, to see what choices were offered

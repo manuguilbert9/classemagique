@@ -557,7 +557,7 @@ function ChoixDeLaListe({
             Les mots de la semaine
           </CardTitle>
           <CardDescription>
-            Le corpus lexical de la méthode Dyna-Mots, en capitales et sans image.
+            Le corpus lexical de la semaine, en capitales et sans image.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

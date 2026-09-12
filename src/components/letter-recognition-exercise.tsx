@@ -14,9 +14,18 @@ import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { VirtualKeyboard } from './virtual-keyboard';
+import type { LettreAReconnaitre } from '@/lib/exercise-content/lettres-et-grilles';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    AnswerFeedback,
+    DELAI_NOUVEL_ESSAI,
+    ExerciseFinished,
+    ExerciseProgress,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const LETTERS_PER_EXERCISE = 20;
-const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export function LetterRecognitionExercise() {
     const { student } = useContext(UserContext);
@@ -24,10 +33,15 @@ export function LetterRecognitionExercise() {
     const isHomework = searchParams.get('from') === 'devoirs';
     const homeworkDate = searchParams.get('date');
 
-    const [currentLetter, setCurrentLetter] = useState('');
+    // La série de lettres vient du stock partagé : tous les élèves de la journée
+    // rencontrent les mêmes, dans le même ordre.
+    const [letters, setLetters] = useState<string[]>([]);
     const [lettersDone, setLettersDone] = useState(0);
+    const currentLetter = letters[lettersDone] ?? '';
     
-    const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    // Le droit à l'erreur : l'élève cherche la touche jusqu'à la trouver.
+    const secondChance = useSecondChance();
     const [showConfetti, setShowConfetti] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
@@ -35,52 +49,52 @@ export function LetterRecognitionExercise() {
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
 
-    const pickNewLetter = useCallback(() => {
-        const randomIndex = Math.floor(Math.random() * ALPHABET.length);
-        setCurrentLetter(ALPHABET[randomIndex]);
-    }, []);
+    const loadLetters = useCallback(async () => {
+        const serie = await getPooledContent<LettreAReconnaitre>('letter-recognition', LETTERS_PER_EXERCISE, {
+            studentId: student?.id ?? null,
+        });
+        setLetters(serie.map((l) => l.lettre));
+    }, [student?.id]);
 
     useEffect(() => {
-        pickNewLetter();
-    }, [pickNewLetter]);
+        loadLetters();
+    }, [loadLetters]);
 
     const handleCorrect = () => {
-        setCorrectAnswers(prev => prev + 1);
-        setFeedback('correct');
-        setShowConfetti(true);
+        const issue = secondChance.resultOnSuccess();
+        // Seule une touche trouvée du premier coup rapporte un point.
+        if (issue === 'correct') {
+            setCorrectAnswers(prev => prev + 1);
+            setShowConfetti(true);
+        }
+        setFeedback(issue);
 
-        const detail: ScoreDetail = {
+        setSessionDetails(prev => [...prev, {
             question: `Appuyer sur la touche "${currentLetter}"`,
             userAnswer: currentLetter,
             correctAnswer: currentLetter,
-            status: 'correct',
-        };
-        setSessionDetails(prev => [...prev, detail]);
-        
+            status: issue,
+        }]);
+
         setTimeout(handleNextLetter, 1000);
     };
 
+    /**
+     * Mauvaise touche : on ne passe pas à la lettre suivante. L'élève continue
+     * de chercher sur le clavier — c'est exactement l'objet de l'exercice.
+     */
     const handleIncorrect = (pressedKey: string) => {
-        setFeedback('incorrect');
-        const detail: ScoreDetail = {
-            question: `Appuyer sur la touche "${currentLetter}"`,
-            userAnswer: pressedKey,
-            correctAnswer: currentLetter,
-            status: 'incorrect',
-        };
-        setSessionDetails(prev => [...prev, detail]);
-        
-        setTimeout(() => {
-            setFeedback(null);
-        }, 800);
+        secondChance.registerError(pressedKey);
+        setFeedback('retry');
+        setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
     };
     
     const handleNextLetter = () => {
+        secondChance.reset();
          if (lettersDone < LETTERS_PER_EXERCISE - 1) {
             setLettersDone(prev => prev + 1);
             setFeedback(null);
             setShowConfetti(false);
-            pickNewLetter();
         } else {
             setIsFinished(true);
         }
@@ -135,8 +149,8 @@ export function LetterRecognitionExercise() {
         saveResult();
     }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
 
-    const restartExercise = () => {
-        setCurrentLetter('');
+    const restartExercise = async () => {
+        setLetters([]);
         setLettersDone(0);
         setFeedback(null);
         setShowConfetti(false);
@@ -144,41 +158,33 @@ export function LetterRecognitionExercise() {
         setCorrectAnswers(0);
         setHasBeenSaved(false);
         setSessionDetails([]);
-        pickNewLetter();
+        await loadLetters();
     };
 
     if (isFinished) {
-        const score = (correctAnswers / LETTERS_PER_EXERCISE) * 100;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-                <CardHeader>
-                    <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Bravo ! Tu as reconnu <span className="font-bold text-primary">{correctAnswers}</span> lettres sur <span className="font-bold">{LETTERS_PER_EXERCISE}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                     {isHomework ? (
-                        <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-                    ) : (
-                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                            <RefreshCw className="mr-2" />
-                            Recommencer
-                        </Button>
-                    )}
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={LETTERS_PER_EXERCISE}
+                canRestart={!isHomework}
+                onRestart={restartExercise}
+                returnHref={isHomework ? '/devoirs' : '/en-classe'}
+                returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+            />
         );
     }
     
     return (
         <div className="w-full max-w-3xl mx-auto space-y-6">
-            <Progress value={((lettersDone) / LETTERS_PER_EXERCISE) * 100} className="w-full h-3" />
+            <ExerciseProgress
+                current={lettersDone}
+                total={LETTERS_PER_EXERCISE}
+                results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')}
+            />
             <Card className={cn(
                 "shadow-2xl text-center relative overflow-hidden transition-colors duration-300",
-                feedback === 'correct' && 'bg-green-100 border-green-500',
-                feedback === 'incorrect' && 'bg-red-100 border-red-500 animate-shake'
+                (feedback === 'correct' || feedback === 'corrected') && 'bg-green-100 border-green-500',
+                feedback === 'retry' && 'bg-red-100 border-red-500 animate-shake'
             )}>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                     <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3, width: "10px", height: "10px"}} />
@@ -189,8 +195,8 @@ export function LetterRecognitionExercise() {
                 <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
                      <div className="relative font-mono text-9xl sm:text-[12rem] font-bold tracking-widest uppercase p-4 rounded-lg">
                         {currentLetter}
-                        {feedback === 'correct' && <Check className="absolute -right-4 -top-4 h-16 w-16 text-green-600" />}
-                        {feedback === 'incorrect' && <X className="absolute -right-4 -top-4 h-16 w-16 text-red-600" />}
+                        {(feedback === 'correct' || feedback === 'corrected') && <Check className="absolute -right-4 -top-4 h-16 w-16 text-green-600" />}
+                        {feedback === 'retry' && <X className="absolute -right-4 -top-4 h-16 w-16 text-red-600" />}
                     </div>
                 </CardContent>
                 <CardFooter className="flex justify-center">

@@ -14,6 +14,16 @@ import { ScoreTube } from './score-tube';
 import { currency, formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import type { SommeAComposer } from '@/lib/exercise-content/calcul-simple';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    AnswerFeedback,
+    DELAI_NOUVEL_ESSAI,
+    ExerciseFinished,
+    ExerciseProgress,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const NUM_QUESTIONS = 5;
 
@@ -34,7 +44,9 @@ export function SumCompositionExercise() {
     const [targetSums, setTargetSums] = useState<number[]>([]);
     const [selectedCoins, setSelectedCoins] = useState<CurrencyItem[]>([]);
 
-    const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    // Le droit à l'erreur : l'élève refait sa pile de pièces jusqu'au bon compte.
+    const secondChance = useSecondChance();
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -49,16 +61,16 @@ export function SumCompositionExercise() {
         return currency.filter(c => c.value === 1 || c.value === 2 || c.value === 5);
     }, []);
 
-    // Initialize target sums (5 unique random sums between 1 and 9)
+    // Les montants viennent du stock partagé : toute la classe compose les mêmes.
     useEffect(() => {
-        const generateUniqueSums = () => {
-            const sums: number[] = [];
-            const possibleSums = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            const shuffled = [...possibleSums].sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, NUM_QUESTIONS);
+        const loadSums = async () => {
+            const sommes = await getPooledContent<SommeAComposer>('composition-somme', NUM_QUESTIONS, {
+                studentId: student?.id ?? null,
+            });
+            setTargetSums(sommes.map((s) => s.target));
         };
-        setTargetSums(generateUniqueSums());
-    }, []);
+        loadSums();
+    }, [student?.id]);
 
     const currentTargetSum = targetSums[currentQuestionIndex] || 0;
 
@@ -81,27 +93,39 @@ export function SumCompositionExercise() {
 
         const isCorrect = Math.abs(userTotal - currentTargetSum) < 0.001;
 
-        const detail: ScoreDetail = {
+        // Faux : on vide la pile et l'élève recompose. Le montant à atteindre
+        // reste affiché, c'est en refaisant qu'il comprend son erreur.
+        if (!isCorrect) {
+            secondChance.registerError();
+            setFeedback('retry');
+            setTimeout(() => {
+                setFeedback(null);
+                setSelectedCoins([]);
+            }, DELAI_NOUVEL_ESSAI);
+            return;
+        }
+
+        const issue = secondChance.resultOnSuccess();
+        setSessionDetails(prev => [...prev, {
             question: `Compose ${formatCurrency(currentTargetSum)}`,
             userAnswer: formatCurrency(userTotal),
             correctAnswer: formatCurrency(currentTargetSum),
-            status: isCorrect ? 'correct' : 'incorrect',
-        };
-        setSessionDetails(prev => [...prev, detail]);
+            status: issue,
+        }]);
 
-        if (isCorrect) {
+        // Seule une réussite du premier coup rapporte un point.
+        if (issue === 'correct') {
             setCorrectAnswers(prev => prev + 1);
-            setFeedback('correct');
             setShowConfetti(true);
-        } else {
-            setFeedback('incorrect');
         }
+        setFeedback(issue);
 
         setTimeout(handleNextQuestion, 2500);
     };
 
     const handleNextQuestion = () => {
         setShowConfetti(false);
+        secondChance.reset();
         if (currentQuestionIndex < NUM_QUESTIONS - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
             setSelectedCoins([]);
@@ -111,13 +135,11 @@ export function SumCompositionExercise() {
         }
     };
 
-    const restartExercise = () => {
-        const generateUniqueSums = () => {
-            const possibleSums = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            const shuffled = [...possibleSums].sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, NUM_QUESTIONS);
-        };
-        setTargetSums(generateUniqueSums());
+    const restartExercise = async () => {
+        const sommes = await getPooledContent<SommeAComposer>('composition-somme', NUM_QUESTIONS, {
+            studentId: student?.id ?? null,
+        });
+        setTargetSums(sommes.map((s) => s.target));
         setCurrentQuestionIndex(0);
         setCorrectAnswers(0);
         setIsFinished(false);
@@ -164,18 +186,15 @@ export function SumCompositionExercise() {
     }
 
     if (isFinished) {
-        const score = (correctAnswers / NUM_QUESTIONS) * 100;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-                <CardHeader><CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle></CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as composé correctement <span className="font-bold text-primary">{correctAnswers}</span> sommes sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4"><RefreshCw className="mr-2" />Recommencer</Button>
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={NUM_QUESTIONS}
+                canRestart={!isHomework}
+                onRestart={restartExercise}
+                returnHref={isHomework ? '/devoirs' : '/en-classe'}
+                returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+            />
         );
     }
 
@@ -192,7 +211,12 @@ export function SumCompositionExercise() {
                 <CardDescription className="text-center text-lg">
                     Sélectionne les pièces et billets pour composer la somme demandée.
                 </CardDescription>
-                <Progress value={((currentQuestionIndex) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
+                <ExerciseProgress
+                    current={currentQuestionIndex}
+                    total={NUM_QUESTIONS}
+                    results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')}
+                    className="mt-4"
+                />
             </CardHeader>
             <CardContent className="flex flex-col gap-8 p-6">
 
@@ -284,19 +308,11 @@ export function SumCompositionExercise() {
                     <Check className="mr-2 h-6 w-6" /> Valider
                 </Button>
 
-                {feedback === 'correct' && (
-                    <div className="text-2xl font-bold text-green-600 flex items-center gap-2 animate-pulse bg-green-50 px-6 py-3 rounded-full border border-green-200">
-                        <ThumbsUp className="h-8 w-8" /> Bravo ! C'est exact.
-                    </div>
-                )}
-                {feedback === 'incorrect' && (
-                    <div className="text-xl font-bold text-red-600 flex flex-col items-center gap-2 animate-shake bg-red-50 px-6 py-3 rounded-xl border border-red-200">
-                        <div className="flex items-center gap-2"><X className="h-6 w-6" /> Ce n'est pas ça.</div>
-                        <div className="text-base font-normal text-slate-700">
-                            Il fallait composer <span className="font-bold">{formatCurrency(currentTargetSum)}</span>.
-                        </div>
-                    </div>
-                )}
+                <AnswerFeedback status={feedback} hinted={secondChance.showHint} className="w-full max-w-xl">
+                    {feedback === 'retry'
+                        ? `Tu as composé ${formatCurrency(userTotal)}. Il faut ${formatCurrency(currentTargetSum)}.`
+                        : undefined}
+                </AnswerFeedback>
             </CardFooter>
             <style jsx>{`
                 @keyframes shake {

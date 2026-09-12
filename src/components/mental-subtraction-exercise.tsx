@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
+import Link from 'next/link';
 
 const GAME_DURATION_S = 120; // 2 minutes
 
@@ -329,9 +330,13 @@ export function MentalSubtractionExercise() {
                                 <RefreshCw className="mr-2 h-5 w-5" />
                                 Changer de niveau
                             </Button>
-                            <Button onClick={() => handleLevelSelect(selectedLevel!)} size="lg" className="text-lg px-8">
+                            <Button onClick={() => handleLevelSelect(selectedLevel!)} size="lg" className="px-8 text-lg">
                                 <Play className="mr-2 h-5 w-5" />
                                 Rejouer ce niveau
+                            </Button>
+                            {/* Un entraînement chronométré ne doit pas être une impasse. */}
+                            <Button asChild size="lg" variant="secondary" className="px-8 text-lg">
+                                <Link href="/en-classe">Retour en classe</Link>
                             </Button>
                         </div>
                     </div>

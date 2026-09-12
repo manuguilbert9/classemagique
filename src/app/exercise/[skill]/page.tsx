@@ -1,12 +1,8 @@
 
 'use client';
 
-import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { getSkillBySlug, categoryStyles } from '@/lib/skills';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
 import { LongCalculationExercise } from '@/components/long-calculation-exercise';
 import { WordFamiliesExercise } from '@/components/word-families-exercise';
@@ -28,7 +24,7 @@ import { FluenceExercise } from '@/components/fluence-exercise';
 import { PhraseConstructionExercise } from '@/components/phrase-construction-exercise';
 import { CodedPathExercise } from '@/components/coded-path-exercise';
 import { LabelGameExercise } from '@/components/label-game-exercise';
-import { FullscreenToggle } from '@/components/fullscreen-toggle';
+import { ExerciseBanner } from '@/components/exercise/exercise-banner';
 import { DicteeExercise } from '@/components/dictee-exercise';
 import { CopieCapitalesExercise } from '@/components/copie-capitales-exercise';
 import { MotImageExercise } from '@/components/mot-image-exercise';
@@ -216,37 +212,21 @@ export default function ExercisePage() {
       default:
         exerciseComponent = <ExerciseWorkspace skill={skill} />;
     }
-    // Wrap every exercise component in a Card with the correct style
-    return <div className={cn("rounded-lg p-0.5", style.bg, style.text === 'text-white' ? 'text-white' : 'text-gray-800')}><div className="bg-background rounded-md">{exerciseComponent}</div></div>;
+    // Un liseré à la couleur de la matière encadre l'exercice : il prolonge
+    // le bandeau et raccroche l'écran à la famille visuelle du site.
+    return (
+      <div className={cn('rounded-[22px] p-1', style.bg)}>
+        <div className="rounded-[18px] bg-background p-1">{exerciseComponent}</div>
+      </div>
+    );
   };
 
   const isWideTool = skill.slug === 'writing-notebook';
 
   return (
-    <div className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-8">
-      <div className={cn("w-full", isWideTool ? "max-w-6xl" : "max-w-4xl")}>
-        <header className="relative flex items-center justify-between mb-8">
-          <Button asChild variant="ghost" className="hidden sm:inline-flex">
-            <Link href={returnHref}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour
-            </Link>
-          </Button>
-          <Button asChild variant="ghost" size="icon" className="sm:hidden">
-            <Link href={returnHref} aria-label="Retour">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <Card className={cn("flex-grow mx-4 sm:mx-8", style.bg, style.text)}>
-            <CardHeader className="flex flex-row items-center justify-center space-x-4 p-4">
-              <div className="[&>svg]:h-12 [&>svg]:w-12">{skill.icon}</div>
-              <CardTitle className="font-exercise text-4xl">{skill.name}</CardTitle>
-            </CardHeader>
-          </Card>
-          <div className="w-10 sm:w-[150px] flex justify-end">
-            <FullscreenToggle />
-          </div>
-        </header>
+    <div className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-6">
+      <div className={cn('flex w-full flex-col gap-6', isWideTool ? 'max-w-6xl' : 'max-w-4xl')}>
+        <ExerciseBanner skill={skill} returnHref={returnHref} />
 
         <main>
           {renderExercise()}

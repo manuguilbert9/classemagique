@@ -53,6 +53,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 mentalMathPerformance: data.mentalMathPerformance || {},
                 nuggets: data.nuggets || 0,
                 accordProgressionIndex: data.accordProgressionIndex || 0,
+                niveauxParDomaine: data.niveauxParDomaine || {},
+                misEnAvant: data.misEnAvant,
+                misEnAvantUpdatedAt: data.misEnAvantUpdatedAt,
+                misEnAvantSource: data.misEnAvantSource,
             };
 
              // Only update state if important fields have changed (ignore isOnline/lastSeenAt)
@@ -68,7 +72,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                     prev.accordProgressionIndex !== newStudent.accordProgressionIndex ||
                     JSON.stringify(prev.levels) !== JSON.stringify(newStudent.levels) ||
                     JSON.stringify(prev.enabledSkills) !== JSON.stringify(newStudent.enabledSkills) ||
-                    JSON.stringify(prev.themeColors) !== JSON.stringify(newStudent.themeColors);
+                    JSON.stringify(prev.themeColors) !== JSON.stringify(newStudent.themeColors) ||
+                    JSON.stringify(prev.misEnAvant) !== JSON.stringify(newStudent.misEnAvant) ||
+                    prev.misEnAvantUpdatedAt !== newStudent.misEnAvantUpdatedAt;
 
                 return hasChanged ? newStudent : prev;
              });

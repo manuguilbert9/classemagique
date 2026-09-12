@@ -1,19 +1,69 @@
-
 'use client';
 
 import { useState, FormEvent, useContext } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2, BookHeart, BarChart3 } from 'lucide-react';
+import {
+  Book,
+  Users,
+  LogOut,
+  ArrowRight,
+  School,
+  KeyRound,
+  User,
+  Loader2,
+  BookHeart,
+  BarChart3,
+  Sparkles,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { UserContext } from '@/context/user-context';
-import { Skeleton } from '@/components/ui/skeleton';
 import { loginStudent } from '@/services/students';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { PageBanner, PillButton, PillLink } from '@/components/layout/page-banner';
+import { PageShell } from '@/components/layout/section';
+import { PageLoading } from '@/components/layout/states';
+import { cn } from '@/lib/utils';
+
+/** Les quatre portes d'entrée de l'application, dans l'ordre où on s'en sert. */
+const DESTINATIONS = [
+  {
+    href: '/en-classe',
+    icon: <Users />,
+    title: 'En classe',
+    description: 'Mes exercices du jour et mes outils.',
+    chip: 'bg-orange text-white',
+    glow: 'hover:border-orange',
+  },
+  {
+    href: '/devoirs',
+    icon: <Book />,
+    title: 'Mes devoirs',
+    description: 'Ce qu\'il y a à faire pour la prochaine fois.',
+    chip: 'bg-yellow text-amber-950',
+    glow: 'hover:border-yellow',
+  },
+  {
+    href: '/story-box',
+    icon: <BookHeart />,
+    title: 'Boîte à histoires',
+    description: 'Inventer et lire mes propres histoires.',
+    chip: 'bg-pink text-white',
+    glow: 'hover:border-pink',
+  },
+  {
+    href: '/results',
+    icon: <BarChart3 />,
+    title: 'Mes progrès',
+    description: 'Voir tout le chemin déjà parcouru.',
+    chip: 'bg-blue text-white',
+    glow: 'hover:border-blue',
+  },
+];
 
 export default function ModeSelectionPage() {
   const { student, setStudent, isLoading } = useContext(UserContext);
@@ -36,173 +86,149 @@ export default function ModeSelectionPage() {
         setStudent(loggedInStudent);
       } else {
         toast({
-            variant: "destructive",
-            title: "Erreur de connexion",
-            description: "Le prénom ou le code est incorrect. Veuillez réessayer.",
+          variant: 'destructive',
+          title: 'Erreur de connexion',
+          description: 'Le prénom ou le code est incorrect. Veuillez réessayer.',
         });
       }
     }
   };
-  
+
   if (isLoading) {
-      return (
-         <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background">
-             <Skeleton className="h-12 w-1/2" />
-         </main>
-      )
+    return <PageLoading>J&apos;ouvre Classe Magique…</PageLoading>;
   }
 
+  // — L'écran de connexion —
   if (!student) {
     return (
-      <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 bg-background relative">
-        <div className="absolute top-8 left-1/2 -translate-x-1/2">
-          <Logo />
-        </div>
-        <Card className="w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
-          <CardHeader className="text-center">
-            <CardTitle className="font-headline text-3xl sm:text-4xl">Bienvenue !</CardTitle>
-            <CardDescription className="text-base sm:text-lg">
-              Connecte-toi pour commencer.
-            </CardDescription>
-          </CardHeader>
+      <main className="flex min-h-screen w-full flex-col items-center justify-center p-4">
+        <Card className="w-full max-w-md overflow-hidden rounded-[26px] shadow-xl animate-in fade-in zoom-in-95">
+          {/* Le bandeau de l'identité, en réduction : l'élève reconnaît la
+              maison dès l'écran de connexion. */}
+          <div className="relative overflow-hidden bg-gradient-to-r from-primary via-primary to-accent p-6 text-center text-white">
+            <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-white/10" />
+            <div className="pointer-events-none absolute -bottom-16 left-[12%] h-28 w-28 rounded-full bg-white/10" />
+            <span className="relative mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 shadow-inner">
+              <Sparkles className="h-8 w-8" />
+            </span>
+            <h1 className="relative font-headline text-3xl font-extrabold tracking-tight sm:text-4xl">Bienvenue !</h1>
+            <p className="relative mt-1 text-white/90">Connecte-toi pour commencer.</p>
+          </div>
+
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-base">Prénom</Label>
-                 <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="name"
-                      placeholder="Ton prénom"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="text-base h-12 pl-10"
-                      required
-                      aria-label="Prénom"
-                    />
-                 </div>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="name"
+                    placeholder="Ton prénom"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-12 pl-11 text-base"
+                    required
+                    aria-label="Prénom"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="code" className="text-base">Code secret</Label>
-                 <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="code"
-                      type="text"
-                      placeholder="Ton code à 4 chiffres"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="text-base h-12 pl-10 font-mono tracking-[0.5em]"
-                      required
-                      maxLength={4}
-                      aria-label="Code secret"
-                    />
-                 </div>
+                <div className="relative">
+                  <KeyRound className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="code"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Ton code à 4 chiffres"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="h-12 pl-11 font-mono text-base tracking-[0.5em]"
+                    required
+                    maxLength={4}
+                    aria-label="Code secret"
+                  />
+                </div>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full text-lg py-6 bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoggingIn}>
-                {isLoggingIn ? <Loader2 className="animate-spin" /> : "Continuer"}
+            <CardFooter className="flex-col gap-3">
+              <Button
+                type="submit"
+                className="w-full bg-accent py-6 text-lg text-accent-foreground hover:bg-accent/90"
+                disabled={isLoggingIn}
+              >
+                {isLoggingIn ? <Loader2 className="animate-spin" /> : 'Continuer'}
                 {!isLoggingIn && <ArrowRight className="ml-2" />}
+              </Button>
+              <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+                <Link href="/teacher/login">
+                  <School className="mr-2 h-4 w-4" />
+                  Accès enseignant
+                </Link>
               </Button>
             </CardFooter>
           </form>
         </Card>
-        <div className="absolute bottom-4 right-4">
-             <Button asChild variant="ghost" size="sm">
-                <Link href="/teacher/login">
-                    <School className="mr-2"/>
-                    Accès enseignant
-                </Link>
-            </Button>
+
+        <div className="mt-8 opacity-80">
+          <Logo />
         </div>
       </main>
     );
   }
 
+  // — Le choix de la destination, une fois connecté —
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background relative">
-      <div className="absolute top-8 text-center space-y-4 flex flex-col items-center">
-        <Logo />
-        <div className="flex items-center gap-2">
+    <PageShell>
+      <PageBanner
+        icon={<Sparkles />}
+        title={`Bonjour, ${student.name} !`}
+        subtitle="Où veux-tu aller aujourd'hui ?"
+        actions={
+          <>
             {student.showPhoto && student.photoURL && (
-                <Avatar>
-                    <AvatarImage src={student.photoURL} alt={student.name} />
-                    <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+              <Avatar className="h-10 w-10 border-2 border-white/40">
+                <AvatarImage src={student.photoURL} alt={student.name} />
+                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+              </Avatar>
             )}
-            <p className="text-base sm:text-lg text-muted-foreground mt-2">Connecté en tant que <span className="font-bold">{student.name}</span>.</p>
-        </div>
+            <PillLink href="/teacher/login" icon={School}>Enseignant</PillLink>
+            <PillButton icon={LogOut} onClick={handleLogout}>Déconnexion</PillButton>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        {DESTINATIONS.map((destination) => (
+          <Link
+            key={destination.href}
+            href={destination.href}
+            aria-label={destination.title}
+            className={cn(
+              'group flex items-center gap-5 rounded-[22px] border-2 border-transparent bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-8',
+              destination.glow
+            )}
+          >
+            <span
+              className={cn(
+                'flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-md transition-transform duration-200 group-hover:scale-110 [&>svg]:h-8 [&>svg]:w-8 sm:h-20 sm:w-20 sm:[&>svg]:h-10 sm:[&>svg]:w-10',
+                destination.chip
+              )}
+            >
+              {destination.icon}
+            </span>
+            <span className="min-w-0">
+              <span className="block font-headline text-2xl leading-tight sm:text-3xl">{destination.title}</span>
+              <span className="mt-1 block text-sm text-muted-foreground sm:text-base">{destination.description}</span>
+            </span>
+            <ArrowRight className="ml-auto hidden h-6 w-6 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 sm:block" />
+          </Link>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full max-w-sm md:max-w-4xl pt-32">
-        <Link href="/devoirs" className="group" aria-label="Accéder aux devoirs">
-          <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-yellow/20">
-            <div className="mb-6 text-yellow transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
-              <Book />
-            </div>
-            <CardHeader>
-              <CardTitle className="font-headline text-3xl sm:text-4xl">Devoirs</CardTitle>
-              <CardDescription className="text-muted-foreground text-base sm:text-lg mt-2">
-                Accède à tes exercices et devoirs personnalisés.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/en-classe" className="group" aria-label="Accéder au mode En classe">
-          <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-orange/20">
-            <div className="mb-6 text-orange transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
-              <Users />
-            </div>
-             <CardHeader>
-              <CardTitle className="font-headline text-3xl sm:text-4xl">En classe</CardTitle>
-              <CardDescription className="text-muted-foreground text-base sm:text-lg mt-2">
-                Utilise les outils interactifs et les exercices en direct.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/story-box" className="group" aria-label="Accéder à la Boîte à Histoires">
-          <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-pink/20">
-            <div className="mb-6 text-pink transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
-              <BookHeart />
-            </div>
-             <CardHeader>
-              <CardTitle className="font-headline text-3xl sm:text-4xl">Boîte à Histoires</CardTitle>
-              <CardDescription className="text-muted-foreground text-base sm:text-lg mt-2">
-                Crée des histoires magiques avec l'aide de l'IA.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-         <Link href="/results" className="group" aria-label="Accéder aux résultats">
-          <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-blue/20">
-            <div className="mb-6 text-blue transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
-              <BarChart3 />
-            </div>
-             <CardHeader>
-              <CardTitle className="font-headline text-3xl sm:text-4xl">Mes Progrès</CardTitle>
-              <CardDescription className="text-muted-foreground text-base sm:text-lg mt-2">
-                Consulte tes scores et suis ta progression.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
+      <div className="flex justify-center opacity-70">
+        <Logo />
       </div>
-      <div className="absolute bottom-4 right-4 flex items-center gap-2">
-             <Button asChild variant="ghost" size="sm">
-                <Link href="/teacher/login">
-                    <School className="mr-2"/>
-                    Accès enseignant
-                </Link>
-            </Button>
-        </div>
-         <div className="absolute bottom-4 left-4">
-            <Button onClick={handleLogout} variant="outline" size="lg">
-                <LogOut className="mr-2" />
-                Déconnexion
-            </Button>
-        </div>
-    </main>
+    </PageShell>
   );
 }

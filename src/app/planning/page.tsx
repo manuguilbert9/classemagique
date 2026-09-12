@@ -1,54 +1,45 @@
-
 'use client';
 
 import { useContext } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Home } from 'lucide-react';
-import { Logo } from '@/components/logo';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Home, ListChecks, Sparkles } from 'lucide-react';
 import { UserContext } from '@/context/user-context';
 import { StudentSchedule } from '@/components/student-schedule';
-import { Card } from '@/components/ui/card';
+import { FullscreenToggle } from '@/components/fullscreen-toggle';
+import { PageBanner, PillLink, PillSlot } from '@/components/layout/page-banner';
+import { PageShell } from '@/components/layout/section';
+import { NotConnected, PageLoading } from '@/components/layout/states';
 
 export default function PlanningPage() {
     const { student, isLoading } = useContext(UserContext);
 
     if (isLoading) {
-        return <div className="flex justify-center items-center h-screen"><Logo /></div>;
+        return <PageLoading>J&apos;ouvre ton planning…</PageLoading>;
     }
 
     if (!student) {
-        return (
-             <main className="container mx-auto px-4 py-8">
-                <header className="mb-12 text-center space-y-4">
-                    <Logo />
-                     <h2 className="font-headline text-4xl sm:text-5xl">Veuillez vous connecter</h2>
-                     <Button asChild>
-                        <Link href="/">Retour à l'accueil</Link>
-                     </Button>
-                </header>
-            </main>
-        )
+        return <NotConnected>Connecte-toi pour voir le programme de ta journée.</NotConnected>;
     }
 
     return (
-        <main className="container mx-auto px-4 py-8">
-             <header className="mb-12 text-center space-y-4 relative">
-                <div className="absolute top-0 left-0">
-                     <Button asChild variant="outline" size="sm">
-                        <Link href="/">
-                            <Home className="mr-2" />
-                            Accueil
-                        </Link>
-                    </Button>
-                </div>
-                <Logo />
-                <h2 className="font-headline text-4xl sm:text-5xl">Planning de la journée</h2>
-                <p className="text-lg sm:text-xl text-muted-foreground">Voici le programme pour aujourd'hui, {student.name} !</p>
-            </header>
-            
-            <StudentSchedule />
+        <PageShell>
+            <PageBanner
+                icon={<ListChecks />}
+                title="Mon planning"
+                subtitle={`Le programme de ${format(new Date(), 'EEEE d MMMM', { locale: fr })}, ${student.name}.`}
+                actions={
+                    <>
+                        <PillLink href="/en-classe" icon={Sparkles}>En classe</PillLink>
+                        <PillLink href="/" icon={Home}>Accueil</PillLink>
+                        <PillSlot>
+                            <FullscreenToggle />
+                        </PillSlot>
+                    </>
+                }
+            />
 
-        </main>
+            <StudentSchedule />
+        </PageShell>
     );
 }

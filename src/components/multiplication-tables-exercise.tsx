@@ -11,6 +11,7 @@ import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
+import Link from 'next/link';
 
 const GAME_DURATION_S = 60; // 1 minute
 const UNTIMED_QUESTIONS_COUNT = 20;
@@ -368,9 +369,13 @@ export function MultiplicationTablesExercise() {
                                 <RefreshCw className="mr-2 h-5 w-5" />
                                 Changer de tables
                             </Button>
-                            <Button onClick={startGame} size="lg" className="text-lg px-8 h-16">
+                            <Button onClick={startGame} size="lg" className="h-16 px-8 text-lg">
                                 <Play className="mr-2 h-5 w-5" />
                                 Rejouer
+                            </Button>
+                            {/* Un entraînement chronométré ne doit pas être une impasse. */}
+                            <Button asChild size="lg" variant="secondary" className="h-16 px-8 text-lg">
+                                <Link href="/en-classe">Retour en classe</Link>
                             </Button>
                         </div>
                     </div>

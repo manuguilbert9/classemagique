@@ -3,7 +3,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
-import { generatePlaceValueTableQuestion } from '@/lib/place-value-table-questions';
+import { getExerciseQuestions } from '@/services/exercise-pool';
 import type { Question } from '@/lib/questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
@@ -16,6 +16,14 @@ import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
+import {
+  AnswerFeedback,
+  DELAI_NOUVEL_ESSAI,
+  ExerciseFinished,
+  ExerciseProgress,
+  useSecondChance,
+  type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const NUM_QUESTIONS = 10;
 
@@ -55,7 +63,10 @@ export function PlaceValueTableExercise() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [userInputs, setUserInputs] = useState<Record<string, string>>({});
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+  // Le droit à l'erreur : l'élève rejoue jusqu'à trouver, et seule la
+  // première tentative compte pour le score.
+  const secondChance = useSecondChance();
   const [isFinished, setIsFinished] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -75,11 +86,10 @@ export function PlaceValueTableExercise() {
     const loadQuestions = async () => {
       if (level) {
         setIsLoading(true);
-        const generatedQuestions: Question[] = [];
-        for (let i = 0; i < NUM_QUESTIONS; i++) {
-          const question = await generatePlaceValueTableQuestion({ level });
-          generatedQuestions.push(question);
-        }
+        const generatedQuestions = await getExerciseQuestions('place-value-table', NUM_QUESTIONS, {
+          settings: { numberLevel: { level } },
+          studentId: student?.id ?? null,
+        });
         setQuestions(generatedQuestions);
         setIsLoading(false);
       }
@@ -93,6 +103,7 @@ export function PlaceValueTableExercise() {
     : null;
 
   const handleNextQuestion = () => {
+    secondChance.reset();
     setShowConfetti(false);
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
@@ -121,21 +132,34 @@ export function PlaceValueTableExercise() {
       }
     }
 
+    const issue = secondChance.resultOnSuccess();
     const detail: ScoreDetail = {
       question: currentQuestion.question,
       userAnswer: JSON.stringify(userInputs),
       correctAnswer: currentQuestion.answer || '',
-      status: isCorrect ? 'correct' : 'incorrect',
+      status: issue,
     };
+
+    // Faux : on ne passe pas à la suite. L'élève reprend la main
+    // jusqu'à donner lui-même la bonne réponse — c'est ainsi qu'il la retient.
+    if (!isCorrect) {
+      secondChance.registerError();
+      setFeedback('retry');
+      setTimeout(() => {
+        setFeedback(null);
+        setUserInputs({});
+      }, DELAI_NOUVEL_ESSAI);
+      return;
+    }
+
     setSessionDetails(prev => [...prev, detail]);
 
-    if (isCorrect) {
-      setFeedback('correct');
+    // Seule une réussite du premier coup rapporte un point.
+    if (issue === 'correct') {
       setCorrectAnswers(prev => prev + 1);
       setShowConfetti(true);
-    } else {
-      setFeedback('incorrect');
     }
+    setFeedback(issue);
     setTimeout(handleNextQuestion, 2500);
   };
 
@@ -175,11 +199,10 @@ export function PlaceValueTableExercise() {
     setHasBeenSaved(false);
     setSessionDetails([]);
     setIsLoading(true);
-    const generatedQuestions: Question[] = [];
-    for (let i = 0; i < NUM_QUESTIONS; i++) {
-      const question = await generatePlaceValueTableQuestion({ level });
-      generatedQuestions.push(question);
-    }
+    const generatedQuestions = await getExerciseQuestions('place-value-table', NUM_QUESTIONS, {
+      settings: { numberLevel: { level } },
+      studentId: student?.id ?? null,
+    });
     setQuestions(generatedQuestions);
     setIsLoading(false);
   };
@@ -193,33 +216,26 @@ export function PlaceValueTableExercise() {
   }
 
   if (isFinished) {
-    const score = (correctAnswers / NUM_QUESTIONS) * 100;
     return (
-      <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-        <CardHeader>
-          <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-2xl">
-            Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-          </p>
-          <ScoreTube score={score} />
-          {isHomework ? (
-            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-          ) : (
-            <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-              <RefreshCw className="mr-2" />
-              Recommencer
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      <ExerciseFinished
+        correct={correctAnswers}
+        total={NUM_QUESTIONS}
+        canRestart={!isHomework}
+        onRestart={restartExercise}
+        returnHref={isHomework ? '/devoirs' : '/en-classe'}
+        returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+      />
     );
   }
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
+      <ExerciseProgress
+        current={currentQuestionIndex}
+        total={NUM_QUESTIONS}
+        results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')}
+        className="mb-4"
+      />
       <Card className="shadow-2xl text-center relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
           <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3, width: "10px", height: "10px"}} />
@@ -275,8 +291,8 @@ export function PlaceValueTableExercise() {
                         }}
                         className={cn(
                           "h-12 w-12 text-2xl text-center font-numbers p-0",
-                          feedback === 'correct' && 'border-green-500 ring-green-500',
-                          feedback === 'incorrect' && userInputs[col] !== metadata.decomposition[col] && 'border-red-500 ring-red-500 animate-shake'
+                          (feedback === 'correct' || feedback === 'corrected') && 'border-green-500 ring-green-500',
+                          feedback === 'retry' && userInputs[col] !== metadata.decomposition[col] && 'border-red-500 ring-red-500 animate-shake'
                         )}
                         disabled={!!feedback}
                       />
@@ -295,19 +311,20 @@ export function PlaceValueTableExercise() {
           )}
 
           {/* Feedback visuel */}
-          {feedback === 'correct' && (
+          {(feedback === 'correct' || feedback === 'corrected') && (
             <div className="flex items-center gap-2 text-green-600 text-xl font-bold">
               <Check className="h-8 w-8" /> Bravo !
             </div>
           )}
-          {feedback === 'incorrect' && (
+          {feedback === 'retry' && (
             <div className="flex items-center gap-2 text-red-600 text-xl font-bold animate-shake">
               <X className="h-8 w-8" /> Réessaie !
             </div>
           )}
         </CardContent>
         <CardFooter className="min-h-20 flex items-center justify-center">
-          {feedback === 'incorrect' && (
+          {/* On ne dévoile la réponse qu'après deux essais infructueux. */}
+{secondChance.showHint && !feedback && (
             <div className="text-lg text-muted-foreground">
               La bonne réponse : {Object.entries(metadata.decomposition)
                 .filter(([_, value]) => value !== '')

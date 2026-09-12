@@ -531,7 +531,7 @@ function SelecteurDeDictee({ onSelect }: { onSelect: (id: string) => void }) {
         <CardHeader>
           <CardTitle className="font-headline text-2xl text-center">Choisis ta dictée</CardTitle>
           <CardDescription className="text-center">
-            Méthode Dyna-Mots CE2 — 34 semaines. Le jour 1 travaille les mots de la semaine, le
+            34 semaines. Le jour 1 travaille les mots de la semaine, le
             jour 4 est la dictée bilan.
           </CardDescription>
         </CardHeader>

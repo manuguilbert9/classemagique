@@ -14,14 +14,18 @@ import { ScoreTube } from './score-tube';
 import { cn } from '@/lib/utils';
 import type { SkillLevel } from '@/lib/skills';
 import { type CalculationState } from '@/services/scores';
+import type { CalculPose } from '@/lib/exercise-content/calcul-pose';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    AnswerFeedback,
+    DELAI_NOUVEL_ESSAI,
+    ExerciseFinished,
+    ExerciseProgress,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
-type OperationType = 'addition' | 'subtraction';
-type Problem = {
-    id: number;
-    operands: number[];
-    operation: OperationType;
-    answer: number;
-};
+type Problem = CalculPose;
 type Feedback = 'correct' | 'incorrect' | null;
 
 const NUM_PROBLEMS = 3;
@@ -135,114 +139,6 @@ function CarryNoteInput({
 
 // --- Problem Generation Logic ---
 
-const generateNumber = (digits: number): number => {
-    if (digits < 1) return 0;
-    const min = Math.pow(10, digits - 1);
-    const max = Math.pow(10, digits) - 1;
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-
-const generateAddition = (numOperands: number, digits: number, withCarry: boolean): Problem => {
-    let operands: number[] = [];
-    let sum = 0;
-    let attempts = 0;
-    
-    while (attempts < 50) {
-        attempts++;
-        operands = Array.from({ length: numOperands }, () => generateNumber(digits));
-        sum = operands.reduce((acc, op) => acc + op, 0);
-
-        if (!withCarry) {
-            let hasCarry = false;
-            let tempSum = 0;
-            for (let d = 0; d < digits; d++) {
-                const columnSum = operands.reduce((acc, op) => acc + (Math.floor(op / Math.pow(10, d)) % 10), 0) + Math.floor(tempSum / 10);
-                if (columnSum >= 10) {
-                    hasCarry = true;
-                    break;
-                }
-                tempSum = columnSum;
-            }
-            if (!hasCarry) break;
-        } else {
-            let hasCarry = false;
-            let tempSum = 0;
-             for (let d = 0; d < digits; d++) {
-                const columnSum = operands.reduce((acc, op) => acc + (Math.floor(op / Math.pow(10, d)) % 10), 0) + Math.floor(tempSum / 10);
-                if (columnSum >= 10) {
-                    hasCarry = true;
-                    break;
-                }
-                 tempSum = columnSum;
-            }
-            if (hasCarry) break;
-        }
-    }
-    if (attempts >= 50) {
-        if (withCarry) {
-             operands = Array.from({ length: numOperands - 1 }, () => generateNumber(digits > 1 ? digits -1 : 1)).concat([Number("9".repeat(digits > 1 ? digits - 1 : 1))]);
-        } else {
-             operands = Array.from({ length: numOperands }, () => Number("1".repeat(digits)));
-        }
-        sum = operands.reduce((a, b) => a + b, 0);
-    }
-    
-    return { id: Date.now() + Math.random(), operands, operation: 'addition', answer: sum };
-};
-
-
-const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
-    let op1 = 0, op2 = 0;
-    let attempts = 0;
-
-    while (attempts < 50) {
-        attempts++;
-        op1 = generateNumber(digits);
-        op2 = generateNumber(digits);
-
-        if (op1 <= op2) {
-            [op1, op2] = [op2, op1];
-            if (op1 === op2) op1++;
-        }
-        
-        if (op1 === 0 || op2 === 0) continue;
-
-        let hasCarry = false;
-        for (let d = 0; d < digits; d++) {
-            const d1 = Math.floor(op1 / Math.pow(10, d)) % 10;
-            const d2 = Math.floor(op2 / Math.pow(10, d)) % 10;
-            let effectiveD1 = d1;
-            
-            if(d > 0) {
-              const prevD1 = Math.floor(op1 / Math.pow(10, d - 1)) % 10;
-              const prevD2 = Math.floor(op2 / Math.pow(10, d - 1)) % 10;
-              if (prevD1 < prevD2) {
-                effectiveD1 -= 1;
-              }
-            }
-
-            if (effectiveD1 < d2) {
-                hasCarry = true;
-                break;
-            }
-        }
-        if (hasCarry === withCarry) break;
-    }
-    
-    if (attempts >= 50) {
-        if(withCarry) {
-            op1 = parseInt(`5` + '0'.repeat(digits - 1));
-            op2 = 1;
-        } else {
-            op1 = parseInt('9'.repeat(digits));
-            op2 = parseInt('1'.repeat(digits));
-        }
-    }
-
-    return { id: Date.now() + Math.random(), operands: [op1, op2], operation: 'subtraction', answer: op1 - op2 };
-};
-
-
 export function LongCalculationExercise() {
     const { student } = useContext(UserContext);
     const searchParams = useSearchParams();
@@ -254,41 +150,22 @@ export function LongCalculationExercise() {
     const [problems, setProblems] = useState<Problem[]>([]);
     const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
     const [calculationState, setCalculationState] = useState<CalculationState>({});
-    const [feedback, setFeedback] = useState<Feedback>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    // Le droit à l'erreur : l'élève reprend sa colonne au lieu de subir la correction.
+    const secondChance = useSecondChance();
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
-    const generateProblemsForLevel = useCallback((lvl: SkillLevel) => {
-        let newProblems: Problem[] = [];
-        switch (lvl) {
-            case 'B':
-                newProblems = [
-                    generateAddition(2, 2, false),
-                    generateSubtraction(2, false),
-                    generateAddition(2, 2, true)
-                ];
-                break;
-            case 'C':
-                 newProblems = [
-                    generateAddition(2, 3, true),
-                    generateSubtraction(3, true),
-                    generateSubtraction(3, true),
-                ];
-                break;
-            case 'D':
-                newProblems = [
-                    generateAddition(3, 4, true),
-                    generateSubtraction(4, true),
-                    generateSubtraction(4, true),
-                ];
-                break;
-        }
-        setProblems(newProblems.sort(() => Math.random() - 0.5));
+    const generateProblemsForLevel = useCallback(async (lvl: SkillLevel) => {
+        setProblems(await getPooledContent<Problem>('long-calculation', NUM_PROBLEMS, {
+            settings: { level: lvl },
+            studentId: student?.id ?? null,
+        }));
         setIsLoading(false);
-    }, []);
+    }, [student?.id]);
     
     useEffect(() => {
         if(level === null && student) {
@@ -341,23 +218,30 @@ export function LongCalculationExercise() {
         const userAnswerNum = parseInt(userAnswerStr, 10) || 0;
         const isCorrect = userAnswerNum === currentProblem.answer;
         
-         const detail: ScoreDetail = {
+        // Faux : l'opération posée reste à l'écran, avec les retenues déjà
+        // écrites. L'élève repère lui-même la colonne fautive et la reprend.
+        if (!isCorrect) {
+            secondChance.registerError();
+            setFeedback('retry');
+            setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
+            return;
+        }
+
+        const issue = secondChance.resultOnSuccess();
+        setSessionDetails(prev => [...prev, {
             question: currentProblem.operands.join(` ${currentProblem.operation === 'addition' ? '+' : '-'} `),
             userAnswer: userAnswerStr,
             correctAnswer: String(currentProblem.answer),
-            status: isCorrect ? 'correct' : 'incorrect',
+            status: issue,
             calculationState: calculationState
-        };
-        setSessionDetails(prev => [...prev, detail]);
+        }]);
 
-        if (isCorrect) {
-            setFeedback('correct');
-            setCorrectAnswers(prev => prev + 1);
-        } else {
-            setFeedback('incorrect');
-        }
+        // Seule une opération juste du premier coup rapporte un point.
+        if (issue === 'correct') setCorrectAnswers(prev => prev + 1);
+        setFeedback(issue);
 
         setTimeout(() => {
+            secondChance.reset();
             if (currentProblemIndex < NUM_PROBLEMS - 1) {
                 setCurrentProblemIndex(prev => prev + 1);
                 setCalculationState({});
@@ -421,28 +305,16 @@ export function LongCalculationExercise() {
     }
 
     if (isFinished) {
-        const score = (correctAnswers / NUM_PROBLEMS) * 100;
         return (
-             <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-                <CardHeader>
-                    <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_PROBLEMS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                     {isHomework ? (
-                        <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-                     ) : (
-                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                            <RefreshCw className="mr-2" />
-                            Recommencer
-                        </Button>
-                     )}
-                </CardContent>
-            </Card>
-        )
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={NUM_PROBLEMS}
+                canRestart={!isHomework}
+                onRestart={restartExercise}
+                returnHref={isHomework ? '/devoirs' : '/en-classe'}
+                returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+            />
+        );
     }
     
     const { operands, operation } = currentProblem;
@@ -467,7 +339,11 @@ export function LongCalculationExercise() {
 
     return (
         <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6">
-            <Progress value={((currentProblemIndex + 1) / NUM_PROBLEMS) * 100} className="w-full" />
+            <ExerciseProgress
+                current={currentProblemIndex}
+                total={NUM_PROBLEMS}
+                results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')}
+            />
              <Card className="w-full">
                 <CardHeader>
                     <CardTitle className="text-center font-body text-2xl sm:text-3xl">
@@ -638,13 +514,23 @@ export function LongCalculationExercise() {
 
             <div className="w-full space-y-3">
                 <Button onClick={handleValidate} size="lg" className={cn("w-full text-lg",
-                    feedback === 'correct' && 'bg-green-500 hover:bg-green-600',
-                    feedback === 'incorrect' && 'bg-red-500 hover:bg-red-500',
+                    (feedback === 'correct' || feedback === 'corrected') && 'bg-green-500 hover:bg-green-600',
+                    feedback === 'retry' && 'bg-red-500 hover:bg-red-500',
                 )} disabled={!!feedback}>
-                    {feedback === 'correct' && <Check className="mr-2"/>}
-                    {feedback === 'incorrect' && <X className="mr-2"/>}
+                    {(feedback === 'correct' || feedback === 'corrected') && <Check className="mr-2"/>}
+                    {feedback === 'retry' && <X className="mr-2"/>}
                     Valider ma réponse
                 </Button>
+
+                <AnswerFeedback status={feedback} hinted={secondChance.showHint} className="w-full">
+                    {feedback === 'retry' ? 'Ce résultat n’est pas le bon. Reprends colonne par colonne, en commençant par les unités.' : undefined}
+                </AnswerFeedback>
+                {/* Après deux essais, on donne le résultat : l'élève le pose quand même. */}
+                {secondChance.showHint && !feedback && currentProblem && (
+                    <p className="rounded-[16px] border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2 text-center text-lg font-bold text-amber-700">
+                        Résultat : {currentProblem.answer}
+                    </p>
+                )}
 
                 {/* Aide visuelle */}
                 <Card className="bg-muted/50 border-dashed">

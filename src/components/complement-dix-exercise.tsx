@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
+import Link from 'next/link';
 
 const GAME_DURATION_S = 60;
 
@@ -147,10 +148,16 @@ export function ComplementDixExercise() {
                         <p className="text-5xl mb-6">
                             Ton score : <span className="font-bold text-primary">{score}</span>
                         </p>
-                        <Button onClick={startGame} size="lg" variant="outline">
-                            <RefreshCw className="mr-2" />
-                            Rejouer
-                        </Button>
+                        <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                            <Button onClick={startGame} size="lg">
+                                <RefreshCw className="mr-2" />
+                                Rejouer
+                            </Button>
+                            {/* Un entraînement chronométré ne doit pas être une impasse. */}
+                            <Button asChild size="lg" variant="outline">
+                                <Link href="/en-classe">Retour en classe</Link>
+                            </Button>
+                        </div>
                     </div>
                 );
         }

@@ -15,7 +15,9 @@ import { addScore, type ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from '@/components/score-tube';
 import { THEMES_ILLUSTRES, urlPictogramme } from '@/data/copie/liste-imagee';
-import { tirerSerie, type MancheDesignation } from '@/lib/mots-images';
+import { type MancheDesignation } from '@/lib/mots-images';
+import { getPooledContent } from '@/services/exercise-pool';
+import { ExerciseFinished, ExerciseProgress } from '@/components/exercise/exercise-kit';
 
 /** Séance courte, terminée avant la fatigue. */
 const NOMBRE_DE_MANCHES = 8;
@@ -57,12 +59,15 @@ export function MotImageExercise() {
     window.speechSynthesis.speak(utterance);
   }, []);
 
-  const demarrer = () => {
+  const demarrer = async () => {
     const intitule =
       theme === 'tous'
         ? 'Tous les thèmes'
         : THEMES_ILLUSTRES.find((t) => t.cle === theme)?.intitule ?? '';
-    setManches(tirerSerie(theme, NOMBRE_DE_MANCHES, NOMBRE_DE_CHOIX));
+    setManches(await getPooledContent<MancheDesignation>('mot-image', NOMBRE_DE_MANCHES, {
+      settings: { theme },
+      studentId: student?.id ?? null,
+    }));
     setTitre(intitule);
     setIndex(0);
     setTrouve(false);
@@ -97,7 +102,9 @@ export function MotImageExercise() {
             : `Trouver le mot de l'image : ${manche.cible.mot}`,
         userAnswer: mot,
         correctAnswer: manche.cible.mot,
-        status: aTatonne ? 'incorrect' : 'correct',
+        // Trouvé après tâtonnement : la réponse est juste, mais elle ne
+        // rapporte pas de point. C'est le troisième état des résultats.
+        status: aTatonne ? 'corrected' : 'correct',
       },
     ]);
 
@@ -174,31 +181,20 @@ export function MotImageExercise() {
 
   if (isFinished) {
     return (
-      <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-        <CardHeader>
-          <CardTitle className="text-4xl font-headline mb-4">Bravo !</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-2xl">
-            Tu as trouvé <span className="font-bold text-primary">{reussitesDirectes}</span> fois du
-            premier coup sur <span className="font-bold">{NOMBRE_DE_MANCHES}</span>.
-          </p>
-          <ScoreTube score={score} />
-          {isHomework ? (
-            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-          ) : (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button onClick={demarrer} variant="outline" size="lg" className="flex-1">
-                <RefreshCw className="mr-2" />
-                Recommencer
-              </Button>
-              <Button onClick={() => setManches(null)} size="lg" className="flex-1">
-                Changer de thème
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ExerciseFinished
+        correct={reussitesDirectes}
+        total={NOMBRE_DE_MANCHES}
+        canRestart={!isHomework}
+        onRestart={demarrer}
+        returnHref={isHomework ? '/devoirs' : '/en-classe'}
+        returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+      >
+        {!isHomework && (
+          <Button onClick={() => setManches(null)} variant="secondary" size="lg" className="text-lg">
+            Changer de thème
+          </Button>
+        )}
+      </ExerciseFinished>
     );
   }
 
@@ -212,7 +208,11 @@ export function MotImageExercise() {
           {index + 1} / {manches.length}
         </Badge>
       </div>
-      <Progress value={(index / manches.length) * 100} className="w-full h-3" />
+      <ExerciseProgress
+        current={index}
+        total={manches.length}
+        results={details.map((d) => d.status as 'correct' | 'corrected' | 'incorrect')}
+      />
 
       <Card className="shadow-2xl relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">

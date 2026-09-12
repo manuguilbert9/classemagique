@@ -30,7 +30,16 @@ import {
     horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ADJECTIVE_ENRICHMENT_SENTENCES, AdjectiveEnrichmentSentence } from '@/data/grammaire/adjective-enrichment-sentences';
+import { AdjectiveEnrichmentSentence } from '@/data/grammaire/adjective-enrichment-sentences';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    AnswerFeedback,
+    DELAI_NOUVEL_ESSAI,
+    ExerciseFinished,
+    ExerciseProgress,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const NUM_QUESTIONS = 5;
 
@@ -90,6 +99,7 @@ function SortableWord({ item, disabled }: { item: WordItem; disabled?: boolean }
 export function AddAdjectivesExercise() {
     const { student } = useContext(UserContext);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [sentences, setSentences] = useState<AdjectiveEnrichmentSentence[]>([]);
     const [currentSentenceData, setCurrentSentenceData] = useState<AdjectiveEnrichmentSentence | null>(null);
 
     // Lists
@@ -99,7 +109,10 @@ export function AddAdjectivesExercise() {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [activeItem, setActiveItem] = useState<WordItem | null>(null);
 
-    const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    // Le droit à l'erreur : l'élève replace ses adjectifs jusqu'à ce que la
+    // phrase tienne debout.
+    const secondChance = useSecondChance();
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -114,32 +127,37 @@ export function AddAdjectivesExercise() {
         })
     );
 
-    const loadNewQuestion = useCallback(() => {
-        const randomIndex = Math.floor(Math.random() * ADJECTIVE_ENRICHMENT_SENTENCES.length);
-        const data = ADJECTIVE_ENRICHMENT_SENTENCES[randomIndex];
+    // Les phrases de la séance viennent du stock partagé.
+    const loadSentences = useCallback(async () => {
+        setSentences(await getPooledContent<AdjectiveEnrichmentSentence>('add-adjectives', NUM_QUESTIONS, {
+            studentId: student?.id ?? null,
+        }));
+    }, [student?.id]);
+
+    useEffect(() => {
+        loadSentences();
+    }, [loadSentences]);
+
+    // Met en place la phrase courante dès que le lot ou la position change.
+    useEffect(() => {
+        const data = sentences[currentQuestionIndex];
+        if (!data) return;
         setCurrentSentenceData(data);
 
-        // Prepare items
-        const baseWords = data.baseSentence.split(' ').map((word, i) => ({
+        setSentenceWords(data.baseSentence.split(' ').map((word, i) => ({
             id: `base-${i}-${word}`,
             word,
             type: 'base' as const,
-        }));
+        })));
 
-        const adjWords = data.adjectives.map((word, i) => ({
+        setAdjectives(data.adjectives.map((word, i) => ({
             id: `adj-${i}-${word}`,
             word,
             type: 'adjective' as const,
-        }));
+        })));
 
-        setSentenceWords(baseWords);
-        setAdjectives(adjWords);
         setFeedback(null);
-    }, []);
-
-    useEffect(() => {
-        loadNewQuestion();
-    }, [loadNewQuestion]);
+    }, [sentences, currentQuestionIndex]);
 
     const findContainer = (id: string) => {
         if (adjectives.find((item) => item.id === id)) {
@@ -250,39 +268,46 @@ export function AddAdjectivesExercise() {
         const constructedSentence = sentenceWords.map(w => w.word).join(' ');
         const isCorrect = currentSentenceData.validSentences.includes(constructedSentence);
 
-        const detail: ScoreDetail = {
+        // Faux : la phrase reste telle quelle et l'élève déplace ses adjectifs.
+        if (!isCorrect) {
+            secondChance.registerError();
+            setFeedback('retry');
+            setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
+            return;
+        }
+
+        const issue = secondChance.resultOnSuccess();
+        setSessionDetails(prev => [...prev, {
             question: `Enrichir : "${currentSentenceData.baseSentence}" avec "${currentSentenceData.adjectives.join(', ')}"`,
             userAnswer: constructedSentence,
             correctAnswer: currentSentenceData.validSentences[0],
-            status: isCorrect ? 'correct' : 'incorrect',
-        };
-        setSessionDetails(prev => [...prev, detail]);
+            status: issue,
+        }]);
 
-        if (isCorrect) {
+        // Seule une phrase réussie du premier coup rapporte un point.
+        if (issue === 'correct') {
             setCorrectAnswers(prev => prev + 1);
-            setFeedback('correct');
             setShowConfetti(true);
-        } else {
-            setFeedback('incorrect');
         }
+        setFeedback(issue);
 
         setTimeout(() => {
+            secondChance.reset();
             if (currentQuestionIndex < NUM_QUESTIONS - 1) {
                 setCurrentQuestionIndex(prev => prev + 1);
-                loadNewQuestion();
             } else {
                 setIsFinished(true);
             }
         }, 2000);
     };
 
-    const restartExercise = () => {
+    const restartExercise = async () => {
         setCurrentQuestionIndex(0);
         setCorrectAnswers(0);
         setIsFinished(false);
         setHasBeenSaved(false);
         setSessionDetails([]);
-        loadNewQuestion();
+        await loadSentences();
     };
 
     useEffect(() => {
@@ -304,18 +329,14 @@ export function AddAdjectivesExercise() {
     if (!currentSentenceData) return <Loader2 className="animate-spin" />;
 
     if (isFinished) {
-        const score = (correctAnswers / NUM_QUESTIONS) * 100;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-8">
-                <CardHeader><CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle></CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as réussi <span className="font-bold text-primary">{correctAnswers}</span> phrases sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4"><RefreshCw className="mr-2" />Recommencer</Button>
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={correctAnswers}
+                total={NUM_QUESTIONS}
+                canRestart
+                onRestart={restartExercise}
+                returnHref="/en-classe"
+            />
         );
     }
 
@@ -337,7 +358,12 @@ export function AddAdjectivesExercise() {
             <CardHeader>
                 <CardTitle className="font-headline text-2xl text-center">Ajouter des adjectifs</CardTitle>
                 <CardDescription className="text-center">Glisse les adjectifs dans la phrase pour l'enrichir.</CardDescription>
-                <Progress value={((currentQuestionIndex) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
+                <ExerciseProgress
+                    current={currentQuestionIndex}
+                    total={NUM_QUESTIONS}
+                    results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')}
+                    className="mt-4"
+                />
             </CardHeader>
             <CardContent className="min-h-[400px] flex flex-col items-center gap-8 p-6">
 
@@ -399,12 +425,14 @@ export function AddAdjectivesExercise() {
                 <Button size="lg" onClick={checkAnswer} disabled={!!feedback || adjectives.length > 0}>
                     <Check className="mr-2" /> Valider
                 </Button>
-                {feedback === 'correct' && <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse"><ThumbsUp /> Bravo !</div>}
-                {feedback === 'incorrect' && (
-                    <div className="text-xl font-bold text-red-600 flex flex-col items-center gap-2 animate-shake text-center">
-                        <div className="flex items-center gap-2"><X /> Ce n'est pas tout à fait ça.</div>
-                        <div className="text-base font-normal text-foreground">Solution possible : "{currentSentenceData.validSentences[0]}"</div>
-                    </div>
+                <AnswerFeedback status={feedback} hinted={secondChance.showHint} className="w-full">
+                    {feedback === 'retry' ? "Ce n'est pas tout à fait ça. Relis ta phrase : où placerais-tu l'adjectif ?" : undefined}
+                </AnswerFeedback>
+                {/* Après deux essais, une solution possible — il y en a souvent plusieurs. */}
+                {secondChance.showHint && !feedback && (
+                    <p className="rounded-[16px] border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2 text-center font-bold text-amber-700">
+                        Par exemple : « {currentSentenceData.validSentences[0]} »
+                    </p>
                 )}
             </CardFooter>
             <style jsx>{`

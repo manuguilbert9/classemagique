@@ -156,8 +156,12 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                                 columnStyles: { 0: { cellWidth: columnWidth * 0.5 }, 1: { cellWidth: columnWidth * 0.5 } },
                                 didParseCell: (data) => {
                                     if (score.details && data.row.index >= 0 && score.details[data.row.index]) {
-                                        if(score.details[data.row.index].status === 'incorrect'){
+                                        const statut = score.details[data.row.index].status;
+                                        if (statut === 'incorrect') {
                                             data.cell.styles.fillColor = LIGHT_RED_FILL;
+                                        } else if (statut === 'corrected') {
+                                            // Trouvée au deuxième essai : ni rouge, ni blanc.
+                                            data.cell.styles.fillColor = [255, 243, 205];
                                         }
                                     }
                                 },

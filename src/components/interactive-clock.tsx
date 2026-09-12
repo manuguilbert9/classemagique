@@ -7,13 +7,15 @@ import { Button } from '../components/ui/button';
 import { Check } from 'lucide-react';
 import type { TimeSettings } from '@/lib/questions';
 import { cn } from '@/lib/utils';
+import type { FeedbackStatus } from '@/components/exercise/exercise-kit';
 
 interface InteractiveClockProps {
   hour: number;
   minute: number;
   settings: TimeSettings;
   onSubmit: (h: number, m: number) => void;
-  feedback: 'correct' | 'incorrect' | null;
+  /** Le vocabulaire commun des exercices (voir `exercise-kit`). */
+  feedback: FeedbackStatus;
 }
 
 export function InteractiveClock({ hour, minute, settings, onSubmit, feedback }: InteractiveClockProps) {
@@ -68,8 +70,8 @@ export function InteractiveClock({ hour, minute, settings, onSubmit, feedback }:
       <Button
         size="lg"
         className={cn("w-full max-w-sm text-xl py-7",
-            feedback === 'correct' ? "bg-green-500 hover:bg-green-600" : 
-            feedback === 'incorrect' ? "bg-red-500 hover:bg-red-600 animate-shake" :
+            feedback === 'correct' || feedback === 'corrected' ? "bg-green-500 hover:bg-green-600" :
+            feedback === 'retry' || feedback === 'incorrect' ? "bg-red-500 hover:bg-red-600 animate-shake" :
             "bg-accent text-accent-foreground hover:bg-accent/90"
         )}
         onClick={handleSubmit}

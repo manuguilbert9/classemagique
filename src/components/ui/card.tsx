@@ -10,7 +10,9 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground",
+      // L'ombre douce fait partie de l'identité : les cartes flottent
+      // légèrement au-dessus du fond gris clair.
+      "rounded-lg border bg-card text-card-foreground shadow-sm",
       className
     )}
     {...props}

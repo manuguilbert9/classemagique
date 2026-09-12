@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Play, RotateCcw, ArrowDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { generateSubtractionTrainingSet, SubtractionQuestion } from '@/lib/subtraction-training-questions';
+import { SubtractionQuestion } from '@/lib/subtraction-training-questions';
+import { getPooledContent } from '@/services/exercise-pool';
 import { addScore } from '@/services/scores';
 import { UserContext } from '@/context/user-context';
+import Link from 'next/link';
 
 // Fonction pour déterminer la couleur d'une colonne
 function getColumnColorClasses(columnIndex: number) {
@@ -33,6 +35,9 @@ function getColumnColorClasses(columnIndex: number) {
     ];
     return colors[2 - columnIndex]; // Inverse pour avoir U, D, C
 }
+
+/** Une séance = les trois soustractions progressives de la série. */
+const NOMBRE_DE_SOUSTRACTIONS = 3;
 
 const getPositionName = (i: number) => {
     if (i === 0) return 'centaines';
@@ -79,10 +84,17 @@ export function SubtractionTrainingExercise() {
 
     // Initialize questions on mount
     useEffect(() => {
-        const questionSet = generateSubtractionTrainingSet();
-        setQuestions(questionSet);
-        loadQuestion(questionSet[0]);
-    }, []);
+        const loadSet = async () => {
+            const questionSet = await getPooledContent<SubtractionQuestion>(
+                'subtraction-training',
+                NOMBRE_DE_SOUSTRACTIONS,
+                { studentId: student?.id ?? null }
+            );
+            setQuestions(questionSet);
+            loadQuestion(questionSet[0]);
+        };
+        loadSet();
+    }, [student?.id]);
 
     const calculateExpectedSteps = (): Step[] => {
         const num1 = minuend.map(d => d === '' ? 0 : parseInt(d));
@@ -313,9 +325,13 @@ export function SubtractionTrainingExercise() {
         }
     };
 
-    const reset = () => {
+    const reset = async () => {
         // Reset everything and restart from first question
-        const questionSet = generateSubtractionTrainingSet();
+        const questionSet = await getPooledContent<SubtractionQuestion>(
+            'subtraction-training',
+            NOMBRE_DE_SOUSTRACTIONS,
+            { studentId: student?.id ?? null }
+        );
         setQuestions(questionSet);
         setCurrentQuestionIndex(0);
         loadQuestion(questionSet[0]);
@@ -387,10 +403,14 @@ export function SubtractionTrainingExercise() {
                                 </Card>
                             )}
 
-                            <div className="mt-8">
+                            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                                 <Button onClick={reset} size="lg" className="text-lg">
                                     <RotateCcw className="mr-2" />
-                                    Recommencer un nouvel exercice
+                                    Recommencer
+                                </Button>
+                                {/* Aucun écran de fin ne doit être une impasse. */}
+                                <Button asChild size="lg" variant="outline" className="text-lg">
+                                    <Link href="/en-classe">Retour en classe</Link>
                                 </Button>
                             </div>
                         </div>

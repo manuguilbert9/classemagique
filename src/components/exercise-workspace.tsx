@@ -10,7 +10,15 @@ import { Button } from '../components/ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Keyboard, Gem } from 'lucide-react';
 import { AnalogClock } from '@/components/analog-clock';
-import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings, type PasseComposeSettings as PasseComposeSettingsType } from '@/lib/questions';
+import { type Question, type AllSettings, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings, type PasseComposeSettings as PasseComposeSettingsType } from '@/lib/questions';
+import { getExerciseQuestions } from '@/services/exercise-pool';
+import {
+  DELAI_NOUVEL_ESSAI,
+  AnswerFeedback,
+  HINT_CLASSES,
+  useSecondChance,
+  type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 import { currency as currencyData, formatCurrency } from '@/lib/currency';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -56,10 +64,18 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const homeworkDate = searchParams.get('date');
   const { toast } = useToast();
 
+  // Tout le contenu passe par le stock partagé : le premier élève de la journée
+  // génère, les suivants reçoivent exactement le même contenu.
+  const fetchQuestions = useCallback(
+    (settings?: AllSettings) =>
+      getExerciseQuestions(skill.slug, NUM_QUESTIONS, { settings, studentId: student?.id ?? null }),
+    [skill.slug, student?.id]
+  );
+
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackStatus>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [isFinished, setIsFinished] = useState(false);
@@ -92,14 +108,15 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   // State for passe-compose QCM hover preview
   const [hoveredOption, setHoveredOption] = useState<string | null>(null);
 
-  // State for passe-compose retry mode (wrong options already tried)
-  const [triedOptions, setTriedOptions] = useState<string[]>([]);
+  // Le droit à l'erreur : l'élève rejoue sa réponse jusqu'à trouver, et seule
+  // la première tentative compte pour le score.
+  const secondChance = useSecondChance();
 
 
   useEffect(() => {
     async function loadNonConfigurableQuestions() {
         if (!['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count', 'passe-compose'].includes(skill.slug)) {
-            const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
+            const generatedQuestions = await fetchQuestions();
             setQuestions(generatedQuestions);
             setIsReadyToStart(true);
         } else if(skill.slug === 'mental-calculation' || skill.slug === 'keyboard-count') {
@@ -135,21 +152,21 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   
   const startCalculationExercise = async (settings: CalcSettings) => {
     setCalculationSettings(settings);
-    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { calculation: settings });
+    const generatedQuestions = await fetchQuestions({ calculation: settings });
     setQuestions(generatedQuestions);
     setIsReadyToStart(true);
   };
   
   const startCurrencyExercise = async (settings: CurrSettings) => {
     setCurrencySettings(settings);
-    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { currency: settings });
+    const generatedQuestions = await fetchQuestions({ currency: settings });
     setQuestions(generatedQuestions);
     setIsReadyToStart(true);
   };
 
   const startTimeExercise = async (settings: TimeSettingsType) => {
     setTimeSettings(settings);
-    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings });
+    const generatedQuestions = await fetchQuestions({ time: settings });
     setQuestions(generatedQuestions);
     setIsReadyToStart(true);
   }
@@ -157,7 +174,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const startPasseComposeExercise = async (settings: PasseComposeSettingsType) => {
     setIsGenerating(true);
     setPasseComposeSettings(settings);
-    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { passeCompose: settings });
+    const generatedQuestions = await fetchQuestions({ passeCompose: settings });
     setQuestions(generatedQuestions);
     setIsGenerating(false);
     setIsReadyToStart(true);
@@ -165,17 +182,21 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   const startCountExercise = async (settings: CountSettingsType) => {
     setCountSettings(settings);
-    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { count: settings });
+    const generatedQuestions = await fetchQuestions({ count: settings });
     setQuestions(generatedQuestions);
     setIsReadyToStart(true);
   }
 
   const startNumberLevelExercise = async (settings: NumberLevelSettings) => {
     setNumberLevelSettings(settings);
-    const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { numberLevel: settings });
+    const generatedQuestions = await fetchQuestions({ numberLevel: settings });
     setQuestions(generatedQuestions);
     setIsReadyToStart(true);
   }
+
+  // Trouvée du premier coup ou après correction : dans les deux cas, l'écran
+  // se met au vert. Seul le score fait la différence.
+  const estReussi = feedback === 'correct' || feedback === 'corrected';
 
   const exerciseData = useMemo(() => {
     if (questions.length === 0) return null;
@@ -205,11 +226,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setUserKeyboardInput('');
     setFeedback(null);
     setHoveredOption(null);
-    setTriedOptions([]);
+    secondChance.reset();
   }
 
   const handleNextQuestion = () => {
     setShowConfetti(false);
+    secondChance.reset();
     resetInteractiveStates();
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
@@ -223,22 +245,34 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   };
   
   const processCorrectAnswer = () => {
-      setCorrectAnswers(prev => prev + 1);
-      setFeedback('correct');
-      const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
-      setMotivationalMessage(randomMessage);
-      setShowConfetti(true);
+      // Trouvée du premier coup, la question rapporte son point ; trouvée après
+      // une erreur, elle ne rapporte rien mais on félicite quand même l'élève
+      // de s'être corrigé.
+      const issue = secondChance.resultOnSuccess();
+      if (issue === 'correct') {
+        setCorrectAnswers(prev => prev + 1);
+        setMotivationalMessage(motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)]);
+        setShowConfetti(true);
+      }
+      setFeedback(issue);
       setTimeout(handleNextQuestion, 2500);
   }
-  
+
+  /**
+   * Une erreur ne fait plus passer à la question suivante : on rend la main à
+   * l'élève pour qu'il trouve, et écrive, la bonne réponse.
+   */
   const processIncorrectAnswer = (wrongOption?: string) => {
-    setFeedback('incorrect');
-    if (exerciseData?.passeComposeSettings) {
-      if (wrongOption) setTriedOptions(prev => [...prev, wrongOption]);
-      setTimeout(() => setFeedback(null), 1500);
-    } else {
-      setTimeout(handleNextQuestion, 1500);
-    }
+    secondChance.registerError(wrongOption);
+    setFeedback('retry');
+    setTimeout(() => {
+      setFeedback(null);
+      // On fait table rase de la saisie fausse : l'élève doit écrire
+      // lui-même la bonne réponse, c'est tout l'intérêt du second essai.
+      setUserKeyboardInput('');
+      setSelectedIndices([]);
+      setSelectedCountIndices([]);
+    }, DELAI_NOUVEL_ESSAI);
   }
   
   const handleQcmAnswer = (option: string) => {
@@ -436,7 +470,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     resetInteractiveStates();
     
     if (!['calculation', 'currency', 'change-making', 'time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'keyboard-count', 'passe-compose'].includes(skill.slug)) {
-      const newQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
+      const newQuestions = await fetchQuestions();
       setQuestions(newQuestions);
       setIsReadyToStart(true);
     } else if (skill.slug === 'mental-calculation' || skill.slug === 'keyboard-count') {
@@ -592,8 +626,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
               onClick={() => handleQcmAnswer(String(num))}
               className={cn(
                 "text-3xl h-20 p-4 justify-center font-numbers",
-                feedback === 'correct' && String(num) === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
-                feedback === 'incorrect' && 'bg-red-500/80 text-white border-red-600 animate-shake'
+                estReussi && String(num) === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+                feedback === 'retry' && String(num) === secondChance.wrongAnswers[secondChance.wrongAnswers.length - 1] && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                secondChance.wrongAnswers.includes(String(num)) && !feedback && 'opacity-40',
+                secondChance.showHint && !feedback && String(num) === exerciseData.answer && HINT_CLASSES
               )}
               disabled={!!feedback}
             >
@@ -613,14 +649,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             ))}
         </div>
          <div className={cn("relative w-48 h-24 border-2 rounded-lg flex items-center justify-center",
-            feedback === 'correct' && 'border-green-500',
-            feedback === 'incorrect' && 'border-red-500 animate-shake'
+            estReussi && 'border-green-500',
+            feedback === 'retry' && 'border-red-500 animate-shake'
          )}>
             <span className="font-bold text-6xl">{userKeyboardInput}</span>
-             {feedback === 'correct' && <Check className="absolute right-2 top-2 h-6 w-6 text-green-500"/>}
-             {feedback === 'incorrect' && <X className="absolute right-2 top-2 h-6 w-6 text-red-500"/>}
+             {estReussi && <Check className="absolute right-2 top-2 h-6 w-6 text-green-500"/>}
+             {feedback === 'retry' && <X className="absolute right-2 top-2 h-6 w-6 text-red-500"/>}
              {!feedback && <span className="absolute bottom-2 text-muted-foreground text-xs">Tape ta réponse</span>}
-             {feedback === 'incorrect' && <span className="absolute bottom-2 text-red-500 text-xs font-bold">Réponse: {exerciseData.answer}</span>}
+             {secondChance.showHint && <span className="absolute bottom-2 text-xs font-bold text-amber-600">Réponse : {exerciseData.answer}</span>}
          </div>
         <VirtualKeyboard onKeyPress={handleKeyboardCountKeystroke} numericOnly />
     </div>
@@ -657,17 +693,19 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 disabled={!!feedback}
                 className={cn(
                     "text-center text-2xl h-16",
-                    feedback === 'correct' && 'border-green-500 bg-green-50 text-green-900',
-                    feedback === 'incorrect' && 'border-red-500 bg-red-50 text-red-900 animate-shake'
+                    estReussi && 'border-green-500 bg-green-50 text-green-900',
+                    feedback === 'retry' && 'border-red-500 bg-red-50 text-red-900 animate-shake'
                 )}
                 placeholder="Tape ta réponse ici"
             />
-            {feedback === 'correct' && <Check className="absolute right-4 top-1/2 -translate-y-1/2 h-6 w-6 text-green-500"/>}
-            {feedback === 'incorrect' && <X className="absolute right-4 top-1/2 -translate-y-1/2 h-6 w-6 text-red-500"/>}
+            {estReussi && <Check className="absolute right-4 top-1/2 -translate-y-1/2 h-6 w-6 text-green-500"/>}
+            {feedback === 'retry' && <X className="absolute right-4 top-1/2 -translate-y-1/2 h-6 w-6 text-red-500"/>}
         </div>
-        {feedback === 'incorrect' && (
-            <div className="text-red-500 font-bold text-lg">
-                La bonne réponse était : {exerciseData.answer}
+        {/* Après deux essais infructueux, on montre le modèle : l'élève doit
+            quand même le recopier lui-même pour valider. */}
+        {secondChance.showHint && !estReussi && (
+            <div className="rounded-[16px] border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2 text-lg font-bold text-amber-700">
+                Réponse : {exerciseData.answer}
             </div>
         )}
         <Button
@@ -718,8 +756,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             ? (option === 'gn' ? 'text-blue-600 font-bold' : option === 'ni' ? 'text-red-600 font-bold' : '')
             : '';
 
-          const alreadyTried = triedOptions.includes(option);
-          const isWrongFeedback = feedback === 'incorrect' && option === triedOptions[triedOptions.length - 1];
+          const alreadyTried = secondChance.wrongAnswers.includes(option);
+          const isWrongFeedback = feedback === 'retry' && option === secondChance.wrongAnswers[secondChance.wrongAnswers.length - 1];
+          // Après deux erreurs, la bonne réponse se signale d'un halo.
+          const isHinted = secondChance.showHint && !feedback && option === exerciseData.answer;
 
           return (
             <Button
@@ -730,15 +770,17 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
               onMouseLeave={() => exerciseData.passeComposeSettings && setHoveredOption(null)}
               className={cn(
                 "text-xl h-20 p-4 justify-center transition-all duration-300 transform active:scale-95",
-                feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+                estReussi && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
                 isWrongFeedback && 'bg-red-500/80 text-white border-red-600 animate-shake',
                 alreadyTried && !feedback && 'opacity-30 cursor-not-allowed',
-                feedback === 'correct' && option !== exerciseData.answer && 'opacity-50',
+                estReussi && option !== exerciseData.answer && 'opacity-50',
+                alreadyTried && !feedback && 'opacity-40 line-through',
+                isHinted && HINT_CLASSES,
               )}
               disabled={!!feedback || alreadyTried}
             >
               <span className={cn("flex items-center gap-4", gnNiColorClass)}>
-                {feedback === 'correct' && option === exerciseData.answer && <Check />}
+                {estReussi && option === exerciseData.answer && <Check />}
                 {isWrongFeedback && <X />}
                 {option}
               </span>
@@ -758,8 +800,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
           onClick={() => handleQcmAnswer(option.value)}
           className={cn(
             "h-32 p-2 flex flex-col justify-center items-center transition-all duration-300 transform active:scale-95",
-            feedback === 'correct' && option.value === exerciseData.answer && 'bg-green-100/80 border-green-500 ring-4 ring-green-500 scale-105',
-            feedback === 'incorrect' && 'bg-red-100/80 border-red-500 animate-shake',
+            estReussi && option.value === exerciseData.answer && 'bg-green-100/80 border-green-500 ring-4 ring-green-500 scale-105',
+            feedback === 'retry' && option.value === secondChance.wrongAnswers[secondChance.wrongAnswers.length - 1] && 'bg-red-100/80 border-red-500 animate-shake',
+            secondChance.wrongAnswers.includes(option.value) && !feedback && 'opacity-40',
+            secondChance.showHint && !feedback && option.value === exerciseData.answer && HINT_CLASSES,
             feedback && option.value !== exerciseData.answer && 'opacity-30',
             feedback && option.value === exerciseData.answer && 'opacity-100'
           )}
@@ -796,8 +840,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
         {/* Current sum display */}
         <div className={cn("rounded-lg border-2 p-4 w-full text-center mb-4 transition-colors",
-            feedback === 'correct' ? 'bg-green-100 border-green-500' :
-            feedback === 'incorrect' ? 'bg-red-100 border-red-500' :
+            estReussi ? 'bg-green-100 border-green-500' :
+            feedback === 'retry' ? 'bg-red-100 border-red-500' :
             'bg-secondary'
         )}>
             <p className="text-muted-foreground">Votre somme</p>
@@ -864,8 +908,8 @@ const renderSelectMultiple = () => (
                         disabled={!!feedback}
                         className={cn("h-auto p-1 rounded-md transform active:scale-95 transition-all",
                             selectedIndices.includes(index) ? 'ring-4 ring-accent' : 'ring-2 ring-transparent',
-                            feedback === 'correct' && selectedIndices.includes(index) && 'ring-green-500',
-                            feedback === 'incorrect' && selectedIndices.includes(index) && 'ring-red-500 animate-shake',
+                            estReussi && selectedIndices.includes(index) && 'ring-green-500',
+                            feedback === 'retry' && selectedIndices.includes(index) && 'ring-red-500 animate-shake',
                             feedback && !selectedIndices.includes(index) && 'opacity-50'
                         )}
                     >
@@ -984,17 +1028,11 @@ const renderWrittenToAudioQCM = () => (
           {exerciseData.type === 'written-to-audio-qcm' && renderWrittenToAudioQCM()}
           {exerciseData.type === 'text-input' && renderTextInput()}
         </CardContent>
-        <CardFooter className="h-24 flex items-center justify-center">
-          {feedback === 'correct' && (
-            <div className="text-2xl font-bold text-green-600 animate-pulse">
-              {motivationalMessage}
-            </div>
-          )}
-           {feedback === 'incorrect' && (
-            <div className="text-2xl font-bold text-red-600 animate-shake">
-              Oups ! Essaye encore.
-            </div>
-          )}
+        <CardFooter className="min-h-[6rem] flex items-center justify-center p-4">
+          {/* La correction, au vocabulaire commun à tous les exercices. */}
+          <AnswerFeedback status={feedback} hinted={secondChance.showHint} className="w-full max-w-xl">
+            {feedback === 'correct' ? motivationalMessage : undefined}
+          </AnswerFeedback>
         </CardFooter>
         <style jsx>{`
           @keyframes fall {

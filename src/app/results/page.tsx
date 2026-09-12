@@ -7,8 +7,11 @@ import { UserContext } from '@/context/user-context';
 import { Score, getScoresForUser } from '@/services/scores';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Home, Loader2, CalendarDays, Calendar, CalendarRange } from 'lucide-react';
-import { Logo } from '@/components/logo';
+import { BarChart3, CalendarDays, Calendar, CalendarRange, Home, LineChart, Sparkles } from 'lucide-react';
+import { FullscreenToggle } from '@/components/fullscreen-toggle';
+import { PageBanner, PillLink, PillSlot } from '@/components/layout/page-banner';
+import { PageShell, SectionLabel } from '@/components/layout/section';
+import { NotConnected, PageLoading } from '@/components/layout/states';
 import { ResultsCarousel } from '@/components/results/results-carousel';
 import { 
   isSameDay, 
@@ -98,47 +101,40 @@ export default function ResultsPage() {
     };
 
     if (isLoading || isUserLoading) {
-        return (
-            <div className="flex flex-col min-h-screen items-center justify-center text-center p-4">
-                <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                <p className="mt-4 text-muted-foreground">Chargement de tes résultats...</p>
-            </div>
-        );
-    }
-    
-     if (!student) {
-        return (
-            <div className="flex flex-col min-h-screen items-center justify-center text-center p-4">
-                <Card className="p-8">
-                    <h2 className="text-xl font-semibold text-destructive">Tu n'es pas connecté.</h2>
-                    <Button asChild className="mt-4">
-                        <Link href="/">
-                            <Home className="mr-2 h-4 w-4" />
-                            Retour à l'accueil
-                        </Link>
-                    </Button>
-                </Card>
-            </div>
-        )
+        return <PageLoading>Je rassemble tes résultats…</PageLoading>;
     }
 
+    if (!student) {
+        return <NotConnected>Connecte-toi pour voir tes progrès.</NotConnected>;
+    }
+
+    /** Le nombre d'exercices faits aujourd'hui : le premier chiffre que l'élève cherche. */
+    const totalDuJour = scoresForDay.length;
+
     return (
-        <main className="container mx-auto px-4 py-8">
-            <header className="mb-12 text-center space-y-4 relative">
-                <div className="absolute top-0 left-0">
-                    <Button asChild variant="outline" size="sm">
-                        <Link href="/">
-                            <Home className="mr-2" />
-                            Retour
-                        </Link>
-                    </Button>
-                </div>
-                <Logo />
-                <h2 className="font-headline text-4xl sm:text-5xl">Mes Progrès</h2>
-            </header>
-            
-            <div className="space-y-12">
+        <PageShell>
+            <PageBanner
+                icon={<BarChart3 />}
+                title="Mes progrès"
+                subtitle={
+                    totalDuJour > 0
+                        ? `Déjà ${totalDuJour} exercice${totalDuJour > 1 ? 's' : ''} aujourd'hui, ${student.name} !`
+                        : `Ton travail jour après jour, ${student.name}.`
+                }
+                actions={
+                    <>
+                        <PillLink href="/en-classe" icon={Sparkles}>En classe</PillLink>
+                        <PillLink href="/" icon={Home}>Accueil</PillLink>
+                        <PillSlot>
+                            <FullscreenToggle />
+                        </PillSlot>
+                    </>
+                }
+            />
+
+            <div className="flex flex-col gap-8">
                 <section>
+                    <SectionLabel icon={<CalendarDays />}>Au jour le jour</SectionLabel>
                     <ResultsCarousel
                         title={getDayLabel(currentDay)}
                         subtitle={format(currentDay, "EEEE d MMMM", { locale: fr })}
@@ -151,6 +147,7 @@ export default function ResultsPage() {
                 </section>
                 
                 <section>
+                    <SectionLabel icon={<Calendar />}>Semaine par semaine</SectionLabel>
                      <ResultsCarousel
                         title={getWeekLabel(currentWeek)}
                         subtitle={`Semaine du ${format(startOfWeek(currentWeek, { locale: fr }), "d MMM", { locale: fr })}`}
@@ -163,6 +160,7 @@ export default function ResultsPage() {
                 </section>
 
                 <section>
+                    <SectionLabel icon={<CalendarRange />}>Mois par mois</SectionLabel>
                      <ResultsCarousel
                         title={getMonthLabel(currentMonth)}
                         subtitle={format(currentMonth, "MMMM yyyy", { locale: fr })}
@@ -175,9 +173,10 @@ export default function ResultsPage() {
                 </section>
                 
                 <section>
+                    <SectionLabel icon={<LineChart />}>Ma courbe de progrès</SectionLabel>
                     <OverallProgressChart allScores={allScores} />
                 </section>
             </div>
-        </main>
+        </PageShell>
     );
 }

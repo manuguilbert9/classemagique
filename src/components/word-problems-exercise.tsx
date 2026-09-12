@@ -9,7 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { addScore } from '@/services/scores';
-import { generateProblem, correctProblem, type GeneratedProblem, type CorrectionFeedback, type ProblemCategory } from '@/ai/flows/word-problems-flow';
+import { correctProblem, type GeneratedProblem, type CorrectionFeedback } from '@/ai/flows/word-problems-flow';
+import { getPooledContent } from '@/services/exercise-pool';
+import { ERREURS_AVANT_AIDE, ExerciseFinished, ExerciseProgress } from '@/components/exercise/exercise-kit';
 import { useToast } from '@/hooks/use-toast';
 import { Gem, RefreshCw, Check, ArrowRight, Calculator, MessageSquare, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -27,7 +29,8 @@ export function WordProblemsExercise() {
     const skill = getSkillBySlug(skillSlug);
 
     const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
-    const [problem, setProblem] = useState<GeneratedProblem | null>(null);
+    const [problems, setProblems] = useState<GeneratedProblem[]>([]);
+    const problem = problems[currentProblemIndex] ?? null;
     const [isLoading, setIsLoading] = useState(true);
     const [isCorrecting, setIsCorrecting] = useState(false);
 
@@ -50,38 +53,37 @@ export function WordProblemsExercise() {
         window.speechSynthesis.speak(utterance);
     };
 
+    // Les problèmes de la séance sont chargés d'un bloc : ils viennent du stock
+    // partagé, donc toute la classe travaille sur les mêmes énoncés.
     useEffect(() => {
-        loadProblem();
-    }, [currentProblemIndex]);
+        const loadProblems = async () => {
+            setIsLoading(true);
+            try {
+                setProblems(await getPooledContent<GeneratedProblem>(skillSlug, NUM_PROBLEMS, {
+                    studentId: student?.id ?? null,
+                }));
+            } catch (error) {
+                console.error("Failed to generate problem:", error);
+                toast({
+                    title: "Erreur",
+                    description: "Impossible de charger le problème. Réessaie plus tard.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadProblems();
+    }, [skillSlug, student?.id]);
 
-    const loadProblem = async () => {
-        setIsLoading(true);
+    // Chaque nouveau problème repart d'une ardoise vierge.
+    useEffect(() => {
         setFeedback(null);
         setCalculation('');
         setResult('');
         setSentence('');
         setAttempts(0);
-
-        try {
-            // Map skill slug to problem category
-            let category: ProblemCategory = 'problemes-transformation';
-            if (skillSlug === 'problemes-composition') category = 'problemes-composition';
-            if (skillSlug === 'problemes-comparaison') category = 'problemes-comparaison';
-            if (skillSlug === 'problemes-composition-transformation') category = 'problemes-composition-transformation';
-
-            const newProblem = await generateProblem(category, 'easy');
-            setProblem(newProblem);
-        } catch (error) {
-            console.error("Failed to generate problem:", error);
-            toast({
-                title: "Erreur",
-                description: "Impossible de charger le problème. Réessaie plus tard.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    }, [currentProblemIndex]);
 
     const handleValidate = async () => {
         if (!problem) return;
@@ -99,16 +101,22 @@ export function WordProblemsExercise() {
             setFeedback(correction);
 
             if (correction.isCorrect) {
-                const pointsEarned = attempts === 0 ? 2 : 1;
+                // Résolu du premier coup : le problème rapporte ses points.
+                // Résolu après correction : il ne rapporte rien, mais il compte
+                // quand même comme résolu.
+                const pointsEarned = attempts === 0 ? 2 : 0;
                 setTotalPoints(prev => prev + pointsEarned);
-                setScore(prev => prev + 1); // Increment solved count
+                setScore(prev => prev + 1);
 
                 toast({
-                    title: "Bravo !",
-                    description: `C'est la bonne réponse ! (+${pointsEarned} pépite${pointsEarned > 1 ? 's' : ''})`,
+                    title: attempts === 0 ? 'Bravo !' : 'Tu t’es corrigé !',
+                    description: pointsEarned > 0
+                        ? `C'est la bonne réponse ! (+${pointsEarned} pépites)`
+                        : "C'est la bonne réponse. Tu l'as trouvée tout seul, c'est l'essentiel.",
                     className: "bg-green-100 border-green-300 text-green-800",
                 });
             } else {
+                // Faux : l'énoncé et la saisie restent à l'écran, l'élève reprend.
                 setAttempts(prev => prev + 1);
             }
         } catch (error) {
@@ -156,33 +164,37 @@ export function WordProblemsExercise() {
 
     if (isFinished) {
         return (
-            <Card className="w-full max-w-2xl mx-auto shadow-2xl text-center p-8">
-                <CardHeader>
-                    <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as résolu <span className="font-bold text-primary">{score}</span> problèmes sur <span className="font-bold">{NUM_PROBLEMS}</span>.
-                    </p>
-                    <ScoreTube score={(totalPoints / (NUM_PROBLEMS * 2)) * 100} />
-                    <Button onClick={() => window.location.reload()} variant="outline" size="lg" className="mt-4">
-                        <RefreshCw className="mr-2" />
-                        Recommencer
-                    </Button>
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={score}
+                total={NUM_PROBLEMS}
+                canRestart
+                onRestart={() => window.location.reload()}
+                returnHref="/en-classe"
+            >
+                <p className="text-muted-foreground">
+                    {totalPoints} pépite{totalPoints > 1 ? 's' : ''} gagnée{totalPoints > 1 ? 's' : ''}.
+                </p>
+            </ExerciseFinished>
         );
     }
 
     return (
         <div className="w-full max-w-3xl mx-auto space-y-6">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-primary">Problème {currentProblemIndex + 1} / {NUM_PROBLEMS}</h2>
-                <div className="flex items-center gap-2 bg-amber-100 px-3 py-1 rounded-full text-amber-800 font-bold">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <ExerciseProgress current={currentProblemIndex} total={NUM_PROBLEMS} className="flex-1" />
+                <div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 font-bold text-amber-800">
                     <Gem className="h-4 w-4" />
                     <span>{totalPoints} pépites gagnées</span>
                 </div>
             </div>
+
+            {/* Après deux essais, on rappelle le résultat attendu : l'élève doit
+                encore écrire le calcul et la phrase réponse. */}
+            {attempts >= ERREURS_AVANT_AIDE && problem && (
+                <p className="rounded-[16px] border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2 text-center font-bold text-amber-700">
+                    Le résultat à trouver est {problem.expectedResult} {problem.unit}.
+                </p>
+            )}
 
             <Card className="shadow-xl border-2 border-primary/10">
                 <CardHeader className="bg-primary/5 border-b border-primary/10 pb-6">

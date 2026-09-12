@@ -15,6 +15,7 @@ import { ChevronLeft, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { allSkillCategories, getSkillBySlug, skills, type SkillCategory } from '@/lib/skills';
 import { competencePertinente, libelleNiveauScolaire } from '@/lib/niveaux-scolaires';
+import { dateDuJourLocal, exercicesAdaptesAuxNiveaux } from '@/lib/mise-en-avant';
 import {
   OPTIONS_PAR_DEFAUT,
   diagnostiquerEleve,
@@ -33,6 +34,7 @@ import { updateStudent, type Student } from '@/services/students';
 import type { Group } from '@/services/groups';
 import { GrilleNiveaux } from './grille-niveaux';
 import { FriseDevoirs } from './frise-devoirs';
+import { AujourdhuiManager } from './aujourdhui-manager';
 
 interface GrilleDeClasseProps {
   students: Student[];
@@ -42,7 +44,7 @@ interface GrilleDeClasseProps {
   onDataRefresh: () => void;
 }
 
-type Onglet = 'niveaux' | 'devoirs' | 'programmer';
+type Onglet = 'aujourdhui' | 'niveaux' | 'devoirs' | 'programmer';
 
 /** Le lundi de la semaine en cours, point de départ naturel de la frise. */
 function lundiCourant(): string {
@@ -64,7 +66,7 @@ export function GrilleDeClasse({
   onDataRefresh,
 }: GrilleDeClasseProps) {
   const { toast } = useToast();
-  const [onglet, setOnglet] = useState<Onglet>('niveaux');
+  const [onglet, setOnglet] = useState<Onglet>('aujourdhui');
   const [eleveOuvert, setEleveOuvert] = useState<Student | null>(null);
   const [filtre, setFiltre] = useState<'tous' | 'vides' | 'retard'>('tous');
   const [isSaving, setIsSaving] = useState(false);
@@ -139,9 +141,14 @@ export function GrilleDeClasse({
       .map(([slug]) => slug);
 
   const enregistrerMiseEnAvant = async (eleve: Student, slugs: string[]) => {
-    const res = await updateStudent(eleve.id, { misEnAvant: slugs });
+    const misEnAvantUpdatedAt = dateDuJourLocal();
+    const res = await updateStudent(eleve.id, {
+      misEnAvant: slugs,
+      misEnAvantUpdatedAt,
+      misEnAvantSource: 'manuel',
+    });
     if (res.success) {
-      setEleveOuvert({ ...eleve, misEnAvant: slugs });
+      setEleveOuvert({ ...eleve, misEnAvant: slugs, misEnAvantUpdatedAt, misEnAvantSource: 'manuel' });
       onDataRefresh();
     } else {
       toast({ variant: 'destructive', title: 'Erreur', description: res.error });
@@ -158,22 +165,15 @@ export function GrilleDeClasse({
 
   /** Met en avant tous les exercices qui correspondent aux niveaux de l'élève. */
   const mettreEnAvantSonNiveau = (eleve: Student) => {
-    const slugs = new Set<string>();
-    for (const [domaine, niveau] of Object.entries(eleve.niveauxParDomaine || {})) {
-      for (const skill of skills) {
-        if (skill.category === domaine && competencePertinente(skill, niveau as never)) {
-          slugs.add(skill.slug);
-        }
-      }
-    }
-    if (slugs.size === 0) {
+    const slugs = exercicesAdaptesAuxNiveaux(eleve.niveauxParDomaine);
+    if (slugs.length === 0) {
       toast({
         title: 'Aucun niveau renseigné',
         description: `Situe d'abord ${eleve.name} dans l'onglet Niveaux.`,
       });
       return;
     }
-    enregistrerMiseEnAvant(eleve, [...slugs]);
+    enregistrerMiseEnAvant(eleve, slugs);
   };
 
   const voirLaProposition = () => {
@@ -206,6 +206,7 @@ export function GrilleDeClasse({
   };
 
   const onglets: { cle: Onglet; libelle: string; compteur?: string }[] = [
+    { cle: 'aujourdhui', libelle: "Aujourd'hui" },
     {
       cle: 'niveaux',
       libelle: 'Niveaux',
@@ -247,6 +248,10 @@ export function GrilleDeClasse({
           </button>
         ))}
       </div>
+
+      {onglet === 'aujourdhui' && (
+        <AujourdhuiManager students={students} groups={groups} onDataRefresh={onDataRefresh} />
+      )}
 
       {onglet === 'niveaux' && (
         <GrilleNiveaux

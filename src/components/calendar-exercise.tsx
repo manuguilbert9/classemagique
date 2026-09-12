@@ -4,7 +4,16 @@
 import { useState, useMemo, useEffect, useContext } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { SkillLevel } from '@/lib/skills';
-import { generateCalendarQuestions, type CalendarQuestion } from '@/lib/calendar-questions';
+import { type CalendarQuestion } from '@/lib/calendar-questions';
+import { getExerciseQuestions } from '@/services/exercise-pool';
+import {
+  AnswerFeedback,
+  DELAI_NOUVEL_ESSAI,
+  ExerciseFinished,
+  ExerciseProgress,
+  useSecondChance,
+  type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
 import { cn } from '@/lib/utils';
@@ -44,7 +53,8 @@ export function CalendarExercise() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+  const secondChance = useSecondChance();
   const [isFinished, setIsFinished] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -68,7 +78,10 @@ export function CalendarExercise() {
 
   const startExercise = async (lvl: SkillLevel) => {
     setIsLoading(true);
-    const generatedQuestions = await generateCalendarQuestions(lvl, NUM_QUESTIONS);
+    const generatedQuestions = await getExerciseQuestions('calendar', NUM_QUESTIONS, {
+      settings: { calendar: { level: lvl } },
+      studentId: student?.id ?? null,
+    });
     setQuestions(generatedQuestions as CalendarQuestion[]);
     setCurrentQuestionIndex(0);
     setCorrectAnswers(0);
@@ -97,6 +110,7 @@ export function CalendarExercise() {
 
   const handleNextQuestion = () => {
     setShowConfetti(false);
+    secondChance.reset();
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setFeedback(null);
@@ -157,21 +171,28 @@ export function CalendarExercise() {
              break;
     }
     
-    const detail: ScoreDetail = {
+    // Faux : l'élève reprend la main et cherche jusqu'à trouver.
+    if (!isCorrect) {
+      secondChance.registerError();
+      setFeedback('retry');
+      setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
+      return;
+    }
+
+    const issue = secondChance.resultOnSuccess();
+    setSessionDetails(prev => [...prev, {
         question: currentQuestion.question,
         userAnswer: getUserAnswerText(),
         correctAnswer: getCorrectAnswerText() || '',
-        status: isCorrect ? 'correct' : 'incorrect',
-    };
-    setSessionDetails(prev => [...prev, detail]);
+        status: issue,
+    }]);
 
-    if (isCorrect) {
-      setFeedback('correct');
+    // Seule une réussite du premier coup rapporte un point.
+    if (issue === 'correct') {
       setCorrectAnswers(prev => prev + 1);
       setShowConfetti(true);
-    } else {
-      setFeedback('incorrect');
     }
+    setFeedback(issue);
     setTimeout(handleNextQuestion, 2000);
   };
   
@@ -236,27 +257,15 @@ export function CalendarExercise() {
   }
 
   if (isFinished) {
-    const score = (correctAnswers / NUM_QUESTIONS) * 100;
     return (
-      <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-        <CardHeader>
-          <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-2xl">
-            Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-          </p>
-          <ScoreTube score={score} />
-          {isHomework ? (
-            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-          ) : (
-            <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-              <RefreshCw className="mr-2" />
-              Recommencer
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      <ExerciseFinished
+        correct={correctAnswers}
+        total={NUM_QUESTIONS}
+        canRestart={!isHomework}
+        onRestart={restartExercise}
+        returnHref={isHomework ? '/devoirs' : '/en-classe'}
+        returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+      />
     );
   }
 
@@ -283,8 +292,8 @@ export function CalendarExercise() {
                             onClick={() => setSelectedOption(option)}
                             className={cn(
                                 "text-xl h-20 p-4 justify-center capitalize",
-                                feedback === 'correct' && option === currentQuestion.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
-                                feedback === 'incorrect' && selectedOption === option && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                                (feedback === 'correct' || feedback === 'corrected') && option === currentQuestion.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+                                feedback === 'retry' && selectedOption === option && 'bg-red-500/80 text-white border-red-600 animate-shake',
                             )}
                             disabled={!!feedback}
                             >
@@ -334,7 +343,7 @@ export function CalendarExercise() {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-       <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
+       <ExerciseProgress current={currentQuestionIndex} total={NUM_QUESTIONS} results={sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect')} className="mb-4" />
         <Card className="shadow-2xl text-center relative overflow-hidden">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
                 <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3, width: "10px", height: "10px"}} />
@@ -358,15 +367,12 @@ export function CalendarExercise() {
                   >
                     Valider
                 </Button>
-                 {feedback === 'incorrect' && (
-                    <div className="text-md font-bold text-red-600 animate-shake pt-2 capitalize">
-                        Oups ! La bonne réponse était {getCorrectAnswerText()}.
-                    </div>
-                )}
-                 {feedback === 'correct' && (
-                    <div className="text-xl font-bold text-green-600 animate-pulse pt-2">
-                        Excellent !
-                    </div>
+                 <AnswerFeedback status={feedback} hinted={secondChance.showHint} className="mt-2 w-full max-w-md" />
+                 {/* Après deux erreurs, on montre la réponse : l'élève la désigne quand même. */}
+                 {secondChance.showHint && !feedback && (
+                    <p className="mt-2 rounded-[16px] border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2 font-bold capitalize text-amber-700">
+                        Réponse : {getCorrectAnswerText()}
+                    </p>
                 )}
             </CardFooter>
         </Card>

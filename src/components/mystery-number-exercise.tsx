@@ -15,6 +15,7 @@ import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { cn } from '@/lib/utils';
 import type { SkillLevel } from '@/lib/skills';
+import Link from 'next/link';
 
 const NUM_QUESTIONS = 5;
 
@@ -197,16 +198,22 @@ export function MysteryNumberExercise() {
         const totalScore = sessionDetails.reduce((acc, detail) => acc + (detail.score || 0), 0);
         const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-6">
+            <Card className="mx-auto w-full max-w-lg rounded-[26px] p-6 text-center shadow-lg">
                 <CardHeader>
                     <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <p className="text-2xl">Ton score moyen est de {Math.round(finalScore)}%.</p>
                     <ScoreTube score={finalScore} />
-                    <Button onClick={() => setCurrentQuestionIndex(0)} variant="outline" size="lg">
-                        <RefreshCw className="mr-2" /> Recommencer
-                    </Button>
+                    <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                        <Button onClick={() => setCurrentQuestionIndex(0)} size="lg">
+                            <RefreshCw className="mr-2" /> Recommencer
+                        </Button>
+                        {/* Aucun écran de fin ne doit être une impasse. */}
+                        <Button asChild variant="outline" size="lg">
+                            <Link href="/en-classe">Retour en classe</Link>
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         );

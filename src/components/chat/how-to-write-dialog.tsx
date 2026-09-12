@@ -36,6 +36,7 @@ export function HowToWriteDialog({ onInsert }: HowToWriteDialogProps) {
     const [transcript, setTranscript] = useState('');
     const [position, setPosition] = useState(0);
     const copyInputRef = useRef<HTMLInputElement>(null);
+    const reviewInputRef = useRef<HTMLInputElement>(null);
 
     const handleResult = useCallback((chunk: string) => {
         setTranscript((prev) => normalizeTranscript(`${prev} ${chunk}`));
@@ -80,6 +81,24 @@ export function HowToWriteDialog({ onInsert }: HowToWriteDialogProps) {
     const handleValidateReview = () => {
         setPosition(0);
         setPhase('copying');
+    };
+
+    /** Insère un signe de ponctuation à l'endroit où se trouve le curseur dans le champ de relecture. */
+    const insertPunctuation = (mark: string) => {
+        const el = reviewInputRef.current;
+        if (!el) {
+            setTranscript((prev) => `${prev}${mark}`);
+            return;
+        }
+        const start = el.selectionStart ?? transcript.length;
+        const end = el.selectionEnd ?? transcript.length;
+        const next = `${transcript.slice(0, start)}${mark}${transcript.slice(end)}`;
+        setTranscript(next);
+        const nextPosition = start + mark.length;
+        requestAnimationFrame(() => {
+            el.focus();
+            el.setSelectionRange(nextPosition, nextPosition);
+        });
     };
 
     // Focus la zone de recopie quand on entre en phase "copying"
@@ -208,17 +227,44 @@ export function HowToWriteDialog({ onInsert }: HowToWriteDialogProps) {
                             {transcript ? (
                                 <>
                                     <p className="text-center text-muted-foreground">Tu as dit :</p>
-                                    <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-4 py-3 text-center text-xl font-medium">
-                                        {transcript}
+                                    <div className="flex w-full max-w-md items-center gap-2">
+                                        <input
+                                            ref={reviewInputRef}
+                                            type="text"
+                                            value={transcript}
+                                            onChange={(e) => setTranscript(e.target.value)}
+                                            className="flex-1 rounded-lg bg-muted/60 px-4 py-3 text-center text-xl font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                            aria-label="Corriger la phrase avant de la recopier"
+                                        />
                                         <Button type="button" variant="ghost" size="icon" onClick={() => speak(transcript)} title="Réécouter">
                                             <Volume2 className="h-5 w-5" />
                                         </Button>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1.5">
+                                        <p className="text-xs text-muted-foreground">
+                                            Le micro n'entend pas la ponctuation : ajoute-la toi-même !
+                                        </p>
+                                        <div className="flex gap-1.5">
+                                            {['.', ',', '?', '!'].map((mark) => (
+                                                <Button
+                                                    key={mark}
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-9 w-9 p-0 text-lg font-semibold"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => insertPunctuation(mark)}
+                                                >
+                                                    {mark}
+                                                </Button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="flex gap-3">
                                         <Button type="button" variant="outline" onClick={handleRestartFromReview} className="gap-1.5">
                                             <RotateCcw className="h-4 w-4" /> Recommencer
                                         </Button>
-                                        <Button type="button" onClick={handleValidateReview} className="gap-1.5">
+                                        <Button type="button" onClick={handleValidateReview} disabled={!transcript.trim()} className="gap-1.5">
                                             C'est ça, je recopie ! <Check className="h-4 w-4" />
                                         </Button>
                                     </div>

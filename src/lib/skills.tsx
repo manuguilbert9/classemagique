@@ -33,6 +33,7 @@ import {
   Sparkles,
   Puzzle,
   Layers,
+  RefreshCw,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -96,7 +97,72 @@ export interface Skill {
   category: SkillCategory;
   isFixedLevel?: SkillLevel;
   allowedLevels?: SkillLevel[];
+  /** Un outil libre (ex : cahier d'écriture) plutôt qu'un exercice noté : toujours accessible, jamais filtré par la mise en avant du professeur. */
+  isTool?: boolean;
 }
+
+/** Regroupement des matières en trois pôles, pour la navigation par onglets sur la page "En classe". */
+export type SkillPole = 'francais' | 'maths' | 'autres';
+
+export const categoryPoles: Record<SkillCategory, SkillPole> = {
+  'Phonologie': 'francais',
+  'Lecture / compréhension': 'francais',
+  'Ecriture': 'francais',
+  'Orthographe': 'francais',
+  'Grammaire': 'francais',
+  'Conjugaison': 'francais',
+  'Vocabulaire': 'francais',
+  'Nombres et calcul': 'maths',
+  'Grandeurs et mesures': 'maths',
+  'Espace et géométrie': 'maths',
+  'Problèmes': 'autres',
+  'Organisation et gestion de données': 'autres',
+};
+
+export interface CategoryAccent {
+  /** Bordure haute des cards (couleur de la matière). */
+  border: string;
+  /** Fond de la pastille d'icône, état normal. */
+  iconBg: string;
+  /** Couleur de l'icône, état normal. */
+  iconText: string;
+  /** Fond plein de la pastille d'icône une fois l'exercice fait. */
+  doneBg: string;
+  /** Pastille d'icône de catégorie dans l'explorateur. */
+  chipBg: string;
+  chipText: string;
+}
+
+export const categoryAccents: Record<SkillCategory, CategoryAccent> = {
+  'Phonologie': { border: 'border-t-blue-400', iconBg: 'bg-blue-100', iconText: 'text-blue-600', doneBg: 'bg-blue-500', chipBg: 'bg-blue-100', chipText: 'text-blue-600' },
+  'Lecture / compréhension': { border: 'border-t-cyan-400', iconBg: 'bg-cyan-100', iconText: 'text-cyan-600', doneBg: 'bg-cyan-500', chipBg: 'bg-cyan-100', chipText: 'text-cyan-600' },
+  'Ecriture': { border: 'border-t-sky-400', iconBg: 'bg-sky-100', iconText: 'text-sky-600', doneBg: 'bg-sky-500', chipBg: 'bg-sky-100', chipText: 'text-sky-600' },
+  'Orthographe': { border: 'border-t-indigo-400', iconBg: 'bg-indigo-100', iconText: 'text-indigo-600', doneBg: 'bg-indigo-500', chipBg: 'bg-indigo-100', chipText: 'text-indigo-600' },
+  'Grammaire': { border: 'border-t-sky-400', iconBg: 'bg-sky-100', iconText: 'text-sky-600', doneBg: 'bg-sky-500', chipBg: 'bg-sky-100', chipText: 'text-sky-600' },
+  'Conjugaison': { border: 'border-t-violet-400', iconBg: 'bg-violet-100', iconText: 'text-violet-600', doneBg: 'bg-violet-500', chipBg: 'bg-violet-100', chipText: 'text-violet-600' },
+  'Vocabulaire': { border: 'border-t-slate-400', iconBg: 'bg-slate-100', iconText: 'text-slate-600', doneBg: 'bg-slate-500', chipBg: 'bg-slate-100', chipText: 'text-slate-600' },
+  'Nombres et calcul': { border: 'border-t-amber-400', iconBg: 'bg-amber-100', iconText: 'text-amber-600', doneBg: 'bg-amber-500', chipBg: 'bg-amber-100', chipText: 'text-amber-600' },
+  'Grandeurs et mesures': { border: 'border-t-orange-400', iconBg: 'bg-orange-100', iconText: 'text-orange-600', doneBg: 'bg-orange-500', chipBg: 'bg-orange-100', chipText: 'text-orange-600' },
+  'Espace et géométrie': { border: 'border-t-yellow-400', iconBg: 'bg-yellow-100', iconText: 'text-yellow-600', doneBg: 'bg-yellow-500', chipBg: 'bg-yellow-100', chipText: 'text-yellow-600' },
+  'Problèmes': { border: 'border-t-lime-400', iconBg: 'bg-lime-100', iconText: 'text-lime-600', doneBg: 'bg-lime-500', chipBg: 'bg-lime-100', chipText: 'text-lime-600' },
+  'Organisation et gestion de données': { border: 'border-t-gray-400', iconBg: 'bg-gray-100', iconText: 'text-gray-600', doneBg: 'bg-gray-500', chipBg: 'bg-gray-100', chipText: 'text-gray-600' },
+};
+
+/** Icône représentant chaque matière dans l'en-tête des catégories de l'explorateur. */
+export const categoryIcons: Record<SkillCategory, ReactElement> = {
+  'Phonologie': <Ear />,
+  'Lecture / compréhension': <BookCopy />,
+  'Ecriture': <Keyboard />,
+  'Orthographe': <Type />,
+  'Grammaire': <Highlighter />,
+  'Conjugaison': <RefreshCw />,
+  'Vocabulaire': <Tags />,
+  'Nombres et calcul': <Calculator />,
+  'Grandeurs et mesures': <PiggyBank />,
+  'Espace et géométrie': <Route />,
+  'Problèmes': <Puzzle />,
+  'Organisation et gestion de données': <Layers />,
+};
 
 export type SkillLevel = 'A' | 'A+' | 'A++' | 'B' | 'C' | 'D';
 
@@ -325,7 +391,7 @@ export const skills: Skill[] = [
     allowedLevels: ['B', 'C', 'D'],
   },
   {
-    name: 'Dictées Dyna-Mots',
+    name: 'Dictée',
     slug: 'spelling',
     description: 'Écoute et écris les mots, les groupes de mots et les phrases de la semaine.',
     icon: <PenLine />,
@@ -410,6 +476,7 @@ export const skills: Skill[] = [
     description: 'Écris librement chaque jour pour t\'entraîner et garder une trace de tes textes.',
     icon: <BookCopy />,
     category: 'Ecriture',
+    isTool: true,
   },
   {
     name: 'Copie au clavier',

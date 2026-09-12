@@ -14,66 +14,19 @@ import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { Checkbox } from './ui/checkbox';
-import { syllableAttackData } from '@/lib/syllable-data'; // Re-using data for word variety
+import type { SoundQuestion } from '@/lib/exercise-content/lettres-et-sons';
+import { getPooledContent } from '@/services/exercise-pool';
+import {
+    DELAI_NOUVEL_ESSAI,
+  AnswerFeedback,
+    ExerciseFinished,
+    ExerciseProgress,
+    HINT_CLASSES,
+    useSecondChance,
+    type FeedbackStatus,
+} from '@/components/exercise/exercise-kit';
 
 const NUM_QUESTIONS = 10;
-
-interface WordOption {
-    word: string;
-    isCorrect: boolean;
-}
-
-interface SoundQuestion {
-    sound: string;
-    options: WordOption[];
-}
-
-function generateQuestion(): SoundQuestion {
-    // Helper function to shuffle array
-    const shuffleArray = <T,>(array: T[]): T[] => {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-    };
-
-    // Get all unique sounds that appear in at least 2 different words
-    const soundCounts = new Map<string, number>();
-    syllableAttackData.forEach(item => {
-        item.sounds.forEach(sound => {
-            soundCounts.set(sound, (soundCounts.get(sound) || 0) + 1);
-        });
-    });
-
-    const validSounds = Array.from(soundCounts.entries())
-        .filter(([_, count]) => count >= 2)
-        .map(([sound, _]) => sound);
-
-    // Select a random sound from valid sounds only
-    const selectedSound = validSounds[Math.floor(Math.random() * validSounds.length)];
-
-    // Get all words that CONTAIN that sound and shuffle
-    const allCorrectWords = syllableAttackData.filter(d => d.sounds.includes(selectedSound));
-    const shuffledCorrectWords = shuffleArray(allCorrectWords);
-    const correctWords = shuffledCorrectWords.slice(0, 2);
-
-    // Get all words that DON'T CONTAIN that sound and shuffle
-    const allIncorrectWords = syllableAttackData.filter(d => !d.sounds.includes(selectedSound));
-    const shuffledIncorrectWords = shuffleArray(allIncorrectWords);
-    const incorrectWords = shuffledIncorrectWords.slice(0, 2);
-
-    const options: WordOption[] = [
-        ...correctWords.map(w => ({ word: w.word, isCorrect: true })),
-        ...incorrectWords.map(w => ({ word: w.word, isCorrect: false }))
-    ];
-
-    // Shuffle options
-    const shuffledOptions = shuffleArray(options);
-
-    return { sound: selectedSound, options: shuffledOptions };
-}
 
 export function LettresEtSonsExercise() {
     const { student } = useContext(UserContext);
@@ -84,7 +37,8 @@ export function LettresEtSonsExercise() {
     const [questions, setQuestions] = useState<SoundQuestion[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedWords, setSelectedWords] = useState<string[]>([]);
-    const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+    const [feedback, setFeedback] = useState<FeedbackStatus>(null);
+    const secondChance = useSecondChance();
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -92,9 +46,13 @@ export function LettresEtSonsExercise() {
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
     useEffect(() => {
-        const newQuestions = Array.from({ length: NUM_QUESTIONS }, generateQuestion);
-        setQuestions(newQuestions);
-    }, []);
+        const loadQuestions = async () => {
+            setQuestions(await getPooledContent<SoundQuestion>('lettres-et-sons', NUM_QUESTIONS, {
+                studentId: student?.id ?? null,
+            }));
+        };
+        loadQuestions();
+    }, [student?.id]);
 
     const currentQuestion = useMemo(() => questions[currentQuestionIndex], [questions, currentQuestionIndex]);
 
@@ -107,6 +65,7 @@ export function LettresEtSonsExercise() {
     }, []);
 
     const handleNextQuestion = () => {
+        secondChance.reset();
         setShowConfetti(false);
         if (currentQuestionIndex < NUM_QUESTIONS - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
@@ -126,21 +85,29 @@ export function LettresEtSonsExercise() {
         const isCorrect = selectedWords.length === correctOptions.length &&
                           selectedWords.every(word => correctOptions.includes(word));
 
+        // Faux : la sélection reste à l'écran et l'élève la corrige lui-même.
+        if (!isCorrect) {
+            secondChance.registerError();
+            setFeedback('retry');
+            setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
+            return;
+        }
+
+        const issue = secondChance.resultOnSuccess();
         const detail: ScoreDetail = {
             question: `Identifier les mots avec le son [${currentQuestion.sound}]`,
             userAnswer: selectedWords.join(', '),
             correctAnswer: correctOptions.join(', '),
-            status: isCorrect ? 'correct' : 'incorrect',
+            status: issue,
         };
         setSessionDetails(prev => [...prev, detail]);
 
-        if (isCorrect) {
-            setFeedback('correct');
+        // Seule une réussite du premier coup rapporte un point.
+        if (issue === 'correct') {
             setCorrectAnswersCount(prev => prev + 1);
             setShowConfetti(true);
-        } else {
-            setFeedback('incorrect');
         }
+        setFeedback(issue);
         setTimeout(handleNextQuestion, 2000);
     };
 
@@ -175,8 +142,10 @@ export function LettresEtSonsExercise() {
         saveFinalScore();
       }, [isFinished, student, correctAnswersCount, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
 
-    const restartExercise = () => {
-        setQuestions(Array.from({ length: NUM_QUESTIONS }, generateQuestion));
+    const restartExercise = async () => {
+        setQuestions(await getPooledContent<SoundQuestion>('lettres-et-sons', NUM_QUESTIONS, {
+            studentId: student?.id ?? null,
+        }));
         setIsFinished(false);
         setCorrectAnswersCount(0);
         setCurrentQuestionIndex(0);
@@ -186,38 +155,30 @@ export function LettresEtSonsExercise() {
         setSessionDetails([]);
     };
     
-    if (questions.length === 0) {
-        return <div>Chargement...</div>
+    if (questions.length === 0 || !currentQuestion) {
+        return <p className="p-8 text-center text-muted-foreground">Je prépare les mots…</p>;
     }
 
     if (isFinished) {
-        const score = (correctAnswersCount / NUM_QUESTIONS) * 100;
         return (
-            <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
-                <CardHeader>
-                    <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <p className="text-2xl">
-                        Tu as obtenu <span className="font-bold text-primary">{correctAnswersCount}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
-                    </p>
-                    <ScoreTube score={score} />
-                    {isHomework ? (
-                        <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-                    ) : (
-                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                            <RefreshCw className="mr-2" /> Recommencer
-                        </Button>
-                    )}
-                </CardContent>
-            </Card>
+            <ExerciseFinished
+                correct={correctAnswersCount}
+                total={NUM_QUESTIONS}
+                canRestart={!isHomework}
+                onRestart={restartExercise}
+                returnHref={isHomework ? '/devoirs' : '/en-classe'}
+                returnLabel={isHomework ? 'Retour aux devoirs' : 'Retour en classe'}
+            />
         );
     }
-    
+
+    const aTrouver = currentQuestion.options.filter(o => o.isCorrect).length;
+    const resultats = sessionDetails.map(d => d.status as 'correct' | 'corrected' | 'incorrect');
+
     return (
-        <div className="w-full max-w-2xl mx-auto">
-            <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
-            <Card className="shadow-2xl text-center relative overflow-hidden">
+        <div className="mx-auto w-full max-w-2xl p-1">
+            <ExerciseProgress current={currentQuestionIndex} total={NUM_QUESTIONS} results={resultats} className="mb-4" />
+            <Card className="relative overflow-hidden rounded-[22px] text-center">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
                     <Confetti active={showConfetti} config={{ angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3 }} />
                 </div>
@@ -225,14 +186,19 @@ export function LettresEtSonsExercise() {
                     <CardTitle className="font-headline text-2xl">
                         Coche les mots où tu <strong>entends</strong> le son <span className="text-primary font-mono text-3xl">[{currentQuestion.sound}]</span>
                     </CardTitle>
-                    <CardDescription>Clique sur le haut-parleur pour écouter chaque mot.</CardDescription>
+                    <CardDescription>
+                        Il y en a <strong>{aTrouver}</strong>. Clique sur le haut-parleur pour écouter un mot.
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-4 p-6">
                     <div className="grid grid-cols-2 gap-4 w-full">
                         {currentQuestion.options.map(option => {
                              const isSelected = selectedWords.includes(option.word);
-                             const showCorrect = feedback && option.isCorrect;
-                             const showIncorrect = feedback && isSelected && !option.isCorrect;
+                             const estTrouve = feedback === 'correct' || feedback === 'corrected';
+                             const showCorrect = estTrouve && option.isCorrect;
+                             // Sur un nouvel essai, on ne pointe que les mots cochés à tort.
+                             const showIncorrect = feedback === 'retry' && isSelected && !option.isCorrect;
+                             const estGuide = secondChance.showHint && !feedback && option.isCorrect;
                             return (
                             <div
                                 key={option.word}
@@ -243,7 +209,8 @@ export function LettresEtSonsExercise() {
                                     !isSelected && !feedback && "border-border bg-card",
                                     feedback && "cursor-not-allowed",
                                     showCorrect && "bg-green-100 border-green-500",
-                                    showIncorrect && "bg-red-100 border-red-500 animate-shake"
+                                    showIncorrect && "bg-red-100 border-red-500 animate-shake",
+                                    estGuide && HINT_CLASSES
                                 )}
                             >
                                 <Checkbox
@@ -264,7 +231,7 @@ export function LettresEtSonsExercise() {
                         )})}
                     </div>
                 </CardContent>
-                <CardFooter className="h-24 flex flex-col items-center justify-center gap-2">
+                <CardFooter className="flex flex-col items-center justify-center gap-3 pb-6">
                      <Button
                         onClick={checkAnswer}
                         disabled={!!feedback || selectedWords.length === 0}
@@ -272,8 +239,12 @@ export function LettresEtSonsExercise() {
                     >
                         Valider
                     </Button>
-                    {feedback === 'correct' && <div className="mt-2 text-xl font-bold text-green-600 animate-pulse flex items-center gap-2"><ThumbsUp/> Parfait !</div>}
-                    {feedback === 'incorrect' && <div className="mt-2 text-md font-bold text-red-600 animate-shake">Oups ! Ce n'est pas tout à fait ça.</div>}
+                    <AnswerFeedback
+                        status={feedback}
+                        hinted={secondChance.showHint}
+                        className="w-full"
+                        correctAnswer={currentQuestion.options.filter(o => o.isCorrect).map(o => o.word).join(', ')}
+                    />
                 </CardFooter>
                  <style jsx>{`
                     @keyframes shake {

@@ -637,7 +637,7 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Dictées Dyna-Mots</Label>
+                  <Label>Dictées</Label>
                   <div className="flex gap-2">
                     <Select
                       value={bulkConfig.dicteeSemaine}
@@ -804,7 +804,7 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                           </div>
 
                           <div className="space-y-2 sm:col-span-2">
-                            <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Dictée Dyna-Mots</Label>
+                            <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Dictée</Label>
                             <Select
                               value={groupAssignment.orthographe || 'none'}
                               onValueChange={(value) => handleAssignmentChange(group.id, 'orthographe', value)}
