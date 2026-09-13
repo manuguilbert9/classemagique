@@ -30,6 +30,7 @@ import { generateTiragesDeCouleurs } from './exercise-content/algorithme-couleur
 import { generateCheminsCodes } from './exercise-content/chemin-code';
 import { generateWordFamilies } from '@/ai/flows/generate-word-families-flow';
 import { generatePhrasesAdjectif, generatePhrasesNom } from './exercise-content/grammaire';
+import { generateTextesACompter } from './exercise-content/compter-phrases';
 import {
   generatePhrasesAConstruire,
   generatePhrasesAEnrichir,
@@ -161,6 +162,7 @@ export const POOLED_GENERATORS: Record<string, PooledContentGenerator> = {
   'add-adjectives': async ({ count }) => generatePhrasesAEnrichir(count),
   'label-game': async ({ count, settings }) => generatePhrasesEtiquettes(settings?.level ?? 'B', count),
   'phrase-construction': async ({ count, settings }) => generatePhrasesAConstruire(settings?.level ?? 'B', count),
+  'compter-phrases': async ({ count, settings }) => generateTextesACompter(settings?.level ?? 'B', count),
   'jumbled-words': async ({ count, settings }) => generateMotsMelanges(settings?.words ?? [], count),
   'comptage-pointage': async ({ count }) => generateManchesComptage(count),
   'category-sorting': async ({ count }) => generateSeancesDeTri(count),

@@ -34,6 +34,7 @@ import {
   Puzzle,
   Layers,
   RefreshCw,
+  Pilcrow,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -526,6 +527,14 @@ export const skills: Skill[] = [
     slug: 'label-game',
     description: "Reconstruis la phrase en faisant glisser les mots dans le bon ordre.",
     icon: <Tags />,
+    category: 'Grammaire',
+    allowedLevels: ['B', 'C', 'D'],
+  },
+  {
+    name: 'Compter les phrases',
+    slug: 'compter-phrases',
+    description: "Combien de phrases dans ce texte ? Attention à la ponctuation.",
+    icon: <Pilcrow />,
     category: 'Grammaire',
     allowedLevels: ['B', 'C', 'D'],
   },

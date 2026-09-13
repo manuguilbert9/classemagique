@@ -97,6 +97,7 @@ export const PLAGES_PAR_COMPETENCE: Record<string, PlageScolaire> = {
   'phrase-construction': { plancher: 'CP-fin', plafond: 'CE2-fin' },
   'label-game': { plancher: 'CP-fin', plafond: 'CE2-fin' },
   'reperer-nom': { plancher: 'CE1-debut', plafond: 'CM1-fin' },
+  'compter-phrases': { plancher: 'CE1-debut', plafond: 'CM2-fin' },
   'reperer-adjectif': { plancher: 'CE1-milieu', plafond: 'CM1-fin' },
   'add-adjectives': { plancher: 'CE1-milieu', plafond: 'CM1-fin' },
 

@@ -38,6 +38,7 @@ import { MbpRuleExercise } from '@/components/mbp-rule-exercise';
 import { PlaceValueTableExercise } from '@/components/place-value-table-exercise';
 import { SubtractionTrainingExercise } from '@/components/subtraction-training-exercise';
 import { NounIdentificationExercise } from '@/components/noun-identification-exercise';
+import { CompterPhrasesExercise } from '@/components/compter-phrases-exercise';
 import { AdjectiveIdentificationExercise } from '@/components/adjective-identification-exercise';
 import { FleaMarketExercise } from '@/components/flea-market-exercise';
 import { SumCompositionExercise } from '@/components/sum-composition-exercise';
@@ -144,6 +145,9 @@ export default function ExercisePage() {
         break;
       case 'label-game':
         exerciseComponent = <LabelGameExercise />;
+        break;
+      case 'compter-phrases':
+        exerciseComponent = <CompterPhrasesExercise />;
         break;
       case 'reperer-nom':
         exerciseComponent = <NounIdentificationExercise />;
