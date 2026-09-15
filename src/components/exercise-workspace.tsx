@@ -108,6 +108,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   // State for passe-compose QCM hover preview
   const [hoveredOption, setHoveredOption] = useState<string | null>(null);
 
+  // State for written-to-audio-qcm: l'élève doit pouvoir écouter chaque
+  // proposition autant de fois qu'il veut avant de valider son choix.
+  const [selectedAudioOption, setSelectedAudioOption] = useState<string | null>(null);
+
   // Le droit à l'erreur : l'élève rejoue sa réponse jusqu'à trouver, et seule
   // la première tentative compte pour le score.
   const secondChance = useSecondChance();
@@ -226,6 +230,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setUserKeyboardInput('');
     setFeedback(null);
     setHoveredOption(null);
+    setSelectedAudioOption(null);
     secondChance.reset();
   }
 
@@ -272,9 +277,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       setUserKeyboardInput('');
       setSelectedIndices([]);
       setSelectedCountIndices([]);
+      setSelectedAudioOption(null);
     }, DELAI_NOUVEL_ESSAI);
   }
-  
+
   const handleQcmAnswer = (option: string) => {
     if (!exerciseData || feedback || !exerciseData.answer) return;
 
@@ -293,7 +299,21 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       processIncorrectAnswer(option);
     }
   };
-  
+
+  // Sur written-to-audio-qcm, un clic ne fait qu'écouter la proposition et la
+  // surligner : l'élève peut réécouter chaque bouton autant de fois qu'il veut
+  // avant de valider, la réponse n'est envoyée qu'au clic sur "Valider".
+  const handleWrittenAudioPreview = (opt: { text: string; audio: string }) => {
+    if (feedback) return;
+    setSelectedAudioOption(opt.text);
+    handleSpeak(opt.audio);
+  };
+
+  const handleWrittenAudioSubmit = () => {
+    if (!selectedAudioOption) return;
+    handleQcmAnswer(selectedAudioOption);
+  };
+
   const handleComposeSumSubmit = () => {
     if (!exerciseData || feedback || typeof exerciseData.targetAmount === 'undefined') return;
     
@@ -947,20 +967,47 @@ const renderSetTime = () => (
 const renderWrittenToAudioQCM = () => (
      <div className="flex flex-col items-center gap-6 w-full">
         <p className="font-numbers text-8xl font-bold">{exerciseData.textToSpeak}</p>
+        <p className="text-sm text-muted-foreground -mt-4">Écoute chaque bouton, puis valide ta réponse.</p>
         <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-            {exerciseData.optionsWithAudio?.map(opt => (
-                <Button
-                    key={opt.text}
-                    variant="outline"
-                    className="h-20"
-                    onClick={() => handleQcmAnswer(opt.text)}
-                    disabled={!!feedback}
-                >
-                    <Volume2 className="mr-4 h-8 w-8 text-muted-foreground" />
-                    <span className="sr-only">{opt.text}</span>
-                </Button>
-            ))}
+            {exerciseData.optionsWithAudio?.map(opt => {
+                const alreadyTried = secondChance.wrongAnswers.includes(opt.text);
+                const isWrongFeedback = feedback === 'retry' && opt.text === secondChance.wrongAnswers[secondChance.wrongAnswers.length - 1];
+                const isHinted = secondChance.showHint && !feedback && opt.text === exerciseData.answer;
+                const isSelected = selectedAudioOption === opt.text;
+
+                return (
+                    <Button
+                        key={opt.text}
+                        variant="outline"
+                        className={cn(
+                            "h-20 transition-all duration-300 transform active:scale-95",
+                            isSelected && !feedback && 'border-primary ring-2 ring-primary',
+                            estReussi && opt.text === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+                            isWrongFeedback && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                            alreadyTried && !feedback && 'opacity-30 cursor-not-allowed',
+                            estReussi && opt.text !== exerciseData.answer && 'opacity-50',
+                            isHinted && HINT_CLASSES,
+                        )}
+                        onClick={() => handleWrittenAudioPreview(opt)}
+                        disabled={!!feedback || alreadyTried}
+                    >
+                        {estReussi && opt.text === exerciseData.answer && <Check className="mr-2" />}
+                        {isWrongFeedback && <X className="mr-2" />}
+                        <Volume2 className={cn("mr-4 h-8 w-8", isSelected ? "text-current" : "text-muted-foreground")} />
+                        <span className="sr-only">{opt.text}</span>
+                    </Button>
+                );
+            })}
         </div>
+        <Button
+            size="lg"
+            className="w-full max-w-md bg-accent text-accent-foreground hover:bg-accent/90"
+            onClick={handleWrittenAudioSubmit}
+            disabled={!!feedback || !selectedAudioOption}
+        >
+            <Check className="mr-2" />
+            Valider
+        </Button>
     </div>
 );
 
