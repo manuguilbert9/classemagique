@@ -157,24 +157,12 @@ const generateLevel = (level: SkillLevel): LevelData => {
             { x: 0, y: height - 1 }, { x: width - 1, y: height - 1 }
         ];
         
-        let startCornerIndex, endCornerIndex;
-        
-        let cornerAttempts = 0;
-        do {
-            startCornerIndex = Math.floor(Math.random() * corners.length);
-            playerStart = corners[startCornerIndex];
-            cornerAttempts++;
-            if (cornerAttempts > 20) continue;
-        } while (grid[playerStart.y][playerStart.x] !== 'empty');
+        const freeCorners = corners.filter(p => grid[p.y][p.x] === 'empty');
+        if (freeCorners.length < 2) continue;
+        const startIndex = Math.floor(Math.random() * freeCorners.length);
+        playerStart = freeCorners.splice(startIndex, 1)[0];
+        keyPos = freeCorners[Math.floor(Math.random() * freeCorners.length)];
 
-        cornerAttempts = 0;
-        do {
-            endCornerIndex = Math.floor(Math.random() * corners.length);
-            keyPos = corners[endCornerIndex];
-            cornerAttempts++;
-            if (cornerAttempts > 20) continue;
-        } while (endCornerIndex === startCornerIndex || grid[keyPos.y][keyPos.x] !== 'empty');
-        
         grid[playerStart.y][playerStart.x] = 'empty';
         grid[keyPos.y][keyPos.x] = 'empty';
 

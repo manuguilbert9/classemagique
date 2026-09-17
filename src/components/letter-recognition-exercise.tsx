@@ -72,6 +72,7 @@ export function LetterRecognitionExercise() {
         setSessionDetails(prev => [...prev, {
             question: `Appuyer sur la touche "${currentLetter}"`,
             userAnswer: currentLetter,
+            ...secondChance.getAttemptMetadata(String(currentLetter), false),
             correctAnswer: currentLetter,
             status: issue,
         }]);
@@ -131,6 +132,7 @@ export function LetterRecognitionExercise() {
                 const score = (correctAnswers / LETTERS_PER_EXERCISE) * 100;
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
+            details: sessionDetails,
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'letter-recognition',
@@ -164,7 +166,8 @@ export function LetterRecognitionExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={LETTERS_PER_EXERCISE}
                 canRestart={!isHomework}
                 onRestart={restartExercise}

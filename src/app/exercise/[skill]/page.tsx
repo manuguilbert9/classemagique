@@ -50,6 +50,8 @@ import { MultiplicationTablesExercise } from '@/components/multiplication-tables
 import { ColorAlgorithmExercise } from '@/components/color-algorithm-exercise';
 import { CategorySortingExercise } from '@/components/category-sorting-exercise';
 import { cn } from '@/lib/utils';
+import { getProgressiveExercise } from '@/lib/progressive-exercises';
+import { ProgressiveSession } from '@/components/progressive/session';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -207,14 +209,15 @@ export default function ExercisePage() {
         exerciseComponent = <WordProblemsExercise />;
         break;
       case 'denombrement':
-      case 'time':
       case 'lire-les-nombres':
       case 'ecoute-les-nombres':
       case 'syllabe-attaque':
       case 'currency':
       case 'passe-compose':
       default:
-        exerciseComponent = <ExerciseWorkspace skill={skill} />;
+        exerciseComponent = getProgressiveExercise(skill.slug)
+          ? <ProgressiveSession key={skill.slug} slug={skill.slug} />
+          : <ExerciseWorkspace skill={skill} />;
     }
     // Un liseré à la couleur de la matière encadre l'exercice : il prolonge
     // le bandeau et raccroche l'écran à la famille visuelle du site.

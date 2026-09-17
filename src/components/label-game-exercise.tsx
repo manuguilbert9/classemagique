@@ -137,6 +137,7 @@ export function LabelGameExercise() {
     }, [allPhrases, currentQuestionIndex]);
 
     const handleNextQuestion = () => {
+        secondChance.reset();
         setShowConfetti(false);
         if (currentQuestionIndex < NUM_QUESTIONS - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
@@ -154,7 +155,7 @@ export function LabelGameExercise() {
 
         // Faux : les étiquettes restent où elles sont, l'élève les réordonne.
         if (!isCorrect) {
-            secondChance.registerError();
+            secondChance.registerError(reconstructedSentence);
             setFeedback('retry');
             setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
             return;
@@ -164,6 +165,7 @@ export function LabelGameExercise() {
         setSessionDetails(prev => [...prev, {
             question: `Remettre en ordre : "${currentSentence}"`,
             userAnswer: reconstructedSentence,
+            ...secondChance.getAttemptMetadata(reconstructedSentence),
             correctAnswer: currentSentence,
             status: issue,
         }]);
@@ -196,6 +198,8 @@ export function LabelGameExercise() {
                 const score = (correctAnswers / NUM_QUESTIONS) * 100;
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level },
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'label-game',
@@ -236,7 +240,8 @@ export function LabelGameExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={NUM_QUESTIONS}
                 canRestart={!isHomework}
                 onRestart={restartExercise}
@@ -264,6 +269,7 @@ export function LabelGameExercise() {
             <CardContent className="min-h-[300px] flex flex-col items-center justify-center gap-6 p-6">
 
                 <div className="p-4 bg-muted rounded-lg w-full min-h-[8rem] flex items-center justify-center">
+                <div className="flex flex-wrap gap-2" aria-label="Déplacer sans glisser">{orderedLabels.map((item, index) => <div key={item.id} className="border rounded p-2"><span>{item.word}</span><Button variant="outline" size="sm" aria-label={`Déplacer ${item.word} avant`} disabled={index === 0 || !!feedback} onClick={() => setOrderedLabels(items => arrayMove(items, index, index - 1))}>←</Button><Button variant="outline" size="sm" aria-label={`Déplacer ${item.word} après`} disabled={index === orderedLabels.length - 1 || !!feedback} onClick={() => setOrderedLabels(items => arrayMove(items, index, index + 1))}>→</Button></div>)}</div>
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                         <SortableContext items={orderedLabels.map(l => l.id)} strategy={horizontalListSortingStrategy}>
                             <div className="flex flex-wrap justify-center gap-3">

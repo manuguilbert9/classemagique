@@ -221,6 +221,7 @@ export function NounIdentificationExercise() {
         const detail: ScoreDetail = {
             question: `Trouve les noms : "${currentSentenceClean}"`,
             userAnswer: sentenceTokens.filter(t => selectedTokenIds.has(t.id)).map(t => t.text).join(', '),
+            ...secondChance.getAttemptMetadata(String(sentenceTokens.filter(t => selectedTokenIds.has(t.id)).map(t => t.text).join(', '))),
             correctAnswer: nouns,
             status: issue,
         };
@@ -228,7 +229,7 @@ export function NounIdentificationExercise() {
         // Faux : la sélection de l'élève reste à l'écran, il la corrige
         // lui-même. Rien n'est enregistré tant qu'il n'a pas trouvé.
         if (!isCorrect) {
-            secondChance.registerError();
+            secondChance.registerError(detail.userAnswer);
             setFeedback('retry');
             setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
             return;
@@ -274,6 +275,7 @@ export function NounIdentificationExercise() {
                 const score = (correctAnswers / NUM_QUESTIONS) * 100;
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
+            details: sessionDetails,
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'reperer-nom',
@@ -305,7 +307,8 @@ export function NounIdentificationExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={NUM_QUESTIONS}
                 canRestart={!isHomework}
                 onRestart={restartExercise}

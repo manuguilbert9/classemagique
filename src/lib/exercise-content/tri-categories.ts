@@ -64,15 +64,15 @@ export const CATEGORY_SETS: CategorySet[] = [
     category1: {
       name: 'Mer',
       emoji: '🌊',
-      items: ['🐠', '🦈', '🐬', '🐋', '🦑', '🦞', '🦀', '🐡', '🦭', '🐙', '🦐', '🐚', '🐟', '🦟', '🐊'],
+      items: ['🐠', '🦈', '🐬', '🐋', '🦑', '🦞', '🦀', '🐡', '🦭', '🐙', '🦐', '🐚', '🐟'],
       bgClass: 'bg-cyan-100 hover:bg-cyan-200',
       textClass: 'text-cyan-800',
       borderClass: 'border-cyan-400',
     },
     category2: {
-      name: 'Savane',
+      name: 'Animaux terrestres',
       emoji: '🌿',
-      items: ['🦁', '🐘', '🦒', '🦓', '🐆', '🦏', '🐪', '🦛', '🦍', '🦜', '🦘', '🐃', '🦌', '🐆', '🦬'],
+      items: ['🦁', '🐘', '🦒', '🦓', '🐆', '🦏', '🐪', '🦛', '🦍', '🦜', '🦘', '🐃', '🦌', '🦬'],
       bgClass: 'bg-amber-100 hover:bg-amber-200',
       textClass: 'text-amber-800',
       borderClass: 'border-amber-400',

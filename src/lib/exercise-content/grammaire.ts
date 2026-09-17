@@ -37,9 +37,20 @@ function tirer(source: string[], count: number): PhraseAReperer[] {
  * Niveau B : des groupes nominaux courts. Au-delà : des phrases complètes.
  */
 export function generatePhrasesNom(niveau: SkillLevel, count: number): PhraseAReperer[] {
-  return tirer(niveau === 'B' ? NOUN_PHRASES : NOUN_SENTENCES, count);
+  return tirer(niveau === 'B' ? NOUN_PHRASES : niveau === 'D' ? NOUN_SENTENCES_D : NOUN_SENTENCES, count);
 }
 
 export function generatePhrasesAdjectif(niveau: SkillLevel, count: number): PhraseAReperer[] {
   return tirer(niveau === 'B' ? ADJECTIVE_PHRASES : ADJECTIVE_SENTENCES, count);
 }
+
+const NOUN_SENTENCES_D = [
+ "La [maîtresse] raconte une [histoire] pendant que les [élèves] dessinent des [animaux].",
+ "Les [enfants] du [voisin] rangent leurs [vélos] dans le [garage].",
+ "Après le [repas], mon [frère] lit un [livre] sur les [volcans].",
+ "Le [jardinier] arrose les [fleurs] qui poussent près de la [maison].",
+ "La [patience] du [professeur] aide les [élèves] à retrouver leur [calme].",
+ "À [Paris], les [touristes] admirent les [tableaux] du [musée].",
+ "Le [vent] soulève les [feuilles] tandis que la [pluie] frappe les [vitres].",
+ "Mon [amie] ressent une grande [joie] quand son [équipe] gagne le [match].",
+];

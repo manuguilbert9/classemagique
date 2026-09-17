@@ -213,7 +213,7 @@ export async function generateQuestions(
     // However, since generateQuestions runs in a server action context, we can just call the flow here.
     // For now, we will add the condition. The implementation will be linked when the flow is created.
     const { generatePasseComposeQuestions } = await import('./passe-compose-questions');
-    return generatePasseComposeQuestions(settings.passeCompose, count);
+    return generatePasseComposeQuestions(settings.passeCompose, count, settings.numberLevel?.level ?? 'B');
   }
 
   // Fallback

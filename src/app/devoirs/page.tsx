@@ -171,7 +171,7 @@ export default function DevoirsPage() {
 
   useEffect(() => {
     async function fetchHomework() {
-      if (student?.groupId) {
+      if (student?.id) {
         setIsLoadingHomework(true);
         const [allAssignments, completedResults] = await Promise.all([
             getHomeworkForStudent(student.id, student.groupId),

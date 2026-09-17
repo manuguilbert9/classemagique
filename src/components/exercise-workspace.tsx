@@ -32,7 +32,7 @@ import { PasseComposeSettings } from '@/components/passe-compose-settings';
 import { PriceTag } from '@/components/price-tag';
 import { InteractiveClock } from '@/components/interactive-clock';
 import { UserContext } from '@/context/user-context';
-import { addScore, getScoresForUser, Score, saveHomeworkResult } from '@/services/scores';
+import { addScore, getScoresForUser, Score, type ScoreDetail, saveHomeworkResult } from '@/services/scores';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
 import { VirtualKeyboard } from './virtual-keyboard';
@@ -75,6 +75,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
   const [feedback, setFeedback] = useState<FeedbackStatus>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [motivationalMessage, setMotivationalMessage] = useState('');
@@ -178,10 +179,17 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const startPasseComposeExercise = async (settings: PasseComposeSettingsType) => {
     setIsGenerating(true);
     setPasseComposeSettings(settings);
-    const generatedQuestions = await fetchQuestions({ passeCompose: settings });
-    setQuestions(generatedQuestions);
-    setIsGenerating(false);
-    setIsReadyToStart(true);
+    const level = student?.levels?.[skill.slug] ?? 'B';
+    setNumberLevelSettings({ level });
+    try {
+      const generatedQuestions = await fetchQuestions({ passeCompose: settings, numberLevel: { level } });
+      setQuestions(generatedQuestions);
+      setIsReadyToStart(true);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Choisis une autre combinaison', description: error instanceof Error ? error.message : 'Les phrases ne sont pas disponibles. Tu peux réessayer.' });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const startCountExercise = async (settings: CountSettingsType) => {
@@ -249,11 +257,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     }
   };
   
-  const processCorrectAnswer = () => {
+  const processCorrectAnswer = (answer?: string) => {
       // Trouvée du premier coup, la question rapporte son point ; trouvée après
       // une erreur, elle ne rapporte rien mais on félicite quand même l'élève
       // de s'être corrigé.
       const issue = secondChance.resultOnSuccess();
+      const expected = exerciseData?.answer ?? String(exerciseData?.targetAmount ?? exerciseData?.correctValue ?? '');
+      const response = answer ?? expected;
+      setSessionDetails(previous => [...previous, { question: exerciseData?.question ?? '', userAnswer: response, correctAnswer: expected, status: issue, ...secondChance.getAttemptMetadata(response) }]);
       if (issue === 'correct') {
         setCorrectAnswers(prev => prev + 1);
         setMotivationalMessage(motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)]);
@@ -321,7 +332,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     if (Math.abs(composedAmount - exerciseData.targetAmount) < 0.001) {
       processCorrectAnswer();
     } else {
-      processIncorrectAnswer();
+      processIncorrectAnswer(String(composedAmount));
     }
   }
 
@@ -422,6 +433,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             userId: student.id,
             skill: skill.slug,
             score: newScoreValue,
+            details: sessionDetails,
         };
 
         if (skill.slug === 'calculation' && calculationSettings) {
@@ -436,13 +448,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         if (skill.slug === 'denombrement' && countSettings) {
             scoreData.countSettings = countSettings;
         }
-        if ((skill.slug === 'lire-les-nombres' || skill.slug === 'mental-calculation' || skill.slug === 'keyboard-count') && numberLevelSettings) {
+        if ((skill.slug === 'lire-les-nombres' || skill.slug === 'mental-calculation' || skill.slug === 'keyboard-count' || skill.slug === 'passe-compose') && numberLevelSettings) {
             scoreData.numberLevelSettings = numberLevelSettings;
         }
 
         let result;
         if (isHomework && homeworkDate) {
-          result = await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: skill.slug, score: newScoreValue });
+          result = await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: skill.slug, score: newScoreValue, details: scoreData.details, numberLevelSettings: scoreData.numberLevelSettings, currencySettings: scoreData.currencySettings, timeSettings: scoreData.timeSettings, countSettings: scoreData.countSettings });
         } else {
           result = await addScore(scoreData);
         }
@@ -468,12 +480,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, hasBeenSaved, correctAnswers, calculationSettings, currencySettings, timeSettings, countSettings, numberLevelSettings, isTableauMode, isHomework, homeworkDate, toast]);
+  }, [isFinished, student, skill.slug, hasBeenSaved, correctAnswers, calculationSettings, currencySettings, timeSettings, countSettings, numberLevelSettings, sessionDetails, isTableauMode, isHomework, homeworkDate, toast]);
   
   const restartExercise = async () => {
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setCorrectAnswers(0);
+    setSessionDetails([]);
     setFeedback(null);
     setIsFinished(false);
     setShowConfetti(false);
@@ -493,7 +506,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       const newQuestions = await fetchQuestions();
       setQuestions(newQuestions);
       setIsReadyToStart(true);
-    } else if (skill.slug === 'mental-calculation' || skill.slug === 'keyboard-count') {
+    } else if (skill.slug === 'mental-calculation' || skill.slug === 'keyboard-count' || skill.slug === 'passe-compose') {
        if (student && student.levels) {
           const level = student.levels[skill.slug] || 'B';
           startNumberLevelExercise({ level });
@@ -816,6 +829,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       {exerciseData.imageOptions?.map((option, index) => (
         <Button
           key={`${option.alt}-${index}`}
+          aria-label={option.alt}
           variant="outline"
           onClick={() => handleQcmAnswer(option.value)}
           className={cn(

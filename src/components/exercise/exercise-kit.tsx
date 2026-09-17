@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { attemptMetadata } from '@/lib/attempt-metadata';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Check, RefreshCw, RotateCcw, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -102,7 +103,7 @@ export function AnswerFeedback({
       cadre: 'border-emerald-300 bg-emerald-50 text-emerald-700',
       pastille: 'bg-amber-500',
       icone: <Check className="h-5 w-5" />,
-      mot: 'C’est la bonne réponse. Tu t’es corrigé tout seul !',
+      mot: 'C’est la bonne réponse. Tu as trouvé !',
     },
     retry: {
       cadre: 'border-amber-300 bg-amber-50 text-amber-800',
@@ -150,6 +151,7 @@ export function AnswerFeedback({
  */
 export function ExerciseFinished({
   correct,
+  corrected,
   total,
   /** Masque « Recommencer » (en mode devoirs, la séance ne se rejoue pas). */
   canRestart = true,
@@ -159,6 +161,7 @@ export function ExerciseFinished({
   children,
 }: {
   correct: number;
+  corrected?: number;
   total: number;
   canRestart?: boolean;
   onRestart?: () => void;
@@ -169,11 +172,7 @@ export function ExerciseFinished({
   const score = total > 0 ? (correct / total) * 100 : 0;
 
   // Un mot d'encouragement proportionné : ni faux enthousiasme, ni sanction.
-  const mot =
-    score >= 90 ? 'Sans faute ou presque. Bravo !'
-    : score >= 70 ? 'Du bon travail !'
-    : score >= 40 ? 'C’est en train de rentrer.'
-    : 'C’est difficile ? On recommence tranquillement.';
+  const mot = 'Bravo pour ton travail ! Les réponses trouvées après correction ou aide font aussi partie de ton apprentissage.';
 
   return (
     <div className="mx-auto w-full max-w-lg rounded-[26px] border bg-card p-6 text-center shadow-sm sm:p-8">
@@ -183,9 +182,9 @@ export function ExerciseFinished({
       <h2 className="font-headline text-3xl sm:text-4xl">Exercice terminé !</h2>
 
       <p className="mt-3 text-xl">
-        <span className="font-extrabold text-primary">{correct}</span> bonne{correct > 1 ? 's' : ''} réponse
-        {correct > 1 ? 's' : ''} sur <span className="font-extrabold">{total}</span>
+        <span className="font-extrabold text-primary">{correct}</span> du premier coup sur <span className="font-extrabold">{total}</span>
       </p>
+      {corrected !== undefined && <p>{corrected} après correction ou aide.</p>}
       <p className="mt-1 text-muted-foreground">{mot}</p>
 
       <div className="my-6">
@@ -275,6 +274,7 @@ export interface SecondChance {
   /** Le statut à retenir pour le score une fois la bonne réponse trouvée. */
   resultOnSuccess: () => 'correct' | 'corrected';
   /** À appeler au passage à la question suivante. */
+  getAttemptMetadata: (answer: string, hintUsed?: boolean) => { firstAnswer?: string; attempts: number; hintUsed: boolean };
   reset: () => void;
 }
 
@@ -295,6 +295,7 @@ export function useSecondChance(): SecondChance {
   const resultOnSuccess = useCallback((): 'correct' | 'corrected' => (errors > 0 ? 'corrected' : 'correct'), [errors]);
 
   return {
+    getAttemptMetadata: (answer: string, hintUsed?: boolean) => attemptMetadata(answer, wrongAnswers, errors, hintUsed ?? errors >= ERREURS_AVANT_AIDE),
     errors,
     wrongAnswers,
     showHint: errors >= ERREURS_AVANT_AIDE,

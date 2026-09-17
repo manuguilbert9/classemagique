@@ -1,6 +1,6 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
+import { validSchoolCalculation } from '@/lib/word-problem-math';
 import { z } from 'zod';
 import { PROBLEM_STOCK } from '@/lib/word-problems-data';
 
@@ -38,6 +38,8 @@ const CorrectProblemInputSchema = z.object({
     studentResult: z.number().describe('The result found by the student.'),
     studentSentence: z.string().describe('The answer sentence written by the student.'),
     expectedResult: z.number(),
+    expectedData: z.array(z.number()).optional(),
+    expectedOperation: z.enum(['addition', 'subtraction']).optional(),
 });
 
 export type CorrectProblemInput = z.infer<typeof CorrectProblemInputSchema>;
@@ -52,106 +54,39 @@ const CorrectionFeedbackSchema = z.object({
 
 export type CorrectionFeedback = z.infer<typeof CorrectionFeedbackSchema>;
 
-// --- Prompts ---
-
-const generateProblemPrompt = ai.definePrompt({
-    name: 'generateProblemPrompt',
-    input: { schema: GenerateProblemInputSchema },
-    output: { schema: GeneratedProblemSchema },
-    prompt: `You are a primary school teacher specializing in mathematics.
-Your task is to generate a word problem for a student based on Vergnaud's classification.
-The problem should be suitable for a child (6-10 years old).
-
-Category: {{category}}
-Difficulty: {{difficulty}}
-
-Guidelines per category:
-- problemes-transformation: Transformation of a state (Time/Chronology, finding initial state, final state, or transformation).
-- problemes-composition: Whole/Parts (finding the whole or a missing part).
-- problemes-comparaison: Comparison (Gap/Difference, "more than"/"less than").
-- problemes-composition-transformation: Composition of transformations (Balance of actions, relative numbers).
-
-Output requirements:
-- The text must be in French.
-- Keep the numbers simple (integers).
-- The context should be familiar to a child (school, toys, fruits, money, etc.).
-`,
-});
-
-const correctProblemPrompt = ai.definePrompt({
-    name: 'correctProblemPrompt',
-    input: { schema: CorrectProblemInputSchema },
-    output: { schema: CorrectionFeedbackSchema },
-    prompt: `You are a primary school teacher correcting a student's answer to a word problem.
-
-Problem: {{problemText}}
-Expected Result: {{expectedResult}}
-
-Student Answer:
-- Calculation: {{studentCalculation}}
-- Result: {{studentResult}}
-- Sentence: {{studentSentence}}
-
-Your task:
-1. Verify if the calculation is relevant to the problem and mathematically correct.
-2. Verify if the result matches the expected result.
-3. Verify if the sentence is complete, grammatically correct, and contains the answer with the unit.
-
-Provide specific feedback for each part.
-- If the calculation is wrong, explain why (e.g., "Tu as fait une addition mais il fallait une soustraction").
-- If the result is wrong, check if it's a calculation error or a logic error.
-- If the sentence is incomplete (missing verb, capital letter, unit), point it out.
-- 'isCorrect' should be true ONLY if everything is correct.
-
-Feedback must be in French, encouraging, and suitable for a child.
-`,
-});
-
-// --- Flows ---
-
-const generateProblemFlow = ai.defineFlow(
-    {
-        name: 'generateProblemFlow',
-        inputSchema: GenerateProblemInputSchema,
-        outputSchema: GeneratedProblemSchema,
-    },
-    async (input) => {
-        const { output } = await generateProblemPrompt(input);
-        return output!;
-    }
-);
-
-const correctProblemFlow = ai.defineFlow(
-    {
-        name: 'correctProblemFlow',
-        inputSchema: CorrectProblemInputSchema,
-        outputSchema: CorrectionFeedbackSchema,
-    },
-    async (input) => {
-        const { output } = await correctProblemPrompt(input);
-        return output!;
-    }
-);
-
 // --- Server Actions ---
 
 export async function generateProblem(category: ProblemCategory, difficulty: 'easy' | 'medium' | 'hard' = 'easy'): Promise<GeneratedProblem> {
-    // Try to pick from stock first (for diversity and speed)
-    // We can add a randomness factor to sometimes use AI if we want, but user asked for "stock" to ensure diversity.
-    // Let's pick from stock 80% of the time if available, or just always for now to guarantee the "stock" request is met.
-    // Actually, mixing is better. Let's say 50/50 or just random pick from stock if available.
-
-    const stock = PROBLEM_STOCK[category];
-    if (stock && stock.length > 0) {
-        // Simple random selection from stock
-        const randomIndex = Math.floor(Math.random() * stock.length);
-        return stock[randomIndex];
+    if (difficulty === 'easy' && category !== 'problemes-composition-transformation') {
+        const stock = PROBLEM_STOCK[category];
+        return stock[Math.floor(Math.random() * stock.length)];
     }
-
-    // Fallback to AI if no stock or empty
-    return await generateProblemFlow({ category, difficulty });
+    const a = difficulty === 'hard' ? 100 + Math.floor(Math.random() * 800) : 20 + Math.floor(Math.random() * 70);
+    const b = difficulty === 'hard' ? 30 + Math.floor(Math.random() * 150) : 10 + Math.floor(Math.random() * 30);
+    const subtract = category === 'problemes-comparaison' || Math.random() < 0.5;
+    if (category === 'problemes-composition-transformation') {
+        const gain = difficulty === 'hard' ? b : a;
+        const loss = difficulty === 'hard' ? a + b : b;
+        return { text: `Une équipe gagne ${gain} points puis perd ${loss} points. Quel est son bilan net ? Écris un nombre négatif si elle a perdu des points au total.`, data: [gain, loss], expectedOperation: 'subtraction', expectedResult: gain - loss, unit: 'points' };
+    }
+    const high = Math.max(a, b), low = Math.min(a, b);
+    const text = category === 'problemes-transformation'
+      ? (subtract ? `La bibliothèque avait ${high} livres. Elle en prête ${low}. Combien en reste-t-il ?` : `La bibliothèque avait ${a} livres. Elle en reçoit ${b}. Combien en a-t-elle maintenant ?`)
+      : category === 'problemes-comparaison'
+      ? `Lina a ${high} cartes et Sami en a ${low}. Combien de cartes Lina a-t-elle de plus que Sami ?`
+      : (subtract ? `Il y a ${high} élèves, dont ${low} filles. Combien y a-t-il de garçons ?` : `Un club compte ${a} filles et ${b} garçons. Combien y a-t-il d'élèves en tout ?`);
+    return { text, data: subtract ? [high, low] : [a, b], expectedOperation: subtract ? 'subtraction' : 'addition', expectedResult: subtract ? high-low : a+b, unit: category === 'problemes-transformation' ? 'livres' : category === 'problemes-comparaison' ? 'cartes' : 'élèves' };
 }
 
 export async function correctProblem(input: CorrectProblemInput): Promise<CorrectionFeedback> {
-    return await correctProblemFlow(input);
+    const parsed = CorrectProblemInputSchema.parse(input);
+    const calculationCorrect = validSchoolCalculation(parsed.studentCalculation, parsed.expectedResult, parsed.expectedData, parsed.expectedOperation);
+    const resultCorrect = Number.isFinite(parsed.studentResult) && Math.abs(parsed.studentResult - parsed.expectedResult) < 1e-8;
+    return {
+        isCorrect: calculationCorrect && resultCorrect,
+        calculationFeedback: calculationCorrect ? '' : "Vérifie les nombres de l'énoncé et les signes de ton calcul.",
+        resultFeedback: resultCorrect ? '' : 'Vérifie le résultat de ton calcul.',
+        sentenceFeedback: parsed.studentSentence.trim() ? '' : "Tu peux compléter ta réponse avec une phrase et l'unité. Cela ne change pas ta réussite en mathématiques.",
+        generalFeedback: calculationCorrect && resultCorrect ? 'Ton raisonnement numérique et ton résultat sont corrects !' : 'Reprends les données du problème et essaie encore.',
+    };
 }

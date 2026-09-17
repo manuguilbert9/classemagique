@@ -1,0 +1,3085 @@
+{
+  "generatedAt": "2026-09-16T14:09:01.878Z",
+  "scope": "Catalogue historique : nouveaux exercices progressifs exclus ; niveaux par défaut signalés comme déduits, pas comme contenus prouvés.",
+  "counts": {
+    "total": 76,
+    "legacy": 56,
+    "exercises": 55,
+    "tools": 1,
+    "declaredExerciseLevelPairs": 111,
+    "freeToolViews": 1
+  },
+  "duplicateSlugs": [],
+  "missingSchoolRanges": [],
+  "routeCasesAbsentFromCatalog": [
+    "time"
+  ],
+  "catalog": [
+    {
+      "name": "Décodage",
+      "slug": "decoding",
+      "description": "Lis les syllabes le plus vite possible sur le circuit de lecture.",
+      "category": "Phonologie",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-fin",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Tableaux de syllabes",
+      "slug": "syllable-table",
+      "description": "Lis des tableaux de syllabes pour t'entraîner à la lecture rapide.",
+      "category": "Phonologie",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-fin",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Syllabe d'attaque",
+      "slug": "syllabe-attaque",
+      "description": "Clique sur l'image dont le nom commence par la syllabe affichée.",
+      "category": "Phonologie",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-fin",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Reconnaissance des lettres",
+      "slug": "letter-recognition",
+      "description": "Appuie sur la bonne touche du clavier correspondant à la lettre affichée.",
+      "category": "Phonologie",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CP-milieu"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Lettres et Sons",
+      "slug": "lettres-et-sons",
+      "description": "Associe une lettre au son qu'elle produit en choisissant la bonne image.",
+      "category": "Phonologie",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-fin",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Le Passé Composé",
+      "slug": "passe-compose",
+      "description": "Conjugue le verbe au passé composé.",
+      "category": "Conjugaison",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE2-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "B"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Dictée",
+      "slug": "spelling",
+      "description": "Écoute et écris les mots, les groupes de mots et les phrases de la semaine.",
+      "category": "Orthographe",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Le son [an]",
+      "slug": "son-an",
+      "description": "Choisis la bonne écriture (an, en, am, em) pour compléter les mots.",
+      "category": "Orthographe",
+      "isFixedLevel": "B",
+      "declaredLevels": [
+        "B"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-milieu",
+        "plafond": "CE1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Le son [in]",
+      "slug": "son-in",
+      "description": "Choisis la bonne écriture (in, im, ain, ein) pour compléter les mots.",
+      "category": "Orthographe",
+      "isFixedLevel": "B",
+      "declaredLevels": [
+        "B"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-milieu",
+        "plafond": "CE1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "La règle M,B,P",
+      "slug": "regle-mbp",
+      "description": "Complète les mots avec 'n' ou 'm' en appliquant la règle du M, B, P.",
+      "category": "Orthographe",
+      "isFixedLevel": "B",
+      "declaredLevels": [
+        "B"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-debut",
+        "plafond": "CE2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "B"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "GN ou NI ?",
+      "slug": "gn-ni",
+      "description": "Choisis entre GN (bleu) et NI (rouge) pour compléter les mots de la liste D4.",
+      "category": "Orthographe",
+      "isFixedLevel": "B",
+      "declaredLevels": [
+        "B"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-milieu",
+        "plafond": "CM1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "B"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "B"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "generic-workspace"
+    },
+    {
+      "name": "Lettres dans le désordre",
+      "slug": "jumbled-words",
+      "description": "Remets les lettres dans le bon ordre pour retrouver le mot.",
+      "category": "Orthographe",
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": true,
+      "schoolRange": {
+        "plancher": "CP-fin",
+        "plafond": "CE2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [
+        "D"
+      ],
+      "route": "explicit"
+    },
+    {
+      "name": "Sens de lecture",
+      "slug": "reading-direction",
+      "description": "Appuie sur les objets de gauche à droite, ligne par ligne, pour t'habituer au sens de la lecture.",
+      "category": "Lecture / compréhension",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CP-debut"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Lire des mots",
+      "slug": "simple-word-reading",
+      "description": "Lire des mots simples à voix haute pour s'entraîner.",
+      "category": "Lecture / compréhension",
+      "isFixedLevel": "B",
+      "declaredLevels": [
+        "B"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-debut",
+        "plafond": "CE1-debut"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-debut",
+          "level": "B"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Lire des phrases",
+      "slug": "lire-des-phrases",
+      "description": "Lis des phrases à voix haute et vérifie ta prononciation avec la reconnaissance vocale.",
+      "category": "Lecture / compréhension",
+      "isFixedLevel": "B",
+      "declaredLevels": [
+        "B"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-milieu",
+        "plafond": "CE1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Fluence",
+      "slug": "fluence",
+      "description": "Chronomètre ta lecture d'un texte et calcule ton score de fluence (MCLM).",
+      "category": "Lecture / compréhension",
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": true,
+      "schoolRange": {
+        "plancher": "CP-fin",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Cahier d'écriture",
+      "slug": "writing-notebook",
+      "description": "Écris librement chaque jour pour t'entraîner et garder une trace de tes textes.",
+      "category": "Ecriture",
+      "isTool": true,
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": true,
+      "schoolRange": {
+        "plancher": "CP-fin",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Copie au clavier",
+      "slug": "keyboard-copy",
+      "description": "Recopie des mots simples lettre par lettre en suivant un modèle.",
+      "category": "Ecriture",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Le mot et son image",
+      "slug": "mot-image",
+      "description": "Retrouve le mot qui va avec l'image, et l'image qui va avec le mot.",
+      "category": "Lecture / compréhension",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CP-milieu"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Écoute et montre l'image",
+      "slug": "montre-image",
+      "description": "Un mot est dit à voix haute : montre la bonne image.",
+      "category": "Vocabulaire",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CP-milieu"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Copie des mots en capitales",
+      "slug": "copie-capitales",
+      "description": "Recopie en capitales les mots de la semaine, lettre après lettre.",
+      "category": "Ecriture",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CE1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "A"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Construction de phrases",
+      "slug": "phrase-construction",
+      "description": "Utilise les mots fournis pour construire une phrase grammaticalement correcte.",
+      "category": "Grammaire",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-fin",
+        "plafond": "CE2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [
+        "D"
+      ],
+      "route": "explicit"
+    },
+    {
+      "name": "Le jeu des étiquettes",
+      "slug": "label-game",
+      "description": "Reconstruis la phrase en faisant glisser les mots dans le bon ordre.",
+      "category": "Grammaire",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-fin",
+        "plafond": "CE2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [
+        "D"
+      ],
+      "route": "explicit"
+    },
+    {
+      "name": "Compter les phrases",
+      "slug": "compter-phrases",
+      "description": "Combien de phrases dans ce texte ? Attention à la ponctuation.",
+      "category": "Grammaire",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Repérer le nom",
+      "slug": "reperer-nom",
+      "description": "Clique sur les noms dans la phrase.",
+      "category": "Grammaire",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-debut",
+        "plafond": "CM1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Repérer l'adjectif",
+      "slug": "reperer-adjectif",
+      "description": "Clique sur les adjectifs dans la phrase.",
+      "category": "Grammaire",
+      "allowedLevels": [
+        "B",
+        "C"
+      ],
+      "declaredLevels": [
+        "B",
+        "C"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-milieu",
+        "plafond": "CM1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "B"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "C"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Ajouter des adjectifs",
+      "slug": "add-adjectives",
+      "description": "Enrichis la phrase en plaçant les adjectifs au bon endroit.",
+      "category": "Grammaire",
+      "allowedLevels": [
+        "B",
+        "C"
+      ],
+      "declaredLevels": [
+        "B",
+        "C"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-milieu",
+        "plafond": "CM1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "B"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "C"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Parcours Codé",
+      "slug": "coded-path",
+      "description": "Guidez le personnage jusqu'à la clé en créant une séquence de flèches.",
+      "category": "Espace et géométrie",
+      "allowedLevels": [
+        "A",
+        "B",
+        "C"
+      ],
+      "declaredLevels": [
+        "A",
+        "B",
+        "C"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-fin",
+        "plafond": "CE2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Nombre Mystère",
+      "slug": "mystery-number",
+      "description": "Devine le nombre secret en utilisant les indices qui apparaissent un par un.",
+      "category": "Nombres et calcul",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Lire les nombres",
+      "slug": "lire-les-nombres",
+      "description": "Associer un nombre écrit en chiffres à son énoncé oral.",
+      "category": "Nombres et calcul",
+      "allowedLevels": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Tableau de numération",
+      "slug": "place-value-table",
+      "description": "Placer les chiffres d'un nombre dans un tableau de numération.",
+      "category": "Nombres et calcul",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-milieu",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Écoute les nombres",
+      "slug": "ecoute-les-nombres",
+      "description": "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
+      "category": "Nombres et calcul",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-milieu",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Dénombrement",
+      "slug": "denombrement",
+      "description": "Dénombrer une quantité inférieure à 20.",
+      "category": "Nombres et calcul",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Comptage au clavier",
+      "slug": "keyboard-count",
+      "description": "Compter les objets et taper la réponse directement sur le clavier.",
+      "category": "Nombres et calcul",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-milieu",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "generic-workspace"
+    },
+    {
+      "name": "Compter en pointant",
+      "slug": "comptage-pointage",
+      "description": "Touche chaque objet pour le compter, puis dis combien il y en a en tout.",
+      "category": "Nombres et calcul",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CP-debut"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Somme < 10",
+      "slug": "somme-dix",
+      "description": "Calcule des additions simples dont le résultat est inférieur à 10.",
+      "category": "Nombres et calcul",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-fin",
+        "plafond": "CE1-debut"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Compléments à 10",
+      "slug": "complement-dix",
+      "description": "Trouve le complément à 10 le plus vite possible.",
+      "category": "Nombres et calcul",
+      "isFixedLevel": "B",
+      "declaredLevels": [
+        "B"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-milieu",
+        "plafond": "CE1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "J'écoute entre 60 et 99",
+      "slug": "nombres-complexes",
+      "description": "Reconnaître les nombres complexes (60-99) à l'oral et à l'écrit.",
+      "category": "Nombres et calcul",
+      "isFixedLevel": "B",
+      "declaredLevels": [
+        "B"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-debut",
+        "plafond": "CE2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "B"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Familles de mots",
+      "slug": "word-families",
+      "description": "Identifier des mots de la même famille. Utiliser les familles de mots pour mémoriser l'orthographe.",
+      "category": "Vocabulaire",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-fin",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Calcul Posé",
+      "slug": "long-calculation",
+      "description": "Additionner/soustraire en colonnes avec ou sans retenue.",
+      "category": "Nombres et calcul",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-fin",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Entraînement soustraction",
+      "slug": "subtraction-training",
+      "description": "Apprendre la méthode de la soustraction posée étape par étape avec un guide interactif.",
+      "category": "Nombres et calcul",
+      "isFixedLevel": "B",
+      "declaredLevels": [
+        "B"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-fin",
+        "plafond": "CM1-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "B"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "B"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Calcul mental",
+      "slug": "mental-calculation",
+      "description": "Calculer de tête des additions, soustractions, multiplications et divisions.",
+      "category": "Nombres et calcul",
+      "allowedLevels": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Calcul mental adaptatif",
+      "slug": "adaptive-mental-calculation",
+      "description": "Un entraînement qui s'adapte à ton niveau pour progresser à ton rythme.",
+      "category": "Nombres et calcul",
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": true,
+      "schoolRange": {
+        "plancher": "CP-milieu",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Soustractions chronométrées",
+      "slug": "soustraction-mentale",
+      "description": "Un maximum de soustractions en 2 minutes.",
+      "category": "Nombres et calcul",
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": true,
+      "schoolRange": {
+        "plancher": "CE1-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Tables de multiplication",
+      "slug": "tables-multiplication",
+      "description": "Un maximum de multiplications en 1 minute.",
+      "category": "Nombres et calcul",
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": true,
+      "schoolRange": {
+        "plancher": "CE2-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "B"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "La Monnaie",
+      "slug": "currency",
+      "description": "Apprendre à utiliser les pièces et les billets en euros.",
+      "category": "Grandeurs et mesures",
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": true,
+      "schoolRange": {
+        "plancher": "CP-milieu",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Rendre la Monnaie",
+      "slug": "change-making",
+      "description": "Apprendre à rendre la monnaie en vendant des objets.",
+      "category": "Grandeurs et mesures",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-milieu",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "generic-workspace"
+    },
+    {
+      "name": "Calendrier",
+      "slug": "calendar",
+      "description": "Se repérer dans le temps, lire les dates et les durées.",
+      "category": "Grandeurs et mesures",
+      "allowedLevels": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-fin",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "La Brocante",
+      "slug": "flea-market",
+      "description": "Rends la monnaie exacte au client.",
+      "category": "Grandeurs et mesures",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Composition de Somme",
+      "slug": "composition-somme",
+      "description": "Sélectionne les pièces et billets pour composer une somme.",
+      "category": "Grandeurs et mesures",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-fin",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Problèmes de Transformation",
+      "slug": "problemes-transformation",
+      "description": "Résous des problèmes de temps et de chronologie.",
+      "category": "Problèmes",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-fin",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Problèmes de Composition",
+      "slug": "problemes-composition",
+      "description": "Trouve la partie manquante ou le tout.",
+      "category": "Problèmes",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CP-fin",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CP-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Problèmes de Comparaison",
+      "slug": "problemes-comparaison",
+      "description": "Compare des quantités (plus que, moins que).",
+      "category": "Problèmes",
+      "allowedLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "B",
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE1-debut",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE1-debut",
+          "level": "B"
+        },
+        {
+          "school": "CE1-milieu",
+          "level": "B"
+        },
+        {
+          "school": "CE1-fin",
+          "level": "B"
+        },
+        {
+          "school": "CE2-debut",
+          "level": "C"
+        },
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "D"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Problèmes Complexes",
+      "slug": "problemes-composition-transformation",
+      "description": "Résous des problèmes avec des nombres relatifs et des bilans.",
+      "category": "Problèmes",
+      "allowedLevels": [
+        "C",
+        "D"
+      ],
+      "declaredLevels": [
+        "C",
+        "D"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "CE2-milieu",
+        "plafond": "CM2-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "CE2-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CE2-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM1-debut",
+          "level": "C"
+        },
+        {
+          "school": "CM1-milieu",
+          "level": "C"
+        },
+        {
+          "school": "CM1-fin",
+          "level": "C"
+        },
+        {
+          "school": "CM2-debut",
+          "level": "D"
+        },
+        {
+          "school": "CM2-milieu",
+          "level": "D"
+        },
+        {
+          "school": "CM2-fin",
+          "level": "D"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Algorithmes de couleurs",
+      "slug": "color-algorithm",
+      "description": "Reproduis l'algorithme de couleurs en cliquant sur les bons carrés.",
+      "category": "Organisation et gestion de données",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    },
+    {
+      "name": "Trier par catégorie",
+      "slug": "category-sorting",
+      "description": "Trie chaque image dans la bonne catégorie : animaux, véhicules, fruits, vêtements…",
+      "category": "Vocabulaire",
+      "isFixedLevel": "A",
+      "declaredLevels": [
+        "A"
+      ],
+      "defaultLevelsInferred": false,
+      "schoolRange": {
+        "plancher": "GS-debut",
+        "plafond": "CP-fin"
+      },
+      "automaticAssignments": [
+        {
+          "school": "GS-debut",
+          "level": "A"
+        },
+        {
+          "school": "GS-milieu",
+          "level": "A"
+        },
+        {
+          "school": "GS-fin",
+          "level": "A"
+        },
+        {
+          "school": "CP-debut",
+          "level": "A"
+        },
+        {
+          "school": "CP-milieu",
+          "level": "A"
+        },
+        {
+          "school": "CP-fin",
+          "level": "A"
+        }
+      ],
+      "levelsNeverAutoAssignedWithinRange": [],
+      "route": "explicit"
+    }
+  ]
+}

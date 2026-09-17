@@ -79,7 +79,7 @@ function CarryNoteInput({
 
     return (
         <div
-            className="relative flex h-10 w-10 items-center justify-center cursor-pointer group"
+            className="relative flex h-11 w-11 items-center justify-center cursor-pointer group"
             onClick={() => {
                 // Clic simple pour barrer/débarrer
                 if (value) {
@@ -90,7 +90,7 @@ function CarryNoteInput({
             <label
                 htmlFor={cellId}
                 className={cn(
-                    'relative flex h-10 w-10 cursor-text items-center justify-center rounded-md border-2 border-dashed text-sm font-bold transition-all',
+                    'relative flex h-11 w-11 cursor-text items-center justify-center rounded-md border-2 border-dashed text-sm font-bold transition-all',
                     colors.border,
                     colors.bg,
                     colors.text,
@@ -102,6 +102,7 @@ function CarryNoteInput({
             >
                 <input
                     id={cellId}
+                    onKeyDown={(event) => { if (event.key === 'F2') { event.preventDefault(); onToggleCrossed(cellId); } }}
                     inputMode="numeric"
                     pattern="[0-9]*"
                     maxLength={2}
@@ -113,7 +114,7 @@ function CarryNoteInput({
                     onFocus={(event) => event.currentTarget.select()}
                     onClick={(e) => e.stopPropagation()}
                     className="absolute inset-0 h-full w-full cursor-text rounded-md border-none bg-transparent text-center text-sm font-bold text-transparent caret-primary focus:outline-none"
-                    aria-label="Retenue ou emprunt"
+                    aria-label={`Retenue ou emprunt colonne ${columnIndex + 1}, touche F2 pour barrer`}
                 />
                 <span
                     className={cn(
@@ -221,7 +222,7 @@ export function LongCalculationExercise() {
         // Faux : l'opération posée reste à l'écran, avec les retenues déjà
         // écrites. L'élève repère lui-même la colonne fautive et la reprend.
         if (!isCorrect) {
-            secondChance.registerError();
+            secondChance.registerError(userAnswerStr);
             setFeedback('retry');
             setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
             return;
@@ -231,6 +232,7 @@ export function LongCalculationExercise() {
         setSessionDetails(prev => [...prev, {
             question: currentProblem.operands.join(` ${currentProblem.operation === 'addition' ? '+' : '-'} `),
             userAnswer: userAnswerStr,
+            ...secondChance.getAttemptMetadata(String(userAnswerStr)),
             correctAnswer: String(currentProblem.answer),
             status: issue,
             calculationState: calculationState
@@ -260,6 +262,8 @@ export function LongCalculationExercise() {
                 
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
+            numberLevelSettings: { level: level },
+            details: sessionDetails,
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'long-calculation',
@@ -307,7 +311,8 @@ export function LongCalculationExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={NUM_PROBLEMS}
                 canRestart={!isHomework}
                 onRestart={restartExercise}
@@ -335,7 +340,7 @@ export function LongCalculationExercise() {
         return digits[digits.length - 1 - columnIndex];
     };
 
-    const gridTemplateStyle = { gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 3.5rem))` };
+    const gridTemplateStyle = { gridTemplateColumns: `repeat(${totalColumns}, minmax(2.75rem, 3.5rem))` };
 
     return (
         <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6">
@@ -352,13 +357,13 @@ export function LongCalculationExercise() {
                 </CardHeader>
                 <CardContent className="pt-2 sm:pt-6">
                     <div className="flex flex-col items-center gap-2">
-                        <div className="space-y-1">
+                        <div className="space-y-1 w-full max-w-full overflow-x-auto pb-3" role="region" aria-label="Calcul posé, défilement horizontal si nécessaire" tabIndex={0}>
                             {/* Labels C D U en haut */}
                             <div className="flex items-center gap-2">
                                 <div className="w-8" />
                                 <div className="grid gap-2" style={gridTemplateStyle}>
                                     {columnIndices.map((columnIndex) => {
-                                        const label = columnIndex === 0 ? 'U' : columnIndex === 1 ? 'D' : columnIndex === 2 ? 'C' : '';
+                                        const label = ['U', 'D', 'C', 'UM', 'DM', 'CM'][columnIndex] ?? '';
                                         return (
                                             <div key={`label-${columnIndex}`} className="flex justify-center items-center h-6">
                                                 <span className="text-sm font-bold text-gray-600">{label}</span>
@@ -368,7 +373,7 @@ export function LongCalculationExercise() {
                                 </div>
                             </div>
                             {/* Retenues */}
-                            <div className="grid gap-2 h-12" style={gridTemplateStyle}>
+                            <div className="grid gap-2 h-14 ml-10" style={gridTemplateStyle}>
                                 {columnIndices.map((columnIndex) =>
                                     <div key={`carry-${columnIndex}`} className="flex justify-center items-center">
                                        <CarryNoteInput
@@ -392,18 +397,19 @@ export function LongCalculationExercise() {
                                                 {columnIndices.map((columnIndex) => {
                                                     const colors = getColumnColorClasses(columnIndex);
                                                     return (
-                                                        <div key={`annotation-${operandIndex}-${columnIndex}`} className="flex justify-center items-center h-8">
+                                                        <div key={`annotation-${operandIndex}-${columnIndex}`} className="flex justify-center items-center h-12">
                                                             <input
                                                                 id={`annotation-${operandIndex}-${columnIndex}`}
+                                                                aria-label={`Emprunt, ligne ${operandIndex + 1}, colonne ${columnIndex + 1}`}
                                                                 inputMode="numeric"
                                                                 pattern="[0-9]*"
-                                                                maxLength={1}
+                                                                maxLength={2}
                                                                 value={calculationState[`annotation-${operandIndex}-${columnIndex}`]?.value || ''}
                                                                 onChange={(e) => handleInputChange(`annotation-${operandIndex}-${columnIndex}`, e.target.value.replace(/[^0-9]/g, ''))}
                                                                 onFocus={(e) => e.currentTarget.select()}
                                                                 placeholder="•"
                                                                 className={cn(
-                                                                    "h-8 w-8 rounded-md border border-dashed text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all",
+                                                                    "h-11 w-11 rounded-md border border-dashed text-center text-base font-bold focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all",
                                                                     colors.border,
                                                                     colors.bg,
                                                                     colors.text,
@@ -436,6 +442,11 @@ export function LongCalculationExercise() {
                                                 return (
                                                     <div
                                                         key={`op-${operandIndex}-${columnIndex}`}
+                                                        role={operation === 'subtraction' && digit ? 'button' : undefined}
+                                                        tabIndex={operation === 'subtraction' && digit ? 0 : undefined}
+                                                        aria-label={`${isCrossed ? 'Rétablir' : 'Barrer'} ${digit}, ligne ${operandIndex + 1}, colonne ${columnIndex + 1}`}
+                                                        aria-pressed={!!isCrossed}
+                                                        onKeyDown={(e) => { if (operation === 'subtraction' && digit && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleToggleCrossed(`op-${operandIndex}-${columnIndex}`); } }}
                                                         className={cn(
                                                             "relative flex h-14 w-14 items-center justify-center rounded-md border-2 text-3xl font-bold transition-all",
                                                             colors.border,
@@ -488,7 +499,7 @@ export function LongCalculationExercise() {
                                     return (
                                         <input
                                             key={`result-${columnIndex}`}
-                                            id={`result-${columnIndex}`}
+                                            id={`result-${columnIndex}`} aria-label={`Résultat colonne ${columnIndex + 1}`}
                                             inputMode="numeric"
                                             pattern="[0-9]*"
                                             maxLength={1}

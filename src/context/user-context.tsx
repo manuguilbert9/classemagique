@@ -7,6 +7,7 @@ import type { Student } from '@/services/students';
 import { getStudentById } from '@/services/students';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { ResultSaveStatus } from '@/components/result-save-status';
 import { setupPresenceHeartbeat } from '@/services/student-presence';
 
 
@@ -139,6 +140,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <UserContext.Provider value={contextValue}>
+      <ResultSaveStatus />
       {children}
     </UserContext.Provider>
   );

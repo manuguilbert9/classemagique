@@ -1,5 +1,6 @@
 'use server';
 
+import { normalizeMarketPrice } from '@/lib/word-problem-math';
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
@@ -65,5 +66,9 @@ const fleaMarketFlowInternal = ai.defineFlow(
 );
 
 export async function fleaMarketFlow(input: FleaMarketInput): Promise<FleaMarketOutput> {
-    return fleaMarketFlowInternal(input);
+    const validInput = FleaMarketInputSchema.parse(input);
+    const output = FleaMarketOutputSchema.parse(await fleaMarketFlowInternal(validInput));
+    const finalPrice = normalizeMarketPrice(output.finalPrice, validInput.level);
+    return { ...output, finalPrice, isNegotiated: finalPrice !== validInput.studentPrice,
+        message: finalPrice !== output.finalPrice ? `Je te propose ${finalPrice.toFixed(validInput.level === 'D' ? 2 : 0).replace('.', ',')} euros.` : output.message };
 }

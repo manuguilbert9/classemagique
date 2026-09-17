@@ -23,10 +23,10 @@ function melanger<T>(items: T[]): T[] {
 /**
  * Des phrases à enrichir, sans répétition à l'intérieur d'une même séance.
  */
-export function generatePhrasesAEnrichir(count: number): AdjectiveEnrichmentSentence[] {
+export function generatePhrasesAEnrichir(count: number, niveau: string = 'B'): AdjectiveEnrichmentSentence[] {
   const phrases: AdjectiveEnrichmentSentence[] = [];
   while (phrases.length < count) {
-    phrases.push(...melanger(ADJECTIVE_ENRICHMENT_SENTENCES).slice(0, count - phrases.length));
+    phrases.push(...melanger(ADJECTIVE_ENRICHMENT_SENTENCES.filter(p => p.level === (niveau === 'C' ? 'C' : 'B'))).slice(0, count - phrases.length));
   }
   return phrases;
 }

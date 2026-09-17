@@ -28,11 +28,13 @@ export function useSpeechRecognition({ onResult, onEnd, onError }: SpeechRecogni
   useEffect(() => {
     // Check for browser support and initialize recognition object
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    let instance: SpeechRecognition | null = null;
     if (SpeechRecognitionAPI) {
       const recognitionInstance = new SpeechRecognitionAPI() as SpeechRecognition;
       recognitionInstance.continuous = true;
       recognitionInstance.interimResults = true;
       recognitionInstance.lang = 'fr-FR';
+      instance = recognitionInstance;
       setRecognition(recognitionInstance);
     } else {
         console.warn("Speech Recognition API is not supported in this browser.");
@@ -40,8 +42,11 @@ export function useSpeechRecognition({ onResult, onEnd, onError }: SpeechRecogni
 
     return () => {
       // Cleanup on unmount
-      if (recognition) {
-        recognition.stop();
+      if (instance) {
+        instance.onresult = null;
+        instance.onend = null;
+        instance.onerror = null;
+        instance.stop();
       }
     };
     // We only want this to run once on mount.
@@ -50,8 +55,7 @@ export function useSpeechRecognition({ onResult, onEnd, onError }: SpeechRecogni
 
   const startListening = useCallback(() => {
     if (recognition && !isListening) {
-      recognition.start();
-      setIsListening(true);
+      try { recognition.start(); setIsListening(true); } catch (error) { setIsListening(false); onError?.(error); }
     }
   }, [recognition, isListening]);
 
@@ -67,13 +71,13 @@ export function useSpeechRecognition({ onResult, onEnd, onError }: SpeechRecogni
 
     recognition.onresult = (event: any) => {
       let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
+      for (let i = 0; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+          finalTranscript += event.results[i][0].transcript + ' ';
         }
       }
       if (finalTranscript && onResult) {
-        onResult(finalTranscript);
+        onResult(finalTranscript.trim());
       }
     };
     

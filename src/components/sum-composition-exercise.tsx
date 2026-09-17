@@ -96,7 +96,7 @@ export function SumCompositionExercise() {
         // Faux : on vide la pile et l'élève recompose. Le montant à atteindre
         // reste affiché, c'est en refaisant qu'il comprend son erreur.
         if (!isCorrect) {
-            secondChance.registerError();
+            secondChance.registerError(formatCurrency(userTotal));
             setFeedback('retry');
             setTimeout(() => {
                 setFeedback(null);
@@ -109,6 +109,7 @@ export function SumCompositionExercise() {
         setSessionDetails(prev => [...prev, {
             question: `Compose ${formatCurrency(currentTargetSum)}`,
             userAnswer: formatCurrency(userTotal),
+            ...secondChance.getAttemptMetadata(String(formatCurrency(userTotal)), false),
             correctAnswer: formatCurrency(currentTargetSum),
             status: issue,
         }]);
@@ -157,6 +158,7 @@ export function SumCompositionExercise() {
                 const score = (correctAnswers / NUM_QUESTIONS) * 100;
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
+            details: sessionDetails,
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'composition-somme',
@@ -188,7 +190,8 @@ export function SumCompositionExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={NUM_QUESTIONS}
                 canRestart={!isHomework}
                 onRestart={restartExercise}

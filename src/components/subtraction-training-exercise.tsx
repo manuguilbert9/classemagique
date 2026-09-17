@@ -262,6 +262,7 @@ export function SubtractionTrainingExercise() {
                 await addScore({
                     userId: student.id,
                     skill: 'subtraction-training',
+                    metadata: { unit: 'count', mode: 'guided-completion', assistance: ['step-by-step'] },
                     score: 1, // Completion score
                     details: [{
                         question: 'Entraînement soustraction posée (3 calculs)',
@@ -316,13 +317,14 @@ export function SubtractionTrainingExercise() {
     }, [userRetenues, userSmallOnes, barredCells, userResult, started]);
 
     const startExercise = () => {
-        const hasMinuend = minuend.some(d => d !== '');
-        const hasSubtrahend = subtrahend.some(d => d !== '');
-
-        if (hasMinuend && hasSubtrahend) {
-            setStarted(true);
-            setCurrentHint('Commence par les unités (à droite) !');
+        const question = questions[currentQuestionIndex];
+        if (!question || Number(minuend.map(d => d || '0').join('')) !== question.num1 ||
+            Number(subtrahend.map(d => d || '0').join('')) !== question.num2) {
+            setCurrentHint("Recopie exactement les deux nombres de la soustraction demandée.");
+            return;
         }
+        setStarted(true);
+        setCurrentHint('Commence par les unités (à droite) !');
     };
 
     const reset = async () => {
@@ -550,6 +552,17 @@ export function SubtractionTrainingExercise() {
                                                     started && 'cursor-pointer',
                                                     started && highlightPosition === i && highlightType === 'minuend' && 'ring-4 ring-yellow-400 scale-110'
                                                 )}
+                                                role="button"
+                                                tabIndex={started ? 0 : -1}
+                                                aria-label={`Barrer le chiffre de la colonne ${i + 1}`}
+                                                aria-pressed={barredCells[i]}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault();
+                                                        setBarredCells(prev => prev.map((v, index) => index === i ? !v : v));
+                                                    }
+                                                }}
+                                                onClick={e => { if (started && (e.target as HTMLElement).tagName !== 'INPUT') setBarredCells(prev => prev.map((v, index) => index === i ? true : v)); }}
                                                 onMouseDown={() => handleMouseDown(i)}
                                                 onMouseUp={handleMouseUp}
                                                 onMouseLeave={handleMouseUp}
@@ -725,7 +738,7 @@ export function SubtractionTrainingExercise() {
                     </div>
                     <div className="flex items-start gap-3">
                         <span className="text-2xl">🖱️</span>
-                        <p><strong>Pour barrer</strong> : clique et maintiens sur le chiffre pendant 0,5 seconde.</p>
+                        <p><strong>Pour barrer</strong> : touche le chiffre, ou utilise Entrée / Espace. Tu peux aussi maintenir 0,5 seconde.</p>
                     </div>
                     <div className="flex items-start gap-3">
                         <span className="text-2xl">1️⃣</span>

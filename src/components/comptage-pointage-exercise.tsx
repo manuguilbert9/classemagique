@@ -110,6 +110,7 @@ export function ComptagePointageExercise() {
         {
           question: `Combien y a-t-il ${avecDe(manche.nom)} ? (${manche.quantite} ${manche.emoji})`,
           userAnswer: chiffre,
+            ...secondChance.getAttemptMetadata(String(chiffre)),
           correctAnswer: String(manche.quantite),
           status: issue,
         },
@@ -150,6 +151,7 @@ export function ComptagePointageExercise() {
       try {
         if (isHomework && homeworkDate) {
           await saveHomeworkResult({
+            details,
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'comptage-pointage',
@@ -184,6 +186,7 @@ export function ComptagePointageExercise() {
   if (isFinished) {
     return (
       <ExerciseFinished
+        corrected={details.filter(detail => detail.status === 'corrected').length}
         correct={bonnesReponses}
         total={NOMBRE_DE_MANCHES}
         canRestart={!isHomework}

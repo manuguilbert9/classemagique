@@ -12,7 +12,7 @@ interface WordWithSound {
 }
 
 const gnWords: WordWithSound[] = [
-  { word: "gagner", correctSound: "gn", before: "gag", after: "er" },
+  { word: "gagner", correctSound: "gn", before: "ga", after: "er" },
   { word: "soigner", correctSound: "gn", before: "soi", after: "er" },
   { word: "baigner", correctSound: "gn", before: "bai", after: "er" },
   { word: "ligne", correctSound: "gn", before: "li", after: "e" },
@@ -72,11 +72,11 @@ function generateGnNiQuestion(id: number, wordData: WordWithSound): Question {
  * Génère toutes les questions pour l'exercice GN/NI
  * Un passage complet = tous les 20 mots de la liste D4
  */
-export function generateGnNiQuestions(): Question[] {
+export function generateGnNiQuestions(count = 20): Question[] {
   const questions: Question[] = [];
 
   // Mélanger tous les mots
-  const shuffledWords = shuffleArray(allWords);
+  const shuffledWords = shuffleArray(allWords).slice(0, Math.max(0, count));
 
   // Générer une question pour chaque mot (20 questions)
   shuffledWords.forEach((wordData, index) => {

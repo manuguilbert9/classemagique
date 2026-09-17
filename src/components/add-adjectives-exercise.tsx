@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useState, useCallback, useEffect, useContext } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ import {
     horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { AdjectiveEnrichmentSentence } from '@/data/grammaire/adjective-enrichment-sentences';
+import { AdjectiveEnrichmentSentence, formatEnrichedSentence, normalizeEnrichedSentence } from '@/data/grammaire/adjective-enrichment-sentences';
 import { getPooledContent } from '@/services/exercise-pool';
 import {
     AnswerFeedback,
@@ -97,7 +98,10 @@ function SortableWord({ item, disabled }: { item: WordItem; disabled?: boolean }
 }
 
 export function AddAdjectivesExercise() {
+    const searchParams = useSearchParams();
     const { student } = useContext(UserContext);
+    const requestedLevel = searchParams.get('level') ?? student?.levels?.['add-adjectives'];
+    const level = requestedLevel === 'C' ? 'C' : 'B';
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [sentences, setSentences] = useState<AdjectiveEnrichmentSentence[]>([]);
     const [currentSentenceData, setCurrentSentenceData] = useState<AdjectiveEnrichmentSentence | null>(null);
@@ -130,9 +134,10 @@ export function AddAdjectivesExercise() {
     // Les phrases de la séance viennent du stock partagé.
     const loadSentences = useCallback(async () => {
         setSentences(await getPooledContent<AdjectiveEnrichmentSentence>('add-adjectives', NUM_QUESTIONS, {
+            level, settings: { level },
             studentId: student?.id ?? null,
         }));
-    }, [student?.id]);
+    }, [student?.id, level]);
 
     useEffect(() => {
         loadSentences();
@@ -265,12 +270,12 @@ export function AddAdjectivesExercise() {
     const checkAnswer = () => {
         if (!currentSentenceData) return;
 
-        const constructedSentence = sentenceWords.map(w => w.word).join(' ');
-        const isCorrect = currentSentenceData.validSentences.includes(constructedSentence);
+        const constructedSentence = formatEnrichedSentence(sentenceWords.map(w => w.word));
+        const isCorrect = currentSentenceData.validSentences.some(valid => normalizeEnrichedSentence(valid) === normalizeEnrichedSentence(constructedSentence));
 
         // Faux : la phrase reste telle quelle et l'élève déplace ses adjectifs.
         if (!isCorrect) {
-            secondChance.registerError();
+            secondChance.registerError(constructedSentence);
             setFeedback('retry');
             setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
             return;
@@ -280,6 +285,7 @@ export function AddAdjectivesExercise() {
         setSessionDetails(prev => [...prev, {
             question: `Enrichir : "${currentSentenceData.baseSentence}" avec "${currentSentenceData.adjectives.join(', ')}"`,
             userAnswer: constructedSentence,
+            ...secondChance.getAttemptMetadata(constructedSentence),
             correctAnswer: currentSentenceData.validSentences[0],
             status: issue,
         }]);
@@ -331,7 +337,8 @@ export function AddAdjectivesExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={NUM_QUESTIONS}
                 canRestart
                 onRestart={restartExercise}
@@ -367,6 +374,18 @@ export function AddAdjectivesExercise() {
             </CardHeader>
             <CardContent className="min-h-[400px] flex flex-col items-center gap-8 p-6">
 
+                <div className="space-y-2" aria-label="Placement sans glisser">
+                  <p>Choisis où placer chaque adjectif. Les déterminants sont ajustés automatiquement.</p>
+                  {[...adjectives, ...sentenceWords.filter(w => w.type === 'adjective')].map(adj => <label key={adj.id} className="flex flex-wrap gap-2 items-center">
+                    {adj.word}
+                    <select aria-label={`Placer ${adj.word}`} value="" disabled={!!feedback} onChange={event => {
+                      const base = sentenceWords.filter(w => w.id !== adj.id);
+                      base.splice(Number(event.target.value), 0, adj);
+                      setSentenceWords(base); setAdjectives(items => items.filter(w => w.id !== adj.id));
+                    }}><option value="" disabled>Choisir la position</option>{sentenceWords.filter(w => w.id !== adj.id).map((word, index) => <option key={word.id} value={index}>Avant {word.word}</option>)}<option value={sentenceWords.filter(w => w.id !== adj.id).length}>À la fin</option></select>
+                  </label>)}
+                  <p aria-live="polite">{formatEnrichedSentence(sentenceWords.map(w => w.word))}</p>
+                </div>
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}

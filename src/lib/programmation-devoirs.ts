@@ -15,7 +15,7 @@
  */
 
 import { addDays, addWeeks, format, startOfWeek } from 'date-fns';
-import { getSkillBySlug, skills, type Skill } from './skills';
+import { getSkillBySlug, skills, canAssignHomework, type Skill } from './skills';
 import {
   competencePertinente,
   competencesPourNiveau,
@@ -68,9 +68,9 @@ function exercicesDisponibles(
   domaine: (typeof DOMAINES_MATHS)[number] | (typeof DOMAINES_ECRIT)[number]
 ): Skill[] {
   const niveau = eleve.niveauxParDomaine?.[domaine];
-  const candidats = niveau
+  const candidats = (niveau
     ? competencesPourNiveau(domaine, niveau)
-    : skills.filter((s) => s.category === domaine);
+    : skills.filter((s) => s.category === domaine)).filter(canAssignHomework);
 
   // Les exercices mis en avant passent devant : quand plusieurs conviennent au
   // même niveau, on donne celui que l'enseignant a choisi de mettre en avant —

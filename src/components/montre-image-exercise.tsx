@@ -129,6 +129,7 @@ export function MontreImageExercise() {
       try {
         if (isHomework && homeworkDate) {
           await saveHomeworkResult({
+            details,
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'montre-image',

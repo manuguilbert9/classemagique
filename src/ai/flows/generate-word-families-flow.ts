@@ -7,6 +7,7 @@
  * - WordFamiliesOutput - The return type for the generateWordFamilies function.
  */
 
+import { sanitizeWordPairs, FAMILY_FALLBACK } from '@/lib/word-family-validation';
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
@@ -38,7 +39,7 @@ Keep the family members simple and understandable for a child.
 For example, if the input is ["dent", "long"], a good output would be [{"original": "dent", "familyMember": "dentiste"}, {"original": "long", "familyMember": "longueur"}].
 
 Do not provide the same word as a family member. Ensure the family member is a different word.
-Make sure every word in the input list has a corresponding pair in the output.
+Every original must belong to the input list and occur once. Every familyMember must be unique and must not duplicate any original. Omit uncertain families.
 
 Input words:
 {{#each words}}
@@ -55,8 +56,10 @@ const wordFamiliesFlow = ai.defineFlow(
     outputSchema: WordFamiliesOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    try {
+      const { output } = await prompt(input);
+      return { pairs: sanitizeWordPairs(output?.pairs ?? [], input.words) };
+    } catch { return { pairs: FAMILY_FALLBACK.filter(pair => input.words.includes(pair.original)) }; }
   }
 );
 

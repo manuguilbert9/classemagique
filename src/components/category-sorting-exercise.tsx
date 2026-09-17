@@ -97,6 +97,7 @@ export function CategorySortingExercise() {
         {
           question: currentItem.emoji,
           userAnswer: chosenCategory.name,
+            ...secondChance.getAttemptMetadata(String(chosenCategory.name)),
           correctAnswer: correctCategory.name,
           status: issue,
         },
@@ -130,6 +131,7 @@ export function CategorySortingExercise() {
         const score = (correctAnswers / NUM_ITEMS) * 100;
         if (isHomework && homeworkDate) {
           await saveHomeworkResult({
+            details: sessionDetails,
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'category-sorting',
@@ -166,6 +168,7 @@ export function CategorySortingExercise() {
   if (isFinished) {
     return (
       <ExerciseFinished
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
         correct={correctAnswers}
         total={NUM_ITEMS}
         canRestart={!isHomework}

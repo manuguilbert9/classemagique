@@ -67,7 +67,9 @@ function generateTraps(answerNumber: number, count: number): Set<number> {
         attempts++;
     }
 
-    return traps;
+    const bounded = [...traps].filter(n => n >= 60 && n <= 99).slice(0, count);
+    for (let n = 60; bounded.length < count; n++) if (!bounded.includes(n)) bounded.push(n);
+    return new Set(bounded);
 }
 
 // Generates questions for the "nombres-complexes" skill
@@ -75,18 +77,7 @@ function generateTraps(answerNumber: number, count: number): Set<number> {
 export async function generateNombresComplexesQuestion(): Promise<Question> {
     const questionType = Math.random();
 
-    // Select number range with weighted probability
-    // 20% for 0-20, 30% for 21-59, 50% for 60-99 (most challenging)
-    const rangeSelector = Math.random();
-    let answerNumber: number;
-
-    if (rangeSelector < 0.2) {
-        answerNumber = Math.floor(Math.random() * 21); // 0-20
-    } else if (rangeSelector < 0.5) {
-        answerNumber = Math.floor(Math.random() * 39) + 21; // 21-59
-    } else {
-        answerNumber = Math.floor(Math.random() * 40) + 60; // 60-99
-    }
+    const answerNumber = Math.floor(Math.random() * 40) + 60;
 
     const answerText = String(answerNumber);
     const answerAudio = numberToFrench[answerNumber] || answerText;

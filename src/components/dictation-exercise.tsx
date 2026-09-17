@@ -143,7 +143,9 @@ export function DictationExercise() {
               setHasBeenSaved(true);
               const score = (correctAnswers / words.length) * 100;
               if (isHomework && homeworkDate) {
-                  await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: 'dictee', score });
+                  await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level }, userId: student.id, date: homeworkDate, skillSlug: 'dictee', score });
               } else {
                   await addScore({ userId: student.id, skill: 'dictee', score, details: sessionDetails, numberLevelSettings: { level } });
               }

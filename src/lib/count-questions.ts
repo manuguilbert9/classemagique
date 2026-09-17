@@ -16,7 +16,7 @@ export async function generateDénombrementQuestion(settings: CountSettings): Pr
     { emoji: '🚑', name: 'ambulances' }
   ];
   const selectedItem = items[Math.floor(Math.random() * items.length)];
-  const max = settings.maxNumber || 19;
+  const max = Number.isFinite(settings.maxNumber) ? Math.max(3, Math.min(100, Math.floor(settings.maxNumber))) : 19;
   const count = Math.floor(Math.random() * (max - 3 + 1)) + 3; 
 
   return {
@@ -28,6 +28,6 @@ export async function generateDénombrementQuestion(settings: CountSettings): Pr
     countNumber: count,
     answer: String(count),
     // Pass settings for result analysis
-    countSettings: settings,
+    countSettings: { maxNumber: max },
   };
 }

@@ -72,7 +72,9 @@ const viaGenerateQuestions =
 /** Tire des problèmes d'une catégorie, sans répétition à l'intérieur du lot. */
 const problemesDeCategorie =
   (categorie: ProblemCategory): PooledContentGenerator =>
-  async ({ count }) => {
+  async ({ count, level, settings }) => {
+    const requestedLevel = level ?? settings?.level ?? 'B';
+    const difficulty = requestedLevel === 'D' ? 'hard' : requestedLevel === 'C' ? 'medium' : 'easy';
     const problemes: PooledItem[] = [];
     const dejaVus = new Set<string>();
     // La banque est finie : au bout de quelques essais infructueux, on accepte
@@ -81,14 +83,14 @@ const problemesDeCategorie =
 
     while (problemes.length < count && essais < count * 8) {
       essais++;
-      const probleme = await generateProblem(categorie, 'easy');
+      const probleme = await generateProblem(categorie, difficulty);
       if (dejaVus.has(probleme.text)) continue;
       dejaVus.add(probleme.text);
       problemes.push(probleme);
     }
 
     while (problemes.length < count) {
-      problemes.push(await generateProblem(categorie, 'easy'));
+      problemes.push(await generateProblem(categorie, difficulty));
     }
 
     return problemes;
@@ -159,7 +161,7 @@ export const POOLED_GENERATORS: Record<string, PooledContentGenerator> = {
   'long-calculation': async ({ count, settings }) => generateCalculsPoses(settings?.level ?? 'B', count),
   'reperer-nom': async ({ count, settings }) => generatePhrasesNom(settings?.level ?? 'B', count),
   'reperer-adjectif': async ({ count, settings }) => generatePhrasesAdjectif(settings?.level ?? 'B', count),
-  'add-adjectives': async ({ count }) => generatePhrasesAEnrichir(count),
+  'add-adjectives': async ({ count, settings, level }) => generatePhrasesAEnrichir(count, settings?.level ?? level ?? 'B'),
   'label-game': async ({ count, settings }) => generatePhrasesEtiquettes(settings?.level ?? 'B', count),
   'phrase-construction': async ({ count, settings }) => generatePhrasesAConstruire(settings?.level ?? 'B', count),
   'compter-phrases': async ({ count, settings }) => generateTextesACompter(settings?.level ?? 'B', count),

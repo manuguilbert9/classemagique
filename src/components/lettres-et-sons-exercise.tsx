@@ -87,7 +87,7 @@ export function LettresEtSonsExercise() {
 
         // Faux : la sélection reste à l'écran et l'élève la corrige lui-même.
         if (!isCorrect) {
-            secondChance.registerError();
+            secondChance.registerError(selectedWords.join(', '));
             setFeedback('retry');
             setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
             return;
@@ -97,6 +97,7 @@ export function LettresEtSonsExercise() {
         const detail: ScoreDetail = {
             question: `Identifier les mots avec le son [${currentQuestion.sound}]`,
             userAnswer: selectedWords.join(', '),
+            ...secondChance.getAttemptMetadata(String(selectedWords.join(', '))),
             correctAnswer: correctOptions.join(', '),
             status: issue,
         };
@@ -124,6 +125,7 @@ export function LettresEtSonsExercise() {
                 const score = (correctAnswersCount / NUM_QUESTIONS) * 100;
                 if (isHomework && homeworkDate) {
                   await saveHomeworkResult({
+            details: sessionDetails,
                       userId: student.id,
                       date: homeworkDate,
                       skillSlug: 'lettres-et-sons',
@@ -162,7 +164,8 @@ export function LettresEtSonsExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswersCount}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswersCount}
                 total={NUM_QUESTIONS}
                 canRestart={!isHomework}
                 onRestart={restartExercise}
@@ -191,7 +194,7 @@ export function LettresEtSonsExercise() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-4 p-6">
-                    <div className="grid grid-cols-2 gap-4 w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full min-w-0">
                         {currentQuestion.options.map(option => {
                              const isSelected = selectedWords.includes(option.word);
                              const estTrouve = feedback === 'correct' || feedback === 'corrected';
@@ -214,16 +217,21 @@ export function LettresEtSonsExercise() {
                                 )}
                             >
                                 <Checkbox
+                                    aria-label={`Choisir ${option.word}`}
                                     checked={isSelected}
-                                    className="h-6 w-6"
+                                    disabled={!!feedback}
+                                    onClick={(event) => event.stopPropagation()}
+                                    onCheckedChange={() => handleToggleWord(option.word)}
+                                    className="h-11 w-11 shrink-0"
                                 />
-                                <p className="font-bold text-2xl uppercase flex-1">{option.word}</p>
+                                <p className="font-bold text-xl uppercase flex-1 min-w-0 break-words">{option.word}</p>
                                 <Button
                                     variant="ghost"
                                     size="icon"
+                                    aria-label={`Écouter ${option.word}`}
                                     onClick={(e) => { e.stopPropagation(); handleSpeak(option.word); }}
                                     disabled={!!feedback}
-                                    className="h-12 w-12"
+                                    className="h-12 w-12 shrink-0"
                                 >
                                     <Volume2 className="h-8 w-8 text-muted-foreground" />
                                 </Button>

@@ -112,7 +112,7 @@ export function PhraseConstructionExercise() {
 
       // Phrase refusée : on ne consigne rien encore, l'élève va la reprendre.
       if (!result.isCorrect) {
-        secondChance.registerError();
+        secondChance.registerError(userSentence);
         setGameState('feedback');
         return;
       }
@@ -121,6 +121,7 @@ export function PhraseConstructionExercise() {
       setSessionDetails(prev => [...prev, {
         question: `Mots: ${wordsToUse.join(', ')}`,
         userAnswer: userSentence,
+            ...secondChance.getAttemptMetadata(String(userSentence)),
         correctAnswer: userSentence,
         status: issue,
         // Une phrase réécrite après correction ne rapporte pas de points.
@@ -174,6 +175,8 @@ export function PhraseConstructionExercise() {
         let result: { success: boolean; error?: string; nuggetsEarned?: number };
         if (isHomework && homeworkDate) {
           result = await saveHomeworkResultWithNuggets({
+            details: sessionDetails,
+            numberLevelSettings: { level },
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'phrase-construction',

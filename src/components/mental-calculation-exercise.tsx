@@ -97,12 +97,13 @@ export function MentalCalculationExercise() {
     if (!currentQuestion || feedback || !currentQuestion.answer) return;
     
     const userAnswer = userInput.replace(',', '.').trim();
-    const isCorrect = parseFloat(userAnswer) === parseFloat(currentQuestion.answer);
+    const isCorrect = /^[+-]?\d+(?:\.\d+)?$/.test(userAnswer) && Number(userAnswer) === Number(currentQuestion.answer);
     
     const issue = secondChance.resultOnSuccess();
     const detail: ScoreDetail = {
       question: currentQuestion.question,
       userAnswer: userAnswer || "vide",
+      ...secondChance.getAttemptMetadata(userAnswer),
       correctAnswer: String(currentQuestion.answer),
       status: issue,
     };
@@ -110,7 +111,7 @@ export function MentalCalculationExercise() {
     // Faux : on ne passe pas à la suite. L'élève reprend la main
     // jusqu'à donner lui-même la bonne réponse — c'est ainsi qu'il la retient.
     if (!isCorrect) {
-      secondChance.registerError();
+      secondChance.registerError(userAnswer);
       setFeedback('retry');
       setTimeout(() => {
         setFeedback(null);
@@ -143,6 +144,8 @@ export function MentalCalculationExercise() {
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
               if (isHomework && homeworkDate) {
                   await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level: level },
                       userId: student.id,
                       date: homeworkDate,
                       skillSlug: 'mental-calculation',
@@ -187,6 +190,7 @@ export function MentalCalculationExercise() {
   if (isFinished) {
     return (
       <ExerciseFinished
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
         correct={correctAnswers}
         total={NUM_QUESTIONS}
         canRestart={!isHomework}

@@ -204,6 +204,7 @@ export function CopieCapitalesExercise() {
       try {
         if (isHomework && homeworkDate) {
           await saveHomeworkResult({
+            details,
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'copie-capitales',

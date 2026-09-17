@@ -125,6 +125,7 @@ export function NombresComplexesExercise() {
     const detail: ScoreDetail = {
       question: currentQuestion.question,
       userAnswer: userAnswer,
+            ...secondChance.getAttemptMetadata(String(userAnswer)),
       correctAnswer: currentQuestion.answer || 'N/A',
       status: issue,
     };
@@ -132,7 +133,7 @@ export function NombresComplexesExercise() {
     // Faux : on ne passe pas à la suite. L'élève reprend la main
     // jusqu'à donner lui-même la bonne réponse — c'est ainsi qu'il la retient.
     if (!isCorrect) {
-      secondChance.registerError();
+      secondChance.registerError(userAnswer);
       setFeedback('retry');
       setTimeout(() => {
         setFeedback(null);
@@ -160,6 +161,8 @@ export function NombresComplexesExercise() {
         const score = (correctAnswers / NUM_QUESTIONS) * 100;
         if (isHomework && homeworkDate) {
           await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level: 'B' },
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'nombres-complexes',
@@ -272,6 +275,7 @@ export function NombresComplexesExercise() {
   if (isFinished) {
     return (
       <ExerciseFinished
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
         correct={correctAnswers}
         total={NUM_QUESTIONS}
         canRestart={!isHomework}

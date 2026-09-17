@@ -1,4 +1,5 @@
 'use client';
+import { normalizeMarketPrice } from '@/lib/word-problem-math';
 
 import { useState, useEffect, useContext, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -97,9 +98,9 @@ export function FleaMarketExercise() {
             console.error("AI Negotiation failed", error);
             // Fallback logic if AI fails
             setCurrentItem({ name: inputItemName, emoji: "📦" });
-            const fallbackPrice = parseFloat(inputPrice.replace(',', '.'));
+            const fallbackPrice = normalizeMarketPrice(Number(inputPrice.replace(',', '.')), level);
             setPrice(fallbackPrice);
-            setNegotiationMessage("D'accord, je te le prends !");
+            setNegotiationMessage(`Je te propose ${fallbackPrice.toFixed(2).replace(".", ",")} euros.`);
             generatePayment(fallbackPrice);
             setPhase('negotiation');
         } finally {
@@ -217,6 +218,8 @@ export function FleaMarketExercise() {
                 const score = (correctAnswers / NUM_QUESTIONS) * 100;
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level },
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'flea-market',

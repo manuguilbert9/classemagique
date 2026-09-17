@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
-import { addScore } from '@/services/scores';
+import { addScore, type ScoreDetail } from '@/services/scores';
 import { correctProblem, type GeneratedProblem, type CorrectionFeedback } from '@/ai/flows/word-problems-flow';
 import { getPooledContent } from '@/services/exercise-pool';
 import { ERREURS_AVANT_AIDE, ExerciseFinished, ExerciseProgress } from '@/components/exercise/exercise-kit';
@@ -40,6 +40,8 @@ export function WordProblemsExercise() {
     const [sentence, setSentence] = useState('');
 
     const [feedback, setFeedback] = useState<CorrectionFeedback | null>(null);
+    const [details, setDetails] = useState<ScoreDetail[]>([]);
+    const [firstAnswer, setFirstAnswer] = useState<string | null>(null);
     const [score, setScore] = useState(0); // This will now track "problems solved" for UI if needed, or we can just use totalPoints/2 for rough progress
     const [totalPoints, setTotalPoints] = useState(0); // Weighted score: 2 for 1st try, 1 for >1
     const [attempts, setAttempts] = useState(0); // Attempts for current problem
@@ -61,6 +63,7 @@ export function WordProblemsExercise() {
             try {
                 setProblems(await getPooledContent<GeneratedProblem>(skillSlug, NUM_PROBLEMS, {
                     studentId: student?.id ?? null,
+                    level: student?.levels?.[skillSlug] ?? (skillSlug === 'problemes-composition-transformation' ? 'C' : 'B'),
                 }));
             } catch (error) {
                 console.error("Failed to generate problem:", error);
@@ -74,7 +77,7 @@ export function WordProblemsExercise() {
             }
         };
         loadProblems();
-    }, [skillSlug, student?.id]);
+    }, [skillSlug, student?.id, student?.levels?.[skillSlug]]);
 
     // Chaque nouveau problème repart d'une ardoise vierge.
     useEffect(() => {
@@ -83,19 +86,24 @@ export function WordProblemsExercise() {
         setResult('');
         setSentence('');
         setAttempts(0);
+        setFirstAnswer(null);
     }, [currentProblemIndex]);
 
     const handleValidate = async () => {
-        if (!problem) return;
+        if (!problem || !/^[+-]?\d+(?:[.,]\d+)?$/.test(result.trim())) return;
 
+        const writtenAnswer = `${calculation} = ${result}`;
+        if (firstAnswer === null) setFirstAnswer(writtenAnswer);
         setIsCorrecting(true);
         try {
             const correction = await correctProblem({
                 problemText: problem.text,
                 studentCalculation: calculation,
-                studentResult: parseFloat(result.replace(',', '.')),
+                studentResult: Number(result.replace(',', '.')),
                 studentSentence: sentence,
                 expectedResult: problem.expectedResult,
+                expectedData: problem.data,
+                expectedOperation: problem.expectedOperation,
             });
 
             setFeedback(correction);
@@ -104,6 +112,7 @@ export function WordProblemsExercise() {
                 // Résolu du premier coup : le problème rapporte ses points.
                 // Résolu après correction : il ne rapporte rien, mais il compte
                 // quand même comme résolu.
+                setDetails(prev => [...prev, { question: problem.text, userAnswer: writtenAnswer, correctAnswer: String(problem.expectedResult), status: attempts === 0 ? 'correct' : 'corrected', firstAnswer: firstAnswer ?? writtenAnswer, attempts: attempts + 1, hintUsed: attempts > 0 }]);
                 const pointsEarned = attempts === 0 ? 2 : 0;
                 setTotalPoints(prev => prev + pointsEarned);
                 setScore(prev => prev + 1);
@@ -150,6 +159,9 @@ export function WordProblemsExercise() {
             userId: student.id,
             skill: skillSlug,
             score: finalScore,
+            details,
+            numberLevelSettings: { level: student.levels?.[skillSlug] ?? (skillSlug === 'problemes-composition-transformation' ? 'C' : 'B') },
+            metadata: { unit: 'percent', mode: 'math-only-first-attempt' },
         });
 
         if (result.success && result.nuggetsEarned) {
@@ -165,14 +177,14 @@ export function WordProblemsExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={score}
+                correct={totalPoints / 2}
                 total={NUM_PROBLEMS}
                 canRestart
                 onRestart={() => window.location.reload()}
                 returnHref="/en-classe"
             >
                 <p className="text-muted-foreground">
-                    {totalPoints} pépite{totalPoints > 1 ? 's' : ''} gagnée{totalPoints > 1 ? 's' : ''}.
+                    {score} problèmes résolus, dont {totalPoints / 2} du premier coup. {totalPoints} pépite{totalPoints > 1 ? 's' : ''} gagnée{totalPoints > 1 ? 's' : ''}.
                 </p>
             </ExerciseFinished>
         );
@@ -184,7 +196,7 @@ export function WordProblemsExercise() {
                 <ExerciseProgress current={currentProblemIndex} total={NUM_PROBLEMS} className="flex-1" />
                 <div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 font-bold text-amber-800">
                     <Gem className="h-4 w-4" />
-                    <span>{totalPoints} pépites gagnées</span>
+                    <span>{score} problèmes résolus, dont {totalPoints / 2} du premier coup. {totalPoints} pépites gagnées</span>
                 </div>
             </div>
 
@@ -220,7 +232,7 @@ export function WordProblemsExercise() {
                     <div className="space-y-3">
                         <Label htmlFor="calculation" className="text-lg flex items-center gap-2 text-blue-600">
                             <Calculator className="h-5 w-5" />
-                            Le calcul
+                            Le calcul avec les nombres de l’énoncé
                         </Label>
                         <Input
                             id="calculation"
@@ -258,7 +270,7 @@ export function WordProblemsExercise() {
                                 inputMode="decimal"
                                 value={result}
                                 onChange={(e) => {
-                                    const val = e.target.value.replace(/[^0-9.,]/g, '');
+                                    const val = e.target.value.replace(/[^0-9.,+-]/g, '');
                                     setResult(val);
                                 }}
                                 disabled={!!feedback?.isCorrect || isCorrecting}
@@ -286,7 +298,7 @@ export function WordProblemsExercise() {
                     <div className="space-y-3">
                         <Label htmlFor="sentence" className="text-lg flex items-center gap-2 text-green-600">
                             <MessageSquare className="h-5 w-5" />
-                            La phrase réponse
+                            La phrase réponse (facultative)
                         </Label>
                         <Textarea
                             id="sentence"
@@ -295,16 +307,16 @@ export function WordProblemsExercise() {
                             disabled={!!feedback?.isCorrect || isCorrecting}
                             className={cn(
                                 "text-lg p-4 min-h-[100px]",
-                                feedback?.sentenceFeedback ? "border-red-500 bg-red-50" :
+                                feedback?.sentenceFeedback ? "border-blue-300 bg-blue-50" :
                                     feedback?.isCorrect ? "border-green-500 bg-green-50" : ""
                             )}
                         />
                         {feedback && feedback.sentenceFeedback && (
-                            <div className="flex items-start gap-2 text-red-600 text-sm">
+                            <div className="flex items-start gap-2 text-blue-700 text-sm">
                                 <p className="flex-grow">
-                                    <span className="font-bold">Attention :</span> {feedback.sentenceFeedback}
+                                    <span className="font-bold">Conseil :</span> {feedback.sentenceFeedback}
                                 </p>
-                                <Button variant="ghost" size="icon" onClick={() => handleSpeak(`Attention : ${feedback.sentenceFeedback}`)} className="h-6 w-6 text-red-600 hover:bg-red-100">
+                                <Button variant="ghost" size="icon" onClick={() => handleSpeak(`Conseil : ${feedback.sentenceFeedback}`)} className="h-6 w-6 text-blue-700 hover:bg-blue-100">
                                     <Volume2 className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -334,7 +346,7 @@ export function WordProblemsExercise() {
                         <Button
                             size="lg"
                             onClick={handleValidate}
-                            disabled={isCorrecting || !calculation || !result || !sentence}
+                            disabled={isCorrecting || !calculation || !result}
                             className="w-full sm:w-auto text-lg px-8"
                         >
                             {isCorrecting ? (

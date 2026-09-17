@@ -1,4 +1,15 @@
 export const PHRASE_CONSTRUCTION_SENTENCES = [
+    "Le petit garçon range ses jouets dans le coffre avant de partir.",
+    "Chaque matin, les enfants traversent le jardin pour rejoindre leur école.",
+    "Pendant la récréation, ma meilleure amie raconte une histoire aux autres enfants.",
+    "La maîtresse distribue les cahiers que les élèves ont laissés sur son bureau.",
+    "Quand la pluie cesse, les oiseaux quittent leur abri et chantent dans les arbres.",
+    "Mon frère prépare un gâteau au chocolat pendant que je mets la table.",
+    "Les enfants cherchent le ballon qui a roulé derrière le grand arbre.",
+    "Après le repas, nous allons à la bibliothèque pour choisir de nouveaux livres.",
+    "Le chien attend devant la porte pendant que son maître cherche ses clés.",
+    "Dans le jardin, les fleurs que nous avons plantées commencent à pousser.",
+
     // Simple sentences (Subject + Verb + [Object/Adjective]) - Level B
     "Le chat dort sur le lit.",
     "La pomme est rouge.",

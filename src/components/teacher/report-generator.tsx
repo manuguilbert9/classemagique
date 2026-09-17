@@ -18,6 +18,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Student } from '@/services/students';
 import { type Score, CalculationState, ScoreDetail } from '@/services/scores';
+import { formatScore } from '@/lib/score-display';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
 
 const PRIMARY_COLOR = '#ea588b';
@@ -126,14 +127,14 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                     render: (x, y) => {
                         const skillName = getSkillBySlug(score.skill)?.name || score.skill;
                         const scoreDate = format(new Date(score.createdAt), 'dd/MM/yy', { locale: fr });
-                        const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)}%`;
-                        const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
+                        const scoreText = formatScore(score);
+                        const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings, score.readingRaceSettings);
                         
                         let currentY = y;
                         
                         doc.setFontSize(10);
                         doc.setFont('helvetica', 'bold');
-                        doc.text(`${skillName} - ${scoreDate}`, x, currentY);
+                        doc.text(`${skillName} - ${scoreDate}${score.context === 'homework' ? ' (devoirs)' : ''}`, x, currentY);
                         
                         doc.setFont('helvetica', 'normal');
                         doc.setFontSize(9);

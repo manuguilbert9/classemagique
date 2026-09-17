@@ -38,7 +38,7 @@ const allCompetencies: MentalMathCompetency[] = [
     {
         id: 'A1',
         level: 'A',
-        description: 'Compter oralement jusqu\'à 10',
+        description: 'Trouver le nombre suivant jusqu\'à 10',
         generate: () => { const a = randInt(1, 9); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; },
         getHelp: (q) => {
             const n = parseInt(q.question.match(/\d+/)?.[0] || '0');
@@ -48,7 +48,7 @@ const allCompetencies: MentalMathCompetency[] = [
     {
         id: 'A2',
         level: 'A',
-        description: 'Compter oralement jusqu\'à 30',
+        description: 'Trouver le nombre suivant jusqu\'à 30',
         generate: () => { const a = randInt(1, 29); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; },
         getHelp: (q) => {
             const n = parseInt(q.question.match(/\d+/)?.[0] || '0');
@@ -69,7 +69,7 @@ const allCompetencies: MentalMathCompetency[] = [
         id: 'A4',
         level: 'A',
         description: 'Ajouter ou retirer 1 ou 2',
-        generate: () => { const a = randInt(3, 20); const b = choice([1, 2]); return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(a + b) } : { question: `${a} - ${b} = ?`, answer: String(a - b) }; },
+        generate: () => { const a = randInt(3, 20); const b = choice([1, 2]); return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(Number((a + b).toFixed(8))) } : { question: `${a} - ${b} = ?`, answer: String(a - b) }; },
         getHelp: (q) => {
             const parts = q.question.match(/(\d+) (.) (\d+)/);
             if (!parts) return { type: 'text-hint', text: 'Regarde bien les nombres.' };
@@ -129,7 +129,7 @@ const allCompetencies: MentalMathCompetency[] = [
     },
 
     // --- Level B ---
-    { id: 'B1', level: 'B', description: 'Dénombrer jusqu\'à 100', generate: () => { const a = randInt(30, 99); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
+    { id: 'B1', level: 'B', description: 'Trouver le nombre suivant jusqu\'à 100', generate: () => { const a = randInt(30, 99); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
     {
         id: 'B2', level: 'B', description: 'Valeur de position (unités, dizaines)', generate: () => {
             let n: number;
@@ -148,14 +148,14 @@ const allCompetencies: MentalMathCompetency[] = [
             return { type: 'visual-blocks', tens: Math.floor(n / 10), units: n % 10 };
         }
     },
-    { id: 'B3', level: 'B', description: 'Ajouter unités à dizaines entières', generate: () => { const a = randInt(1, 9) * 10; const b = randInt(1, 9); return { question: `${a} + ${b} = ?`, answer: String(a + b) }; } },
-    { id: 'B4', level: 'B', description: 'Additions simples (< 20)', generate: () => { const a = randInt(1, 18); const b = randInt(1, 19 - a); return { question: `${a} + ${b} = ?`, answer: String(a + b) }; } },
+    { id: 'B3', level: 'B', description: 'Ajouter unités à dizaines entières', generate: () => { const a = randInt(1, 9) * 10; const b = randInt(1, 9); return { question: `${a} + ${b} = ?`, answer: String(Number((a + b).toFixed(8))) }; } },
+    { id: 'B4', level: 'B', description: 'Additions simples (< 20)', generate: () => { const a = randInt(1, 18); const b = randInt(1, 19 - a); return { question: `${a} + ${b} = ?`, answer: String(Number((a + b).toFixed(8))) }; } },
     { id: 'B5', level: 'B', description: 'Soustractions simples (résultat >= 0)', generate: () => { const a = randInt(5, 19); const b = randInt(1, a); return { question: `${a} - ${b} = ?`, answer: String(a - b) }; } },
-    { id: 'B6', level: 'B', description: 'Tables d\'addition', generate: () => { const a = randInt(1, 10); const b = randInt(1, 10); return { question: `${a} + ${b} = ?`, answer: String(a + b) }; } },
+    { id: 'B6', level: 'B', description: 'Tables d\'addition', generate: () => { const a = randInt(1, 10); const b = randInt(1, 10); return { question: `${a} + ${b} = ?`, answer: String(Number((a + b).toFixed(8))) }; } },
     { id: 'B7', level: 'B', description: 'Doubles des nombres jusqu\'à 10', generate: () => { const a = randInt(1, 10); return { question: `Double de ${a} ?`, answer: String(a * 2) }; } },
     { id: 'B8', level: 'B', description: 'Moitiés des nombres pairs jusqu\'à 20', generate: () => { const a = randInt(1, 10) * 2; return { question: `Moitié de ${a} ?`, answer: String(a / 2) }; } },
-    { id: 'B9', level: 'B', description: 'Ajouter/retirer des dizaines entières', generate: () => { const a = randInt(2, 9) * 10; const b = randInt(1, Math.floor(a / 10)) * 10; return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(a + b) } : { question: `${a} - ${b} = ?`, answer: String(a - b) }; } },
-    { id: 'B10', level: 'B', description: 'Additions/soustractions sans retenue', generate: () => { let a = randInt(21, 98); let b = randInt(11, a - 11); if ((a % 10) < (b % 10) || (a % 10) + (b % 10) > 9) return allCompetencies.find(c => c.id === 'B10')!.generate(); return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(a + b) } : { question: `${a} - ${b} = ?`, answer: String(a - b) }; } },
+    { id: 'B9', level: 'B', description: 'Ajouter/retirer des dizaines entières', generate: () => { const a = randInt(2, 9) * 10; const b = randInt(1, Math.floor(a / 10)) * 10; return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(Number((a + b).toFixed(8))) } : { question: `${a} - ${b} = ?`, answer: String(a - b) }; } },
+    { id: 'B10', level: 'B', description: 'Additions/soustractions sans retenue', generate: () => { let a = randInt(21, 98); let b = randInt(11, a - 11); if ((a % 10) < (b % 10) || (a % 10) + (b % 10) > 9) return allCompetencies.find(c => c.id === 'B10')!.generate(); return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(Number((a + b).toFixed(8))) } : { question: `${a} - ${b} = ?`, answer: String(a - b) }; } },
 
     // --- Level C ---
     {
@@ -173,19 +173,19 @@ const allCompetencies: MentalMathCompetency[] = [
             return { question: `Quel est le chiffre des ${type} dans ${n} ?`, answer: String(ans) };
         }
     },
-    { id: 'C2', level: 'C', description: 'Dénombrer jusqu\'à 1 000', generate: () => { const a = randInt(100, 999); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
+    { id: 'C2', level: 'C', description: 'Trouver le nombre suivant jusqu\'à 1 000', generate: () => { const a = randInt(100, 999); return { question: `Quel nombre vient après ${a} ?`, answer: String(a + 1) }; } },
     { id: 'C3', level: 'C', description: 'Doubles (jusqu\'à 50 et dizaines)', generate: () => { const a = Math.random() > 0.5 ? randInt(11, 50) : randInt(1, 9) * 10; return { question: `Double de ${a} ?`, answer: String(a * 2) }; } },
     { id: 'C4', level: 'C', description: 'Moitiés des nombres (< 100)', generate: () => { const a = randInt(1, 50) * 2; return { question: `Moitié de ${a} ?`, answer: String(a / 2) }; } },
-    { id: 'C5', level: 'C', description: 'Ajouter/retirer des centaines entières', generate: () => { const a = randInt(2, 9) * 100; const b = randInt(1, Math.floor(a / 100)) * 100; return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(a + b) } : { question: `${a} - ${b} = ?`, answer: String(a - b) }; } },
-    { id: 'C6', level: 'C', description: 'Addition par décomposition', generate: () => { const a = randInt(21, 88); const b = randInt(11, 99 - a); return { question: `${a} + ${b} = ?`, answer: String(a + b) }; } },
-    { id: 'C7', level: 'C', description: 'Addition par compensation', generate: () => { const a = randInt(21, 88); const b = randInt(1, 9) + (choice([1, 2, 3, 4, 5, 6, 7, 8]) * 10); return { question: `${a} + ${b} = ?`, answer: String(a + b) }; } },
+    { id: 'C5', level: 'C', description: 'Ajouter/retirer des centaines entières', generate: () => { const a = randInt(2, 9) * 100; const b = randInt(1, Math.floor(a / 100)) * 100; return Math.random() > 0.5 ? { question: `${a} + ${b} = ?`, answer: String(Number((a + b).toFixed(8))) } : { question: `${a} - ${b} = ?`, answer: String(a - b) }; } },
+    { id: 'C6', level: 'C', description: 'Addition par décomposition', generate: () => { const a = randInt(21, 88); const b = randInt(11, 99 - a); return { question: `${a} + ${b} = ?`, answer: String(Number((a + b).toFixed(8))) }; } },
+    { id: 'C7', level: 'C', description: 'Addition par compensation', generate: () => { const a = randInt(21, 88); const b = randInt(1, 9) + (choice([1, 2, 3, 4, 5, 6, 7, 8]) * 10); return { question: `${a} + ${b} = ?`, answer: String(Number((a + b).toFixed(8))) }; } },
     { id: 'C8', level: 'C', description: 'Soustraction par jalonnement', generate: () => { const a = randInt(51, 99); const b = randInt(11, a - 20); return { question: `${a} - ${b} = ?`, answer: String(a - b) }; } },
     { id: 'C9', level: 'C', description: 'Compléter à la centaine/millier', generate: () => { const target = choice([100, 1000]); const a = randInt(Math.floor(target / 2), target - 1); return { question: `${a} + ? = ${target}`, answer: String(target - a) }; } },
     {
         id: 'C10',
         level: 'C',
         description: 'Tables de multiplication (0-10)',
-        generate: () => { const a = randInt(0, 10); const b = randInt(0, 10); return { question: `${a} × ${b} = ?`, answer: String(a * b) }; },
+        generate: () => { const a = randInt(0, 10); const b = randInt(0, 10); return { question: `${a} × ${b} = ?`, answer: String(Number((a * b).toFixed(8))) }; },
         getHelp: (q) => {
             const parts = q.question.match(/(\d+) (.) (\d+)/);
             if (!parts) return { type: 'text-hint', text: 'C\'est une multiplication.' };
@@ -197,7 +197,7 @@ const allCompetencies: MentalMathCompetency[] = [
         id: 'C11',
         level: 'C',
         description: 'Multiplier par 10, 100, 1000',
-        generate: () => { const a = randInt(1, 500); const b = choice([10, 100, 1000]); return { question: `${a} × ${b} = ?`, answer: String(a * b) }; },
+        generate: () => { const a = randInt(1, 500); const b = choice([10, 100, 1000]); return { question: `${a} × ${b} = ?`, answer: String(Number((a * b).toFixed(8))) }; },
         getHelp: (q) => {
             const parts = q.question.match(/(\d+) (.) (\d+)/);
             const b = parts ? parts[3] : '10';
@@ -222,7 +222,7 @@ const allCompetencies: MentalMathCompetency[] = [
         id: 'D1',
         level: 'D',
         description: 'Multiplier par 5, 25, 50',
-        generate: () => { const b = choice([5, 25, 50]); const a = randInt(2, 40); return { question: `${a} × ${b} = ?`, answer: String(a * b) }; },
+        generate: () => { const b = choice([5, 25, 50]); const a = randInt(2, 40); return { question: `${a} × ${b} = ?`, answer: String(Number((a * b).toFixed(8))) }; },
         getHelp: (q) => {
             const parts = q.question.match(/(\d+) (.) (\d+)/);
             const b = parts ? parseInt(parts[3]) : 5;
@@ -233,17 +233,17 @@ const allCompetencies: MentalMathCompetency[] = [
             return { type: 'text-hint', text: hint };
         }
     },
-    { id: 'D2', level: 'D', description: 'Calculer 10% d\'un nombre', generate: () => { const a = randInt(1, 100) * 10; return { question: `10% de ${a} ?`, answer: String(a * 0.1) }; } },
+    { id: 'D2', level: 'D', description: 'Calculer 10% d\'un nombre', generate: () => { const a = randInt(1, 100) * 10; return { question: `10% de ${a} ?`, answer: String(Number((a * 0.1).toFixed(8))) }; } },
     { id: 'D3', level: 'D', description: 'Calculer 25%, 50%, 75% d\'un nombre', generate: () => { const a = randInt(1, 25) * 4; const p = choice([25, 50, 75]); return { question: `${p}% de ${a} ?`, answer: String(a * (p / 100)) }; } },
     { id: 'D4', level: 'D', description: 'Calculer une fraction simple d\'un nombre', generate: () => { const d = choice([2, 3, 4, 5]); const n = randInt(1, d - 1); const a = randInt(2, 10) * d; return { question: `${n}/${d} de ${a} ?`, answer: String(a * n / d) }; } },
-    { id: 'D5', level: 'D', description: 'Addition/soustraction de décimaux simples', generate: () => { const a = randInt(1, 500) / 10; const b = randInt(1, 500) / 10; return Math.random() > 0.5 ? { question: `${String(a).replace('.', ',')} + ${String(b).replace('.', ',')} = ?`, answer: String(a + b) } : { question: `${String(Math.max(a, b)).replace('.', ',')} - ${String(Math.min(a, b)).replace('.', ',')} = ?`, answer: String(Math.max(a, b) - Math.min(a, b)) }; } },
+    { id: 'D5', level: 'D', description: 'Addition/soustraction de décimaux simples', generate: () => { const a = randInt(1, 500) / 10; const b = randInt(1, 500) / 10; return Math.random() > 0.5 ? { question: `${String(a).replace('.', ',')} + ${String(b).replace('.', ',')} = ?`, answer: String(Number((a + b).toFixed(8))) } : { question: `${String(Math.max(a, b)).replace('.', ',')} - ${String(Math.min(a, b)).replace('.', ',')} = ?`, answer: String(Number((Math.max(a, b) - Math.min(a, b)).toFixed(8))) }; } },
     { id: 'D6', level: 'D', description: 'Carrés parfaits (1-12)', generate: () => { const a = randInt(1, 12); return { question: `${a}² = ?`, answer: String(a * a) }; } },
     { id: 'D7', level: 'D', description: 'Critères de divisibilité', generate: () => { const d = choice([2, 3, 5, 9, 10]); const isDivisible = Math.random() > 0.5; let n; if (isDivisible) { n = randInt(2, 100) * d; } else { n = randInt(10, 500); if (n % d === 0) n++; } return { question: `${n} est-il divisible par ${d} ?`, answer: isDivisible ? 'oui' : 'non' }; } },
     {
         id: 'D8',
         level: 'D',
         description: 'Multiplier/diviser par 0.1, 0.5',
-        generate: () => { const b = choice([0.1, 0.5]); const a = randInt(10, 200); return Math.random() > 0.5 ? { question: `${a} × ${b} = ?`, answer: String(a * b) } : { question: `${a} ÷ ${b} = ?`, answer: String(a / b) }; },
+        generate: () => { const b = choice([0.1, 0.5]); const a = randInt(10, 200); return Math.random() > 0.5 ? { question: `${a} × ${b} = ?`, answer: String(Number((a * b).toFixed(8))) } : { question: `${a} ÷ ${b} = ?`, answer: String(a / b) }; },
         getHelp: (q) => {
             const parts = q.question.match(/(\d+) (.) ([\d\.]+)/);
             const b = parts ? parseFloat(parts[3]) : 0.1;

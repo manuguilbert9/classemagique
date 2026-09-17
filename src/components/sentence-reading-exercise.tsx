@@ -49,30 +49,15 @@ export function SentenceReadingExercise() {
   const checkAnswer = (spokenText: string) => {
     if (!currentSentence || isChecking) return;
     
-    setIsChecking(true);
-    stopListening(); // Ensure listening is stopped before checking
-    
-    const isCorrect = normalize(spokenText) === normalize(currentSentence);
-    
-    const detail: ScoreDetail = {
-        question: `Lire : "${currentSentence}"`,
-        userAnswer: spokenText,
-        correctAnswer: currentSentence,
-        status: isCorrect ? 'correct' : 'incorrect',
-    };
-    setSessionDetails(prev => [...prev, detail]);
-
-    setFeedback(isCorrect ? 'correct' : 'incorrect');
-
-    if (isCorrect) {
-      setShowConfetti(true);
-      setTimeout(handleNextSentence, 2000);
-    } else {
-        // If incorrect, we are no longer checking, user has to retry
-        setIsChecking(false);
-    }
+    setTranscript(spokenText);
   };
-
+  const [transcript, setTranscript] = useState('');
+  const validateByAdult = (correct: boolean) => {
+    stopListening();
+    setSessionDetails(prev => [...prev, { question: `Lire : "${currentSentence}"`, userAnswer: 'Observation adulte', correctAnswer: currentSentence, status: correct ? 'correct' : 'incorrect' }]);
+    setTranscript('');
+    handleNextSentence();
+  };
 
   const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
       onResult: (result) => {
@@ -80,7 +65,8 @@ export function SentenceReadingExercise() {
       },
       onError: (err) => {
         if (err === 'aborted') return;
-        setFeedback('incorrect');
+        setTranscript('Micro indisponible : poursuivre avec la validation adulte.');
+        setFeedback(null);
         setIsChecking(false);
       }
   });
@@ -146,6 +132,8 @@ export function SentenceReadingExercise() {
               
               if (isHomework && homeworkDate) {
                 await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level: 'B' },
                     userId: student.id,
                     date: homeworkDate,
                     skillSlug: 'lire-des-phrases',
@@ -178,18 +166,6 @@ export function SentenceReadingExercise() {
     setIsChecking(false);
   };
   
-  if (!isSupported) {
-    return (
-      <Card className="w-full max-w-lg mx-auto shadow-2xl p-6">
-        <CardHeader>
-          <CardTitle className="text-center text-destructive">Erreur</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center">Désolé, la reconnaissance vocale n'est pas supportée par ce navigateur. Veuillez essayer avec Google Chrome ou Microsoft Edge.</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -255,7 +231,7 @@ export function SentenceReadingExercise() {
             </p>
             <Button
                 onClick={isListening ? stopListening : startListening}
-                disabled={!!feedback || isChecking}
+                disabled={!isSupported || isChecking}
                 size="lg"
                 className={cn("rounded-full h-24 w-24", 
                     isListening && 'bg-red-500 hover:bg-red-600 animate-pulse',
@@ -264,6 +240,9 @@ export function SentenceReadingExercise() {
              >
                 {isChecking ? <Loader2 className="h-10 w-10 animate-spin" /> : <Mic className="h-10 w-10"/>}
             </Button>
+          <p className="text-sm">La transcription est indicative. Un adulte écoute et valide la lecture.</p>
+          {transcript && <p aria-live="polite">Transcription : {transcript}</p>}
+          <div className="flex flex-wrap gap-2"><Button onClick={() => validateByAdult(true)}>Adulte : lecture réussie</Button><Button variant="outline" onClick={() => validateByAdult(false)}>Adulte : à retravailler</Button></div>
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (

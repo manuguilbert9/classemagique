@@ -87,6 +87,7 @@ export function MbpRuleExercise() {
         const detail: ScoreDetail = {
             question: `Compléter: ${currentQuestion.missingPart}`,
             userAnswer: selectedLetter,
+            ...secondChance.getAttemptMetadata(String(selectedLetter)),
             correctAnswer: currentQuestion.correctLetter,
             status: issue,
         };
@@ -108,6 +109,7 @@ export function MbpRuleExercise() {
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
               if (isHomework && homeworkDate) {
                 await saveHomeworkResult({
+            details: sessionDetails,
                     userId: student.id,
                     date: homeworkDate,
                     skillSlug: 'regle-mbp',
@@ -145,7 +147,8 @@ export function MbpRuleExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={NUM_QUESTIONS}
                 canRestart={!isHomework}
                 onRestart={restartExercise}

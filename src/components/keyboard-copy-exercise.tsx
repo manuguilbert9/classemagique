@@ -33,6 +33,7 @@ export function KeyboardCopyExercise() {
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
+    const [wordErrors, setWordErrors] = useState(0);
 
     useEffect(() => {
         setWords(getSimpleWords(WORDS_PER_EXERCISE));
@@ -57,16 +58,23 @@ export function KeyboardCopyExercise() {
     }, [currentWord, handleSpeak]);
 
     const processInput = (input: string) => {
+        if (showConfetti || isFinished) return;
+        input = input.normalize('NFC');
         const targetPart = currentWord.substring(0, input.length);
         if (input.toLowerCase() === targetPart.toLowerCase()) {
             setTypedWord(input);
+        } else {
+            setWordErrors(count => count + 1);
         }
     }
 
     const handlePhysicalKeystroke = (e: KeyboardEvent) => {
-        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (e.key.length === 1 && /^\p{L}$/u.test(e.key)) {
+             e.preventDefault();
              processInput(typedWord + e.key);
         } else if (e.key === 'Backspace') {
+            e.preventDefault();
             processInput(typedWord.slice(0, -1));
         }
     }
@@ -86,18 +94,18 @@ export function KeyboardCopyExercise() {
             document.removeEventListener('keydown', handlePhysicalKeystroke);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [typedWord, currentWord]);
+    }, [typedWord, currentWord, showConfetti, isFinished]);
 
 
     useEffect(() => {
         if (typedWord.toLowerCase() === currentWord.toLowerCase() && currentWord !== '') {
-            setCorrectAnswers(prev => prev + 1);
+            setCorrectAnswers(prev => prev + (wordErrors === 0 ? 1 : 0));
             setShowConfetti(true);
             const detail: ScoreDetail = {
                 question: `Recopier "${currentWord}"`,
                 userAnswer: typedWord,
                 correctAnswer: currentWord,
-                status: 'correct',
+                status: wordErrors === 0 ? 'correct' : 'corrected',
             };
             setSessionDetails(prev => [...prev, detail]);
 
@@ -106,6 +114,7 @@ export function KeyboardCopyExercise() {
                 if (currentWordIndex < wordsCount - 1) {
                     setCurrentWordIndex(prev => prev + 1);
                     setTypedWord('');
+                    setWordErrors(0);
                 } else {
                     setIsFinished(true);
                 }
@@ -124,6 +133,7 @@ export function KeyboardCopyExercise() {
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'keyboard-copy',
+                        details: sessionDetails,
                         score: score
                      });
                 } else {
@@ -152,6 +162,7 @@ export function KeyboardCopyExercise() {
         setCorrectAnswers(0);
         setHasBeenSaved(false);
         setSessionDetails([]);
+        setWordErrors(0);
     };
     
     if (isFinished) {
@@ -163,7 +174,7 @@ export function KeyboardCopyExercise() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <p className="text-2xl">
-                        Bravo ! Tu as recopié <span className="font-bold text-primary">{correctAnswers}</span> mots sur <span className="font-bold">{wordsCount}</span>.
+                        Tu as recopié {wordsCount} mots, dont <span className="font-bold text-primary">{correctAnswers}</span> sans erreur.
                     </p>
                     <ScoreTube score={score} />
                     {isHomework ? (
@@ -190,17 +201,17 @@ export function KeyboardCopyExercise() {
                     <CardTitle className="font-headline text-3xl">Recopie le mot suivant</CardTitle>
                 </CardHeader>
                 <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
-                    <div className="flex items-center gap-6">
-                         {currentWordObject?.emoji !== '📝' && <span className="text-7xl">{currentWordObject?.emoji}</span>}
-                         <div className="font-mono text-7xl sm:text-8xl font-bold tracking-widest uppercase p-4 bg-muted rounded-lg">
+                    <div className="flex flex-wrap justify-center items-center gap-3 w-full min-w-0">
+                         {currentWordObject?.emoji !== '📝' && <span className="text-5xl" aria-hidden="true">{currentWordObject?.emoji}</span>}
+                         <div className="w-full order-first break-all font-mono text-4xl sm:text-6xl font-bold tracking-wide uppercase p-3 bg-muted rounded-lg">
                             {currentWord}
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => handleSpeak(currentWord)} className="h-16 w-16">
+                        <Button aria-label="Écouter le mot" variant="ghost" size="icon" onClick={() => handleSpeak(currentWord)} className="h-14 w-14">
                             <Volume2 className="h-10 w-10 text-muted-foreground" />
                         </Button>
                     </div>
 
-                    <div className="relative font-mono text-5xl sm:text-6xl font-bold tracking-wider uppercase">
+                    <div aria-hidden="true" className="relative flex flex-wrap justify-center font-mono text-3xl sm:text-5xl font-bold uppercase">
                         {currentWord.split('').map((char, index) => {
                             const isTyped = index < typedWord.length;
                             const isCurrent = index === typedWord.length;
@@ -225,9 +236,12 @@ export function KeyboardCopyExercise() {
                         type="text"
                         value={typedWord}
                         onChange={handleInputChange}
-                        className="absolute -top-full"
-                        autoFocus
-                        onBlur={(e) => e.target.focus()}
+                        aria-label="Recopier le mot"
+                        autoComplete="off"
+                        autoCapitalize="characters"
+                        spellCheck={false}
+                        disabled={showConfetti}
+                        className="w-full min-h-12 rounded-lg border-2 border-primary/30 p-2 text-center text-2xl uppercase"
                     />
                 </CardContent>
                 <CardFooter>
@@ -238,7 +252,7 @@ export function KeyboardCopyExercise() {
                 </CardFooter>
             </Card>
 
-            {showVirtualKeyboard && <VirtualKeyboard onKeyPress={handleVirtualKeystroke} />}
+            {showVirtualKeyboard && <VirtualKeyboard disabled={showConfetti} onKeyPress={handleVirtualKeystroke} />}
         </div>
     )
 }

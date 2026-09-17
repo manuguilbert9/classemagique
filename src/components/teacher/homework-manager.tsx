@@ -1,5 +1,6 @@
 
 'use client';
+import { resolveAssignment } from '@/lib/homework-assignment';
 
 import { useState, useMemo, useEffect, Fragment } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
@@ -12,7 +13,7 @@ import { format, addDays, startOfWeek, addWeeks, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { type Group } from '@/services/groups';
 import { type Student } from '@/services/students';
-import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
+import { skills, getSkillBySlug, canAssignHomework, type Skill } from '@/lib/skills';
 import { saveHomework, saveHomeworkForStudents, type Homework, type Assignment, HomeworkResult } from '@/services/homework';
 import { DICTEES_CE2, formatSessionId, libelleSession, parseSessionId } from '@/services/dictees';
 import { OPTIONS_PAR_DEFAUT, genererPourEleve, genererPourEleves, resumerAssignment, type OptionsProgrammation } from '@/lib/programmation-devoirs';
@@ -30,8 +31,8 @@ interface HomeworkManagerProps {
   allHomeworkResults: HomeworkResult[];
 }
 
-const frenchSkills = skills.filter(s => ['Phonologie', 'Lecture / compréhension', 'Ecriture', 'Grammaire', 'Conjugaison', 'Vocabulaire', 'Orthographe'].includes(s.category));
-const mathSkills = skills.filter(s => ['Nombres et calcul', 'Grandeurs et mesures', 'Espace et géométrie', 'Problèmes', 'Organisation et gestion de données'].includes(s.category));
+const frenchSkills = skills.filter(s => canAssignHomework(s) && ['Phonologie', 'Lecture / compréhension', 'Ecriture', 'Grammaire', 'Conjugaison', 'Vocabulaire', 'Orthographe'].includes(s.category));
+const mathSkills = skills.filter(s => canAssignHomework(s) && ['Nombres et calcul', 'Grandeurs et mesures', 'Espace et géométrie', 'Problèmes', 'Organisation et gestion de données'].includes(s.category));
 
 
 export function HomeworkManager({ students, groups, allHomework, allHomeworkResults }: HomeworkManagerProps) {
@@ -850,9 +851,10 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                               {groupStudents.map(student => {
-                                const francaisStatus = getCompletionStatus(student.id, groupAssignment.francais);
-                                const mathsStatus = getCompletionStatus(student.id, groupAssignment.maths);
-                                const orthoStatus = getCompletionStatus(student.id, groupAssignment.orthographe ?? null);
+                                const effective = resolveAssignment({assignments, assignmentsByStudent: allHomework.find(h => h.id === (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''))?.assignmentsByStudent}, student.id, group.id);
+                                const francaisStatus = getCompletionStatus(student.id, effective?.francais ?? null);
+                                const mathsStatus = getCompletionStatus(student.id, effective?.maths ?? null);
+                                const orthoStatus = getCompletionStatus(student.id, effective?.orthographe ?? null);
 
                                 return (
                                   <div key={student.id} className="flex items-center gap-2 p-2 bg-background/50 rounded-lg border border-secondary/50 hover:border-primary/20 transition-colors">

@@ -1,6 +1,7 @@
 
 
 import { type ReactElement } from 'react';
+import { PROGRESSIVE_EXERCISES, getProgressiveExercise } from './progressive-exercises';
 import {
   Clock,
   PiggyBank,
@@ -97,9 +98,15 @@ export interface Skill {
   icon: ReactElement;
   category: SkillCategory;
   isFixedLevel?: SkillLevel;
+  /** Repère pédagogique affiché, indépendant de l'échelle historique de réglage. */
+  pedagogicalLevel?: 'A' | 'B−' | 'B' | 'B+' | 'C';
   allowedLevels?: SkillLevel[];
   /** Un outil libre (ex : cahier d'écriture) plutôt qu'un exercice noté : toujours accessible, jamais filtré par la mise en avant du professeur. */
   isTool?: boolean;
+  /** false : atelier libre sans contrat de validation des devoirs. */
+  supportsHomework?: boolean;
+  /** Progression pilotée dans l’atelier, sans palier A/B/C/D imposé au profil. */
+  progressionLabel?: string;
 }
 
 /** Regroupement des matières en trois pôles, pour la navigation par onglets sur la page "En classe". */
@@ -343,6 +350,15 @@ const LireMotsIcon = () => (
 
 
 export const skills: Skill[] = [
+  ...PROGRESSIVE_EXERCISES.map((exercise): Skill => ({
+    name: exercise.name,
+    slug: exercise.slug,
+    description: `Niveau ${exercise.level} — ${exercise.description}`,
+    category: exercise.category,
+    icon: exercise.family === 'math' || exercise.category === 'Nombres et calcul' ? <Calculator /> : <BookCopy />,
+    isFixedLevel: exercise.technicalLevel,
+    pedagogicalLevel: exercise.level,
+  })),
   {
     name: 'Décodage',
     slug: 'decoding',
@@ -354,6 +370,7 @@ export const skills: Skill[] = [
   {
     name: 'Tableaux de syllabes',
     slug: 'syllable-table',
+    supportsHomework: false,
     description: "Lis des tableaux de syllabes pour t'entraîner à la lecture rapide.",
     icon: <Table />,
     category: 'Phonologie',
@@ -436,6 +453,7 @@ export const skills: Skill[] = [
   {
     name: 'Lettres dans le désordre',
     slug: 'jumbled-words',
+    progressionLabel: 'Liste de mots choisie',
     description: "Remets les lettres dans le bon ordre pour retrouver le mot.",
     icon: <Puzzle />,
     category: 'Orthographe',
@@ -443,6 +461,7 @@ export const skills: Skill[] = [
   {
     name: 'Sens de lecture',
     slug: 'reading-direction',
+    supportsHomework: false,
     description: 'Appuie sur les objets de gauche à droite, ligne par ligne, pour t\'habituer au sens de la lecture.',
     icon: <ArrowRight />,
     category: 'Lecture / compréhension',
@@ -467,6 +486,7 @@ export const skills: Skill[] = [
   {
     name: 'Fluence',
     slug: 'fluence',
+    progressionLabel: 'Texte choisi, niveaux B à D',
     description: "Chronomètre ta lecture d'un texte et calcule ton score de fluence (MCLM).",
     icon: <Rocket />,
     category: 'Lecture / compréhension',
@@ -474,6 +494,7 @@ export const skills: Skill[] = [
   {
     name: 'Cahier d\'écriture',
     slug: 'writing-notebook',
+    supportsHomework: false,
     description: 'Écris librement chaque jour pour t\'entraîner et garder une trace de tes textes.',
     icon: <BookCopy />,
     category: 'Ecriture',
@@ -687,6 +708,7 @@ export const skills: Skill[] = [
   {
     name: 'Calcul mental adaptatif',
     slug: 'adaptive-mental-calculation',
+    progressionLabel: 'Progression adaptative A1–D8',
     description: "Un entraînement qui s'adapte à ton niveau pour progresser à ton rythme.",
     icon: <Wand />,
     category: 'Nombres et calcul',
@@ -694,6 +716,7 @@ export const skills: Skill[] = [
   {
     name: 'Soustractions chronométrées',
     slug: 'soustraction-mentale',
+    progressionLabel: 'Niveau choisi dans l’exercice',
     description: "Un maximum de soustractions en 2 minutes.",
     icon: <div className="h-full w-full rounded-full border-4 border-current flex items-center justify-center text-4xl font-bold">-</div>,
     category: 'Nombres et calcul',
@@ -701,6 +724,7 @@ export const skills: Skill[] = [
   {
     name: 'Tables de multiplication',
     slug: 'tables-multiplication',
+    progressionLabel: 'Tables choisies de 1 à 10',
     description: "Un maximum de multiplications en 1 minute.",
     icon: <div className="h-full w-full rounded-full border-4 border-current flex items-center justify-center text-4xl font-bold">×</div>,
     category: 'Nombres et calcul',
@@ -708,6 +732,7 @@ export const skills: Skill[] = [
   {
     name: 'La Monnaie',
     slug: 'currency',
+    allowedLevels: ['A', 'B', 'C', 'D'],
     description: 'Apprendre à utiliser les pièces et les billets en euros.',
     icon: <PiggyBank />,
     category: 'Grandeurs et mesures',
@@ -771,7 +796,7 @@ export const skills: Skill[] = [
   {
     name: 'Problèmes Complexes',
     slug: 'problemes-composition-transformation',
-    description: "Résous des problèmes avec des nombres relatifs et des bilans.",
+    description: "Résous des problèmes en deux étapes et calcule un bilan.",
     icon: <Calculator />,
     category: 'Problèmes',
     allowedLevels: ['C', 'D'],
@@ -810,6 +835,8 @@ export function difficultyLevelToString(
   countSettings?: CountSettings,
   readingRaceSettings?: ReadingRaceSettings
 ): string | null {
+  const progressive = getProgressiveExercise(skillSlug);
+  if (progressive) return `Niveau ${progressive.level}`;
   const skill = getSkillBySlug(skillSlug);
   if (skill?.isFixedLevel) {
     return `Niveau ${skill.isFixedLevel}`;
@@ -839,15 +866,15 @@ export function difficultyLevelToString(
     return "Niveau A"; // isFixedLevel handles this, but as a fallback.
   }
 
-  // Fallback for skills that might not have detailed settings but are level-based
-  if (skill?.allowedLevels) {
-    // Find student level for this skill if available, otherwise make a guess
-    if (scoreValue < 50) return `Niveau ${skill.allowedLevels[0]}`;
-    if (scoreValue < 80 && skill.allowedLevels.length > 1) return `Niveau ${skill.allowedLevels[1]}`;
-    return `Niveau ${skill.allowedLevels[skill.allowedLevels.length - 1]}`;
-  }
+  // Le taux de réussite ne permet jamais de reconstituer la difficulté passée.
+  if (skill?.allowedLevels) return 'Niveau non renseigné';
 
 
   // Fallback for any other case where level can't be determined
   return null;
+}
+
+/** Seules les activités capables de valider une séance sont attribuables. */
+export function canAssignHomework(skill: Skill): boolean {
+  return !skill.isTool && skill.supportsHomework !== false;
 }

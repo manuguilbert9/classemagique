@@ -151,6 +151,7 @@ export function CompterPhrasesExercise() {
       {
         question: `Combien de phrases ? « ${debut}… »`,
         userAnswer: String(nombre),
+            ...secondChance.getAttemptMetadata(String(String(nombre))),
         correctAnswer: String(texte.reponse),
         status: issue,
       },
@@ -172,7 +173,8 @@ export function CompterPhrasesExercise() {
       setHasBeenSaved(true);
       const score = (correctAnswers / NUM_QUESTIONS) * 100;
       if (isHomework && homeworkDate) {
-        await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: SLUG, score });
+        await saveHomeworkResult({
+            details: sessionDetails, userId: student.id, date: homeworkDate, skillSlug: SLUG, score });
       } else {
         await addScore({ userId: student.id, skill: SLUG, score, details: sessionDetails });
       }
@@ -199,6 +201,7 @@ export function CompterPhrasesExercise() {
   if (isFinished) {
     return (
       <ExerciseFinished
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
         correct={correctAnswers}
         total={NUM_QUESTIONS}
         canRestart={!isHomework}

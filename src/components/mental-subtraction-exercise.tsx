@@ -35,6 +35,12 @@ export function MentalSubtractionExercise() {
     const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
+    const [timerEnabled, setTimerEnabled] = useState(false);
+    const deadline = useRef(0);
+    const completedDuration = useRef(0);
+    const finish = () => { completedDuration.current = Math.max(0, Math.min(GAME_DURATION_S, Math.round((Date.now() - (deadline.current - GAME_DURATION_S * 1000)) / 1000))); setGameState('finished'); };
+    const transition = useRef<ReturnType<typeof setTimeout>>();
+    const answering = useRef(false);
     const [viewedQuestions, setViewedQuestions] = useState<Set<string>>(new Set());
 
     const timerRef = useRef<NodeJS.Timeout>();
@@ -85,6 +91,11 @@ export function MentalSubtractionExercise() {
 
     const handleLevelSelect = (level: Level) => {
         setSelectedLevel(level);
+        clearTimeout(transition.current);
+        answering.current = false;
+        setFeedback(null);
+        setUserInput('');
+        deadline.current = Date.now() + GAME_DURATION_S * 1000;
         setGameState('playing');
         setTimeLeft(GAME_DURATION_S);
         setScore(0);
@@ -98,39 +109,45 @@ export function MentalSubtractionExercise() {
     };
 
     useEffect(() => {
-        if (gameState === 'playing' && timeLeft > 0) {
-            timerRef.current = setTimeout(() => {
-                setTimeLeft(prev => prev - 1);
-            }, 1000);
-        } else if (gameState === 'playing' && timeLeft === 0) {
-            setGameState('finished');
-        }
-        return () => clearTimeout(timerRef.current);
-    }, [gameState, timeLeft]);
+        if (gameState !== 'playing' || !timerEnabled) return;
+        const tick = () => {
+            const left = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
+            setTimeLeft(left);
+            if (!left) { clearTimeout(transition.current); answering.current = true; finish(); }
+        };
+        const timer = setInterval(tick, 200); tick();
+        return () => clearInterval(timer);
+    }, [gameState, timerEnabled]);
+    useEffect(() => () => clearTimeout(transition.current), []);
 
     useEffect(() => {
         const saveResult = async () => {
-            if (gameState === 'finished' && student && !hasBeenSaved) {
+            if (gameState === 'finished' && student && !hasBeenSaved && sessionDetails.length > 0) {
                 setHasBeenSaved(true);
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'soustraction-mentale',
-                        score: score
+                        details: sessionDetails,
+                        score: timerEnabled ? score : Math.round(score / sessionDetails.length * 100),
+                        numberLevelSettings: { level: selectedLevel ?? 'B' },
+                        metadata: { unit: timerEnabled ? 'count' : 'percent', mode: timerEnabled ? 'chronométré' : 'sans chrono', durationSeconds: timerEnabled ? completedDuration.current : undefined }
                     });
                 } else {
                     await addScore({
                         userId: student.id,
                         skill: 'soustraction-mentale',
-                        score: score,
+                        score: timerEnabled ? score : Math.round(score / sessionDetails.length * 100),
+                        numberLevelSettings: { level: selectedLevel ?? 'B' },
+                        metadata: { unit: timerEnabled ? 'count' : 'percent', mode: timerEnabled ? 'chronométré' : 'sans chrono', durationSeconds: timerEnabled ? completedDuration.current : undefined },
                         details: sessionDetails,
                     });
                 }
             }
         };
         saveResult();
-    }, [gameState, student, score, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
+    }, [gameState, student, score, hasBeenSaved, sessionDetails, isHomework, homeworkDate, timerEnabled, selectedLevel]);
 
     // Keyboard input handling remains similar but adapted for typing full numbers (since answer can be > 9)
     // Actually, for this exercise, users might need to type multiple digits.
@@ -175,7 +192,9 @@ export function MentalSubtractionExercise() {
     };
 
     const submitAnswer = (value: string, isCorrect: boolean) => {
-        if (!currentQuestion) return;
+        if (!currentQuestion || gameState !== 'playing' || answering.current || feedback) return;
+        if (timerEnabled && Date.now() >= deadline.current) { finish(); return; }
+        answering.current = true;
 
         const correctAnswer = currentQuestion.a - currentQuestion.b;
 
@@ -194,7 +213,9 @@ export function MentalSubtractionExercise() {
             setFeedback('incorrect');
         }
 
-        setTimeout(() => {
+        transition.current = setTimeout(() => {
+            if (!timerEnabled && sessionDetails.length + 1 >= 20) { finish(); return; }
+            answering.current = false;
             setFeedback(null);
             setUserInput('');
             const nextQ = generateQuestion(selectedLevel!);
@@ -213,7 +234,7 @@ export function MentalSubtractionExercise() {
         if (e) e.preventDefault();
         // Force submit whatever is there
         if (!currentQuestion) return;
-        const val = parseInt(userInput);
+        const val = (/^\d+$/.test(userInput) ? Number(userInput) : NaN);
         if (isNaN(val)) return;
         const correctAnswer = currentQuestion.a - currentQuestion.b;
         submitAnswer(userInput, val === correctAnswer);
@@ -224,7 +245,7 @@ export function MentalSubtractionExercise() {
         setUserInput(val);
 
         if (!currentQuestion) return;
-        const numVal = parseInt(val);
+        const numVal = /^\d+$/.test(val) ? Number(val) : NaN;
         const correctAnswer = currentQuestion.a - currentQuestion.b;
 
         if (numVal === correctAnswer) {
@@ -244,7 +265,7 @@ export function MentalSubtractionExercise() {
                 return (
                     <div className="text-center space-y-8">
                         <div className="space-y-4">
-                            <h3 className="text-xl font-semibold mb-4">Choisis ton niveau :</h3>
+                            <label className="flex justify-center items-center gap-3 min-h-12"><input type="checkbox" className="h-6 w-6" checked={timerEnabled} onChange={e => setTimerEnabled(e.target.checked)} />Chronomètre : deux minutes</label><p>{timerEnabled ? "Réponds pendant deux minutes." : "20 questions à ton rythme."}</p><h3 className="text-xl font-semibold mb-4">Choisis ton niveau :</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
                                 <Button onClick={() => handleLevelSelect('A')} variant="outline" className="h-24 text-lg flex flex-col gap-2 hover:bg-green-50 hover:border-green-500">
                                     <span className="font-bold text-2xl">Niveau A</span>
@@ -276,10 +297,10 @@ export function MentalSubtractionExercise() {
                             "absolute top-0 right-0 text-2xl font-mono font-bold transition-all",
                             timeLeft <= 10 ? "text-red-500 scale-110 animate-pulse" : "text-muted-foreground"
                         )}>
-                            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                            {timerEnabled ? `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}` : `Question ${Math.min(sessionDetails.length + 1, 20)} / 20`}
                         </div>
 
-                        <div className="text-8xl font-bold p-12 rounded-2xl bg-secondary/30 min-w-[300px] text-center">
+                        <div className="text-4xl sm:text-7xl font-bold p-6 rounded-2xl bg-secondary/30 w-full text-center">
                             {currentQuestion.a} - {currentQuestion.b}
                         </div>
 
@@ -287,7 +308,7 @@ export function MentalSubtractionExercise() {
                             <div className="relative w-full max-w-[200px]">
                                 <input
                                     ref={inputRef}
-                                    type="number"
+                                    type="text" inputMode="numeric" aria-label="Résultat de la soustraction"
                                     value={userInput}
                                     onChange={handleInputChange}
                                     className={cn(
@@ -312,20 +333,20 @@ export function MentalSubtractionExercise() {
                             <Button type="submit" size="lg" className="w-full max-w-[200px] text-lg" disabled={!userInput || !!feedback}>
                                 Valider
                             </Button>
-                        </form>
+                        </form><Button variant="outline" onClick={() => { clearTimeout(transition.current); finish(); }}>Terminer la séance</Button>
                     </div>
                 );
 
             case 'finished':
                 return (
                     <div className="text-center space-y-6">
-                        <h2 className="text-4xl font-bold text-primary">Temps écoulé !</h2>
+                        <h2 className="text-4xl font-bold text-primary">Séance terminée !</h2>
                         <div className="py-8">
                             <p className="text-2xl text-muted-foreground mb-2">Ton score</p>
                             <p className="text-8xl font-bold text-primary">{score}</p>
-                            <p className="text-lg text-muted-foreground mt-2">bonnes réponses</p>
+                            <p className="text-lg text-muted-foreground mt-2">réponses justes sur {sessionDetails.length}</p>
                         </div>
-                        <div className="flex justify-center gap-4">
+                        <div className="flex flex-wrap justify-center gap-4">
                             <Button onClick={() => setGameState('setup')} size="lg" variant="outline" className="text-lg px-8">
                                 <RefreshCw className="mr-2 h-5 w-5" />
                                 Changer de niveau
@@ -352,7 +373,7 @@ export function MentalSubtractionExercise() {
                     {selectedLevel && <span className="text-lg font-normal py-1 px-3 bg-primary/10 rounded-full text-primary">Niveau {selectedLevel}</span>}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="min-h-[400px] flex flex-col justify-center items-center p-8">
+            <CardContent className="min-h-[400px] flex flex-col justify-center items-center p-4 sm:p-8">
                 {renderContent()}
             </CardContent>
         </Card>

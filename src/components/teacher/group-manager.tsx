@@ -123,7 +123,7 @@ export function GroupManager({ initialStudents, initialGroups }: GroupManagerPro
             const defaultLevels: Record<string, SkillLevel> = {};
             availableSkills.forEach(skill => {
                  allEnabled[skill.slug] = true;
-                 if(!skill.isFixedLevel) defaultLevels[skill.slug] = 'B';
+                 if(!skill.isFixedLevel && !skill.progressionLabel) defaultLevels[skill.slug] = 'B';
             });
             setEditedEnabledSkills(allEnabled);
             setEditedLevels(defaultLevels);
@@ -319,7 +319,7 @@ export function GroupManager({ initialStudents, initialGroups }: GroupManagerPro
                                                      <Label htmlFor={`group-skill-${skill.slug}`} className="text-sm font-medium pl-2 flex-grow">
                                                          {skill.name}
                                                      </Label>
-                                                      {!skill.isFixedLevel && (
+                                                      {!skill.isFixedLevel && !skill.progressionLabel && (
                                                         <Select 
                                                             value={editedLevels[skill.slug]} 
                                                             onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
@@ -335,8 +335,8 @@ export function GroupManager({ initialStudents, initialGroups }: GroupManagerPro
                                                             </SelectContent>
                                                         </Select>
                                                      )}
-                                                     {skill.isFixedLevel && (
-                                                         <Badge variant="outline" className="w-24 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
+                                                     {(skill.isFixedLevel || skill.progressionLabel) && (
+                                                         <Badge variant="outline" className="max-w-40 whitespace-normal text-center justify-center min-h-8 text-xs">{skill.progressionLabel ?? `Niveau ${skill.pedagogicalLevel ?? skill.isFixedLevel}`}</Badge>
                                                      )}
                                                      <Switch
                                                          id={`group-skill-${skill.slug}`}

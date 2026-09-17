@@ -14,6 +14,7 @@
  */
 
 import { skills, type Skill, type SkillCategory, type SkillLevel } from './skills';
+import { PROGRESSIVE_EXERCISES } from './progressive-exercises';
 
 export type AnneeScolaire = 'GS' | 'CP' | 'CE1' | 'CE2' | 'CM1' | 'CM2';
 export type MomentDeLAnnee = 'debut' | 'milieu' | 'fin';
@@ -66,6 +67,10 @@ interface PlageScolaire {
  * le niveau de l'élève dans le domaine tombe dans sa plage.
  */
 export const PLAGES_PAR_COMPETENCE: Record<string, PlageScolaire> = {
+  ...Object.fromEntries(PROGRESSIVE_EXERCISES.map(exercise => [exercise.slug, {
+    plancher: exercise.schoolMin,
+    plafond: exercise.schoolMax,
+  }])),
   // Phonologie
   'letter-recognition': { plancher: 'GS-debut', plafond: 'CP-milieu' },
   'reading-direction': { plancher: 'GS-debut', plafond: 'CP-debut' },
@@ -183,7 +188,10 @@ export function difficultePourNiveau(skill: Skill, niveauEleve: NiveauScolaire):
 
   const plage = PLAGES_PAR_COMPETENCE[skill.slug];
   const ecart = plage ? rang(niveauEleve) - rang(plage.plancher) : 0;
-  const proportion = Math.min(Math.max(ecart, 0), ECART_MAXIMAL) / ECART_MAXIMAL;
+  // Une plage courte doit aussi atteindre son dernier palier ; les plages
+  // longues conservent une montée progressive sur trois années scolaires.
+  const amplitude = plage ? Math.max(1, Math.min(ECART_MAXIMAL, rang(plage.plafond) - rang(plage.plancher))) : ECART_MAXIMAL;
+  const proportion = Math.min(Math.max(ecart, 0), amplitude) / amplitude;
   const index = Math.round(proportion * (autorises.length - 1));
   return autorises[index];
 }
@@ -205,7 +213,7 @@ export function difficultesDuDomaine(
   niveauEleve: NiveauScolaire
 ): Record<string, SkillLevel> {
   const resultat: Record<string, SkillLevel> = {};
-  for (const skill of skills.filter((s) => s.category === domaine)) {
+  for (const skill of skills.filter((s) => s.category === domaine && !s.progressionLabel)) {
     resultat[skill.slug] = difficultePourNiveau(skill, niveauEleve);
   }
   return resultat;

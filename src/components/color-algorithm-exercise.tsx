@@ -34,6 +34,9 @@ const COLORS: Record<string, { name: string; hex: string; textColor: string }> =
 };
 
 const COLOR_KEYS = Object.keys(COLORS);
+const SYMBOLS = ['●', '▲', '■', '★', '◆', '✚', '☀', '☾', '♥', '✿'];
+const colorSymbol = (key: string) => SYMBOLS[COLOR_KEYS.indexOf(key)] ?? '?';
+const ColorMark = ({ colorKey }: { colorKey: string }) => <span aria-hidden="true" className="inline-flex rounded bg-white text-black px-1 leading-tight text-base font-bold">{colorSymbol(colorKey)}</span>;
 
 type AlgorithmType = 'AB' | 'ABC' | 'ABBC' | 'ABCD' | 'ABAC' | 'ABABC' | 'AABBCC' | 'ABCB';
 
@@ -204,7 +207,9 @@ export function ColorAlgorithmExercise() {
                 question: `Série ${currentAlgorithm.pattern}`,
                 userAnswer: 'Complété',
                 correctAnswer: 'Complété',
-                status: 'correct',
+                status: hintMode !== 'none' ? 'completed' : errors > 0 ? 'corrected' : 'correct',
+                hintUsed: hintMode !== 'none',
+                attempts: targetSequence.length + errors,
               },
             ]);
             setGameState('finished');
@@ -221,7 +226,7 @@ export function ColorAlgorithmExercise() {
         }, 600);
       }
     },
-    [userSequence, targetSequence, feedback, currentAlgorithm]
+    [userSequence, targetSequence, feedback, currentAlgorithm, hintMode, errors]
   );
 
   // Clear user sequence
@@ -235,27 +240,30 @@ export function ColorAlgorithmExercise() {
     const saveResult = async () => {
       if (gameState === 'finished' && student && !hasBeenSaved) {
         setHasBeenSaved(true);
-        const score = Math.max(0, 100 - errors * 10);
+        const score = Math.round(Math.max(0, targetSequence.length - errors) / Math.max(1, targetSequence.length) * 100);
 
         if (isHomework && homeworkDate) {
           await saveHomeworkResult({
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'color-algorithm',
+            details: sessionDetails,
             score: score,
+            metadata: { unit: 'percent', mode: hintMode === 'none' ? 'autonome' : 'guidé', assistance: hintMode === 'none' ? [] : [hintMode], text: `${selectedAlgorithm}, ${repetitions} répétitions` },
           });
         } else {
           await addScore({
             userId: student.id,
             skill: 'color-algorithm',
             score: score,
+            metadata: { unit: 'percent', mode: hintMode === 'none' ? 'autonome' : 'guidé', assistance: hintMode === 'none' ? [] : [hintMode], text: `${selectedAlgorithm}, ${repetitions} répétitions` },
             details: sessionDetails,
           });
         }
       }
     };
     saveResult();
-  }, [gameState, student, hasBeenSaved, errors, sessionDetails, isHomework, homeworkDate]);
+  }, [gameState, student, hasBeenSaved, errors, sessionDetails, isHomework, homeworkDate, hintMode, targetSequence.length, selectedAlgorithm, repetitions]);
 
   // ========================
   // RENDER
@@ -366,13 +374,14 @@ export function ColorAlgorithmExercise() {
         {/* ALWAYS show example: one cycle of the algorithm */}
         <div className="p-4 bg-primary/10 rounded-xl">
           <span className="text-sm text-primary font-medium block text-center mb-3">🔄 Modèle à reproduire :</span>
-          <div className="flex gap-2 justify-center">
+          <div className="flex flex-wrap gap-2 justify-center">
             {exampleCycle.map((colorKey, index) => (
               <div
                 key={index}
                 className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg shadow-md border-2 border-primary/30"
                 style={{ backgroundColor: COLORS[colorKey]?.hex || '#ccc' }}
-              />
+                aria-label={COLORS[colorKey]?.name}
+              ><ColorMark colorKey={colorKey} /></div>
             ))}
           </div>
         </div>
@@ -394,7 +403,8 @@ export function ColorAlgorithmExercise() {
                     borderColor: index === userSequence.length ? '#000' : 'transparent',
                     boxShadow: index === userSequence.length ? '0 0 0 3px rgba(0,0,0,0.3)' : 'none',
                   }}
-                />
+                  aria-label={COLORS[colorKey]?.name}
+                ><ColorMark colorKey={colorKey} /></div>
               ))}
             </div>
           </div>
@@ -425,7 +435,8 @@ export function ColorAlgorithmExercise() {
                       width: `${baseSize}px`,
                       height: `${baseSize}px`,
                     }}
-                  />
+                    aria-label={COLORS[colorKey]?.name}
+                  ><ColorMark colorKey={colorKey} /></div>
                 );
               })}
               {feedback === 'correct' && <Check className="h-6 w-6 text-green-600 ml-1 flex-shrink-0" />}
@@ -448,13 +459,14 @@ export function ColorAlgorithmExercise() {
                 onClick={() => handleColorClick(colorKey)}
                 disabled={!!feedback}
                 className={cn(
-                  'aspect-square rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-offset-2',
+                  'min-h-11 min-w-11 aspect-square rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-offset-2',
                   isHinted ? 'ring-4 ring-primary ring-offset-2 scale-105' : '',
                   feedback ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                 )}
                 style={{ backgroundColor: color.hex }}
                 title={color.name}
-              />
+                aria-label={`${color.name}, symbole ${colorSymbol(colorKey)}`}
+              ><ColorMark colorKey={colorKey} /></button>
             );
           })}
         </div>
@@ -480,7 +492,7 @@ export function ColorAlgorithmExercise() {
       onRestart={startGame}
       returnHref="/en-classe"
     >
-      <div className="mx-auto max-w-sm space-y-4 rounded-[20px] bg-muted/30 py-6">
+      <div className="mx-auto max-w-sm space-y-4 rounded-[20px] bg-muted/30 py-6"><p>{hintMode === 'none' ? 'Série reconstruite sans aide.' : 'Série terminée avec aide.'} Le résultat indique la précision des choix.</p>
         <div>
           <p className="text-muted-foreground">Temps</p>
           <p className="text-3xl font-bold text-primary">

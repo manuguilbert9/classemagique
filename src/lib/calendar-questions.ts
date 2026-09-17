@@ -59,6 +59,7 @@ const generateLevelA = async (): Promise<CalendarQuestion> => {
                 id: Date.now() + Math.random(),
                 level: 'A',
                 type: 'qcm',
+                month: startOfMonth(referenceDate).toISOString(),
                 question: `Si aujourd'hui on est ${daysOfWeek[todayIndex]}, quel jour serons-nous demain ?`,
                 options: Array.from(options).sort(() => Math.random() - 0.5),
                 answer: answer,
@@ -74,6 +75,7 @@ const generateLevelA = async (): Promise<CalendarQuestion> => {
                 id: Date.now() + Math.random(),
                 level: 'A',
                 type: 'qcm',
+                month: startOfMonth(referenceDate).toISOString(),
                 question: `Si aujourd'hui on est ${daysOfWeek[todayIndex]}, quel jour étions-nous hier ?`,
                 options: Array.from(options).sort(() => Math.random() - 0.5),
                 answer: answer,
@@ -96,6 +98,7 @@ const generateLevelA = async (): Promise<CalendarQuestion> => {
             id: Date.now() + Math.random(),
             level: 'A',
             type: 'qcm',
+                month: startOfMonth(referenceDate).toISOString(),
             question: `Le ${day} ${monthName} ${year}, c'est quel jour de la semaine ?`,
             options: Array.from(options).sort(() => Math.random() - 0.5),
             answer: answer
@@ -146,6 +149,7 @@ const generateLevelB = async (): Promise<CalendarQuestion> => {
             id: Date.now() + Math.random(),
             level: 'B',
             type: 'qcm',
+                month: startOfMonth(referenceDate).toISOString(),
             question: `Le ${day1} ${format(date1, 'MMMM', {locale:fr})} ${year1} tombe un ${dayOfWeek1}. Quel jour sera le ${day2} ?`,
             options: Array.from(options).sort(() => Math.random() - 0.5),
             answer: answer,
@@ -221,7 +225,16 @@ const generateLevelC = async (): Promise<CalendarQuestion> => {
 };
 
 const generateLevelD = async (): Promise<CalendarQuestion> => {
-    return generateLevelC(); // Placeholder - For now, Level D uses Level C questions
+    const referenceDate = await getRandomDateInSchoolYear();
+    const start = addDays(lastDayOfMonth(referenceDate), -Math.floor(Math.random() * 5));
+    const duration = Math.floor(Math.random() * 18) + 7;
+    const end = addDays(start, duration);
+    return {
+        id: Date.now() + Math.random(), level: 'D', type: 'count-days',
+        question: `Combien de jours s'écoulent du ${format(start, 'd MMMM yyyy', { locale: fr })} au ${format(end, 'd MMMM yyyy', { locale: fr })} ?`,
+        description: "Compte les jours écoulés : le jour de départ compte pour zéro. Tu peux changer de mois.",
+        month: startOfMonth(start).toISOString(), answerNumber: duration,
+    };
 };
 
 
@@ -239,7 +252,7 @@ export async function generateCalendarQuestions(level: SkillLevel, count: number
     const questions: Question[] = [];
     const questionSet = new Set<string>();
 
-    while (questions.length < count) {
+    for (let attempt = 0; questions.length < count && attempt < count * 20; attempt++) {
         const newQ = await generator();
         if (!questionSet.has(newQ.question)) {
             questionSet.add(newQ.question);
@@ -247,5 +260,6 @@ export async function generateCalendarQuestions(level: SkillLevel, count: number
         }
     }
     
+    while (questions.length < count) questions.push(await generator() as Question);
     return questions;
 }

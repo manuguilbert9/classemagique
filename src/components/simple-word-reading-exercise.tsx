@@ -44,7 +44,7 @@ export function SimpleWordReadingExercise() {
       onError: (err) => {
         // Ignore "aborted" which happens on manual stop
         if (err === 'aborted') return;
-        console.error(err);
+        setDetectedWord('Micro indisponible : poursuivre avec la validation adulte.');
         setExerciseState('ready');
       }
   });
@@ -53,14 +53,6 @@ export function SimpleWordReadingExercise() {
     setWords(getSimpleWords(WORDS_PER_EXERCISE));
   }, []);
   
-  // Effect to auto-start listening when a new word is ready
-  useEffect(() => {
-    if(exerciseState === 'ready' && currentWordIndex < WORDS_PER_EXERCISE) {
-      handleMicClick();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseState, currentWordIndex]);
-
   const currentWordObject = useMemo(() => words[currentWordIndex], [words, currentWordIndex]);
   const currentWord = useMemo(() => currentWordObject?.word || '', [currentWordObject]);
 
@@ -80,44 +72,17 @@ export function SimpleWordReadingExercise() {
   const checkAnswer = (spokenText: string) => {
     if (exerciseState !== 'listening' || !currentWord) return;
 
-    setExerciseState('checking');
-    stopListening();
-    
-    setDetectedWord(spokenText); // Store what was heard
-
-    // Normalize both strings for comparison to handle homophones and silent letters
-    const normalize = (str: string) => {
-        return str
-            .toLowerCase()
-            .trim()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
-            .replace(/[.,'-]/g, '') // remove punctuation
-            .replace(/y/g, 'i') // Treat 'y' and 'i' as the same
-            .replace(/[stdpxz]$/, ''); // remove common silent final letters
-    }
-
-    const expected = normalize(currentWord);
-    const actual = normalize(spokenText);
-    const isCorrect = expected === actual;
-    
-    const detail: ScoreDetail = {
-        question: `Lire le mot "${currentWord}"`,
-        userAnswer: spokenText,
-        correctAnswer: currentWord,
-        status: isCorrect ? 'correct' : 'incorrect',
-    };
-    setSessionDetails(prev => [...prev, detail]);
-
-    if (isCorrect) {
-      setFeedback('correct');
-      setCorrectAnswers(prev => prev + 1);
-      setShowConfetti(true);
-    } else {
-      setFeedback('incorrect');
-    }
-    setTimeout(handleNextWord, 2500);
+    setDetectedWord(spokenText);
+    // Une transcription aide l'adulte ; elle ne constitue pas une évaluation.
   };
-  
+
+  const validateByAdult = (correct: boolean) => {
+    stopListening();
+    setSessionDetails(prev => [...prev, { question: `Lire le mot "${currentWord}"`, userAnswer: 'Observation adulte', correctAnswer: currentWord, status: correct ? 'correct' : 'incorrect' }]);
+    if (correct) setCorrectAnswers(prev => prev + 1);
+    handleNextWord();
+  };
+
   const handleMicClick = () => {
     if (exerciseState === 'ready') {
       startListening();
@@ -135,6 +100,7 @@ export function SimpleWordReadingExercise() {
               const score = (correctAnswers / WORDS_PER_EXERCISE) * 100;
               if(isHomework && homeworkDate) {
                  await saveHomeworkResult({
+            details: sessionDetails,
                     userId: student.id,
                     date: homeworkDate,
                     skillSlug: 'simple-word-reading',
@@ -165,18 +131,6 @@ export function SimpleWordReadingExercise() {
     setSessionDetails([]);
   };
   
-  if (!isSupported) {
-    return (
-      <Card className="w-full max-w-lg mx-auto shadow-2xl p-6">
-        <CardHeader>
-          <CardTitle className="text-center text-destructive">Erreur</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center">Désolé, la reconnaissance vocale n'est pas supportée par ce navigateur. Veuillez essayer avec Google Chrome ou Microsoft Edge.</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (exerciseState === 'finished') {
     const score = (correctAnswers / WORDS_PER_EXERCISE) * 100;
@@ -221,10 +175,13 @@ export function SimpleWordReadingExercise() {
                 className={cn("rounded-full h-24 w-24", 
                     isListening ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-primary hover:bg-primary/90'
                 )}
-                disabled={exerciseState === 'checking' || isListening}
+                disabled={!isSupported}
              >
                 {exerciseState === 'checking' ? <Loader2 className="h-10 w-10 animate-spin" /> : <Mic className="h-10 w-10"/>}
             </Button>
+          <p className="text-sm">La transcription est indicative. Un adulte écoute et valide la lecture.</p>
+          {detectedWord && <p aria-live="polite">Transcription : {detectedWord}</p>}
+          <div className="flex flex-wrap gap-2"><Button onClick={() => validateByAdult(true)}>Adulte : lecture réussie</Button><Button variant="outline" onClick={() => validateByAdult(false)}>Adulte : à retravailler</Button></div>
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (

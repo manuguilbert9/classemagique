@@ -190,6 +190,7 @@ export default function TeacherDashboardPage() {
               </TabsContent>
               <TabsContent value="results" className="mt-6">
                 <ResultsManager
+                  allHomeworkResults={allHomeworkResults}
                   students={students}
                   allScores={allScores}
                   allWritingEntries={allWritingEntries}

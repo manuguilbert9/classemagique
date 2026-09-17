@@ -107,8 +107,22 @@ export function MultiplicationTablesExercise() {
         }
     };
 
+    const deadlineRef = useRef(0);
+    const pendingAnswerRef = useRef(false);
+    const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const sessionRef = useRef(0);
+    useEffect(() => () => { if (transitionRef.current) clearTimeout(transitionRef.current); }, []);
+    useEffect(() => {
+        if (gameState !== 'playing' && transitionRef.current) clearTimeout(transitionRef.current);
+    }, [gameState]);
     const startGame = () => {
         if (selectedTables.length === 0) return;
+        if (transitionRef.current) clearTimeout(transitionRef.current);
+        sessionRef.current++;
+        pendingAnswerRef.current = false;
+        setFeedback(null);
+        setUserInput('');
+        deadlineRef.current = Date.now() + GAME_DURATION_S * 1000;
         setGameState('playing');
         setTimeLeft(GAME_DURATION_S);
         setScore(0);
@@ -124,7 +138,7 @@ export function MultiplicationTablesExercise() {
     useEffect(() => {
         if (gameState === 'playing' && timerEnabled && timeLeft > 0) {
             timerRef.current = setTimeout(() => {
-                setTimeLeft(prev => prev - 1);
+                setTimeLeft(Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000)));
             }, 1000);
         } else if (gameState === 'playing' && timerEnabled && timeLeft === 0) {
             setGameState('finished');
@@ -134,21 +148,24 @@ export function MultiplicationTablesExercise() {
 
     useEffect(() => {
         const saveResult = async () => {
-            if (gameState === 'finished' && student && !hasBeenSaved) {
+            if (gameState === 'finished' && student && !hasBeenSaved && questionCount > 0) {
                 setHasBeenSaved(true);
-                const finalScore = timerEnabled ? score : Math.round((score / questionCount) * 100);
+                const finalScore = timerEnabled ? score : Math.round((score / Math.max(1, questionCount)) * 100);
                 
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'tables-multiplication',
+                        details: sessionDetails,
+                        metadata: { unit: timerEnabled ? 'count' : 'percent', durationSeconds: timerEnabled ? GAME_DURATION_S - timeLeft : 0, mode: timerEnabled ? 'timed' : 'untimed', tables: selectedTables },
                         score: finalScore
                     });
                 } else {
                     await addScore({
                         userId: student.id,
                         skill: 'tables-multiplication',
+                        metadata: { unit: timerEnabled ? 'count' : 'percent', durationSeconds: timerEnabled ? GAME_DURATION_S - timeLeft : 0, mode: timerEnabled ? 'timed' : 'untimed', tables: selectedTables },
                         score: finalScore,
                         details: sessionDetails,
                     });
@@ -161,8 +178,14 @@ export function MultiplicationTablesExercise() {
     const [userInput, setUserInput] = useState('');
 
     const submitAnswer = (value: string, isCorrect: boolean) => {
-        if (!currentQuestion) return;
-
+        if (!currentQuestion || gameState !== 'playing' || feedback || pendingAnswerRef.current || !/^\d+$/.test(value)) return;
+        if (timerEnabled && Date.now() >= deadlineRef.current) {
+            setTimeLeft(0);
+            setGameState('finished');
+            return;
+        }
+        pendingAnswerRef.current = true;
+        const session = sessionRef.current;
         const correctAnswer = currentQuestion.a * currentQuestion.b;
 
         const detail: ScoreDetail = {
@@ -182,12 +205,19 @@ export function MultiplicationTablesExercise() {
 
         setQuestionCount(prev => prev + 1);
 
-        setTimeout(() => {
+        transitionRef.current = setTimeout(() => {
+            if (session !== sessionRef.current) return;
+            if (timerEnabled && Date.now() >= deadlineRef.current) {
+                setTimeLeft(0);
+                setGameState('finished');
+                return;
+            }
             if (!timerEnabled && questionCount + 1 >= UNTIMED_QUESTIONS_COUNT) {
                 setGameState('finished');
                 return;
             }
 
+            pendingAnswerRef.current = false;
             setFeedback(null);
             setUserInput('');
             // Generate next question based on NEW timeLeft (approximate, since we are inside closure, better to use ref or just pass current decr)
@@ -203,8 +233,8 @@ export function MultiplicationTablesExercise() {
     const handleSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!currentQuestion) return;
-        const val = parseInt(userInput);
-        if (isNaN(val)) return;
+        if (!/^\d+$/.test(userInput)) return;
+        const val = Number(userInput);
         const correctAnswer = currentQuestion.a * currentQuestion.b;
         submitAnswer(userInput, val === correctAnswer);
     };
@@ -214,7 +244,8 @@ export function MultiplicationTablesExercise() {
         setUserInput(val);
 
         if (!currentQuestion) return;
-        const numVal = parseInt(val);
+        if (!/^\d+$/.test(val)) return;
+        const numVal = Number(val);
         const correctAnswer = currentQuestion.a * currentQuestion.b;
 
         if (numVal === correctAnswer) {
@@ -299,7 +330,7 @@ export function MultiplicationTablesExercise() {
                             </div>
                         )}
 
-                        <div className="text-8xl font-bold p-12 rounded-2xl bg-secondary/30 min-w-[300px] text-center mb-4">
+                        <div className="text-5xl sm:text-7xl font-bold p-4 sm:p-8 rounded-2xl bg-secondary/30 w-full text-center mb-4">
                             {currentQuestion.a} x {currentQuestion.b}
                         </div>
 
@@ -307,7 +338,10 @@ export function MultiplicationTablesExercise() {
                             <div className="relative w-full max-w-[200px]">
                                 <input
                                     ref={inputRef}
-                                    type="number"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    aria-label="Résultat de la multiplication"
                                     value={userInput}
                                     onChange={handleInputChange}
                                     className={cn(
@@ -353,13 +387,13 @@ export function MultiplicationTablesExercise() {
             case 'finished':
                 return (
                     <div className="text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <h2 className="text-4xl font-bold text-primary">Temps écoulé !</h2>
+                        <h2 className="text-4xl font-bold text-primary">{timerEnabled ? 'Temps écoulé !' : 'Entraînement terminé !'}</h2>
                         <div className="py-8 bg-muted/20 rounded-xl max-w-sm mx-auto">
                             <p className="text-2xl text-muted-foreground mb-2">Ton score</p>
                             <div className="flex items-baseline justify-center gap-2">
                                 <p className="text-8xl font-bold text-primary">{score}</p>
                                 {!timerEnabled && (
-                                    <p className="text-4xl text-muted-foreground">/ {UNTIMED_QUESTIONS_COUNT}</p>
+                                    <p className="text-4xl text-muted-foreground">/ {questionCount}</p>
                                 )}
                             </div>
                             <p className="text-lg text-muted-foreground mt-2">bonnes réponses</p>

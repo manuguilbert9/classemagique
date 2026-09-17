@@ -173,7 +173,7 @@ export function CalendarExercise() {
     
     // Faux : l'élève reprend la main et cherche jusqu'à trouver.
     if (!isCorrect) {
-      secondChance.registerError();
+      secondChance.registerError(getUserAnswerText());
       setFeedback('retry');
       setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
       return;
@@ -183,6 +183,7 @@ export function CalendarExercise() {
     setSessionDetails(prev => [...prev, {
         question: currentQuestion.question,
         userAnswer: getUserAnswerText(),
+        ...secondChance.getAttemptMetadata(getUserAnswerText()),
         correctAnswer: getCorrectAnswerText() || '',
         status: issue,
     }]);
@@ -206,13 +207,17 @@ export function CalendarExercise() {
                     userId: student.id,
                     date: homeworkDate,
                     skillSlug: 'calendar',
-                    score: score
+                    details: sessionDetails,
+                    score: score,
+                    calendarSettings: { level },
+                    metadata: { unit: 'percent' },
                 });
               } else {
                 await addScore({
                     userId: student.id,
                     skill: 'calendar',
                     score: score,
+                    metadata: { unit: 'percent' },
                     calendarSettings: { level: level },
                     details: sessionDetails,
                 });
@@ -259,6 +264,7 @@ export function CalendarExercise() {
   if (isFinished) {
     return (
       <ExerciseFinished
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
         correct={correctAnswers}
         total={NUM_QUESTIONS}
         canRestart={!isHomework}
@@ -274,8 +280,11 @@ export function CalendarExercise() {
           case 'qcm':
               return (
                   <div className='flex flex-col items-center gap-4'>
-                    {(level === 'B' || level === 'C' || level === 'D') && (
+                    <Button variant="outline" onClick={() => { if ('speechSynthesis' in window) { const speech = new SpeechSynthesisUtterance(currentQuestion.question + '. Réponses : ' + currentQuestion.options?.join(', ')); speech.lang = 'fr-FR'; window.speechSynthesis.cancel(); window.speechSynthesis.speak(speech); } }}>Écouter la question et les réponses</Button>
+                    {currentQuestion.month && (
                          <DayPicker
+                            key={currentQuestion.id}
+                            defaultMonth={currentQuestion.month ? new Date(currentQuestion.month) : undefined}
                             mode="single"
                             locale={fr}
                             className="p-4 rounded-md border bg-card"
@@ -307,6 +316,8 @@ export function CalendarExercise() {
               return (
                   <DayPicker
                     mode="single"
+                    key={currentQuestion.id}
+                    defaultMonth={currentQuestion.answerDate ? new Date(currentQuestion.answerDate) : undefined}
                     selected={selectedDay}
                     onSelect={setSelectedDay}
                     locale={fr}
@@ -321,9 +332,10 @@ export function CalendarExercise() {
                 return (
                      <div className="flex flex-col items-center gap-4">
                         <DayPicker
+                            key={currentQuestion.id}
+                            defaultMonth={currentQuestion.month ? new Date(currentQuestion.month) : undefined}
                             mode="single"
                             locale={fr}
-                            month={new Date(currentQuestion.month!)}
                             className="p-4 rounded-md border bg-card"
                             classNames={{
                                 day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",

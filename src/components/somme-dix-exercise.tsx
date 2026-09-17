@@ -100,6 +100,7 @@ export function SommeDixExercise() {
         const detail: ScoreDetail = {
             question: `${currentProblem.operands[0]} + ${currentProblem.operands[1]}`,
             userAnswer: answer,
+            ...secondChance.getAttemptMetadata(String(answer)),
             correctAnswer: String(currentProblem.answer),
             status: issue,
         };
@@ -153,6 +154,8 @@ export function SommeDixExercise() {
                 const score = (correctAnswers / NUM_PROBLEMS) * 100;
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({
+            numberLevelSettings: { level: 'A' },
+            details: sessionDetails,
                         userId: student.id,
                         date: homeworkDate,
                         skillSlug: 'somme-dix',
@@ -190,7 +193,8 @@ export function SommeDixExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={NUM_PROBLEMS}
                 canRestart={!isHomework}
                 onRestart={restartExercise}

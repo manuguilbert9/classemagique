@@ -194,7 +194,7 @@ export function CodedPathExercise() {
         // Parcours raté : rien n'est consigné, l'élève refait son programme.
         // Le labyrinthe ne change pas : c'est en le recommençant qu'il comprend.
         if (!isCorrect) {
-            secondChance.registerError();
+            secondChance.registerError(userPath.join(', '));
             setFeedback('retry');
             setTimeout(() => {
                 setIsSimulating(false);
@@ -211,6 +211,7 @@ export function CodedPathExercise() {
         setSessionDetails(prev => [...prev, {
             question: `Parcours ${currentLevelIndex + 1}`,
             userAnswer: userPath.join(', '),
+            ...secondChance.getAttemptMetadata(String(userPath.join(', ')), false),
             correctAnswer: 'Chemin valide',
             status: issue,
             score: scoreRetenu
@@ -251,7 +252,9 @@ export function CodedPathExercise() {
                 const finalScore = sessionScores.length > 0 ? sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length : 0;
 
                 if (isHomework && homeworkDate) {
-                    await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: 'coded-path', score: finalScore });
+                    await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level }, userId: student.id, date: homeworkDate, skillSlug: 'coded-path', score: finalScore });
                 } else {
                     await addScore({ userId: student.id, skill: 'coded-path', score: finalScore, details: sessionDetails, numberLevelSettings: { level } });
                 }
@@ -298,7 +301,8 @@ export function CodedPathExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={sessionScores.filter(s => s > 0).length}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={sessionScores.filter(s => s > 0).length}
                 total={LEVEL_COUNT}
                 canRestart={!isHomework}
                 onRestart={restartExercise}

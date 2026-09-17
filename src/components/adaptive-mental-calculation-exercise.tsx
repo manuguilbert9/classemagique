@@ -9,6 +9,7 @@ import type { Question } from '@/lib/questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from './ui/input';
+import { sameSchoolAnswer, mergeMathPerformance } from '@/lib/word-problem-math';
 import { cn } from '@/lib/utils';
 import { Check, RefreshCw, X, Loader2, ListTree, Sparkles, CheckCircle, Hourglass, XCircle, BrainCircuit } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
@@ -63,6 +64,14 @@ export function AdaptiveMentalCalculationExercise() {
   // For adaptive logic
   const [sessionPerformance, setSessionPerformance] = useState<StudentPerformance>({});
 
+  const historicalPerformanceRef = useRef<StudentPerformance>({});
+  const performanceRef = useRef<StudentPerformance>({});
+  const recordAttempt = (id: string, outcome: 'success' | 'failure') => {
+    const next = { ...performanceRef.current, [id]: { attempts: [...(performanceRef.current[id]?.attempts || []), outcome] } };
+    performanceRef.current = next;
+    setSessionPerformance(next);
+  };
+
   // For AI Analysis
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string>('');
@@ -91,6 +100,7 @@ export function AdaptiveMentalCalculationExercise() {
       const comps = await getAdaptiveMentalMathCompetencies();
       setAllCompetencies(comps);
       const initialPerformance = student?.mentalMathPerformance || {};
+      historicalPerformanceRef.current = structuredClone(initialPerformance);
       await generateNextQuestion(initialPerformance);
       setIsLoading(false);
     }
@@ -98,7 +108,7 @@ export function AdaptiveMentalCalculationExercise() {
       start();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [student]);
+  }, [student?.id]);
 
   const currentQuestion = useMemo(() => {
     return questions[currentQuestionIndex];
@@ -109,8 +119,8 @@ export function AdaptiveMentalCalculationExercise() {
     secondChance.reset();
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-      const studentPerformance = student?.mentalMathPerformance || {};
-      const combinedPerformance = { ...studentPerformance, ...sessionPerformance };
+      const studentPerformance = historicalPerformanceRef.current;
+      const combinedPerformance = mergeMathPerformance(studentPerformance, performanceRef.current);
       await generateNextQuestion(combinedPerformance);
 
       setUserInput('');
@@ -128,24 +138,17 @@ export function AdaptiveMentalCalculationExercise() {
 
     const userAnswer = userInput.replace(',', '.').trim().toLowerCase();
     const correctAnswer = String(currentQuestion.answer).toLowerCase();
-    const isCorrect = userAnswer === correctAnswer;
+    const isCorrect = sameSchoolAnswer(userAnswer, correctAnswer);
 
     const competencyId = currentQuestion.competencyId;
     if (competencyId) {
-      setSessionPerformance(prev => {
-        const newPerformance = { ...prev };
-        if (!newPerformance[competencyId]) {
-          newPerformance[competencyId] = { attempts: [] };
-        }
-        newPerformance[competencyId].attempts.push(isCorrect ? 'success' : 'failure');
-        return newPerformance;
-      });
+      recordAttempt(competencyId, isCorrect ? 'success' : 'failure');
     }
 
     // Faux : on affiche l'aide et on attend que l'élève reprenne. Rien n'est
     // consigné tant qu'il n'a pas trouvé.
     if (!isCorrect) {
-      secondChance.registerError();
+      secondChance.registerError(userAnswer);
       setFeedback('retry');
       setShowHelp(true);
       return;
@@ -157,6 +160,7 @@ export function AdaptiveMentalCalculationExercise() {
       userAnswer: userAnswer || "vide",
       correctAnswer: String(currentQuestion.answer),
       status: issue,
+      ...secondChance.getAttemptMetadata(userAnswer, false),
     }]);
 
     // Seule une réponse juste du premier coup rapporte un point.
@@ -177,6 +181,7 @@ export function AdaptiveMentalCalculationExercise() {
   /** L'élève renonce : la question est consignée comme ratée, sans détour. */
   const handleGiveUp = () => {
     if (currentQuestion) {
+      if (currentQuestion.competencyId) recordAttempt(currentQuestion.competencyId, 'failure');
       setSessionDetails(prev => [...prev, {
         question: currentQuestion.question,
         userAnswer: 'abandon',
@@ -200,7 +205,7 @@ export function AdaptiveMentalCalculationExercise() {
         setHasBeenSaved(true);
         const score = (correctAnswers / NUM_QUESTIONS) * 100;
 
-        const finalPerformance: StudentPerformance = JSON.parse(JSON.stringify(student.mentalMathPerformance || {}));
+        const finalPerformance: StudentPerformance = structuredClone(historicalPerformanceRef.current);
 
         Object.entries(sessionPerformance).forEach(([id, { attempts }]) => {
           if (!finalPerformance[id] || !Array.isArray(finalPerformance[id].attempts)) {
@@ -214,12 +219,15 @@ export function AdaptiveMentalCalculationExercise() {
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'adaptive-mental-calculation',
+            details: sessionDetails,
+            metadata: { unit: 'percent', mode: 'adaptive' },
             score: score,
           });
         } else {
           await addScore({
             userId: student.id,
             skill: 'adaptive-mental-calculation',
+            metadata: { unit: 'percent', mode: 'adaptive' },
             score: score,
             details: sessionDetails,
           });
@@ -240,6 +248,7 @@ export function AdaptiveMentalCalculationExercise() {
     setFeedback(null);
     setHasBeenSaved(false);
     setSessionDetails([]);
+    performanceRef.current = {};
     setSessionPerformance({});
     setAnalysisResult('');
     setShowingSolution(false);
@@ -248,6 +257,7 @@ export function AdaptiveMentalCalculationExercise() {
     async function start() {
       setIsLoading(true);
       const initialPerformance = student?.mentalMathPerformance || {};
+      historicalPerformanceRef.current = structuredClone(initialPerformance);
       await generateNextQuestion(initialPerformance);
       setIsLoading(false);
     }
@@ -260,7 +270,7 @@ export function AdaptiveMentalCalculationExercise() {
     setAnalysisResult('');
 
     // Combine historical and session performance for a complete view
-    const combinedPerformance: StudentPerformance = JSON.parse(JSON.stringify(student.mentalMathPerformance || {}));
+    const combinedPerformance: StudentPerformance = structuredClone(historicalPerformanceRef.current);
 
     Object.entries(sessionPerformance).forEach(([id, { attempts }]) => {
       if (!combinedPerformance[id] || !Array.isArray(combinedPerformance[id].attempts)) {
@@ -297,6 +307,7 @@ export function AdaptiveMentalCalculationExercise() {
   if (isFinished) {
     return (
       <ExerciseFinished
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
         correct={correctAnswers}
         total={NUM_QUESTIONS}
         canRestart={!isHomework}
@@ -333,7 +344,7 @@ export function AdaptiveMentalCalculationExercise() {
               <ScrollArea className="h-[calc(100%-160px)] pr-4">
                 <div className="space-y-4 py-4">
                   {allCompetencies.map(competency => {
-                    const globalPerfData = student?.mentalMathPerformance?.[competency.id];
+                    const globalPerfData = historicalPerformanceRef.current[competency.id];
                     const globalPerf = globalPerfData?.attempts || [];
 
                     const sessionPerf = sessionPerformance[competency.id]?.attempts || [];
@@ -410,7 +421,7 @@ export function AdaptiveMentalCalculationExercise() {
             <Input
               ref={inputRef}
               type="text"
-              inputMode="decimal"
+              inputMode={currentQuestion.competencyId === 'D7' ? 'text' : 'decimal'}
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyDown={handleKeyDown}

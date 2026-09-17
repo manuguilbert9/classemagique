@@ -1,3 +1,4 @@
+import { validPasseComposeQuestion } from '@/lib/passe-compose-bank';
 import { z } from 'zod';
 import { ai } from '../genkit';
 
@@ -5,7 +6,8 @@ const PasseComposeInputSchema = z.object({
   auxiliaries: z.array(z.enum(['avoir', 'etre'])),
   groups: z.array(z.enum(['1er', '2eme', '3eme'])),
   theme: z.string().optional(),
-  count: z.number().default(10),
+  count: z.number().int().min(1).max(30).default(10),
+  level: z.enum(['B', 'C', 'D']).default('B'),
 });
 
 const PasseComposeOutputSchema = z.object({
@@ -13,7 +15,7 @@ const PasseComposeOutputSchema = z.object({
     sentence: z.string().describe("La phrase avec un trou pour le verbe (ex: 'Hier, nous _____ une pomme.')"),
     infinitive: z.string().describe("L'infinitif du verbe à conjuguer (ex: 'manger', 'aller', 'finir')"),
     answer: z.string().describe("Le verbe correctement conjugué au passé composé. Pour les verbes pronominaux, inclure le pronom réfléchi (ex: 's'est levée', 't'es levé', 'nous nous sommes promenés'). Pour les non-pronominaux: 'avons mangé', 'sont allés'."),
-    options: z.array(z.string()).describe("3 options pour le QCM, incluant la bonne réponse et 2 distracteurs plausibles (erreurs d'accord, mauvais auxiliaire, mauvais participe passé)"),
+    options: z.array(z.string()).length(3).describe("3 options pour le QCM, incluant la bonne réponse et 2 distracteurs plausibles (erreurs d'accord, mauvais auxiliaire, mauvais participe passé)"),
   }))
 });
 
@@ -24,6 +26,7 @@ export const passeComposeFlow = ai.defineFlow({
 }, async (input): Promise<z.infer<typeof PasseComposeOutputSchema>> => {
 
   const prompt = `
+    Niveau ${input.level} : B sujets singuliers et phrases courtes ; C sujets pluriels et accords avec être ; D groupes nominaux développés et contexte long.
     Génère un exercice de conjugaison au passé composé en français.
     Tu dois générer exactement ${input.count} phrases.
 
@@ -54,7 +57,7 @@ export const passeComposeFlow = ai.defineFlow({
         - 'suis' (je) → S consonne → PAS d'élision → 'je _____'
         - 'sommes' (nous) → S consonne → PAS d'élision → 'nous _____'
         - 'sont' (ils/elles) → S consonne → PAS d'élision → 'ils _____' / 'elles _____'
-      * EXEMPLE CORRECT : 'Les joueurs se _____ entraînés.' (answer: 'sont entraînés') — car 'sont' commence par S.
+      * EXEMPLE CORRECT : 'Les joueurs _____ ce matin.' (answer: 'se sont entraînés') — car 'sont' commence par S.
 
     Pour chaque phrase, tu dois fournir :
     1. 'sentence': La phrase avec un trou (indiqué par '_____') à la place du verbe conjugué au passé composé.
@@ -79,7 +82,7 @@ export const passeComposeFlow = ai.defineFlow({
     },
   });
 
-  if (!output) {
+  if (!output || output.questions.length !== input.count || !output.questions.every(validPasseComposeQuestion)) {
       throw new Error("Failed to generate passe compose questions");
   }
 

@@ -1,0 +1,85 @@
+{
+  "isolation": "Local harness, fictitious student; no backend writes or AI calls. Speech API disabled. Spelling stub supplies only chat.",
+  "tests": [
+    {
+      "name": "label-game reordered entirely through keyboard buttons and validated",
+      "status": "pass",
+      "evidence": {
+        "reference": "Le poivre est noir."
+      }
+    },
+    {
+      "name": "jumbled native arrows solve synthetic chat with no drag",
+      "status": "pass",
+      "evidence": {
+        "fixture": "chat"
+      }
+    },
+    {
+      "name": "adjective B native select solves reviewed placement",
+      "status": "pass",
+      "evidence": {
+        "level": "B",
+        "base": "Le chien aboie.",
+        "answer": "Le grand chien aboie."
+      }
+    },
+    {
+      "name": "adjective C native select solves reviewed placement",
+      "status": "pass",
+      "evidence": {
+        "level": "C",
+        "base": "Un ami est venu me voir.",
+        "answer": "Un vieil ami est venu me voir."
+      }
+    },
+    {
+      "name": "word reading no microphone completes via adult without transcript grading",
+      "status": "pass",
+      "evidence": {
+        "score": 90,
+        "adultObservations": 10
+      }
+    },
+    {
+      "name": "sentence reading no microphone completes via adult",
+      "status": "pass",
+      "evidence": {
+        "score": 100,
+        "adultObservations": 4
+      }
+    },
+    {
+      "name": "passé composé forwards B and presents correct subject",
+      "status": "pass",
+      "evidence": {
+        "level": "B",
+        "subject": "Il _____"
+      }
+    },
+    {
+      "name": "passé composé forwards C and presents correct subject",
+      "status": "pass",
+      "evidence": {
+        "level": "C",
+        "subject": "Elles _____"
+      }
+    },
+    {
+      "name": "passé composé forwards D and presents correct subject",
+      "status": "pass",
+      "evidence": {
+        "level": "D",
+        "subject": "Les filles de notre classe _____"
+      }
+    },
+    {
+      "name": "passé composé unsupported être + second group remains recoverable",
+      "status": "pass",
+      "evidence": {
+        "blockedInvalid": true,
+        "recoveredToAvoir": true
+      }
+    }
+  ]
+}

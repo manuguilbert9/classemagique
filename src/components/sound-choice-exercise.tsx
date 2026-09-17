@@ -103,6 +103,7 @@ export function SoundChoiceExercise({ slug, sound, options }: SoundChoiceExercis
         setSessionDetails(prev => [...prev, {
             question: currentQuestion.word.replace(currentQuestion.correct, '__'),
             userAnswer: selectedOption,
+            ...secondChance.getAttemptMetadata(String(selectedOption)),
             correctAnswer: currentQuestion.correct,
             status: issue,
         }]);
@@ -122,7 +123,8 @@ export function SoundChoiceExercise({ slug, sound, options }: SoundChoiceExercis
                 setHasBeenSaved(true);
                 const score = (correctAnswers / NUM_QUESTIONS) * 100;
                 if (isHomework && homeworkDate) {
-                    await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: slug, score });
+                    await saveHomeworkResult({
+            details: sessionDetails, userId: student.id, date: homeworkDate, skillSlug: slug, score });
                 } else {
                     await addScore({ userId: student.id, skill: slug, score, details: sessionDetails });
                 }
@@ -149,7 +151,8 @@ export function SoundChoiceExercise({ slug, sound, options }: SoundChoiceExercis
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={NUM_QUESTIONS}
                 canRestart={!isHomework}
                 onRestart={restartExercise}

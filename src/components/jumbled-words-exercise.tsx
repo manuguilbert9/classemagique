@@ -220,7 +220,7 @@ export function JumbledWordsExercise() {
 
         // Faux : les lettres restent en place, l'élève poursuit sa recherche.
         if (!isCorrect) {
-            secondChance.registerError();
+            secondChance.registerError(proposedWord);
             setFeedback('retry');
             setTimeout(() => setFeedback(null), DELAI_NOUVEL_ESSAI);
             return;
@@ -230,6 +230,7 @@ export function JumbledWordsExercise() {
         setSessionDetails(prev => [...prev, {
             question: `Remettre en ordre : ${currentWord}`,
             userAnswer: proposedWord,
+            ...secondChance.getAttemptMetadata(proposedWord),
             correctAnswer: currentWord,
             status: issue,
         }]);
@@ -306,7 +307,8 @@ export function JumbledWordsExercise() {
     if (isFinished) {
         return (
             <ExerciseFinished
-                correct={correctAnswers}
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
+        correct={correctAnswers}
                 total={NUM_QUESTIONS}
                 canRestart
                 onRestart={restartExercise}
@@ -345,6 +347,7 @@ export function JumbledWordsExercise() {
             </CardHeader>
             <CardContent className="min-h-[300px] flex flex-col items-center justify-center gap-8 p-6">
 
+                <div className="flex flex-wrap gap-2" aria-label="Déplacer sans glisser">{currentLetters.map((item, index) => <div key={item.id} className="border rounded p-2"><span>{item.letter}</span><Button variant="outline" size="sm" aria-label={`Déplacer ${item.letter} avant`} disabled={index === 0 || !!feedback} onClick={() => setCurrentLetters(items => arrayMove(items, index, index - 1))}>←</Button><Button variant="outline" size="sm" aria-label={`Déplacer ${item.letter} après`} disabled={index === currentLetters.length - 1 || !!feedback} onClick={() => setCurrentLetters(items => arrayMove(items, index, index + 1))}>→</Button></div>)}</div>
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}

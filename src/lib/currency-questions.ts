@@ -40,7 +40,7 @@ const generateLevelA = (): Question => {
             optionsItems.push(correctItem);
 
             const questionText = `Clique sur ${correctItem.type === 'pièce' ? 'la pièce de' : 'le billet de'} ${correctItem.name}.`;
-            const textToSpeak = `Clique sur ${correctItem.type === 'pièce' ? 'la pièce de' : 'le billet de'} ${numberToWords(correctItem.value)}`;
+            const textToSpeak = `Clique sur ${correctItem.type === 'pièce' ? 'la pièce de' : 'le billet de'} ${correctItem.value < 1 ? `${numberToWords(Math.round(correctItem.value * 100))} centime${correctItem.value > 0.01 ? 's' : ''}` : `${numberToWords(correctItem.value)} euro${correctItem.value > 1 ? 's' : ''}`}`;
 
             return {
                 id: Date.now() + questionIdCounter++,
@@ -70,7 +70,7 @@ const generateLevelA = (): Question => {
                 level: 'A',
                 type: 'image-qcm',
                 question: `Clique sur la pièce de ${correctItem.name}.`,
-                textToSpeak: `Clique sur la pièce de ${numberToWords(correctItem.value)}`,
+                textToSpeak: `Clique sur la pièce de ${correctItem.value < 1 ? `${numberToWords(Math.round(correctItem.value * 100))} centime${correctItem.value > 0.01 ? 's' : ''}` : `${numberToWords(correctItem.value)} euro${correctItem.value > 1 ? 's' : ''}`}`,
                 imageOptions: optionsItems.sort(() => Math.random() - 0.5).map(item => ({
                     value: item.name,
                     src: item.image,
@@ -93,7 +93,7 @@ const generateLevelA = (): Question => {
                 level: 'A',
                 type: 'image-qcm',
                 question: `Clique sur le billet de ${correctItem.name}.`,
-                textToSpeak: `Clique sur le billet de ${numberToWords(correctItem.value)}`,
+                textToSpeak: `Clique sur le billet de ${correctItem.value < 1 ? `${numberToWords(Math.round(correctItem.value * 100))} centime${correctItem.value > 0.01 ? 's' : ''}` : `${numberToWords(correctItem.value)} euro${correctItem.value > 1 ? 's' : ''}`}`,
                 imageOptions: optionsItems.sort(() => Math.random() - 0.5).map(item => ({
                     value: item.name,
                     src: item.image,
@@ -158,7 +158,8 @@ const generateLevelB = (): Question => {
             const itemsToShow: typeof euroPiecesAndBillets = [];
 
             for (let i = 0; i < numItems; i++) {
-                const item = euroPiecesAndBillets[randomInt(0, euroPiecesAndBillets.length - 1)];
+                const smallCurrency = euroPiecesAndBillets.filter(item => item.value <= 5);
+                const item = smallCurrency[randomInt(0, smallCurrency.length - 1)];
                 itemsToShow.push(item);
                 total += item.value;
             }
@@ -261,14 +262,16 @@ const generateLevelC = (): Question => {
             // Type 2: Achat d'un objet - combien ça coûte ?
             const price = roundToCent(randomInt(3, 20) + [0, 0.50, 0.95][randomInt(0, 2)]);
 
+            const secondPrice = randomInt(2, 8);
+            const totalPrice = roundToCent(price + secondPrice);
             const options = new Set<string>();
-            options.add(formatCurrency(price));
+            options.add(formatCurrency(totalPrice));
 
             // Générer des distracteurs plausibles
             const errors = [0.50, -0.50, 1, -1, 2, -2, 5, -5];
             for(const error of errors.sort(() => Math.random() - 0.5)) {
                 if(options.size >= 4) break;
-                const distractor = roundToCent(Math.max(0.50, price + error));
+                const distractor = roundToCent(Math.max(0.50, totalPrice + error));
                 options.add(formatCurrency(distractor));
             }
 
@@ -279,9 +282,9 @@ const generateLevelC = (): Question => {
                 id: Date.now() + questionIdCounter++,
                 level: 'C',
                 type: 'qcm',
-                question: `Tu veux acheter un ${item} qui coûte ${formatCurrency(price)}. Combien vas-tu payer ?`,
+                question: `Tu veux acheter un ${item} qui coûte ${formatCurrency(price)} et un carnet à ${formatCurrency(secondPrice)}. Combien vas-tu payer en tout ?`,
                 options: Array.from(options).sort(() => Math.random() - 0.5),
-                answer: formatCurrency(price),
+                answer: formatCurrency(totalPrice),
                 currencySettings: { difficulty: 2 },
             };
         }

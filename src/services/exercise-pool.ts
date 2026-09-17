@@ -331,7 +331,8 @@ export async function clearAllExercisePools(): Promise<number> {
 // — Utilitaires —
 
 function buildPoolId(skill: string, level: SkillLevel | string | null, settingsKey: string): string {
-  return `${sanitize(skill)}__${sanitize(level ? String(level) : 'na')}__${fingerprint(settingsKey)}`;
+  // Révision du corpus : ne jamais réutiliser les questions antérieures aux correctifs.
+  return `v20260916__${sanitize(skill)}__${sanitize(level ? String(level) : 'na')}__${fingerprint(settingsKey)}`;
 }
 
 function buildStudentKey(studentId?: string | null): string {

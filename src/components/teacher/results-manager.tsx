@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import { type Student } from '@/services/students';
+import type { HomeworkResult } from '@/services/homework';
 import { type Score, deleteScore } from '@/services/scores';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
 import { format } from 'date-fns';
@@ -25,12 +26,19 @@ import { WritingFilesViewer } from './writing-files-viewer';
 interface ResultsManagerProps {
     students: Student[];
     allScores: Score[];
+    allHomeworkResults?: HomeworkResult[];
     allWritingEntries: WritingEntry[];
     allWritingFsNodes: FsNode[];
 }
 
-export function ResultsManager({ students, allScores, allWritingEntries, allWritingFsNodes }: ResultsManagerProps) {
+export function ResultsManager({ students, allScores: sourceScores, allHomeworkResults = [], allWritingEntries, allWritingFsNodes }: ResultsManagerProps) {
     const { toast } = useToast();
+    const [scope, setScope] = useState('all');
+    const allScores = useMemo(() => {
+        const ids = new Set(sourceScores.map(s=>s.id));
+        const historical: Score[] = allHomeworkResults.filter(h=>h.id && !ids.has(h.id)).map(h=>({...h,id:h.id!,skill:h.skillSlug,context:'homework',homeworkDate:h.date,createdAt:typeof h.createdAt === 'string' ? h.createdAt : h.createdAt?.toDate().toISOString() || h.date}));
+        return [...sourceScores,...historical].filter(s=>scope === 'all' || (scope === 'homework' ? s.context === 'homework' : s.context !== 'homework'));
+    },[sourceScores,allHomeworkResults,scope]);
 
     const sortedStudents = useMemo(() => {
         const studentLastActivity: Record<string, number> = {};
@@ -95,6 +103,7 @@ export function ResultsManager({ students, allScores, allWritingEntries, allWrit
     
     return (
         <div className="space-y-8">
+            <label>Périmètre des résultats <select value={scope} onChange={e=>setScope(e.target.value)}><option value="all">Classe et devoirs</option><option value="classroom">En classe (et anciens résultats sans contexte)</option><option value="homework">Devoirs</option></select></label>
             <ReportGenerator students={students} allScores={allScores} />
             <Card>
                 <CardHeader>

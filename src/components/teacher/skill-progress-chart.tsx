@@ -16,6 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { RotateCcw, Trash2, ChevronDown, ChevronUp, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { scoreUnit, formatScore } from '@/lib/score-display';
 import type { Score } from '@/services/scores';
 import { type Skill, difficultyLevelToString } from '@/lib/skills';
 import { format } from 'date-fns';
@@ -28,18 +29,22 @@ interface SkillProgressChartProps {
   onDeleteScore: (scoreId: string) => void;
 }
 
-export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgressChartProps) {
+export function SkillProgressChart({ skill, scores: allScores, onDeleteScore }: SkillProgressChartProps) {
+  const units = Array.from(new Set(allScores.map(scoreUnit)));
+  const [selectedUnit, setSelectedUnit] = React.useState(units[0]);
+  const unit = units.includes(selectedUnit) ? selectedUnit : units[0];
+  const scores = allScores.filter(s => scoreUnit(s) === unit);
   const [isDetailOpen, setIsDetailOpen] = React.useState(false);
 
   const chartData = React.useMemo(() => {
     return scores.map(s => ({
       date: new Date(s.createdAt),
       score: Math.round(s.score),
-      level: difficultyLevelToString(s.skill, s.score, s.calculationSettings, s.currencySettings, s.timeSettings, s.calendarSettings, s.numberLevelSettings, s.countSettings)
+      level: difficultyLevelToString(s.skill, s.score, s.calculationSettings, s.currencySettings, s.timeSettings, s.calendarSettings, s.numberLevelSettings, s.countSettings, s.readingRaceSettings)
     })).sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [scores]);
 
-  const isMCLM = skill.slug === 'fluence' || skill.slug === 'reading-race';
+  const isMCLM = unit === 'MCLM';
 
   return (
     <Card className="flex flex-col">
@@ -48,7 +53,8 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
         <CardDescription className="text-xs">{scores.length} session(s)</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
-        <ChartContainer
+        {units.length > 1 && <label>Unité <select value={unit} onChange={e=>setSelectedUnit(e.target.value as typeof unit)}>{units.map(u=><option key={u} value={u}>{u === "percent" ? "%" : u === "count" ? "Nombre de réponses" : u === "completion" ? "Atelier achevé" : u === "unknown" ? "Unité non renseignée" : "MCLM"}</option>)}</select></label>}
+        {unit === "unknown" ? <p className="text-muted-foreground">Unité historique non renseignée : valeurs brutes disponibles dans l’historique, sans courbe de réussite.</p> : unit === "completion" ? <p className="text-muted-foreground">Ateliers achevés : {scores.length}. La participation ne mesure pas la maîtrise de la lecture.</p> : <ChartContainer
           config={{
             score: { label: isMCLM ? 'MCLM' : 'Score', color: "hsl(var(--primary))" },
           }}
@@ -58,7 +64,7 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
             <AreaChart accessibilityLayer data={chartData}>
               <CartesianGrid vertical={false} />
               <XAxis hide dataKey="date" />
-              <YAxis hide domain={isMCLM ? [0, 'dataMax + 10'] : [0, 100]} />
+              <YAxis hide domain={unit !== 'percent' ? [0, 'dataMax + 10'] : [0, 100]} />
               <ChartTooltip
                 cursor={false}
                 content={
@@ -66,7 +72,7 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
                     formatter={(value, name, item) => (
                       <div className="flex flex-col">
                         <span>{format(item.payload.date, 'd MMM yy', { locale: fr })}</span>
-                        <span>{isMCLM ? `${value} MCLM` : `${value}%`}</span>
+                        <span>{`${value}${unit === 'MCLM' ? ' MCLM' : unit === 'count' ? ' réponses' : '%'}`}</span>
                         {item.payload.level && <span className="text-xs text-muted-foreground">{item.payload.level}</span>}
                       </div>
                     )}
@@ -85,7 +91,7 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
              <BarChart accessibilityLayer data={chartData}>
                <CartesianGrid vertical={false} />
                 <XAxis hide dataKey="date" />
-                <YAxis hide domain={isMCLM ? [0, 'dataMax + 10'] : [0, 100]} />
+                <YAxis hide domain={unit !== 'percent' ? [0, 'dataMax + 10'] : [0, 100]} />
                 <ChartTooltip
                     cursor={false}
                     content={
@@ -93,7 +99,7 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
                         formatter={(value, name, item) => (
                         <div className="flex flex-col">
                             <span>{format(item.payload.date, 'd MMM yy', { locale: fr })}</span>
-                            <span>{isMCLM ? `${value} MCLM` : `${value}%`}</span>
+                            <span>{`${value}${unit === 'MCLM' ? ' MCLM' : unit === 'count' ? ' réponses' : '%'}`}</span>
                             {item.payload.level && <span className="text-xs text-muted-foreground">{item.payload.level}</span>}
                         </div>
                         )}
@@ -103,7 +109,7 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
                <Bar dataKey="score" fill="var(--color-score)" radius={4} />
              </BarChart>
           )}
-        </ChartContainer>
+        </ChartContainer>}
       </CardContent>
       <CardFooter>
         <Button size="sm" variant="outline" className="w-full" onClick={() => setIsDetailOpen(!isDetailOpen)}>
@@ -128,7 +134,7 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
                     <DialogTrigger asChild>
                         <TableRow className="cursor-pointer">
                             <TableCell className="text-xs">{format(new Date(score.createdAt), 'd/MM/yy', { locale: fr })}</TableCell>
-                            <TableCell className="text-xs">{isMCLM ? `${score.score} MCLM` : `${Math.round(score.score)}%`}</TableCell>
+                            <TableCell className="text-xs">{formatScore(score)}</TableCell>
                             <TableCell className="text-right">
                                 <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -161,6 +167,7 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
                                 {skill.name} - {format(new Date(score.createdAt), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                             </CardDescription>
                         </DialogHeader>
+                         {score.metadata && <p className="text-xs text-muted-foreground">{score.metadata.durationSeconds !== undefined && `${score.metadata.durationSeconds} s ; `}{score.metadata.wordsRead !== undefined && `${score.metadata.wordsRead} mots lus ; `}{score.metadata.errors !== undefined && `${score.metadata.errors} erreurs ; `}Aides : {score.metadata.assistance?.join(', ') || 'non renseignées'}</p>}
                          <ScrollArea className="max-h-[60vh]">
                             <Table>
                                 <TableHeader>
@@ -174,7 +181,7 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
                                     {score.details?.map((detail, index) => (
                                         <TableRow key={index}>
                                             <TableCell className="text-xs font-mono max-w-xs truncate">{detail.question}</TableCell>
-                                            <TableCell className="text-xs font-mono max-w-xs truncate">{detail.userAnswer}</TableCell>
+                                            <TableCell className="text-xs font-mono max-w-xs truncate">{detail.userAnswer}{detail.attempts !== undefined && <p>{detail.attempts} essai(s) · {detail.hintUsed ? 'aide utilisée' : 'sans aide signalée'} · première réponse : {detail.firstAnswer}</p>}</TableCell>
                                             <TableCell className="text-right">
                                                 {/* Trois états : juste, corrigé par l'élève, ou raté. */}
                                                 {detail.status === 'correct' ? (
@@ -183,6 +190,8 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
                                                     <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600">
                                                         <RotateCcw className="h-4 w-4" /> corrigé
                                                     </span>
+                                                ) : detail.status === 'completed' ? (
+                                                    <span className="text-slate-600">Achevé</span>
                                                 ) : (
                                                     <XCircle className="inline h-4 w-4 text-red-500" />
                                                 )}

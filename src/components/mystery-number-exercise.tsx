@@ -80,16 +80,6 @@ export function MysteryNumberExercise() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentQuestionIndex, level]);
 
-    useEffect(() => {
-        // Reveal one clue at a time
-        if (gameState === 'playing' && revealedClueCount < clues.length) {
-            const timer = setTimeout(() => {
-                setRevealedClueCount(prev => prev + 1);
-            }, 2000); // Reveal a new clue every 2 seconds
-            return () => clearTimeout(timer);
-        }
-    }, [gameState, revealedClueCount, clues]);
-
     const generateNewProblem = () => {
         setGameState('generating');
         let num: number;
@@ -141,7 +131,9 @@ export function MysteryNumberExercise() {
                 question: `Deviner le nombre mystère (${mysteryNumber})`,
                 userAnswer: userInput,
                 correctAnswer: String(mysteryNumber),
-                status: 'correct',
+                status: currentAttempts === 1 ? 'correct' : 'corrected',
+                attempts: currentAttempts,
+                hintUsed: currentAttempts > 1,
                 score: score,
             };
             setSessionDetails(prev => [...prev, detail]);
@@ -181,7 +173,9 @@ export function MysteryNumberExercise() {
                 const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
                 
                 if (isHomework && homeworkDate) {
-                    await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: 'mystery-number', score: finalScore });
+                    await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level }, userId: student.id, date: homeworkDate, skillSlug: 'mystery-number', score: finalScore });
                 } else {
                     await addScore({ userId: student.id, skill: 'mystery-number', score: finalScore, details: sessionDetails, numberLevelSettings: { level } });
                 }
@@ -240,11 +234,15 @@ export function MysteryNumberExercise() {
                 </div>
                 <div className="space-y-3">
                     <CardDescription>Indices :</CardDescription>
-                    {clues.map((clue, index) => (
+                    {clues.slice(0, revealedClueCount).map((clue, index) => (
                          <p key={clue.id} className={cn("text-lg font-medium transition-all duration-500", index < revealedClueCount ? 'opacity-100' : 'opacity-0')}>
                             - {clue.text}
                          </p>
                     ))}
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" disabled={revealedClueCount >= clues.length} onClick={() => setRevealedClueCount(n => Math.min(n + 1, clues.length))}>Indice suivant</Button>
+                        <Button variant="outline" onClick={() => { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const speech = new SpeechSynthesisUtterance(clues.slice(0, revealedClueCount).map(c => c.text).join(' ')); speech.lang = 'fr-FR'; window.speechSynthesis.speak(speech); } }}>Écouter les indices</Button>
+                    </div>
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">

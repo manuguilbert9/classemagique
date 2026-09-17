@@ -38,9 +38,7 @@ export async function generateLireLesNombresQuestion(settings: NumberLevelSettin
             s = s.substring(0, zeroPos) + '0' + s.substring(zeroPos + 1);
              if (len > 4 && Math.random() > 0.5) {
                  let zeroPos2 = Math.floor(Math.random() * (len - 2)) + 1;
-                 while(zeroPos2 === zeroPos) {
-                    zeroPos2 = Math.floor(Math.random() * (len - 2)) + 1;
-                 }
+                 if (zeroPos2 === zeroPos) zeroPos2 = zeroPos % (len - 2) + 1;
                  s = s.substring(0, zeroPos2) + '0' + s.substring(zeroPos2 + 1);
              }
             answerNumber = parseInt(s);
@@ -67,7 +65,7 @@ export async function generateLireLesNombresQuestion(settings: NumberLevelSettin
     const options = new Set<number>([answerNumber]);
 
     // Generate trap options
-    while (options.size < 4) {
+    for (let attempt = 0; options.size < 4 && attempt < 32; attempt++) {
         let trapNumber: number;
         const magnitude = String(answerNumber).length;
         // Try to generate a similarly-sized number
@@ -84,6 +82,10 @@ export async function generateLireLesNombresQuestion(settings: NumberLevelSettin
         }
     }
 
+    for (let offset = 1; options.size < 4; offset++) {
+        if (answerNumber - offset >= min) options.add(answerNumber - offset);
+        if (options.size < 4 && answerNumber + offset <= max) options.add(answerNumber + offset);
+    }
     const allOptions = Array.from(options);
 
     if (isReverse) {

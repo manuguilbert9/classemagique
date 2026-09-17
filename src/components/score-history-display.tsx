@@ -2,6 +2,7 @@
 
 'use client';
 
+import { scoreUnit, formatScore } from '@/lib/score-display';
 import type { Score } from '@/services/scores';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -21,7 +22,9 @@ export function ScoreHistoryDisplay({ scoreHistory }: ScoreHistoryDisplayProps) 
   const chartData = scoreHistory.slice(0, 5).map(item => ({
     date: item.createdAt ? format(new Date(item.createdAt), 'd MMM yyyy', { locale: fr }) : 'N/A',
     score: item.score,
-    difficulty: difficultyLevelToString(item.skill, item.score, item.calculationSettings, item.currencySettings, item.timeSettings, item.calendarSettings, item.numberLevelSettings, item.countSettings)
+    unit: scoreUnit(item),
+    label: formatScore(item),
+    difficulty: difficultyLevelToString(item.skill, item.score, item.calculationSettings, item.currencySettings, item.timeSettings, item.calendarSettings, item.numberLevelSettings, item.countSettings, item.readingRaceSettings)
   }));
 
   return (
@@ -35,7 +38,7 @@ export function ScoreHistoryDisplay({ scoreHistory }: ScoreHistoryDisplayProps) 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 pt-2">
             {chartData.map((item, index) => (
               <div key={index} className="flex flex-col items-center text-center gap-2 p-3 rounded-lg bg-card shadow-sm">
-                 <ScoreTube score={item.score} />
+                 {item.unit === "percent" ? <ScoreTube score={item.score} /> : <p className="font-bold">{item.label}</p>}
                  <p className="text-xs font-medium text-muted-foreground">{item.date}</p>
                  {item.difficulty && (
                     <Badge variant="outline" className="text-xs">{item.difficulty}</Badge>

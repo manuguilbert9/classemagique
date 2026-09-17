@@ -136,6 +136,7 @@ export function PlaceValueTableExercise() {
     const detail: ScoreDetail = {
       question: currentQuestion.question,
       userAnswer: JSON.stringify(userInputs),
+            ...secondChance.getAttemptMetadata(String(JSON.stringify(userInputs))),
       correctAnswer: currentQuestion.answer || '',
       status: issue,
     };
@@ -143,7 +144,7 @@ export function PlaceValueTableExercise() {
     // Faux : on ne passe pas à la suite. L'élève reprend la main
     // jusqu'à donner lui-même la bonne réponse — c'est ainsi qu'il la retient.
     if (!isCorrect) {
-      secondChance.registerError();
+      secondChance.registerError(detail.userAnswer);
       setFeedback('retry');
       setTimeout(() => {
         setFeedback(null);
@@ -170,6 +171,8 @@ export function PlaceValueTableExercise() {
         const score = (correctAnswers / NUM_QUESTIONS) * 100;
         if (isHomework && homeworkDate) {
           await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level: level },
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'place-value-table',
@@ -218,6 +221,7 @@ export function PlaceValueTableExercise() {
   if (isFinished) {
     return (
       <ExerciseFinished
+        corrected={sessionDetails.filter(detail => detail.status === 'corrected').length}
         correct={correctAnswers}
         total={NUM_QUESTIONS}
         canRestart={!isHomework}
@@ -253,16 +257,17 @@ export function PlaceValueTableExercise() {
           </div>
 
           {/* Tableau de numération */}
-          <div className="w-full overflow-x-auto">
+          <p className="text-sm text-muted-foreground">Laisse vide une colonne avant le premier chiffre. {metadata.columns.length > 4 && 'Fais défiler le tableau vers la droite pour voir toutes les colonnes.'}</p>
+          <div className="w-full min-w-0 overflow-x-auto pb-3" role="region" aria-label="Tableau de numération, défilement horizontal" tabIndex={0}>
             <table className="mx-auto border-collapse border-2 border-gray-400">
               <thead>
                 <tr>
                   {/* Colonne pour afficher le nombre complet */}
-                  <th className="border-2 border-gray-400 bg-gray-100 px-3 py-2 text-sm font-semibold">
+                  <th className="hidden sm:table-cell border-2 border-gray-400 bg-gray-100 px-3 py-2 text-sm font-semibold">
                     Nombre
                   </th>
                   {metadata.columns.map((col, index) => (
-                    <th key={index} className={cn("border-2 border-gray-400 px-3 py-2 text-sm font-semibold min-w-[60px]", getColumnColor(col))}>
+                    <th scope="col" key={index} className={cn("border-2 border-gray-400 px-1 sm:px-3 py-2 text-sm font-semibold min-w-[52px]", getColumnColor(col))}>
                       {col}
                     </th>
                   ))}
@@ -271,15 +276,16 @@ export function PlaceValueTableExercise() {
               <tbody>
                 <tr>
                   {/* Afficher le nombre en chiffres dans la première colonne */}
-                  <td className="border-2 border-gray-400 px-3 py-2 bg-gray-50 font-bold text-lg">
+                  <td className="hidden sm:table-cell border-2 border-gray-400 px-3 py-2 bg-gray-50 font-bold text-lg">
                     {metadata.number}
                   </td>
                   {metadata.columns.map((col, index) => (
-                    <td key={index} className="border-2 border-gray-400 px-2 py-2">
+                    <td key={index} className="border-2 border-gray-400 px-1 py-2">
                       <Input
                         ref={index === 0 ? firstInputRef : null}
                         type="text"
                         inputMode="numeric"
+                        aria-label={`Chiffre de la colonne ${col}`}
                         maxLength={1}
                         value={userInputs[col] || ''}
                         onChange={(e) => {

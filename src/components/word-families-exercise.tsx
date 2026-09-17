@@ -1,6 +1,7 @@
 
 'use client';
 
+import { sanitizeWordPairs, FAMILY_FALLBACK } from '@/lib/word-family-validation';
 import { useState, useEffect, useMemo, useContext } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -148,7 +149,8 @@ export function WordFamiliesExercise() {
         reuseFromStart: true,
       });
       if (famille && famille.pairs) {
-        const validPairs = famille.pairs.filter(p => p.familyMember && p.familyMember.trim() !== '' && p.original.trim() !== p.familyMember.trim());
+        const cleaned = sanitizeWordPairs(famille.pairs, list.words);
+        const validPairs = cleaned.length ? cleaned : FAMILY_FALLBACK;
         setAllPairs(validPairs);
         
         const shuffledPairs = shuffleArray(validPairs);
@@ -160,9 +162,12 @@ export function WordFamiliesExercise() {
         if (newRounds.length > 0) {
             setupRound(0, newRounds);
         }
+      } else {
+        setAllPairs(FAMILY_FALLBACK); setRounds([FAMILY_FALLBACK]); setupRound(0, [FAMILY_FALLBACK]);
       }
     } catch (error) {
       console.error("Failed to generate word families:", error);
+      setAllPairs(FAMILY_FALLBACK); setRounds([FAMILY_FALLBACK]); setupRound(0, [FAMILY_FALLBACK]);
     } finally {
       setIsLoadingPairs(false);
     }
@@ -222,6 +227,8 @@ export function WordFamiliesExercise() {
 
               if (isHomework && homeworkDate) {
                 await saveHomeworkResult({
+            details: sessionDetails,
+            numberLevelSettings: { level: level },
                     userId: student.id,
                     date: homeworkDate,
                     skillSlug: 'word-families',
@@ -336,6 +343,7 @@ export function WordFamiliesExercise() {
     <Card className="w-full max-w-4xl mx-auto shadow-2xl p-4 sm:p-6">
        <CardHeader>
           <CardTitle className="font-headline text-2xl text-center">Relie les mots de la même famille</CardTitle>
+          <p className="text-sm">Mots de la liste ou corpus de secours relu lorsque la génération est indisponible.</p>
           <CardDescription className="text-center">
              {rounds.length > 0 && `Manche ${currentRoundIndex + 1} / ${rounds.length}`}
           </CardDescription>

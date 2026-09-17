@@ -16,6 +16,9 @@ export interface MbpQuestion {
 const findMbpPattern = (word: string): { base: string, missing: string, correct: 'n' | 'm' } | null => {
     const lowerWord = word.toLowerCase();
     
+    // Exceptions lexicales : garder le n devant b/p dans le trou.
+    const exception = lowerWord.match(/(.*)n([mbp].*)/);
+    if (exception) return { base: exception[1], missing: exception[2], correct: 'n' };
     // Find 'm' before m, b, p
     let match = lowerWord.match(/(.*)m([mbp].*)/);
     if (match) {
@@ -63,5 +66,11 @@ const generateQuestion = (): MbpQuestion => {
 };
 
 export function generateMbpQuestions(count: number): MbpQuestion[] {
-  return Array.from({ length: count }, generateQuestion);
+  const source = [...new Set([...MBP_WORDS, 'bonbon', 'bonbonne', 'bonbonnière', 'embonpoint', 'néanmoins'])].flatMap(word => {
+    const pattern = findMbpPattern(word);
+    return pattern ? [{ word, missingPart: pattern.base + '___' + pattern.missing, correctLetter: pattern.correct }] : [];
+  });
+  const questions: MbpQuestion[] = [];
+  while (questions.length < count) questions.push(...[...source].sort(() => Math.random() - .5).slice(0, count - questions.length));
+  return questions;
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { categoryAccents, type Skill } from '@/lib/skills';
 import { cn } from '@/lib/utils';
+import { getProgressiveExercise } from '@/lib/progressive-exercises';
 
 interface ExerciseCardProps {
     skill: Skill;
@@ -20,6 +21,7 @@ interface ExerciseCardProps {
 export function ExerciseCard({ skill, done = false, variant = 'hero' }: ExerciseCardProps) {
     const accent = categoryAccents[skill.category];
     const isHero = variant === 'hero';
+    const progressive = getProgressiveExercise(skill.slug);
 
     return (
         <Link
@@ -53,6 +55,9 @@ export function ExerciseCard({ skill, done = false, variant = 'hero' }: Exercise
                 {skill.name}
             </h3>
 
+            {progressive && <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold">Niveau {progressive.level}</span>}
+
+            {isHero && skill.progressionLabel && <span className="text-xs text-muted-foreground">{skill.progressionLabel}</span>}
             {isHero && (
                 <p className="text-xs leading-snug text-muted-foreground line-clamp-2">{skill.description}</p>
             )}

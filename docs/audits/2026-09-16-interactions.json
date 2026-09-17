@@ -1,0 +1,159 @@
+{
+  "emptySession": {
+    "calls": [
+      {
+        "service": "scores.ts",
+        "name": "addScore",
+        "args": [
+          {
+            "userId": "audit-fixture",
+            "skill": "tables-multiplication",
+            "score": null,
+            "details": []
+          }
+        ]
+      }
+    ],
+    "hasNaN": true
+  },
+  "replayAfterTwenty": {
+    "inputDisabled": true,
+    "value": "10"
+  },
+  "keyboard": {
+    "viewport": 390,
+    "documentWidth": 511,
+    "buttons": [
+      {
+        "text": "A",
+        "left": -121,
+        "right": -65
+      },
+      {
+        "text": "Z",
+        "left": -57,
+        "right": -1
+      },
+      {
+        "text": "E",
+        "left": 7,
+        "right": 63
+      },
+      {
+        "text": "R",
+        "left": 71,
+        "right": 127
+      },
+      {
+        "text": "T",
+        "left": 135,
+        "right": 191
+      },
+      {
+        "text": "Y",
+        "left": 199,
+        "right": 255
+      },
+      {
+        "text": "U",
+        "left": 263,
+        "right": 319
+      },
+      {
+        "text": "I",
+        "left": 327,
+        "right": 383
+      },
+      {
+        "text": "O",
+        "left": 391,
+        "right": 447
+      },
+      {
+        "text": "P",
+        "left": 455,
+        "right": 511
+      },
+      {
+        "text": "Q",
+        "left": -121,
+        "right": -65
+      },
+      {
+        "text": "S",
+        "left": -57,
+        "right": -1
+      },
+      {
+        "text": "D",
+        "left": 7,
+        "right": 63
+      },
+      {
+        "text": "F",
+        "left": 71,
+        "right": 127
+      },
+      {
+        "text": "G",
+        "left": 135,
+        "right": 191
+      },
+      {
+        "text": "H",
+        "left": 199,
+        "right": 255
+      },
+      {
+        "text": "J",
+        "left": 263,
+        "right": 319
+      },
+      {
+        "text": "K",
+        "left": 327,
+        "right": 383
+      },
+      {
+        "text": "L",
+        "left": 391,
+        "right": 447
+      },
+      {
+        "text": "M",
+        "left": 455,
+        "right": 511
+      },
+      {
+        "text": "W",
+        "left": -25,
+        "right": 31
+      },
+      {
+        "text": "X",
+        "left": 39,
+        "right": 95
+      },
+      {
+        "text": "C",
+        "left": 103,
+        "right": 159
+      },
+      {
+        "text": "V",
+        "left": 167,
+        "right": 223
+      },
+      {
+        "text": "B",
+        "left": 231,
+        "right": 287
+      },
+      {
+        "text": "N",
+        "left": 295,
+        "right": 351
+      }
+    ]
+  }
+}

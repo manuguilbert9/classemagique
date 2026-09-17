@@ -1,0 +1,218 @@
+{
+  "results": [
+    "tables: empty session, twenty answers, detailed 100%, replay enabled",
+    "copy: all accent keys visible at 390px, ten Unicode words completed, homework details retained",
+    "complements: twenty touch-only answers without timer, 100 percent",
+    "complements: early timed exit records actual duration, not sixty seconds",
+    "subtraction: twenty untimed answers, actual A saved, clean replay",
+    "place value B: all four entry columns visible on 390px",
+    "calendar A: calendar support present",
+    "fluence: no premature save, partial text and final five errors produce 15 MCLM in sixty seconds"
+  ],
+  "geometry": {
+    "width": 390,
+    "document": 390,
+    "letters": [
+      {
+        "text": "A",
+        "left": 53,
+        "right": 97
+      },
+      {
+        "text": "Z",
+        "left": 101,
+        "right": 145
+      },
+      {
+        "text": "E",
+        "left": 149,
+        "right": 193
+      },
+      {
+        "text": "R",
+        "left": 197,
+        "right": 241
+      },
+      {
+        "text": "T",
+        "left": 245,
+        "right": 289
+      },
+      {
+        "text": "Y",
+        "left": 293,
+        "right": 337
+      },
+      {
+        "text": "U",
+        "left": 101,
+        "right": 145
+      },
+      {
+        "text": "I",
+        "left": 149,
+        "right": 193
+      },
+      {
+        "text": "O",
+        "left": 197,
+        "right": 241
+      },
+      {
+        "text": "P",
+        "left": 245,
+        "right": 289
+      },
+      {
+        "text": "Q",
+        "left": 53,
+        "right": 97
+      },
+      {
+        "text": "S",
+        "left": 101,
+        "right": 145
+      },
+      {
+        "text": "D",
+        "left": 149,
+        "right": 193
+      },
+      {
+        "text": "F",
+        "left": 197,
+        "right": 241
+      },
+      {
+        "text": "G",
+        "left": 245,
+        "right": 289
+      },
+      {
+        "text": "H",
+        "left": 293,
+        "right": 337
+      },
+      {
+        "text": "J",
+        "left": 101,
+        "right": 145
+      },
+      {
+        "text": "K",
+        "left": 149,
+        "right": 193
+      },
+      {
+        "text": "L",
+        "left": 197,
+        "right": 241
+      },
+      {
+        "text": "M",
+        "left": 245,
+        "right": 289
+      },
+      {
+        "text": "W",
+        "left": 53,
+        "right": 97
+      },
+      {
+        "text": "X",
+        "left": 101,
+        "right": 145
+      },
+      {
+        "text": "C",
+        "left": 149,
+        "right": 193
+      },
+      {
+        "text": "V",
+        "left": 197,
+        "right": 241
+      },
+      {
+        "text": "B",
+        "left": 245,
+        "right": 289
+      },
+      {
+        "text": "N",
+        "left": 293,
+        "right": 337
+      },
+      {
+        "text": "É",
+        "left": 53,
+        "right": 97
+      },
+      {
+        "text": "È",
+        "left": 101,
+        "right": 145
+      },
+      {
+        "text": "Ê",
+        "left": 149,
+        "right": 193
+      },
+      {
+        "text": "À",
+        "left": 197,
+        "right": 241
+      },
+      {
+        "text": "Â",
+        "left": 245,
+        "right": 289
+      },
+      {
+        "text": "Î",
+        "left": 293,
+        "right": 337
+      },
+      {
+        "text": "Ô",
+        "left": 53,
+        "right": 97
+      },
+      {
+        "text": "Ù",
+        "left": 101,
+        "right": 145
+      },
+      {
+        "text": "Û",
+        "left": 149,
+        "right": 193
+      },
+      {
+        "text": "Ç",
+        "left": 197,
+        "right": 241
+      },
+      {
+        "text": "Ë",
+        "left": 245,
+        "right": 289
+      },
+      {
+        "text": "Ï",
+        "left": 293,
+        "right": 337
+      },
+      {
+        "text": "Ü",
+        "left": 149,
+        "right": 193
+      },
+      {
+        "text": "Œ",
+        "left": 197,
+        "right": 241
+      }
+    ]
+  }
+}

@@ -360,9 +360,9 @@ export const PROBLEM_STOCK: Record<ProblemCategory, GeneratedProblem[]> = {
         },
         {
             text: "Il a fait +2 degrés le matin et +5 degrés l'après-midi. De combien la température a-t-elle augmenté ?",
-            data: [2, 5],
-            expectedOperation: "addition",
-            expectedResult: 7,
+            data: [5, 2],
+            expectedOperation: "subtraction",
+            expectedResult: 3,
             unit: "degrés"
         },
         {

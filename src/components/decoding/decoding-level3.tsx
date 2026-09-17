@@ -137,6 +137,13 @@ export function DecodingLevel3() {
 
     if (isHomework && homeworkDate) {
         await saveHomeworkResult({
+            details: [{
+                question: 'Mots à trois syllabes',
+                userAnswer: `Temps circuit: ${time}s, Vitesse: ${wordsPerMinute} mots/min`,
+                correctAnswer: 'Exercice terminé',
+                status: 'completed'
+            }],
+            numberLevelSettings: { level: 'C' },
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'decoding',
@@ -159,7 +166,7 @@ export function DecodingLevel3() {
 
     toast({
         title: "Exercice terminé !",
-        description: "Ton score a bien été enregistré.",
+        description: "Le suivi de l’enregistrement est affiché en haut de page.",
     });
   };
 
@@ -258,7 +265,7 @@ export function DecodingLevel3() {
             <CardContent className="pt-6 flex justify-center">
                  <Button onClick={handleSaveScore} disabled={!student || hasBeenSaved} size="lg">
                     {hasBeenSaved ? <CheckCircle className="mr-2"/> : <Save className="mr-2"/>}
-                    {hasBeenSaved ? "Score enregistré !" : "J'ai terminé, j'enregistre mon score"}
+                    {hasBeenSaved ? "Atelier terminé" : "J'ai terminé cet atelier"}
                 </Button>
             </CardContent>
         </Card>

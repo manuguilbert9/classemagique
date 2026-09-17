@@ -5,7 +5,6 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { PasseComposeSettings } from '@/lib/questions';
 import { Loader2 } from 'lucide-react';
@@ -18,12 +17,11 @@ interface PasseComposeSettingsProps {
 export function PasseComposeSettings({ onStart, isLoading }: PasseComposeSettingsProps) {
   const [auxiliaries, setAuxiliaries] = useState<('avoir' | 'etre')[]>(['avoir', 'etre']);
   const [groups, setGroups] = useState<('1er' | '2eme' | '3eme')[]>(['1er']);
-  const [theme, setTheme] = useState('');
   const [answerMode, setAnswerMode] = useState<'qcm' | 'text'>('qcm');
 
   const handleSubmit = () => {
     if (auxiliaries.length === 0 || groups.length === 0) return;
-    onStart({ auxiliaries, groups, theme: theme.trim() || undefined, answerMode });
+    onStart({ auxiliaries, groups, answerMode });
   };
 
   const handleAuxiliaryChange = (value: 'avoir' | 'etre') => {
@@ -38,7 +36,8 @@ export function PasseComposeSettings({ onStart, isLoading }: PasseComposeSetting
     );
   };
 
-  const isFormValid = auxiliaries.length > 0 && groups.length > 0;
+  const unavailableCombination = auxiliaries.length === 1 && auxiliaries[0] === 'etre' && groups.length === 1 && groups[0] === '2eme';
+  const isFormValid = auxiliaries.length > 0 && groups.length > 0 && !unavailableCombination;
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-2xl">
@@ -80,17 +79,7 @@ export function PasseComposeSettings({ onStart, isLoading }: PasseComposeSetting
             </div>
           </div>
           {groups.length === 0 && <p className="text-red-500 text-sm">Veuillez sélectionner au moins un groupe de verbes.</p>}
-        </div>
-
-        <div className="space-y-4">
-          <Label htmlFor="theme" className="text-lg font-bold">Thème (Optionnel)</Label>
-          <Input
-            id="theme"
-            placeholder="Ex: Les pirates, le football, la forêt..."
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-          />
-          <p className="text-sm text-muted-foreground">L'intelligence artificielle créera des phrases sur ce thème.</p>
+          {unavailableCombination && <p role="alert" className="text-sm">Les verbes simples du deuxième groupe proposés ici utilisent avoir. Choisis aussi avoir, ou un autre groupe.</p>}
         </div>
 
         <div className="space-y-4">

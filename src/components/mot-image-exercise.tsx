@@ -128,6 +128,7 @@ export function MotImageExercise() {
       try {
         if (isHomework && homeworkDate) {
           await saveHomeworkResult({
+            details,
             userId: student.id,
             date: homeworkDate,
             skillSlug: 'mot-image',

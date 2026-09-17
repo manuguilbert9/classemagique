@@ -276,7 +276,7 @@ export function StudentManager({ students, archivedSkills = {} }: StudentManager
                                                         {(student.levels && Object.entries(student.levels).length > 0) ? (
                                                             Object.entries(student.levels).map(([skillSlug, level]) => {
                                                                 const skillInfo = availableSkills.find(s => s.slug === skillSlug);
-                                                                if (skillInfo && !skillInfo.isFixedLevel) {
+                                                                if (skillInfo && !skillInfo.isFixedLevel && !skillInfo.progressionLabel) {
                                                                     return (
                                                                         <Tooltip key={skillSlug}>
                                                                             <TooltipTrigger asChild>
@@ -440,7 +440,7 @@ export function StudentManager({ students, archivedSkills = {} }: StudentManager
                                                             <Label className="text-xs font-medium leading-tight line-clamp-2" title={skill.name}>
                                                                 {skill.name}
                                                             </Label>
-                                                            {!skill.isFixedLevel ? (
+                                                            {!skill.isFixedLevel && !skill.progressionLabel ? (
                                                                 <Select
                                                                     value={isEnabled ? (currentLevel || 'B') : 'off'}
                                                                     onValueChange={(value) => {
@@ -464,7 +464,7 @@ export function StudentManager({ students, archivedSkills = {} }: StudentManager
                                                                 </Select>
                                                             ) : (
                                                                 <div className="flex items-center gap-2">
-                                                                    <Badge variant="outline" className="flex-1 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
+                                                                    <Badge variant="outline" className="flex-1 whitespace-normal text-center justify-center min-h-8 text-xs">{skill.progressionLabel ?? `Niveau ${skill.pedagogicalLevel ?? skill.isFixedLevel}`}</Badge>
                                                                     <Switch
                                                                         checked={isEnabled}
                                                                         onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
@@ -513,7 +513,7 @@ export function StudentManager({ students, archivedSkills = {} }: StudentManager
                                                                         <Label className="text-xs font-medium leading-tight line-clamp-2 text-muted-foreground" title={skill.name}>
                                                                             {skill.name}
                                                                         </Label>
-                                                                        {!skill.isFixedLevel ? (
+                                                                        {!skill.isFixedLevel && !skill.progressionLabel ? (
                                                                             <Select
                                                                                 value={isEnabled ? (currentLevel || 'B') : 'off'}
                                                                                 onValueChange={(value) => {
@@ -537,7 +537,7 @@ export function StudentManager({ students, archivedSkills = {} }: StudentManager
                                                                             </Select>
                                                                         ) : (
                                                                             <div className="flex items-center gap-2">
-                                                                                <Badge variant="outline" className="flex-1 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
+                                                                                <Badge variant="outline" className="flex-1 whitespace-normal text-center justify-center min-h-8 text-xs">{skill.progressionLabel ?? `Niveau ${skill.pedagogicalLevel ?? skill.isFixedLevel}`}</Badge>
                                                                                 <Switch
                                                                                     checked={isEnabled}
                                                                                     onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}

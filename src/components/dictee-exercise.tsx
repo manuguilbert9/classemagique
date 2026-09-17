@@ -164,6 +164,7 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
       try {
         if (isHomework && homeworkDate) {
           await saveHomeworkResult({
+            details,
             userId: student.id,
             date: homeworkDate,
             skillSlug: `orthographe-${session.id}`,

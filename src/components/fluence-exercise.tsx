@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { UserContext } from '@/context/user-context';
 import { addScore } from '@/services/scores';
+import { calculateMCLM, readingSeconds } from '@/lib/fluence-metrics';
 import { saveHomeworkResult } from '@/services/homework';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -29,13 +30,6 @@ interface FluenceText {
 
 type ExerciseState = 'selecting' | 'reading' | 'finished';
 
-const calculateMCLM = (wordCount: number, seconds: number, errors: number): number => {
-  if (seconds === 0) return 0;
-  const wordsRead = wordCount - errors;
-  const minutes = seconds / 60;
-  return Math.round(wordsRead / minutes);
-};
-
 export function FluenceExercise() {
   const { student } = useContext(UserContext);
   const searchParams = useSearchParams();
@@ -52,15 +46,22 @@ export function FluenceExercise() {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const elapsedMs = React.useRef(0);
+  const startedAt = React.useRef<number | null>(null);
 
   // Score state
   const [errors, setErrors] = useState(0);
-  const [mclm, setMclm] = useState(0);
+  const [wordsRead, setWordsRead] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const sessionId = React.useRef<string>(crypto.randomUUID());
+  const mclm = calculateMCLM(wordsRead, time, errors);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   // Display state
   const [fontSize, setFontSize] = useState(20);
   const [showSyllables, setShowSyllables] = useState(false);
+  const syllablesUsed = React.useRef(false);
   const fontSizes = [16, 18, 20, 24, 28, 32];
 
   useEffect(() => {
@@ -89,8 +90,8 @@ export function FluenceExercise() {
    useEffect(() => {
     if (isRunning) {
       timerRef.current = setInterval(() => {
-        setTime(prevTime => prevTime + 1);
-      }, 1000);
+        setTime(readingSeconds(elapsedMs.current, startedAt.current, Date.now()));
+      }, 250);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -101,60 +102,40 @@ export function FluenceExercise() {
   
   const handleSelectText = (text: FluenceText) => {
     setSelectedText(text);
+    syllablesUsed.current = showSyllables;
     setExerciseState('reading');
     setTime(0);
+    elapsedMs.current = 0;
+    startedAt.current = null;
     setErrors(0);
-    setMclm(0);
+    setWordsRead(0);
+    sessionId.current = crypto.randomUUID();
     setHasBeenSaved(false);
+    setSubmitted(false);
   };
   
   const handleStop = () => {
+    if (startedAt.current !== null) elapsedMs.current += Date.now() - startedAt.current;
+    startedAt.current = null;
+    setTime(readingSeconds(elapsedMs.current, null, Date.now()));
     setIsRunning(false);
-    if (selectedText) {
-        const score = calculateMCLM(selectedText.wordCount, time, errors);
-        setMclm(score);
-    }
   };
-
-  const handleRecalculate = () => {
-    if(selectedText) {
-        const score = calculateMCLM(selectedText.wordCount, time, errors);
-        setMclm(score);
-    }
-  }
-
-  useEffect(() => {
-    async function saveResult() {
-      if (mclm > 0 && student && !hasBeenSaved && selectedText) {
-        setHasBeenSaved(true);
-        const details = [{
-            question: selectedText.title,
-            userAnswer: `${mclm} MCLM`,
-            correctAnswer: `Temps: ${time}s, Erreurs: ${errors}`,
-            status: 'completed' as const,
-        }];
-
-        if (isHomework && homeworkDate) {
-           await saveHomeworkResult({
-              userId: student.id,
-              date: homeworkDate,
-              skillSlug: 'fluence',
-              score: mclm,
-           });
-        } else {
-          await addScore({
-            userId: student.id,
-            skill: 'fluence',
-            score: mclm,
-            details: details,
-            readingRaceSettings: { level: selectedText.level as any }
-          });
-        }
-        toast({ title: 'Score enregistré !', description: `Ton score de ${mclm} MCLM a été sauvegardé.` });
-      }
-    }
-    saveResult();
-  }, [mclm, student, hasBeenSaved, selectedText, time, errors, toast, isHomework, homeworkDate]);
+  const toggleTimer = () => {
+    if (isRunning) handleStop();
+    else { startedAt.current = Date.now(); setIsRunning(true); }
+  };
+  const saveFinalResult = async () => {
+    if (!student || !selectedText || time <= 0 || isRunning || isSaving || hasBeenSaved) return;
+    setIsSaving(true);
+    setSubmitted(true);
+    const details = [{question:selectedText.title, userAnswer:`${mclm} MCLM`, correctAnswer:`${wordsRead} mots lus, ${time}s, ${errors} erreurs`,status:'completed' as const, hintUsed:syllablesUsed.current}];
+    const result = await addScore({userId:student.id,skill:'fluence',score:mclm,sessionId:sessionId.current,details,
+      readingRaceSettings:{level:(`Niveau ${selectedText.level.replace('Niveau ', '')}`) as 'Niveau B' | 'Niveau C' | 'Niveau D'},
+      metadata:{unit:'MCLM',durationSeconds:time,text:selectedText.content,wordsRead,errors,assistance:syllablesUsed.current ? ['syllabes'] : []}});
+    setIsSaving(false);
+    setHasBeenSaved(result.success);
+    toast(result.success ? {title:'Résultat enregistré',description:`${mclm} MCLM, après validation de l’adulte.`} : {variant:'destructive',title:'Résultat à enregistrer',description:'Utilise Réessayer l’enregistrement. Le résultat final est conservé.'});
+  };
 
   const resetExercise = () => {
     setExerciseState('selecting');
@@ -255,9 +236,9 @@ export function FluenceExercise() {
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
             <header className="flex items-center justify-between">
-                <Button onClick={resetExercise} variant="outline"><ArrowLeft className="mr-2"/> Choisir un autre texte</Button>
+                <Button disabled={isSaving} onClick={resetExercise} variant="outline"><ArrowLeft className="mr-2"/> Choisir un autre texte</Button>
                 <div className="flex items-center gap-4">
-                    <Button variant="outline" onClick={() => setShowSyllables(prev => !prev)}>
+                    <Button variant="outline" disabled={submitted} onClick={() => setShowSyllables(prev => { if (!prev) syllablesUsed.current = true; return !prev; })}>
                         <SyllableText text="Syllabes" />
                     </Button>
                     <div className="flex items-center gap-2 w-48">
@@ -298,7 +279,8 @@ export function FluenceExercise() {
 
                     <div className="flex items-center gap-4">
                          <Button
-                            onClick={() => setIsRunning(!isRunning)}
+                            disabled={submitted}
+                            onClick={toggleTimer}
                             size="lg"
                             variant={isRunning ? 'destructive' : 'default'}
                             className="w-40"
@@ -309,7 +291,7 @@ export function FluenceExercise() {
                             onClick={handleStop}
                             size="lg"
                             variant="secondary"
-                            disabled={isRunning}
+                            disabled={isRunning || submitted}
                             className="w-40"
                          >
                             <Calculator className="mr-2"/> Calculer
@@ -317,15 +299,18 @@ export function FluenceExercise() {
                     </div>
                     
                      <div className="flex items-center gap-2">
+                        <div><Label htmlFor="words-read">Mots réellement lus (numéro du dernier mot)</Label>
+                        <Input id="words-read" type="number" min={0} max={selectedText.wordCount} value={wordsRead} disabled={submitted} onChange={e=>{const value=Math.max(0,Math.min(selectedText.wordCount,Math.floor(Number(e.target.value))||0));setWordsRead(value);setErrors(n=>Math.min(n,value));}} /></div>
                         <div className="text-center">
                              <Label htmlFor="errors" className="text-sm text-muted-foreground">Erreurs</Label>
                             <Input 
                                 id="errors"
                                 type="number" 
                                 value={errors}
-                                onChange={e => setErrors(parseInt(e.target.value, 10) || 0)}
+                                min={0} max={wordsRead} disabled={submitted}
+                                onChange={e => setErrors(Math.min(wordsRead, Math.max(0, parseInt(e.target.value, 10) || 0)))}
                                 className="w-24 h-14 text-2xl text-center font-bold"
-                                onBlur={handleRecalculate}
+
                             />
                         </div>
                          <div className="text-center pt-5">
@@ -335,6 +320,8 @@ export function FluenceExercise() {
                     </div>
 
                 </CardContent>
+                <p className="px-4 text-sm">L’adulte chronomètre uniquement la lecture, indique le dernier mot lu et les erreurs, puis valide. Le temps de saisie ne compte pas.</p>
+                <Button className="m-4" disabled={isRunning || time <= 0 || submitted} onClick={saveFinalResult}>{hasBeenSaved ? 'Résultat enregistré' : isSaving ? 'Enregistrement…' : submitted ? 'Résultat conservé — réessayer ci-dessus' : 'Valider le résultat final (adulte)'}</Button>
             </Card>
         </div>
     )

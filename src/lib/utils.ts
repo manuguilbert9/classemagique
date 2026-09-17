@@ -36,7 +36,7 @@ export function numberToWords(num: number): string {
         return numberToFrench[num];
     }
 
-    if (num < 0 || num > 999999999) {
+    if (!Number.isInteger(num) || num < 0 || num > 999999999) {
         return "nombre hors limites";
     }
 
@@ -54,7 +54,7 @@ export function numberToWords(num: number): string {
     if (num >= 1000) {
         const thousands = Math.floor(num / 1000);
         if (thousands > 1) {
-            words += numberToWords(thousands) + " ";
+            words += numberToWords(thousands).replace(/(vingt|cent)s$/, "$1") + " ";
         }
         words += "mille";
         num %= 1000;
