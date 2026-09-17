@@ -25,7 +25,10 @@ async function inspect(page) {
   });
 }
 (async()=>{
-  const browser=await chromium.launch({headless:true});
+  const browser=await chromium.launch({
+    headless:true,
+    ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH}:{}),
+  });
   const context=await browser.newContext({viewport:{width:1280,height:1000}});
   await context.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
   const rows=[];

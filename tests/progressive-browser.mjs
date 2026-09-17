@@ -12,7 +12,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const base = process.env.BASE_URL || 'http://localhost:9003';
 const output = '.next/progressive-qa';
 await mkdir(output, { recursive: true });
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : {}),
+});
 const page = await browser.newPage({ viewport: { width: 1200, height: 1000 } });
 page.setDefaultTimeout(15000);
 const errors = [];

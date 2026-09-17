@@ -79,6 +79,34 @@ test('calendar A provides reference month and D really spans months',async()=>{
  for(const q of await api.generateCalendarQuestions('D',20)){assert.equal(q.level,'D');assert.ok(q.answerNumber>=7);assert.ok(q.description.includes('zéro'));}
 });
 
+test('place-value tables and written calculations keep distinct C and D progressions',async()=>{
+ const placeValue=load('src/lib/place-value-table-questions.ts',seeded());
+ const calculations=load('src/lib/exercise-content/calcul-pose.ts',seeded());
+ const expectedColumns={C:['CM','DM','UM','C','D','U'],D:['CM (millions)','DM (millions)','UM (millions)','CM','DM','UM','C','D','U']};
+ for(const level of ['C','D']) {
+  for(let i=0;i<30;i++) {
+   const q=await placeValue.generatePlaceValueTableQuestion({level});
+   const metadata=JSON.parse(q.description);
+   assert.equal(q.level,level);
+   assert.deepEqual([...metadata.columns],expectedColumns[level]);
+   assert.equal(Object.keys(metadata.decomposition).length,expectedColumns[level].length);
+   assert.match(metadata.displayNumber,/^[a-zà-ÿ -]+$/i);
+   assert.equal(Object.values(metadata.decomposition).filter(Boolean).join(''),String(metadata.number));
+  }
+  const problems=calculations.generateCalculsPoses(level,30);
+  assert.ok(problems.some(problem=>problem.operation==='addition'));
+  assert.ok(problems.some(problem=>problem.operation==='subtraction'));
+  for(const problem of problems) {
+   assert.equal(problem.answer,problem.operation==='addition'
+    ? problem.operands.reduce((sum,value)=>sum+value,0)
+    : problem.operands[0]-problem.operands[1]);
+   assert.ok(problem.operands[0]>=Math.pow(10,level==='C'?2:3));
+   assert.ok(problem.operands.every(value=>value<Math.pow(10,level==='C'?3:4)));
+   if(level==='D'&&problem.operation==='addition')assert.equal(problem.operands.length,3);
+  }
+ }
+});
+
 test('adaptive numeric answers normalize decimal notation and history concatenates without mutation',()=>{
  const {sameSchoolAnswer,mergeMathPerformance}=load('src/lib/word-problem-math.ts');
  assert.equal(sameSchoolAnswer('0,3','0.30000000000000004'),true);

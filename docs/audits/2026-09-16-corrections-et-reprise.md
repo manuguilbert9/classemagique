@@ -24,10 +24,12 @@ Vérifications arrêtées le 16 septembre 2026 à la demande de Manu, pour pours
 
 ## Première reprise hebdomadaire
 
-1. **Calendrier sur petit écran** : le scan a signalé des boutons de jours partiellement rognés par un conteneur. Le support calendrier A est bien présent et testé ; la disposition de certaines propositions reste à inspecter visuellement et corriger si nécessaire. Ce signal n'a pas été approfondi avant l'arrêt demandé.
-2. Vérifier les niveaux C/D des tableaux de numération et calculs posés, ainsi que les dernières présentations de progression dans les réglages enseignant.
+1. **Calendrier sur petit écran — corrigé le 17 septembre 2026** : le conteneur et les choix de jours sont désormais adaptatifs. Le scénario navigateur vérifie que les trois ou quatre propositions restent entièrement visibles dans leur carte à 390 px.
+2. **Niveaux C/D des tableaux de numération et calculs posés — vérifiés le 17 septembre 2026** : C utilise six colonnes jusqu'aux centaines de milliers et des calculs à trois chiffres ; D utilise neuf colonnes jusqu'aux centaines de millions et des calculs à quatre chiffres, dont les additions à trois opérandes. Les réponses, décompositions et transmissions de niveau sont testées.
 3. Recette des sauvegardes sur un environnement de test connecté, avec comptes fictifs : jusqu'ici Firestore et l'IA ont été simulés, sans donnée élève réelle.
 4. Relecture pédagogique hebdomadaire d'un petit corpus et écoute des voix réelles. La validation structurelle d'une sortie IA n'est pas une certification linguistique.
+
+Le premier déploiement du 17 septembre a aussi révélé un verrouillage npm incomplet : les dépendances pair optionnelles de Genkit n'étaient plus décrites dans `package-lock.json`. Le verrouillage a été recréé depuis un dossier vide puis contrôlé par une installation `npm ci`, les tests et le build de production.
 
 Ne pas relancer tout l'audit à chaque reprise. Choisir un petit lot, réutiliser les preuves existantes, tester seulement les changements et les parcours concernés.
 

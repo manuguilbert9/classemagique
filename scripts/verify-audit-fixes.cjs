@@ -3,7 +3,10 @@ const fs = require('node:fs');
 const assert = require('node:assert/strict');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 (async () => {
- const browser = await chromium.launch({headless:true});
+ const browser = await chromium.launch({
+  headless: true,
+  ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : {}),
+ });
  const page = await browser.newPage({viewport:{width:390,height:844}});
  page.setDefaultTimeout(7000);
  await page.route('**/*', r => new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort());
@@ -92,7 +95,22 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
   await open('calendar','A');
   await page.getByRole('grid').first().waitFor();
-  results.push('calendar A: calendar support present');
+  const weekdayChoices = page.getByRole('button', { name: /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)$/i });
+  assert.ok((await weekdayChoices.count()) >= 3, 'calendar A must offer at least three weekday choices');
+  assert.ok(await weekdayChoices.evaluateAll(buttons => buttons.every(button => {
+    const rect = button.getBoundingClientRect();
+    let parent = button.parentElement;
+    while (parent) {
+      const style = getComputedStyle(parent);
+      const parentRect = parent.getBoundingClientRect();
+      if (['hidden', 'clip'].includes(style.overflowX) && (rect.left < parentRect.left - 1 || rect.right > parentRect.right + 1)) {
+        return false;
+      }
+      parent = parent.parentElement;
+    }
+    return rect.left >= 0 && rect.right <= innerWidth;
+  })), 'calendar weekday choices must not be clipped on 390px');
+  results.push('calendar A: calendar support and all weekday choices visible on 390px');
   await open('fluence');
   await page.getByRole('button',{name:'Niveau B',exact:true}).click();
   await page.getByRole('button',{name:'Sons simples',exact:true}).click();

@@ -6,7 +6,7 @@
     "complements: early timed exit records actual duration, not sixty seconds",
     "subtraction: twenty untimed answers, actual A saved, clean replay",
     "place value B: all four entry columns visible on 390px",
-    "calendar A: calendar support present",
+    "calendar A: calendar support and all weekday choices visible on 390px",
     "fluence: no premature save, partial text and final five errors produce 15 MCLM in sixty seconds"
   ],
   "geometry": {

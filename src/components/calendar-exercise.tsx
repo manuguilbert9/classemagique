@@ -279,28 +279,28 @@ export function CalendarExercise() {
       switch(currentQuestion.type) {
           case 'qcm':
               return (
-                  <div className='flex flex-col items-center gap-4'>
-                    <Button variant="outline" onClick={() => { if ('speechSynthesis' in window) { const speech = new SpeechSynthesisUtterance(currentQuestion.question + '. Réponses : ' + currentQuestion.options?.join(', ')); speech.lang = 'fr-FR'; window.speechSynthesis.cancel(); window.speechSynthesis.speak(speech); } }}>Écouter la question et les réponses</Button>
+                  <div className="flex w-full min-w-0 flex-col items-center gap-4">
+                    <Button className="h-auto min-h-11 max-w-full whitespace-normal px-3 py-2" variant="outline" onClick={() => { if ('speechSynthesis' in window) { const speech = new SpeechSynthesisUtterance(currentQuestion.question + '. Réponses : ' + currentQuestion.options?.join(', ')); speech.lang = 'fr-FR'; window.speechSynthesis.cancel(); window.speechSynthesis.speak(speech); } }}>Écouter la question et les réponses</Button>
                     {currentQuestion.month && (
                          <DayPicker
                             key={currentQuestion.id}
                             defaultMonth={currentQuestion.month ? new Date(currentQuestion.month) : undefined}
                             mode="single"
                             locale={fr}
-                            className="p-4 rounded-md border bg-card"
+                            className="max-w-full rounded-md border bg-card p-2 sm:p-4"
                             classNames={{
                                 day_today: "font-bold text-accent",
                             }}
                         />
                     )}
-                    <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
+                    <div className="grid w-full min-w-0 max-w-lg grid-cols-2 gap-2 sm:gap-4">
                         {currentQuestion.options?.map(option => (
                             <Button
                             key={option}
                             variant={selectedOption === option ? 'default' : 'outline'}
                             onClick={() => setSelectedOption(option)}
                             className={cn(
-                                "text-xl h-20 p-4 justify-center capitalize",
+                                "h-16 min-w-0 justify-center whitespace-normal px-2 text-lg capitalize sm:h-20 sm:p-4 sm:text-xl",
                                 (feedback === 'correct' || feedback === 'corrected') && option === currentQuestion.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
                                 feedback === 'retry' && selectedOption === option && 'bg-red-500/80 text-white border-red-600 animate-shake',
                             )}
@@ -321,7 +321,7 @@ export function CalendarExercise() {
                     selected={selectedDay}
                     onSelect={setSelectedDay}
                     locale={fr}
-                    className="p-4 rounded-md border bg-card"
+                    className="max-w-full rounded-md border bg-card p-2 sm:p-4"
                     classNames={{
                         day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
                         day_today: "font-bold text-accent",
@@ -336,7 +336,7 @@ export function CalendarExercise() {
                             defaultMonth={currentQuestion.month ? new Date(currentQuestion.month) : undefined}
                             mode="single"
                             locale={fr}
-                            className="p-4 rounded-md border bg-card"
+                            className="max-w-full rounded-md border bg-card p-2 sm:p-4"
                             classNames={{
                                 day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
                                 day_today: "font-bold text-accent",
@@ -367,7 +367,7 @@ export function CalendarExercise() {
                      <CardDescription>{currentQuestion.description}</CardDescription>
                 )}
             </CardHeader>
-            <CardContent className="min-h-[350px] flex flex-col items-center justify-center gap-8 p-6">
+            <CardContent className="flex min-h-[350px] min-w-0 flex-col items-center justify-center gap-8 p-3 sm:p-6">
                 {renderQuestion()}
             </CardContent>
             <CardFooter className="h-24 flex flex-col items-center justify-center gap-2">
