@@ -66,6 +66,11 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
 
   const [choix, setChoix] = useState<string | null>(sessionId ?? null);
   const session = useMemo(() => (choix ? getSession(choix, niveau) : null), [choix, niveau]);
+  const copieDevoir = isHomework && session?.type === 'mots';
+  const items = useMemo(
+    () => copieDevoir ? session!.items.flatMap((mot) => [mot, mot, mot]) : session?.items ?? [],
+    [session, copieDevoir]
+  );
 
   const [etape, setEtape] = useState<'preparation' | 'dictee' | 'bilan'>('preparation');
   const [index, setIndex] = useState(0);
@@ -77,7 +82,7 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
 
   const champRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
 
-  const itemCourant = session?.items[index] ?? '';
+  const itemCourant = items[index] ?? '';
 
   /* ----------------------------- Synthèse vocale ---------------------------- */
 
@@ -95,7 +100,7 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
     if (etape !== 'dictee' || !itemCourant) return;
     const timer = setTimeout(() => dire(itemCourant), 400);
     return () => clearTimeout(timer);
-  }, [etape, itemCourant, dire]);
+  }, [etape, itemCourant, index, dire]);
 
   useEffect(() => {
     if (etape === 'dictee' && !resultatCourant) {
@@ -114,7 +119,7 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
   /* ------------------------------ Déroulement ------------------------------- */
 
   const valider = () => {
-    if (!session || resultatCourant) return;
+    if (!session || resultatCourant || !saisie.trim()) return;
     const resultat = comparer(itemCourant, saisie, exigeant);
     setResultatCourant(resultat);
     setReponses((prev) => [...prev, { attendu: itemCourant, saisi: saisie, resultat }]);
@@ -125,7 +130,7 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
     setConfetti(false);
     setResultatCourant(null);
     setSaisie('');
-    if (session && index < session.items.length - 1) {
+    if (session && index < items.length - 1) {
       setIndex((i) => i + 1);
     } else {
       setEtape('bilan');
@@ -227,7 +232,9 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <p className="text-muted-foreground">{session.objectif}</p>
+            <p className="text-muted-foreground">
+              {copieDevoir ? 'Recopie chaque mot 3 fois. Le modèle reste affiché pour t’aider.' : session.objectif}
+            </p>
 
             <p className="text-sm rounded-md bg-muted/60 p-3">
               {exigeant
@@ -263,7 +270,7 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
             </Accordion>
 
             <Button size="lg" className="w-full" onClick={() => setEtape('dictee')}>
-              Commencer la dictée
+              {copieDevoir ? 'Commencer la copie' : 'Commencer la dictée'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </CardContent>
@@ -295,7 +302,7 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
             />
           </div>
           <Star className="h-16 w-16 text-yellow-400 mx-auto mb-4" />
-          <h1 className="font-headline text-4xl mb-2">Dictée terminée !</h1>
+          <h1 className="font-headline text-4xl mb-2">{copieDevoir ? 'Copie terminée !' : 'Dictée terminée !'}</h1>
           <p className="text-lg text-muted-foreground mb-6">
             {motsCorrects} mots justes sur {totalMots}.
           </p>
@@ -381,7 +388,7 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
 
   // 3. La dictée elle-même
   const saisieLongue = estUneSaisieLongue(session);
-  const progression = ((index + (resultatCourant ? 1 : 0)) / session.items.length) * 100;
+  const progression = ((index + (resultatCourant ? 1 : 0)) / items.length) * 100;
   /** Le corpus n'accompagne que le jour 1 : la dictée bilan se fait sans appui. */
   const afficherCorpus = session.jour === 1;
 
@@ -393,7 +400,9 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
             {session.typeLabel} · semaine {semaine.semaine}
           </p>
           <p className="text-sm text-muted-foreground">
-            {index + 1} / {session.items.length}
+            {copieDevoir
+              ? `Mot ${Math.floor(index / 3) + 1} / ${session.items.length} · Copie ${(index % 3) + 1} / 3`
+              : `${index + 1} / ${items.length}`}
           </p>
         </div>
         <Progress value={progression} className="w-full mb-4 h-3" />
@@ -417,10 +426,15 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
           </div>
           <CardHeader className="text-center">
             <CardTitle className="font-headline text-2xl">
-              {session.jour === 4 ? 'Écris la phrase dictée' : 'Écoute puis écris'}
+              {copieDevoir ? 'Recopie chaque mot 3 fois' : session.jour === 4 ? 'Écris la phrase dictée' : 'Écoute puis écris'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 p-6">
+            {copieDevoir && (
+              <p className="rounded-lg bg-muted p-4 text-center text-3xl font-body font-semibold">
+                {itemCourant}
+              </p>
+            )}
             <div className="flex flex-wrap justify-center gap-3">
               <Button onClick={() => dire(itemCourant)} size="lg">
                 <Volume2 className="mr-2" />
@@ -495,7 +509,7 @@ export function DicteeExercise({ sessionId, onFinish }: DicteeExerciseProps) {
                   )}
                 </div>
                 <Button onClick={suivant} size="lg" className="w-full text-lg">
-                  {index < session.items.length - 1 ? 'Suivant' : 'Voir mon résultat'}
+                  {index < items.length - 1 ? 'Suivant' : 'Voir mon résultat'}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>

@@ -38,6 +38,8 @@ const MOTS_PAR_SEANCE = 10;
 /** Un mot à recopier, éventuellement illustré par un pictogramme ARASAAC. */
 interface MotACopier {
   mot: string;
+  /** Rang de la copie pour les mots de dictée donnés en devoirs. */
+  copie?: number;
   /** Pictogramme ARASAAC illustrant le mot. */
   picto?: number;
   /** Image déjà résolue (photo d'élève), prioritaire sur le pictogramme. */
@@ -123,7 +125,7 @@ export function CopieCapitalesExercise() {
 
   useEffect(() => {
     if (motCourant) setPosition(prochaineLettre(motCourant, 0));
-  }, [motCourant]);
+  }, [motCourant, index]);
 
   const dire = useCallback((texte: string) => {
     if (!texte || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -135,7 +137,7 @@ export function CopieCapitalesExercise() {
 
   useEffect(() => {
     if (motCourant) dire(motCourant);
-  }, [motCourant, dire]);
+  }, [motCourant, index, dire]);
 
   /* ------------------------------ Saisie ------------------------------- */
 
@@ -162,7 +164,7 @@ export function CopieCapitalesExercise() {
 
   const frapper = useCallback(
     (touche: string) => {
-      if (!motCourant || isFinished || position >= motCourant.length) return;
+      if (!motCourant || isFinished || confetti || position >= motCourant.length) return;
 
       setFrappesTotales((n) => n + 1);
       if (!memeLettre(touche, motCourant[position])) return;
@@ -172,12 +174,13 @@ export function CopieCapitalesExercise() {
       setPosition(suivante);
       if (suivante >= motCourant.length) motTermine();
     },
-    [motCourant, position, isFinished, motTermine]
+    [motCourant, position, isFinished, confetti, motTermine]
   );
 
   const effacer = useCallback(() => {
+    if (confetti || isFinished) return;
     if (position > 0) setPosition(lettrePrecedente(motCourant, position));
-  }, [motCourant, position]);
+  }, [motCourant, position, confetti, isFinished]);
 
   useEffect(() => {
     if (!mots) return;
@@ -241,7 +244,7 @@ export function CopieCapitalesExercise() {
   /* ------------------------------ Rendus ------------------------------- */
 
   if (!mots) {
-    return <ChoixDeLaListe onStart={demarrer} />;
+    return <ChoixDeLaListe onStart={demarrer} isHomework={isHomework} />;
   }
 
   if (isFinished) {
@@ -252,7 +255,7 @@ export function CopieCapitalesExercise() {
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-2xl">
-            Tu as recopié <span className="font-bold text-primary">{mots.length}</span> mots.
+            Tu as recopié <span className="font-bold text-primary">{mots[0]?.copie ? mots.length / 3 : mots.length}</span> mots{mots[0]?.copie ? ' trois fois chacun' : ''}.
           </p>
           <ScoreTube score={score} />
           {isHomework ? (
@@ -283,8 +286,9 @@ export function CopieCapitalesExercise() {
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Badge variant="secondary">{titreListe}</Badge>
         <Badge>
-          Mot {index + 1} / {mots.length}
+          Mot {courant?.copie ? Math.floor(index / 3) + 1 : index + 1} / {courant?.copie ? mots.length / 3 : mots.length}
         </Badge>
+        {courant?.copie && <Badge variant="secondary">Copie {courant.copie} / 3</Badge>}
       </div>
       <Progress value={(index / mots.length) * 100} className="w-full h-3" />
 
@@ -306,7 +310,7 @@ export function CopieCapitalesExercise() {
           />
         </div>
         <CardHeader>
-          <CardTitle className="font-headline text-3xl">Recopie le mot</CardTitle>
+          <CardTitle className="font-headline text-3xl">{courant?.copie ? 'Recopie chaque mot 3 fois' : 'Recopie le mot'}</CardTitle>
         </CardHeader>
         <CardContent className="min-h-[280px] flex flex-col items-center justify-center gap-8 p-6">
           {/* Le modèle à recopier, illustré lorsque le mot a un pictogramme */}
@@ -380,8 +384,10 @@ function MentionArasaac() {
 /** Écran de choix de la liste, affiché au lancement de l'exercice. */
 function ChoixDeLaListe({
   onStart,
+  isHomework,
 }: {
   onStart: (mots: MotACopier[], titre: string) => void;
+  isHomework: boolean;
 }) {
   const { student } = useContext(UserContext);
 
@@ -467,7 +473,10 @@ function ChoixDeLaListe({
       mot: m.toUpperCase(),
       picto: pictogrammeDuMot(m),
     }));
-    onStart(mots, `Semaine ${semaine.semaine} — ${semaine.corpusTheme}`);
+    const copies = isHomework
+      ? mots.flatMap((mot) => [1, 2, 3].map((copie) => ({ ...mot, copie })))
+      : mots;
+    onStart(copies, `Semaine ${semaine.semaine} — ${semaine.corpusTheme}`);
   };
 
   const lancerListeIllustree = () => {
@@ -558,7 +567,9 @@ function ChoixDeLaListe({
             Les mots de la semaine
           </CardTitle>
           <CardDescription>
-            Le corpus lexical de la semaine, en capitales et sans image.
+            {isHomework
+              ? 'Recopie chaque mot de dictée 3 fois en capitales.'
+              : 'Le corpus lexical de la semaine, en capitales et sans image.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
