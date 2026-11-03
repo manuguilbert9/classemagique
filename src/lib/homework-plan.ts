@@ -46,6 +46,9 @@ export interface HomeworkFeedback {
   listened: boolean;
   usedFallback: boolean;
   updatedAt: string;
+  completion?: 'draft' | 'completed';
+  activityKey?: string;
+  responses?: { id: string; prompt: string; answer: string }[];
 }
 export const FEEDBACK_LABELS: Record<HomeworkFeedbackStatus, string> = {
   alone: 'Fait seul', help: 'Avec aide', retry: 'À reprendre',

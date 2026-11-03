@@ -12,6 +12,7 @@ import type { Student } from '@/services/students';
 import type { Group } from '@/services/groups';
 import { FEEDBACK_LABELS, type HomeworkFeedback, type HomeworkSubject } from '@/lib/homework-plan';
 import { getHomeworkFeedback } from '@/services/homework-feedback';
+import { homeworkSubjectCompleted, homeworkFeedbackLabel, homeworkActivityKey } from '@/lib/homework-responses';
 
 export type EtatDevoir = 'fait' | 'retard' | 'programme' | 'propose' | 'vide';
 
@@ -106,7 +107,7 @@ export function FriseDevoirs({
     if(assignment.plan) {
       const subjects:HomeworkSubject[]=discipline==='maths'?['maths']:assignment.plan.spelling?['reading','spelling']:['reading'];
       const results=subjects.map(subject=>feedback.find(r=>r.userId===eleve.id&&r.date===seance.date&&r.subject===subject));
-      if(results.every(r=>r&&r.status!=='retry'))return 'fait';
+      if(results.every((r,i)=>homeworkSubjectCompleted(assignment.plan!,subjects[i],r)))return 'fait';
       return propose?'propose':isBefore(parseISO(seance.date),aujourdhui)?'retard':'programme';
     }
     const slug =
@@ -201,7 +202,9 @@ export function FriseDevoirs({
                 if(assignment.plan)return <td key={seance.date} className="border-b p-1 align-top"><div className="flex flex-col gap-1">{(['reading','spelling','maths'] as const).filter(subject=>subject!=='spelling'||assignment.plan!.spelling).map(subject=>{
                   const result=feedback.find(r=>r.userId===eleve.id&&r.date===seance.date&&r.subject===subject);
                   const label=subject==='reading'?'Lecture':subject==='spelling'?'Dyna-Mots':'Maths';
-                  return <button key={subject} type="button" className={cn('rounded border px-2 py-2 text-left text-xs',result?.status==='retry'?'bg-amber-50 text-amber-900':result?'bg-emerald-50 text-emerald-800':'bg-muted')} onClick={()=>onCaseClick(eleve,seance.date,assignment)}>{label} · {result?FEEDBACK_LABELS[result.status]:'programmé'}</button>;
+                  const done=homeworkSubjectCompleted(assignment.plan!,subject,result);
+                  const changed=result?.activityKey&&result.activityKey!==homeworkActivityKey(assignment.plan!,subject);
+                  return <button key={subject} type="button" className={cn('rounded border px-2 py-2 text-left text-xs',done?(result?.status==='retry'?'bg-amber-50 text-amber-900':'bg-emerald-50 text-emerald-800'):result?'bg-sky-50 text-sky-900':'bg-muted')} onClick={()=>onCaseClick(eleve,seance.date,assignment)}>{label} · {changed?'activité modifiée':result?homeworkFeedbackLabel(result):'programmé'}</button>;
                 })}</div></td>;
                 const etatFr = etat(eleve, seance, assignment, propose, 'francais');
                 const etatMa = etat(eleve, seance, assignment, propose, 'maths');
