@@ -1,0 +1,16 @@
+import type { HomeworkPlan, HomeworkActivity } from './homework-plan';
+import { mathsForPlan } from './homework-period';
+import { syllabifier } from './lirecouleur-engine';
+const escape = (text: string) => text.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!));
+function colouredText(text:string):string {
+  let index=0;
+  return text.split(/(\s+|[.,;!?:()"'’\-])/).map(part=>{
+    if(!part||/^(\s+|[.,;!?:()"'’\-])$/.test(part))return escape(part);
+    return syllabifier(part).map(s=>`<span class="syllable-${index++%2?'red':'blue'}">${escape(s.syllabe)}</span>${s.muet?`<span class="silent">${escape(s.muet)}</span>`:''}`).join('');
+  }).join('');
+}
+export function homeworkPrintHtml(plan: HomeworkPlan, date: string): string {
+  const questions = (activity: HomeworkActivity) => activity.questions.map(q => `<li>${escape(q.prompt)}<details class="no-print"><summary>Aide et vérification</summary><p>${escape(q.hint)}</p><p>${escape(q.answer)}</p></details></li>`).join('');
+  const maths = mathsForPlan(plan);
+  return `<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mes devoirs du ${escape(date)}</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 24px;color:#172033;line-height:1.6}h1{font-size:26px}h2{font-size:22px;margin-bottom:8px}section{border-top:2px solid #cbd5e1;padding:12px 0;break-inside:avoid}li{margin:12px 0}.passage{font-size:21px;line-height:1.9}button{font:inherit;padding:10px 20px}.syllable-blue{color:#2563eb}.syllable-red{color:#dc2626}.silent{color:#64748b}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}details{font-size:16px;color:#475569}@media print{body{margin:0;font-size:13pt}.no-print{display:none}section{break-inside:avoid}@page{size:A4;margin:18mm}}</style><body><button class="no-print" onclick="window.print()">Imprimer</button><h1>Mes devoirs pour le ${escape(date.split('-').reverse().join('/'))}</h1><p>S${plan.week} · ${escape(plan.theme)} · ${plan.maxMinutes} minutes maximum</p><p>Je peux répondre à voix haute, montrer ou manipuler. Je m’arrête si je suis fatigué.</p><section><h2>Je lis · ${plan.reading.minutes} min</h2><p>${escape(plan.reading.instruction)}</p><div class="passage">${plan.reading.passage.map(s => `<p>${plan.profiles.support==='syllabes'?colouredText(s):escape(s)}</p>`).join('')}</div>${plan.reading.adultText ? `<p><strong>À lire par l’adulte :</strong> ${escape(plan.reading.adultText)}</p>` : ''}<ol>${questions(plan.reading)}</ol></section>${plan.spelling ? `<section><h2>Je prépare mes mots · ${plan.spelling.minutes} min</h2><p>${escape(plan.spelling.instruction)}</p><ul>${plan.spelling.words.map(w => `<li>${escape(w)}</li>`).join('')}</ul><ol>${questions(plan.spelling)}</ol></section>` : ''}<section><h2>Je m’entraîne en maths · ${maths.minutes} min</h2><p><strong>${escape(maths.title)}</strong></p><p>${escape(maths.instruction)}</p><ol>${questions(maths)}</ol></section><p>Mon retour à l’oral : fait seul / avec aide / à reprendre.</p><p class="no-print">Ce fichier fonctionne sans connexion. Les réponses sont disponibles en ouvrant « Aide et vérification » après l’essai.</p></body></html>`;
+}

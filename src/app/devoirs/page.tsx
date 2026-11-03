@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useContext, Fragment } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
@@ -15,9 +15,14 @@ import { getSkillBySlug } from '@/lib/skills';
 import { UserContext } from '@/context/user-context';
 import { getHomeworkForStudent, getHomeworkResultsForUser, type Assignment, type HomeworkResult } from '@/services/homework';
 import { getSemaine, libelleSession, parseSessionId } from '@/services/dictees';
-import { format, isBefore, startOfToday, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { HomeworkPlanCard } from '@/components/homework-plan-card';
+import { getHomeworkFeedback } from '@/services/homework-feedback';
+import type { HomeworkFeedback } from '@/lib/homework-plan';
+import { parisDate, planIsAvailable, homeworkViewer } from '@/lib/homework-period';
+import { getStudents, type Student } from '@/services/students';
 
 interface DatedAssignment {
   date: string;
@@ -76,7 +81,7 @@ function HomeworkTask({
 }
 
 /** Une journée de devoirs : sa date, ses consignes libres, ses tâches. */
-function HomeworkCard({ date, assignment, completedHomework }: { date: string, assignment: Assignment, completedHomework: HomeworkResult[] }) {
+function HomeworkCard({ date, assignment, completedHomework, readOnly=false }: { date: string, assignment: Assignment, completedHomework: HomeworkResult[], readOnly?:boolean }) {
   const frenchSkill = assignment.francais ? getSkillBySlug(assignment.francais) : null;
   const mathSkill = assignment.maths ? getSkillBySlug(assignment.maths) : null;
   // Le champ « orthographe » porte l'identifiant d'une séance de dictée, ex. « S12-J4 ».
@@ -151,7 +156,7 @@ function HomeworkCard({ date, assignment, completedHomework }: { date: string, a
         {taches.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {taches.map((tache) => (
-              <HomeworkTask key={tache.href} {...tache} />
+              readOnly ? <div key={tache.href} className="rounded-xl border p-4"><p className="text-sm text-muted-foreground">{tache.subject}</p><p className="font-exercise text-lg">{tache.title}</p><p className="mt-2 text-sm">{tache.done?'Réalisé par l’élève':'Pas de réalisation enregistrée'} · ancien exercice, consultation de l’affectation</p></div> : <HomeworkTask key={tache.href} {...tache} />
             ))}
           </div>
         ) : (
@@ -164,51 +169,65 @@ function HomeworkCard({ date, assignment, completedHomework }: { date: string, a
 
 export default function DevoirsPage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
-  const [futureHomework, setFutureHomework] = useState<DatedAssignment[]>([]);
-  const [pastHomework, setPastHomework] = useState<DatedAssignment[]>([]);
+  const [allHomework, setAllHomework] = useState<DatedAssignment[]>([]);
+  const [currentTime,setCurrentTime]=useState(()=>new Date());
   const [completedHomework, setCompletedHomework] = useState<HomeworkResult[]>([]);
   const [isLoadingHomework, setIsLoadingHomework] = useState(true);
+  const [feedback, setFeedback] = useState<HomeworkFeedback[]>([]);
+  const [feedbackError, setFeedbackError] = useState(false);
+  const [previewStudentId,setPreviewStudentId]=useState('');
+  const [previewDate,setPreviewDate]=useState('');
+  const [pupils,setPupils]=useState<Student[]>([]);
+  const [pupilsError,setPupilsError]=useState(false);
+  const viewer=student?homeworkViewer(student,previewStudentId):{canPreview:false,studentId:'',readOnly:false};
+  const viewedStudent=viewer.readOnly?pupils.find(p=>p.id===viewer.studentId):student;
+  const today=parisDate(currentTime);
+  const availableHomework=allHomework.filter(item=>viewer.readOnly||!item.assignment.plan||planIsAvailable(item.assignment.plan,currentTime));
+  const futureHomework=availableHomework.filter(item=>item.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
+  const pastHomework=availableHomework.filter(item=>item.date<today).sort((a,b)=>b.date.localeCompare(a.date));
+
+  // Réévaluer à chaque minute sans relire Firestore : une page ouverte à 14 h 59
+  // affiche le nouveau devoir dès 15 h. Reprendre aussi l'heure au retour sur l'onglet.
+  useEffect(()=>{
+    const timer=window.setTimeout(()=>setCurrentTime(new Date()),60000-Date.now()%60000);
+    return()=>window.clearTimeout(timer);
+  },[currentTime]);
+  useEffect(()=>{
+    const refreshTime=()=>setCurrentTime(new Date());
+    window.addEventListener('focus',refreshTime);
+    return()=>window.removeEventListener('focus',refreshTime);
+  },[]);
+
+  useEffect(()=>{
+    if(!viewer.canPreview)return;
+    let cancelled=false;
+    getStudents().then(values=>{if(!cancelled){setPupils(values.filter(p=>p.groupId&&!homeworkViewer(p).canPreview).sort((a,b)=>a.name.localeCompare(b.name,'fr')));setPupilsError(false);}}).catch(()=>{if(!cancelled)setPupilsError(true);});
+    return()=>{cancelled=true;};
+  },[viewer.canPreview]);
 
   useEffect(() => {
+    let cancelled=false;
     async function fetchHomework() {
-      if (student?.id) {
+      if (viewedStudent?.id) {
         setIsLoadingHomework(true);
         const [allAssignments, completedResults] = await Promise.all([
-            getHomeworkForStudent(student.id, student.groupId),
-            getHomeworkResultsForUser(student.id),
+            getHomeworkForStudent(viewedStudent.id, viewedStudent.groupId),
+            getHomeworkResultsForUser(viewedStudent.id),
         ]);
-        
+        if(cancelled)return;
         setCompletedHomework(completedResults);
+        try { const values=await getHomeworkFeedback(viewedStudent.id); if(cancelled)return;setFeedback(values); setFeedbackError(false); }
+        catch { if(cancelled)return;setFeedback([]);setFeedbackError(true); }
 
-        const today = startOfToday();
-        const future: DatedAssignment[] = [];
-        const past: DatedAssignment[] = [];
-
-        allAssignments.forEach(item => {
-            try {
-                const itemDate = parseISO(item.date);
-                if (isBefore(itemDate, today)) {
-                    past.push(item);
-                } else {
-                    future.push(item);
-                }
-            } catch (e) {
-                console.error("Invalid date format for homework item:", item.date, e);
-            }
-        });
-        
-        future.sort((a,b) => a.date.localeCompare(b.date));
-        past.sort((a,b) => b.date.localeCompare(a.date));
-
-        setFutureHomework(future);
-        setPastHomework(past);
+        setAllHomework(allAssignments);
         setIsLoadingHomework(false);
       } else if (!isUserLoading) {
         setIsLoadingHomework(false);
       }
     }
     fetchHomework();
-  }, [student, isUserLoading]);
+    return()=>{cancelled=true;};
+  }, [viewedStudent?.id,viewedStudent?.groupId,viewer.readOnly,isUserLoading]);
 
   if (isUserLoading || isLoadingHomework) {
     return <PageLoading>Je cherche tes devoirs…</PageLoading>;
@@ -239,10 +258,13 @@ export default function DevoirsPage() {
         }
       />
 
+      {viewer.canPreview&&<section className="space-y-3 rounded-xl border-2 border-sky-300 bg-sky-50 p-4 text-slate-900"><label className="block font-semibold">Voir comme un élève<select className="mt-2 block h-12 w-full rounded-lg border bg-white px-3 font-normal" value={previewStudentId} onChange={e=>{setPreviewStudentId(e.target.value);setPreviewDate('');}}><option value="">Mes devoirs — M. Manu</option>{pupils.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>{pupilsError&&<p role="alert">La liste des élèves n’a pas pu être chargée. Recharge la page pour réessayer.</p>}{viewer.readOnly&&<><p><strong>Mode consultation : {viewedStudent?.name}.</strong> Tu restes connecté en tant que M. Manu. Les essais, l’écoute et les vérifications ne modifient ni ses devoirs réalisés, ni ses résultats.</p>{futureHomework.length>1&&<label className="block">Date à consulter<select className="mt-1 block h-11 w-full rounded-lg border bg-white px-3" value={previewDate||futureHomework[0].date} onChange={e=>setPreviewDate(e.target.value)}>{futureHomework.map(item=><option key={item.date} value={item.date}>{item.date.split('-').reverse().join('/')}{item.assignment.plan?` · S${item.assignment.plan.week}`:''}</option>)}</select></label>}</>}</section>}
+
       <section>
-        <SectionLabel icon={<BookMarked />}>À faire</SectionLabel>
+        <SectionLabel icon={<BookMarked />}>{viewer.readOnly?'Devoirs à consulter':'À faire'}</SectionLabel>
+        {feedbackError && <p role="alert" className="mb-3 text-sm text-amber-800">Les retours enregistrés ne sont pas disponibles pour le moment. Tu peux quand même ouvrir tes devoirs.</p>}
         {futureHomework.length > 0 ? (
-          futureHomework.slice(0, 1).map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} completedHomework={completedHomework} />)
+          (viewer.readOnly&&previewDate?futureHomework.filter(item=>item.date===previewDate):futureHomework.slice(0, 1)).map(item => item.assignment.plan ? <HomeworkPlanCard key={`${viewer.studentId}/${item.date}`} date={item.date} plan={item.assignment.plan} studentId={viewer.studentId} readOnly={viewer.readOnly} feedback={feedback} onFeedback={value=>setFeedback(previous=>[...previous.filter(f=>!(f.date===value.date&&f.subject===value.subject&&f.userId===value.userId)),value])}/> : <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} completedHomework={completedHomework} readOnly={viewer.readOnly} />)
         ) : (
           <EmptyState icon={<PartyPopper />} title="Aucun devoir à venir">
             Rien n&apos;est prévu pour les prochains jours. Tu peux aller t&apos;entraîner en classe si tu en as envie.
@@ -261,7 +283,7 @@ export default function DevoirsPage() {
                 </span>
               </AccordionTrigger>
               <AccordionContent className="space-y-6 pt-4">
-                {pastHomework.map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} completedHomework={completedHomework}/>)}
+                {pastHomework.map(item => item.assignment.plan ? <HomeworkPlanCard key={`${viewer.studentId}/${item.date}`} date={item.date} plan={item.assignment.plan} studentId={viewer.studentId} readOnly={viewer.readOnly} feedback={feedback} onFeedback={value=>setFeedback(previous=>[...previous.filter(f=>!(f.date===value.date&&f.subject===value.subject&&f.userId===value.userId)),value])}/> : <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} completedHomework={completedHomework} readOnly={viewer.readOnly}/>)}
               </AccordionContent>
             </AccordionItem>
           </Accordion>

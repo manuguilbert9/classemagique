@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { format, parseISO, startOfToday, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,8 @@ import { getSemaine, parseSessionId } from '@/services/dictees';
 import type { Seance } from '@/lib/programmation-devoirs';
 import type { Student } from '@/services/students';
 import type { Group } from '@/services/groups';
+import { FEEDBACK_LABELS, type HomeworkFeedback, type HomeworkSubject } from '@/lib/homework-plan';
+import { getHomeworkFeedback } from '@/services/homework-feedback';
 
 export type EtatDevoir = 'fait' | 'retard' | 'programme' | 'propose' | 'vide';
 
@@ -60,6 +62,8 @@ export function FriseDevoirs({
   onEleveClick,
   onCaseClick,
 }: FriseDevoirsProps) {
+  const [feedback,setFeedback]=useState<HomeworkFeedback[]>([]);
+  useEffect(()=>{getHomeworkFeedback().then(setFeedback).catch(()=>setFeedback([]));},[allHomework]);
   const aujourdhui = startOfToday();
   const nomDuGroupe = (id?: string) => groups.find((g) => g.id === id)?.name ?? '—';
 
@@ -99,6 +103,12 @@ export function FriseDevoirs({
     propose: boolean,
     discipline: 'francais' | 'maths'
   ): EtatDevoir => {
+    if(assignment.plan) {
+      const subjects:HomeworkSubject[]=discipline==='maths'?['maths']:assignment.plan.spelling?['reading','spelling']:['reading'];
+      const results=subjects.map(subject=>feedback.find(r=>r.userId===eleve.id&&r.date===seance.date&&r.subject===subject));
+      if(results.every(r=>r&&r.status!=='retry'))return 'fait';
+      return propose?'propose':isBefore(parseISO(seance.date),aujourdhui)?'retard':'programme';
+    }
     const slug =
       discipline === 'maths'
         ? assignment.maths
@@ -160,7 +170,7 @@ export function FriseDevoirs({
                   {format(parseISO(seance.date), 'EEEE d MMM', { locale: fr })}
                 </span>
                 <span className="block font-mono text-[10px] font-normal text-muted-foreground">
-                  S{seance.semaineDictee} · {seance.jourDeMethode === 1 ? 'jour 1' : 'bilan'}
+                  {seance.jourDeMethode === 1 ? 'Préparation du lundi' : 'Révision du jeudi'}
                 </span>
               </th>
             ))}
@@ -188,6 +198,11 @@ export function FriseDevoirs({
 
               {seances.map((seance) => {
                 const { assignment, propose } = devoirDe(eleve, seance.date);
+                if(assignment.plan)return <td key={seance.date} className="border-b p-1 align-top"><div className="flex flex-col gap-1">{(['reading','spelling','maths'] as const).filter(subject=>subject!=='spelling'||assignment.plan!.spelling).map(subject=>{
+                  const result=feedback.find(r=>r.userId===eleve.id&&r.date===seance.date&&r.subject===subject);
+                  const label=subject==='reading'?'Lecture':subject==='spelling'?'Dyna-Mots':'Maths';
+                  return <button key={subject} type="button" className={cn('rounded border px-2 py-2 text-left text-xs',result?.status==='retry'?'bg-amber-50 text-amber-900':result?'bg-emerald-50 text-emerald-800':'bg-muted')} onClick={()=>onCaseClick(eleve,seance.date,assignment)}>{label} · {result?FEEDBACK_LABELS[result.status]:'programmé'}</button>;
+                })}</div></td>;
                 const etatFr = etat(eleve, seance, assignment, propose, 'francais');
                 const etatMa = etat(eleve, seance, assignment, propose, 'maths');
                 const nomFr = libelleFrancais(assignment);

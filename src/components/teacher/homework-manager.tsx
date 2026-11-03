@@ -23,6 +23,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { HomeworkPeriodManager } from './homework-period-manager';
 
 interface HomeworkManagerProps {
   students: Student[];
@@ -308,6 +309,7 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
 
   return (
     <div className="space-y-8">
+      <HomeworkPeriodManager students={students} allHomework={allHomework}/>
       {/* Header with Magic Mode toggle */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gradient-to-r from-primary/10 to-transparent p-6 rounded-2xl border border-primary/20 gap-4">
         <div>

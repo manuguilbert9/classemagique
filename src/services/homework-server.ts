@@ -6,8 +6,10 @@ import { db } from '@/lib/firebase';
 import type { Score, ScoreDetail } from './scores';
 import { resolveAssignment } from '@/lib/homework-assignment';
 import { doc, getDoc, setDoc, collection, getDocs, orderBy, query, addDoc, Timestamp, where } from 'firebase/firestore';
+import type { HomeworkPlan } from '@/lib/homework-plan';
 
 export interface Assignment {
+  plan?: HomeworkPlan | null;
   francais: string | null;
   maths: string | null;
   orthographe?: string | null;

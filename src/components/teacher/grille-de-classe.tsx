@@ -34,6 +34,7 @@ import { updateStudent, type Student } from '@/services/students';
 import type { Group } from '@/services/groups';
 import { GrilleNiveaux } from './grille-niveaux';
 import { FriseDevoirs } from './frise-devoirs';
+import { HomeworkPeriodManager } from './homework-period-manager';
 import { AujourdhuiManager } from './aujourdhui-manager';
 
 interface GrilleDeClasseProps {
@@ -352,6 +353,7 @@ export function GrilleDeClasse({
 
       {onglet === 'programmer' && (
         <div className="space-y-5">
+          <HomeworkPeriodManager students={students} allHomework={allHomework}/>
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Ce que reçoit chaque élève</CardTitle>
@@ -522,7 +524,7 @@ export function GrilleDeClasse({
 
       {/* Modification d'une case de la frise, sans quitter le tableau */}
       <Dialog open={!!caseEditee} onOpenChange={(ouvert) => !ouvert && setCaseEditee(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={caseEditee?.assignment.plan ? 'max-h-[90vh] overflow-y-auto sm:max-w-4xl' : 'sm:max-w-md'}>
           <DialogHeader>
             <DialogTitle>
               {caseEditee?.eleve.name} —{' '}
@@ -530,7 +532,8 @@ export function GrilleDeClasse({
             </DialogTitle>
           </DialogHeader>
 
-          {caseEditee && (
+          {caseEditee?.assignment.plan && <HomeworkPeriodManager key={`${caseEditee.date}/${caseEditee.eleve.id}`} students={students} allHomework={allHomework} initialStudentId={caseEditee.eleve.id} initialDate={caseEditee.date}/>}
+          {caseEditee && !caseEditee.assignment.plan && (
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -626,12 +629,12 @@ export function GrilleDeClasse({
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCaseEditee(null)}>
-              Annuler
+              Fermer
             </Button>
-            <Button onClick={enregistrerLaCase} disabled={isSaving}>
+            {!caseEditee?.assignment.plan && <Button onClick={enregistrerLaCase} disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Enregistrer
-            </Button>
+            </Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
