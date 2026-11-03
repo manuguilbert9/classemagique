@@ -38,6 +38,13 @@ export interface HomeworkPlan {
   spelling: HomeworkSpelling | null;
   maths: HomeworkMaths;
 }
+export interface HomeworkAnswerReview {
+  checkedAnswer: string;
+  questionKey: string;
+  outcome: 'correct' | 'retry' | 'compare' | 'self-reviewed' | 'to-review';
+  attempts: { answer: string; outcome: 'correct' | 'retry' | 'compare' }[];
+  correctionSeen: boolean;
+}
 export interface HomeworkFeedback {
   userId: string;
   date: string;
@@ -48,7 +55,8 @@ export interface HomeworkFeedback {
   updatedAt: string;
   completion?: 'draft' | 'completed';
   activityKey?: string;
-  responses?: { id: string; prompt: string; answer: string }[];
+  guided?: boolean;
+  responses?: { id: string; prompt: string; answer: string; review?: HomeworkAnswerReview }[];
 }
 export const FEEDBACK_LABELS: Record<HomeworkFeedbackStatus, string> = {
   alone: 'Fait seul', help: 'Avec aide', retry: 'À reprendre',
