@@ -31,7 +31,7 @@ export function profileForStudent(student: { name: string; groupId?: string }): 
     mathis: 'B+', nolan: 'B+', stelina: 'C', emma: 'C', lenny: 'C', nessa: 'C', axelle: 'C', julie: 'C',
   };
   const profile = roster[name];
-  return profile ? { reading: profile, spelling: profile, maths: profile, support: ['leo', 'helena'].includes(name) ? 'syllabes' : 'standard' } : null;
+  return profile ? { reading: profile, spelling: profile, maths: name === 'axelle' ? 'B+' : profile, support: ['leo', 'helena'].includes(name) ? 'syllabes' : 'standard' } : null;
 }
 
 export function createPeriodPlan(week: number, day: 1 | 4, profiles: HomeworkProfiles): HomeworkPlan {

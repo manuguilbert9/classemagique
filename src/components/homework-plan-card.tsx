@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, BrainCircuit, Calculator, Volume2, Printer, Check, RotateCcw, ArrowRight, ArrowLeft } from 'lucide-react';
+import { BookOpen, BrainCircuit, Calculator, Volume2, Printer, Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { HomeworkMathsSupport } from '@/components/homework-maths-support';
+import { homeworkAid } from '@/lib/homework-aids';
 import { SyllableText } from '@/components/syllable-text';
 import { FEEDBACK_LABELS, type HomeworkAnswerReview, type HomeworkFeedback, type HomeworkFeedbackStatus, type HomeworkPlan, type HomeworkSubject } from '@/lib/homework-plan';
 import { mathsForPlan } from '@/lib/homework-period';
@@ -23,16 +25,6 @@ function Speak({ text, label = 'Écouter la consigne', onListen }: { text: strin
     voice.lang = 'fr-FR'; voice.rate = 0.85;
     window.speechSynthesis.speak(voice); onListen?.();
   }}><Volume2 className="mr-2 h-4 w-4" />{label}</Button>;
-}
-
-function Tokens() {
-  const [count, setCount] = useState(0);
-  return <details className="my-4 rounded-lg border p-3"><summary className="cursor-pointer py-2 font-medium">Mes jetons et ma bande numérique</summary>
-    <p className="my-2">Utilise ces jetons ou des objets à la maison. Un adulte peut déplacer les objets selon tes indications.</p>
-    <div className="flex flex-wrap gap-2 py-3" aria-label={`${count} jetons`}>{Array.from({length:count}, (_, i) => <span key={i} aria-hidden="true" className="h-7 w-7 rounded-full border-2 border-amber-800 bg-amber-300" />)}</div>
-    <div className="flex flex-wrap items-center gap-3"><Button variant="outline" disabled={count===0} onClick={()=>setCount(count-1)}>Retirer 1</Button><output aria-live="polite">{count} jetons</output><Button variant="outline" disabled={count===20} onClick={()=>setCount(count+1)}>Ajouter 1</Button><Button variant="ghost" onClick={()=>setCount(0)} aria-label="Enlever tous les jetons"><RotateCcw className="h-4 w-4" /></Button></div>
-    <p className="mt-4 overflow-x-auto whitespace-nowrap font-mono text-lg" aria-label="Bande numérique de zéro à vingt">{Array.from({length:21},(_,i)=>i).join(' · ')}</p>
-  </details>;
 }
 
 type HomeworkPlanCardProps = {
@@ -104,6 +96,7 @@ function HomeworkPlanContent({ plan, date, studentId, feedback = [], onFeedback,
   const fields = active ? responseFields(plan, active) : [];
   const field = fields[step];
   const question = active && field ? homeworkQuestion(plan, active, field.id) : null;
+  const aid = active && field ? homeworkAid(plan, active, field.id) : null;
   const answer = active && field ? answers[active][field.id] ?? '' : '';
   const review = active && field ? reviews[active][field.id] : undefined;
   const current = !!active && !!field && homeworkReviewCurrent(plan, active, field.id, answer, review);
@@ -181,13 +174,13 @@ function HomeworkPlanContent({ plan, date, studentId, feedback = [], onFeedback,
           {!resolved && <Button className="min-h-12" disabled={busy} onClick={validate}>{busy ? 'Enregistrement…' : current ? 'Valider mon nouvel essai' : 'Valider ma réponse'}</Button>}
           {current && review && <div role="status" className={`space-y-3 rounded-xl border p-4 ${review.outcome === 'correct' ? 'border-emerald-300 bg-emerald-50 text-emerald-950' : 'border-amber-300 bg-amber-50 text-amber-950'}`}>
             {review.outcome === 'correct' && <p className="font-semibold">Bravo, ta réponse est juste !</p>}
-            {review.outcome === 'retry' && <><p className="font-semibold">Pas encore. Tu peux te corriger.</p><p>{question.hint}</p>{!review.correctionSeen && <Button variant="outline" disabled={busy} onClick={() => commitReview({ ...review, correctionSeen: true })}>Voir le modèle pour m’aider</Button>}{review.correctionSeen && <p><strong>Le modèle : </strong>{question.answer}</p>}{review.correctionSeen && review.attempts.filter(a => a.outcome === 'retry').length >= 2 && <Button variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={busy} onClick={() => commitReview({ ...review, outcome: 'to-review' })}>J’ai encore besoin d’aide : à reprendre avec le maître</Button>}</>}
-            {review.outcome === 'compare' && <><p className="font-semibold">Compare les idées de ta réponse.</p><p><strong>Une réponse possible : </strong>{question.answer}</p><p>{question.hint}</p><p className="text-sm">Tu peux avoir utilisé d’autres mots. Vérifie que ta réponse donne les mêmes informations.</p><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={busy} onClick={() => input.current?.focus()}>Je me corrige</Button><Button className="h-auto min-h-11 whitespace-normal" disabled={busy} onClick={() => commitReview({ ...review, outcome: 'self-reviewed' })}>Ma réponse donne ces informations</Button><Button variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={busy} onClick={() => commitReview({ ...review, outcome: 'to-review' })}>J’ai besoin du maître pour vérifier</Button></div></>}
+            {review.outcome === 'retry' && <><p className="font-semibold">Pas encore. Tu peux te corriger.</p><p>{aid?.hint}</p>{review.attempts.filter(a => a.outcome === 'retry').length >= 2 && <Button variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={busy} onClick={() => commitReview({ ...review, outcome: 'to-review' })}>J’ai encore besoin d’aide : à reprendre avec le maître</Button>}</>}
+            {review.outcome === 'compare' && <><p className="font-semibold">Vérifie ta réponse avec la consigne.</p><p>{aid?.hint}</p><ul className="list-disc space-y-1 pl-5">{aid?.checks.map(check => <li key={check}>{check}</li>)}</ul><p className="text-sm">Cette réponse n’est pas validée automatiquement. Relis-la avec ces pistes ou demande de l’aide.</p><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={busy} onClick={() => input.current?.focus()}>Je me corrige</Button><Button className="h-auto min-h-11 whitespace-normal" disabled={busy} onClick={() => commitReview({ ...review, outcome: 'self-reviewed' })}>J’ai relu et vérifié ma réponse</Button><Button variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={busy} onClick={() => commitReview({ ...review, outcome: 'to-review' })}>J’ai besoin du maître pour vérifier</Button></div></>}
             {review.outcome === 'self-reviewed' && <p>Tu as relu et confirmé ta réponse. Le maître pourra la consulter.</p>}
             {review.outcome === 'to-review' && <p>Ta réponse est conservée. Le maître verra que tu as besoin d’aide.</p>}
           </div>}
           {!current && review && <p className="text-sm">Ta réponse a changé. Valide-la à nouveau.</p>}
-          {!resolved && <><details className="rounded-lg bg-muted/40 p-3"><summary className="cursor-pointer py-1 font-medium">Un coup de pouce</summary><p className="mt-2">{question.hint}</p></details>{active === 'maths' && plan.maths.tokens && <Tokens />}</>}
+          {!resolved && <><details className="rounded-lg bg-muted/40 p-3"><summary className="cursor-pointer py-1 font-medium">Un coup de pouce</summary><p className="mt-2">{aid?.hint}</p></details>{aid?.context && <p className="rounded-lg bg-muted/40 p-3 text-sm"><strong>Rappel de la situation : </strong>{aid.context}</p>}{aid?.support && <HomeworkMathsSupport key={`${active}/${field.id}`} support={aid.support} />}</>}
           <div className="flex flex-wrap gap-3">{step > 0 && <Button variant="outline" disabled={busy} onClick={() => move(step - 1)}><ArrowLeft className="mr-2 h-4 w-4" />Étape précédente</Button>}<Button disabled={busy || !resolved} className="min-h-12" onClick={() => move(step + 1)}>{step === fields.length - 1 ? 'Voir mon bilan' : 'Étape suivante'}<ArrowRight className="ml-2 h-4 w-4" /></Button></div>
         </>}
       </>}

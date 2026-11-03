@@ -81,7 +81,7 @@ export function checkHomeworkAnswer(plan: HomeworkPlan, subject: HomeworkSubject
   else if (subject === 'maths') outcome = mathVerdict(question.answer, answer);
   else if (subject === 'reading' && plain(question.answer) === 'son papa' && ['son pere', 'papa', 'le papa de lila', 'le pere de lila'].includes(plain(answer))) outcome = 'correct';
   else outcome = 'compare';
-  return { outcome, model: question.answer, hint: question.hint };
+  return { outcome };
 }
 export function recordHomeworkCheck(plan: HomeworkPlan, subject: HomeworkSubject, id: string, answer: string, previous?: HomeworkAnswerReview): HomeworkAnswerReview {
   const checkedAnswer = answer.trim();
@@ -91,7 +91,7 @@ export function recordHomeworkCheck(plan: HomeworkPlan, subject: HomeworkSubject
   const history = previous?.questionKey === questionKey ? previous.attempts : [];
   // Keep the first attempt and the latest 19, including after reopening a session.
   const attempts = [...history, { answer: checkedAnswer, outcome: check.outcome }];
-  return { checkedAnswer, questionKey, outcome: check.outcome, attempts: attempts.length > 20 ? [attempts[0], ...attempts.slice(-19)] : attempts, correctionSeen: check.outcome === 'compare' || (previous?.questionKey === questionKey && previous.correctionSeen) || false };
+  return { checkedAnswer, questionKey, outcome: check.outcome, attempts: attempts.length > 20 ? [attempts[0], ...attempts.slice(-19)] : attempts, correctionSeen: (previous?.questionKey === questionKey && previous.correctionSeen) || false };
 }
 export function homeworkReviewCurrent(plan: HomeworkPlan, subject: HomeworkSubject, id: string, answer: string, review?: HomeworkAnswerReview): boolean {
   if (!review || review.checkedAnswer !== answer.trim()) return false;
@@ -103,5 +103,5 @@ export function homeworkReviewResolved(plan: HomeworkPlan, subject: HomeworkSubj
   return homeworkReviewCurrent(plan, subject, id, answer, review) && ['correct', 'self-reviewed', 'to-review'].includes(review!.outcome);
 }
 export const HOMEWORK_REVIEW_LABELS: Record<HomeworkAnswerReview['outcome'], string> = {
-  correct: 'Réponse validée', retry: 'Nouvel essai demandé', compare: 'Comparaison en cours', 'self-reviewed': 'Relue et confirmée par l’élève', 'to-review': 'À reprendre avec le maître',
+  correct: 'Réponse validée', retry: 'Nouvel essai demandé', compare: 'À vérifier par l’élève', 'self-reviewed': 'Relue et confirmée par l’élève', 'to-review': 'À reprendre avec le maître',
 };
