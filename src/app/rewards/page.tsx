@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useContext, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { UserContext } from '@/context/user-context';
@@ -20,8 +20,9 @@ import { GearRacerGame } from '@/components/gear-racer-game';
 import { GhostHuntGame } from '@/components/ghost-hunt-game';
 import { SantaSleighGame } from '@/components/santa-sleigh-game';
 import { NeonSkiGame } from '@/components/neon-ski-game';
+import { MiaoudokuGame } from '@/components/miaoudoku-game';
 
-type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer' | 'playing_ghost_hunt' | 'playing_santa_sleigh' | 'playing_neon_ski';
+type GameState = 'selection' | 'playing_snake' | 'playing_air_defense' | 'playing_boccia' | 'playing_gear_racer' | 'playing_ghost_hunt' | 'playing_santa_sleigh' | 'playing_neon_ski' | 'playing_miaoudoku';
 
 const GAME_COST = 2;
 const GHOST_HUNT_COST = 4;
@@ -31,8 +32,10 @@ export default function RewardsPage() {
   const { student, refreshStudent } = useContext(UserContext);
   const [gameState, setGameState] = useState<GameState>('selection');
   const { toast } = useToast();
+  const purchasePending = useRef(false);
 
-  const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia' | 'gear_racer' | 'ghost_hunt' | 'santa_sleigh' | 'neon_ski') => {
+  const handlePlay = async (game: 'snake' | 'air_defense' | 'boccia' | 'gear_racer' | 'ghost_hunt' | 'santa_sleigh' | 'neon_ski' | 'miaoudoku') => {
+    if (purchasePending.current) return;
     const cost = game === 'ghost_hunt' ? GHOST_HUNT_COST : GAME_COST;
 
     if (!student || (student.nuggets || 0) < cost) {
@@ -44,30 +47,23 @@ export default function RewardsPage() {
       return;
     }
 
-    const result = await spendNuggets(student.id, cost);
-    if (result.success) {
-      refreshStudent();
-      if (game === 'snake') {
-        setGameState('playing_snake');
-      } else if (game === 'air_defense') {
-        setGameState('playing_air_defense');
-      } else if (game === 'boccia') {
-        setGameState('playing_boccia');
-      } else if (game === 'gear_racer') {
-        setGameState('playing_gear_racer');
-      } else if (game === 'ghost_hunt') {
-        setGameState('playing_ghost_hunt');
-      } else if (game === 'santa_sleigh') {
-        setGameState('playing_santa_sleigh');
-      } else if (game === 'neon_ski') {
-        setGameState('playing_neon_ski');
+    purchasePending.current = true;
+    try {
+      const result = await spendNuggets(student.id, cost);
+      if (result.success) {
+        refreshStudent();
+        setGameState(`playing_${game}`);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: result.error || "Impossible de dépenser les pépites.",
+        });
       }
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: result.error || "Impossible de dépenser les pépites.",
-      });
+    } catch {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de lancer le jeu. Réessaie dans un instant.' });
+    } finally {
+      purchasePending.current = false;
     }
   };
 
@@ -222,10 +218,15 @@ export default function RewardsPage() {
     );
   }
 
+  if (gameState === 'playing_miaoudoku') {
+    return <MiaoudokuGame key={student.id} studentId={student.id} onExit={handleExitGame} />;
+  }
+
   const nuggets = student.nuggets || 0;
 
   /** Le catalogue : ajouter un jeu, c'est ajouter une ligne ici. */
   const jeux = [
+    { id: 'miaoudoku' as const, title: 'Miaoudoku', description: 'Un chat par couleur : 24 défis de logique !', visual: '🐱', cost: GAME_COST, className: 'border-teal-200', visualClassName: 'bg-teal-50 bg-none', buttonClassName: 'bg-teal-700 hover:bg-teal-800' },
     { id: 'snake' as const, title: 'Snake', description: 'Un classique indémodable !', visual: <Gamepad2 />, cost: GAME_COST },
     { id: 'air_defense' as const, title: 'Défense aérienne', description: 'Détruis les envahisseurs !', visual: <Shield />, cost: GAME_COST },
     { id: 'boccia' as const, title: 'Boccia', description: 'Précision et stratégie !', visual: <Disc3 />, cost: GAME_COST },
